@@ -255,7 +255,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       {/* Auto-Swiping 6-Image Hero Banner Slider */}
       {selectedCategory === 'all' && displayBanners.length > 0 && (
         <section
-          className="hero-banner-container block mb-6 md:mb-10 relative w-full h-[260px] sm:h-[320px] md:h-[360px] xl:h-[420px] overflow-hidden rounded-2xl border border-[#27272a] shadow-2xl group/slider select-none bg-[#09090b]"
+          className="hero-banner-container block mb-6 md:mb-10 relative w-full h-[220px] sm:h-[320px] md:h-[360px] xl:h-[420px] overflow-hidden rounded-2xl border border-[#27272a] shadow-2xl group/slider select-none bg-[#09090b]"
         >
           {/* Preloaded GPU Cross-Fade Banner Slide Layers */}
           {displayBanners.map((banner, index) => {
@@ -268,7 +268,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     onSelectCategory(banner.targetCategory);
                   }
                 }}
-                className={`absolute inset-0 w-full h-full flex items-end p-8 xl:p-12 cursor-pointer transition-all duration-700 ease-in-out ${
+                className={`absolute inset-0 w-full h-full flex items-end p-4 sm:p-8 xl:p-12 cursor-pointer transition-all duration-700 ease-in-out ${
                   isActive
                     ? 'opacity-100 scale-100 z-10 pointer-events-auto'
                     : 'opacity-0 scale-105 z-0 pointer-events-none'
@@ -281,27 +281,27 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                   decoding="async"
                   className="absolute inset-0 w-full h-full object-cover gpu-accelerated"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/60 to-transparent pointer-events-none" />
-                <div className="absolute inset-0 bg-gradient-to-r from-[#09090b]/90 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/95 via-[#09090b]/40 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#09090b]/80 via-transparent to-transparent pointer-events-none" />
 
                 <div
-                  className={`relative z-10 max-w-2xl space-y-3 transition-all duration-700 ease-out ${
+                  className={`relative z-10 max-w-xl sm:max-w-2xl space-y-1.5 sm:space-y-3 transition-all duration-700 ease-out ${
                     isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
                   }`}
                 >
-                  <span className="inline-block px-3 py-1 bg-[#ec4899] text-white text-[11px] font-black uppercase tracking-wider rounded-md shadow-lg">
+                  <span className="inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 bg-[#ec4899] text-white text-[9px] sm:text-[11px] font-black uppercase tracking-wider rounded-md shadow-lg">
                     {banner.tag || 'Featured Release'}
                   </span>
-                  <h1 className="text-3xl xl:text-5xl font-black text-white italic tracking-tight hover:text-[#ffb0cd] transition-colors duration-150">
+                  <h1 className="text-lg sm:text-3xl xl:text-5xl font-black text-white italic tracking-tight hover:text-[#ffb0cd] transition-colors duration-150 line-clamp-1 sm:line-clamp-none">
                     {banner.title}
                   </h1>
-                  <p className="text-xs xl:text-sm text-[#debec8] line-clamp-2 leading-relaxed">
+                  <p className="text-[10px] sm:text-xs xl:text-sm text-[#debec8] line-clamp-1 sm:line-clamp-2 leading-snug sm:leading-relaxed">
                     {banner.subtitle}
                   </p>
-                  <div className="pt-2">
-                    <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 hover:bg-[#ec4899] text-white font-bold text-xs uppercase tracking-wider backdrop-blur-md transition-all duration-150 border border-white/20 shadow-lg hover:scale-105 active:scale-95">
+                  <div className="pt-0.5 sm:pt-2">
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-6 sm:py-3 rounded-full bg-white/10 hover:bg-[#ec4899] text-white font-bold text-[10px] sm:text-xs uppercase tracking-wider backdrop-blur-md transition-all duration-150 border border-white/20 shadow-lg hover:scale-105 active:scale-95">
                       <span>{banner.ctaText || 'Watch Now'}</span>
-                      <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                      <span className="material-symbols-outlined text-xs sm:text-sm">arrow_forward</span>
                     </span>
                   </div>
                 </div>
