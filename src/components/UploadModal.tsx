@@ -565,9 +565,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 required
                 value={durationInput}
                 onChange={(e) => setDurationInput(e.target.value)}
-                placeholder="e.g. 05:30"
+                placeholder="e.g. 10:45 or 05:30"
                 className="w-full upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500 font-mono"
               />
+              <p className="text-[10px] text-rose-400 font-mono mt-1">
+                ⏱️ Set exact video length (e.g. 12:45) for embed links
+              </p>
             </div>
 
             <div>

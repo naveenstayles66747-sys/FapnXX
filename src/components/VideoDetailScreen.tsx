@@ -262,10 +262,15 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
 
         {/* Sub-row: Views & Creator Info on Left, Action Pill Buttons on Right */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3 border-white/10">
-          {/* Views & Creator Avatar Pill */}
+          {/* Views, Duration & Creator Avatar Pill */}
           <div className="flex items-center gap-2.5 text-xs font-medium text-white/80 flex-wrap">
             <span className="font-bold text-white">
               {currentViewsCount.toLocaleString()} {currentViewsCount === 1 ? 'view' : 'views'}
+            </span>
+            <span className="text-white/30">|</span>
+            <span className="font-mono font-bold text-rose-400 flex items-center gap-1">
+              <span className="material-symbols-outlined text-sm">schedule</span>
+              {video.duration || '05:00'}
             </span>
             <span className="text-white/30">|</span>
             <div className="flex items-center gap-2 bg-[#232328] px-3 py-1 rounded-full border border-white/10">
