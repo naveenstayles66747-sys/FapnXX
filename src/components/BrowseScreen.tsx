@@ -257,57 +257,60 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         <section
           className="hero-banner-container block mb-6 md:mb-10 relative w-full h-[220px] sm:h-[320px] md:h-[360px] xl:h-[420px] overflow-hidden rounded-2xl border border-[#27272a] shadow-2xl group/slider select-none bg-[#09090b]"
         >
-          {/* Preloaded GPU Cross-Fade Banner Slide Layers */}
-          {displayBanners.map((banner, index) => {
-            const isActive = index === currentSlideIndex;
-            return (
-              <div
-                key={banner.id}
-                onClick={() => {
-                  if (banner.targetCategory) {
-                    onSelectCategory(banner.targetCategory);
-                  }
-                }}
-                className={`absolute inset-0 w-full h-full flex items-end p-4 pb-10 sm:p-8 xl:p-12 cursor-pointer transition-all duration-700 ease-in-out ${
-                  isActive
-                    ? 'opacity-100 scale-100 z-10 pointer-events-auto'
-                    : 'opacity-0 scale-105 z-0 pointer-events-none'
-                }`}
-                style={{ willChange: 'opacity, transform' }}
-              >
-                <img
-                  src={banner.bannerImage || DEFAULT_DESKTOP_BANNERS[0].bannerImage}
-                  alt={banner.title}
-                  decoding="async"
-                  className="absolute inset-0 w-full h-full object-cover gpu-accelerated"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/95 via-[#09090b]/40 to-transparent pointer-events-none" />
-                <div className="absolute inset-0 bg-gradient-to-r from-[#09090b]/80 via-transparent to-transparent pointer-events-none" />
-
+          {/* Continuous Hardware-Accelerated Sliding Track (Zero Black Gap) */}
+          <div
+            className="flex w-full h-full transition-transform duration-700 ease-in-out"
+            style={{
+              transform: `translateX(-${currentSlideIndex * 100}%)`,
+              willChange: 'transform',
+            }}
+          >
+            {displayBanners.map((banner, index) => {
+              const isActive = index === currentSlideIndex;
+              return (
                 <div
-                  className={`relative z-10 max-w-xl sm:max-w-2xl space-y-1.5 sm:space-y-3 transition-all duration-700 ease-out ${
-                    isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-                  }`}
+                  key={banner.id}
+                  onClick={() => {
+                    if (banner.targetCategory) {
+                      onSelectCategory(banner.targetCategory);
+                    }
+                  }}
+                  className="w-full h-full flex-shrink-0 relative flex items-end p-4 pb-10 sm:p-8 xl:p-12 cursor-pointer"
                 >
-                  <span className="inline-block px-2 py-0.5 sm:px-3 sm:py-1 bg-[#ec4899] text-white text-[9px] sm:text-[11px] font-black uppercase tracking-wider rounded-md shadow-lg">
-                    {banner.tag || 'Featured Release'}
-                  </span>
-                  <h1 className="text-base sm:text-3xl xl:text-5xl font-black text-white italic tracking-tight hover:text-[#ffb0cd] transition-colors duration-150 line-clamp-1 sm:line-clamp-none">
-                    {banner.title}
-                  </h1>
-                  <p className="text-[10px] sm:text-xs xl:text-sm text-[#debec8] line-clamp-1 sm:line-clamp-2 leading-snug sm:leading-relaxed">
-                    {banner.subtitle}
-                  </p>
-                  <div className="pt-0.5 sm:pt-2">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 sm:px-5 sm:py-2.5 rounded-full bg-white/10 hover:bg-[#ec4899] text-white font-extrabold text-[9px] sm:text-xs uppercase tracking-wider backdrop-blur-md transition-all duration-150 border border-white/20 shadow-lg hover:scale-105 active:scale-95">
-                      <span>{banner.ctaText || 'Watch Now'}</span>
-                      <span className="material-symbols-outlined text-xs sm:text-sm">arrow_forward</span>
+                  <img
+                    src={banner.bannerImage || DEFAULT_DESKTOP_BANNERS[0].bannerImage}
+                    alt={banner.title}
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover gpu-accelerated"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/95 via-[#09090b]/40 to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#09090b]/80 via-transparent to-transparent pointer-events-none" />
+
+                  <div
+                    className={`relative z-10 max-w-xl sm:max-w-2xl space-y-1.5 sm:space-y-3 transition-all duration-700 ease-out ${
+                      isActive ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-90'
+                    }`}
+                  >
+                    <span className="inline-block px-2 py-0.5 sm:px-3 sm:py-1 bg-[#ec4899] text-white text-[9px] sm:text-[11px] font-black uppercase tracking-wider rounded-md shadow-lg">
+                      {banner.tag || 'Featured Release'}
                     </span>
+                    <h1 className="text-base sm:text-3xl xl:text-5xl font-black text-white italic tracking-tight hover:text-[#ffb0cd] transition-colors duration-150 line-clamp-1 sm:line-clamp-none">
+                      {banner.title}
+                    </h1>
+                    <p className="text-[10px] sm:text-xs xl:text-sm text-[#debec8] line-clamp-1 sm:line-clamp-2 leading-snug sm:leading-relaxed">
+                      {banner.subtitle}
+                    </p>
+                    <div className="pt-0.5 sm:pt-2">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 sm:px-5 sm:py-2.5 rounded-full bg-white/10 hover:bg-[#ec4899] text-white font-extrabold text-[9px] sm:text-xs uppercase tracking-wider backdrop-blur-md transition-all duration-150 border border-white/20 shadow-lg hover:scale-105 active:scale-95">
+                        <span>{banner.ctaText || 'Watch Now'}</span>
+                        <span className="material-symbols-outlined text-xs sm:text-sm">arrow_forward</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
 
           {/* Corner Left Navigation Arrow - Visible on Banner Hover Only */}
           <button
