@@ -40,7 +40,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] lg:hidden">
+    <div className="fixed inset-0 z-[100]">
       {/* Overlay */}
       <div
         onClick={onClose}
