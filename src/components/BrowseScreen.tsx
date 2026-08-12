@@ -268,7 +268,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     onSelectCategory(banner.targetCategory);
                   }
                 }}
-                className={`absolute inset-0 w-full h-full flex items-end p-4 sm:p-8 xl:p-12 cursor-pointer transition-all duration-700 ease-in-out ${
+                className={`absolute inset-0 w-full h-full flex items-end p-4 pb-10 sm:p-8 xl:p-12 cursor-pointer transition-all duration-700 ease-in-out ${
                   isActive
                     ? 'opacity-100 scale-100 z-10 pointer-events-auto'
                     : 'opacity-0 scale-105 z-0 pointer-events-none'
@@ -289,17 +289,17 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
                   }`}
                 >
-                  <span className="inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 bg-[#ec4899] text-white text-[9px] sm:text-[11px] font-black uppercase tracking-wider rounded-md shadow-lg">
+                  <span className="inline-block px-2 py-0.5 sm:px-3 sm:py-1 bg-[#ec4899] text-white text-[9px] sm:text-[11px] font-black uppercase tracking-wider rounded-md shadow-lg">
                     {banner.tag || 'Featured Release'}
                   </span>
-                  <h1 className="text-lg sm:text-3xl xl:text-5xl font-black text-white italic tracking-tight hover:text-[#ffb0cd] transition-colors duration-150 line-clamp-1 sm:line-clamp-none">
+                  <h1 className="text-base sm:text-3xl xl:text-5xl font-black text-white italic tracking-tight hover:text-[#ffb0cd] transition-colors duration-150 line-clamp-1 sm:line-clamp-none">
                     {banner.title}
                   </h1>
                   <p className="text-[10px] sm:text-xs xl:text-sm text-[#debec8] line-clamp-1 sm:line-clamp-2 leading-snug sm:leading-relaxed">
                     {banner.subtitle}
                   </p>
                   <div className="pt-0.5 sm:pt-2">
-                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-6 sm:py-3 rounded-full bg-white/10 hover:bg-[#ec4899] text-white font-bold text-[10px] sm:text-xs uppercase tracking-wider backdrop-blur-md transition-all duration-150 border border-white/20 shadow-lg hover:scale-105 active:scale-95">
+                    <span className="inline-flex items-center gap-1 px-3 py-1 sm:px-5 sm:py-2.5 rounded-full bg-white/10 hover:bg-[#ec4899] text-white font-extrabold text-[9px] sm:text-xs uppercase tracking-wider backdrop-blur-md transition-all duration-150 border border-white/20 shadow-lg hover:scale-105 active:scale-95">
                       <span>{banner.ctaText || 'Watch Now'}</span>
                       <span className="material-symbols-outlined text-xs sm:text-sm">arrow_forward</span>
                     </span>
@@ -331,8 +331,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
             <span className="material-symbols-outlined text-2xl md:text-3xl text-white">chevron_right</span>
           </button>
 
-          {/* Bottom Dot Indicators */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+          {/* Bottom Dot Indicators (Higher z-40 layer with explicit touch zone) */}
+          <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-40 px-2 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 pointer-events-auto">
             {displayBanners.map((_, index) => (
               <button
                 key={index}
@@ -342,10 +342,10 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                   setCurrentSlideIndex(index);
                 }}
                 aria-label={`Go to slide ${index + 1}`}
-                className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
                   index === currentSlideIndex
-                    ? 'w-8 bg-[#ec4899] shadow-neon-pink'
-                    : 'w-2.5 bg-white/40 hover:bg-white/70'
+                    ? 'w-6 sm:w-8 bg-[#ec4899] shadow-neon-pink'
+                    : 'w-2 sm:w-2.5 bg-white/50 hover:bg-white/90'
                 }`}
               />
             ))}
