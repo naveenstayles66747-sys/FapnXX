@@ -489,10 +489,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       {/* Video Grid Section */}
       <section className="w-full">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <h2 className="text-2xl font-black text-white italic tracking-tight flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#e0358d]">
-              {sortBy === 'latest' ? 'auto_awesome' : sortBy === 'top_rated' ? 'star' : 'local_fire_department'}
-            </span>
+          <h2 className="text-2xl font-black text-white italic tracking-tight">
             {selectedCategory === 'all'
               ? 'Latest'
               : `${selectedCategoryObj?.name || selectedCategory.toUpperCase()} Videos`}
