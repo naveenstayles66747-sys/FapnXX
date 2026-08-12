@@ -306,12 +306,11 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative" ref={langDropdownRef}>
           <button
             onClick={() => { setIsLangMenuOpen(!isLangMenuOpen); setIsPrefMenuOpen(false); }}
-            className="header-btn-hover-pink w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10 group/lang relative"
+            className="header-btn-hover-pink w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10 group/lang"
             title={`Switch Language: ${currentLanguageMeta?.englishName || 'English'} (${currentLanguageMeta?.label || 'EN'}) / भाषा बदलें`}
             aria-label="Switch Language"
           >
             <span className="material-symbols-outlined text-lg text-[#e0358d] group-hover/lang:text-white transition-colors">translate</span>
-            <span className="absolute -top-1 -right-1 text-[11px] leading-none select-none">{currentLanguageMeta?.flag || '🇬🇧'}</span>
           </button>
 
           {isLangMenuOpen && (
