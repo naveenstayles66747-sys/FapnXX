@@ -512,9 +512,9 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
             </button>
 
             {isSortDropdownOpen && (
-              <div className="dropdown-modal-menu absolute right-0 mt-2 w-52 rounded-2xl shadow-2xl py-2 z-50 text-xs border border-white/10 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
-                  <span>Sort Videos By</span>
+              <div className="dropdown-modal-menu absolute right-0 mt-2 w-44 rounded-2xl shadow-2xl py-1.5 z-50 text-xs border border-white/10 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
+                  <span>Sort Videos</span>
                   <span className="text-[#e0358d] text-[9px] font-mono">FILTER</span>
                 </div>
 
@@ -524,16 +524,13 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     setSortBy('most_relevant');
                     setIsSortDropdownOpen(false);
                   }}
-                  className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                  className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
                     sortBy === 'most_relevant' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-base text-[#e0358d]">auto_awesome</span>
-                    <div>
-                      <div className="font-bold text-xs">Most Relevant</div>
-                      <div className="text-[10px] opacity-60">Highest engagement & matching tags</div>
-                    </div>
+                    <span className="font-bold text-xs">Most Relevant</span>
                   </div>
                   {sortBy === 'most_relevant' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
                 </button>
@@ -544,16 +541,13 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     setSortBy('latest');
                     setIsSortDropdownOpen(false);
                   }}
-                  className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                  className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
                     sortBy === 'latest' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-base text-[#e0358d]">schedule</span>
-                    <div>
-                      <div className="font-bold text-xs">Latest</div>
-                      <div className="text-[10px] opacity-60">Newly uploaded & recent releases</div>
-                    </div>
+                    <span className="font-bold text-xs">Latest</span>
                   </div>
                   {sortBy === 'latest' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
                 </button>
@@ -564,16 +558,13 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     setSortBy('top_rated');
                     setIsSortDropdownOpen(false);
                   }}
-                  className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                  className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
                     sortBy === 'top_rated' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-base text-[#e0358d]">star</span>
-                    <div>
-                      <div className="font-bold text-xs">Top Rated</div>
-                      <div className="text-[10px] opacity-60">Most watched & 100% rated videos</div>
-                    </div>
+                    <span className="font-bold text-xs">Top Rated</span>
                   </div>
                   {sortBy === 'top_rated' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
                 </button>
