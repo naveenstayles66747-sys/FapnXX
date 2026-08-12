@@ -178,16 +178,14 @@ export const getStoredVideos = (): Video[] => {
       let embed = v.embedUrl || '';
       let preview = v.previewMp4Url || '';
       let webp = v.previewWebpUrl || '';
-      if (v.id === 'vid-test-user-1') {
+      if (v.id === 'vid-test-user-1' || embed.includes('youtube.com') || embed.includes('youtu.be')) {
         embed = 'https://hornhub.embedseek.com/#9sq8g';
-        preview = 'https://hornhub.embedseek.com/CuvLNl_912aJnZn_RytLjw/9ow/ipljen89/lwiup6/preview.mp4';
-        webp = '';
+      }
+      if (preview.includes('zencdn.net') || preview.includes('oceans.mp4') || preview.includes('gtv-videos-bucket') || preview.includes('commondatastorage.googleapis.com')) {
+        preview = '';
       }
       if (embed.includes('gtv-videos-bucket') || embed.includes('commondatastorage.googleapis.com')) {
         embed = '';
-      }
-      if (preview.includes('gtv-videos-bucket') || preview.includes('commondatastorage.googleapis.com')) {
-        preview = '';
       }
       return { ...v, embedUrl: embed, previewMp4Url: preview, previewWebpUrl: webp };
     });
