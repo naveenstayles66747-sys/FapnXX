@@ -92,6 +92,19 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const [rankedTrendingVideos, setRankedTrendingVideos] = useState<Video[]>([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [isHoveredSlider, setIsHoveredSlider] = useState<boolean>(false);
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<'latest' | 'most_relevant' | 'top_rated'>('latest');
+  const sortDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target as Node)) {
+        setIsSortDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Filter out any videos that have been taken down
   const activeVideos = videos.filter((v) => !v.isTakenDown);
@@ -192,6 +205,28 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     selectedCategory === 'all'
       ? regionalVideos
       : regionalVideos.filter((v) => v.category === selectedCategory);
+
+  const sortedVideos = React.useMemo(() => {
+    const list = [...justAddedVideos];
+    if (sortBy === 'latest') {
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    } else if (sortBy === 'top_rated') {
+      list.sort((a, b) => {
+        const ratingA = parseInt((a.rating || '0').replace('%', ''), 10) || 0;
+        const ratingB = parseInt((b.rating || '0').replace('%', ''), 10) || 0;
+        const scoreA = (a.viewsCount || 0) + ratingA * 100;
+        const scoreB = (b.viewsCount || 0) + ratingB * 100;
+        return scoreB - scoreA;
+      });
+    } else if (sortBy === 'most_relevant') {
+      list.sort((a, b) => {
+        const scoreA = (a.likesCount || 0) * 10 + (a.viewsCount || 0);
+        const scoreB = (b.likesCount || 0) * 10 + (b.viewsCount || 0);
+        return scoreB - scoreA;
+      });
+    }
+    return list;
+  }, [justAddedVideos, sortBy]);
 
   const selectedCategoryObj = categories.find((c) => c.id === selectedCategory);
 
@@ -453,15 +488,106 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
       {/* Video Grid Section */}
       <section className="w-full">
-        <h2 className="text-2xl font-bold text-white mb-6">
-          {selectedCategory === 'all'
-            ? 'Just Added'
-            : `${selectedCategoryObj?.name || selectedCategory.toUpperCase()} Videos`}
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <h2 className="text-2xl font-black text-white italic tracking-tight flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#e0358d]">
+              {sortBy === 'latest' ? 'auto_awesome' : sortBy === 'top_rated' ? 'star' : 'local_fire_department'}
+            </span>
+            {selectedCategory === 'all'
+              ? 'Latest'
+              : `${selectedCategoryObj?.name || selectedCategory.toUpperCase()} Videos`}
+          </h2>
 
-        {justAddedVideos.length > 0 ? (
+          {/* Interactive Sort Dropdown Filter (Most Relevant / Latest / Top Rated) */}
+          <div className="relative" ref={sortDropdownRef}>
+            <button
+              onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1c1b1f] hover:bg-[#27272a] text-white border border-white/10 hover:border-[#e0358d] text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
+              title="Change Video Sort Order"
+            >
+              <span className="text-[#e0358d] font-mono text-[10px] uppercase tracking-wider font-bold">SORT:</span>
+              <span className="font-extrabold flex items-center gap-1.5">
+                {sortBy === 'latest' && <><span className="material-symbols-outlined text-sm text-[#e0358d]">schedule</span> Latest</>}
+                {sortBy === 'most_relevant' && <><span className="material-symbols-outlined text-sm text-[#e0358d]">auto_awesome</span> Most Relevant</>}
+                {sortBy === 'top_rated' && <><span className="material-symbols-outlined text-sm text-[#e0358d]">star</span> Top Rated</>}
+              </span>
+              <span className="material-symbols-outlined text-sm opacity-70">expand_more</span>
+            </button>
+
+            {isSortDropdownOpen && (
+              <div className="dropdown-modal-menu absolute right-0 mt-2 w-52 rounded-2xl shadow-2xl py-2 z-50 text-xs border border-white/10 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
+                  <span>Sort Videos By</span>
+                  <span className="text-[#e0358d] text-[9px] font-mono">FILTER</span>
+                </div>
+
+                {/* Option 1: Most Relevant */}
+                <button
+                  onClick={() => {
+                    setSortBy('most_relevant');
+                    setIsSortDropdownOpen(false);
+                  }}
+                  className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                    sortBy === 'most_relevant' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-base text-[#e0358d]">auto_awesome</span>
+                    <div>
+                      <div className="font-bold text-xs">Most Relevant</div>
+                      <div className="text-[10px] opacity-60">Highest engagement & matching tags</div>
+                    </div>
+                  </div>
+                  {sortBy === 'most_relevant' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                </button>
+
+                {/* Option 2: Latest */}
+                <button
+                  onClick={() => {
+                    setSortBy('latest');
+                    setIsSortDropdownOpen(false);
+                  }}
+                  className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                    sortBy === 'latest' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-base text-[#e0358d]">schedule</span>
+                    <div>
+                      <div className="font-bold text-xs">Latest</div>
+                      <div className="text-[10px] opacity-60">Newly uploaded & recent releases</div>
+                    </div>
+                  </div>
+                  {sortBy === 'latest' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                </button>
+
+                {/* Option 3: Top Rated */}
+                <button
+                  onClick={() => {
+                    setSortBy('top_rated');
+                    setIsSortDropdownOpen(false);
+                  }}
+                  className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                    sortBy === 'top_rated' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-base text-[#e0358d]">star</span>
+                    <div>
+                      <div className="font-bold text-xs">Top Rated</div>
+                      <div className="text-[10px] opacity-60">Most watched & 100% rated videos</div>
+                    </div>
+                  </div>
+                  {sortBy === 'top_rated' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {sortedVideos.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {justAddedVideos.map((video) => (
+            {sortedVideos.map((video) => (
               <VideoCard
                 key={video.id}
                 video={video}
