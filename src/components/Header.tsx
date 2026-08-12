@@ -302,17 +302,16 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {/* Language Switcher Dropdown (Placed at extreme right corner of header) */}
+        {/* Language Switcher Dropdown (Half-size compact circular icon button at right corner) */}
         <div className="relative" ref={langDropdownRef}>
           <button
             onClick={() => { setIsLangMenuOpen(!isLangMenuOpen); setIsPrefMenuOpen(false); }}
-            className="flex header-icon-btn header-btn-hover-pink rounded-full border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-extrabold items-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm group/lang"
-            title="Switch Language & Regional Content / भाषा बदलें"
+            className="header-btn-hover-pink w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10 group/lang relative"
+            title={`Switch Language: ${currentLanguageMeta?.englishName || 'English'} (${currentLanguageMeta?.label || 'EN'}) / भाषा बदलें`}
+            aria-label="Switch Language"
           >
-            <span className="material-symbols-outlined text-base text-[#e0358d] group-hover/lang:text-white transition-colors">translate</span>
-            <span className="text-sm">{currentLanguageMeta?.flag || '🇬🇧'}</span>
-            <span className="uppercase tracking-wider font-extrabold group-hover/lang:text-white transition-colors">{currentLanguageMeta?.label || 'EN'}</span>
-            <span className="material-symbols-outlined text-sm opacity-70 group-hover/lang:text-white transition-colors">expand_more</span>
+            <span className="material-symbols-outlined text-lg text-[#e0358d] group-hover/lang:text-white transition-colors">translate</span>
+            <span className="absolute -top-1 -right-1 text-[11px] leading-none select-none">{currentLanguageMeta?.flag || '🇬🇧'}</span>
           </button>
 
           {isLangMenuOpen && (
