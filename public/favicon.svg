@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c1917" />
+      <stop offset="50%" stop-color="#09090b" />
+      <stop offset="100%" stop-color="#18181b" />
+    </linearGradient>
+    <linearGradient id="pinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f472b6" />
+      <stop offset="50%" stop-color="#ec4899" />
+      <stop offset="100%" stop-color="#e11d48" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb7185" />
+      <stop offset="100%" stop-color="#d946ef" />
+    </linearGradient>
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background Icon Frame -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" stroke="#27272a" stroke-width="8" />
+  
+  <!-- Outer Neon Ring -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="url(#pinkGrad)" stroke-width="12" opacity="0.35" />
+  <circle cx="256" cy="256" r="190" fill="none" stroke="url(#accentGrad)" stroke-width="6" opacity="0.6" />
+
+  <!-- Flaming Play Emblem -->
+  <g filter="url(#neonGlow)">
+    <!-- Fire Flame Base -->
+    <path d="M256 96c0 0-72 72-72 144 0 44 28 82 68 96-8-24-4-52 12-72 16 32 48 40 48 72 0 44-36 80-80 80-66 0-120-54-120-120 0-88 88-144 144-200z" fill="url(#pinkGrad)" opacity="0.4" />
+    
+    <!-- Play Triangle -->
+    <path d="M208 160 L352 256 L208 352 Z" fill="url(#pinkGrad)" stroke="#ffffff" stroke-width="8" stroke-linejoin="round" />
+  </g>
+</svg>
