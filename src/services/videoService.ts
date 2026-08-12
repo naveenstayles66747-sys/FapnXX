@@ -147,14 +147,14 @@ export class VideoService {
           } as Video);
         });
 
-        // Ensure sample video in Firestore is explicitly updated with test embed link
+        // Ensure sample video in Firestore is sanitized with Hornhub embed link
         const targetSample = firestoreVideos.find((v) => v.id === 'vid-test-user-1');
-        if (targetSample) {
+        if (targetSample && (targetSample.previewMp4Url || targetSample.embedUrl.includes('youtube'))) {
           this.saveVideo({
             ...targetSample,
             title: 'Desi Romance Scene 4K',
             embedUrl: 'https://hornhub.embedseek.com/#9sq8g',
-            previewMp4Url: 'https://hornhub.embedseek.com/CuvLNl_912aJnZn_RytLjw/9ow/ipljen89/lwiup6/preview.mp4',
+            previewMp4Url: '',
             previewWebpUrl: '',
           });
         }
