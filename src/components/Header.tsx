@@ -242,11 +242,71 @@ export const Header: React.FC<HeaderProps> = ({
           {isPrefMenuOpen && renderPrefDropdownMenu()}
         </div>
 
-        {/* Language Switcher Dropdown */}
+        {/* Admin Panel Access Button */}
+        {onOpenAdminPanel && (
+          <button
+            onClick={onOpenAdminPanel}
+            className={`hidden lg:flex px-2.5 py-1.5 rounded-lg font-bold text-[11px] tracking-wider uppercase border transition-all items-center gap-1 cursor-pointer active:scale-95 group/btn ${
+              isAdminAuthenticated
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30 hover:text-white'
+                : 'bg-[#2a2a2c] hover:bg-[#e0358d] text-[#ffb0cd] hover:text-white border-[#353437] hover:border-[#e0358d]'
+            }`}
+            title="Open Admin Panel & Media Controls"
+          >
+            <span className="material-symbols-outlined text-base group-hover/btn:text-white transition-colors">admin_panel_settings</span>
+            <span className="hidden lg:inline group-hover/btn:text-white transition-colors">{isAdminAuthenticated ? 'Admin Portal' : t.admin}</span>
+          </button>
+        )}
+
+        {/* Upload Button */}
+        <button
+          onClick={onOpenUpload}
+          className="w-10 h-10 sm:w-auto sm:px-4 sm:py-2 rounded-2xl sm:rounded-xl bg-[#e0358d] hover:bg-[#c9287a] text-white font-black text-xs shadow-lg shadow-[#e0358d]/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0"
+          title="Upload Video"
+        >
+          <span className="material-symbols-outlined text-xl">upload</span>
+          <span className="hidden sm:inline uppercase text-[11px] tracking-wider">{t.upload}</span>
+        </button>
+
+        {/* Search Icon Button (Mobile Only) */}
+        <button
+          onClick={onOpenSearch}
+          className="lg:hidden text-zinc-700 dark:text-zinc-200 hover:text-rose-500 p-1.5 rounded-full transition-colors cursor-pointer active:scale-95 shrink-0"
+          aria-label="Search"
+        >
+          <span className="material-symbols-outlined text-2xl">search</span>
+        </button>
+
+        {userEmail ? (
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#2a2a2c] border border-white/10 text-xs text-[#e5e1e4]">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span className="font-bold max-w-[120px] truncate">{userEmail.split('@')[0]}</span>
+            </div>
+            <button
+              onClick={onSignOut}
+              className="hidden sm:block px-3 py-2 rounded-lg bg-rose-950/40 border border-rose-500/30 text-rose-300 font-bold text-xs uppercase hover:bg-rose-900/50 transition-colors cursor-pointer"
+              title="Sign Out"
+            >
+              {t.signOut}
+            </button>
+          </div>
+        ) : (
+          <div className="hidden lg:flex items-center gap-2">
+            <button
+              onClick={() => onNavigate('signin')}
+              className="px-4 py-2 rounded-lg bg-[#2a2a2c] hover:bg-[#ec4899] border border-[#353437] hover:border-[#ec4899] text-[#e5e1e4] hover:text-white font-semibold text-xs tracking-wider uppercase transition-colors cursor-pointer group/btn"
+            >
+              <span className="group-hover/btn:text-white transition-colors">{t.signIn}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Language Switcher Dropdown (Placed at extreme right corner of header) */}
         <div className="relative" ref={langDropdownRef}>
           <button
             onClick={() => { setIsLangMenuOpen(!isLangMenuOpen); setIsPrefMenuOpen(false); }}
-            className="hidden lg:flex header-icon-btn header-btn-hover-pink rounded-full border px-3.5 py-2 text-xs font-extrabold items-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm group/lang"
+            className="flex header-icon-btn header-btn-hover-pink rounded-full border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-extrabold items-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm group/lang"
             title="Switch Language & Regional Content / भाषा बदलें"
           >
             <span className="material-symbols-outlined text-base text-[#e0358d] group-hover/lang:text-white transition-colors">translate</span>
@@ -286,66 +346,6 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
         </div>
-
-        {/* Admin Panel Access Button */}
-        {onOpenAdminPanel && (
-          <button
-            onClick={onOpenAdminPanel}
-            className={`hidden lg:flex px-2.5 py-1.5 rounded-lg font-bold text-[11px] tracking-wider uppercase border transition-all items-center gap-1 cursor-pointer active:scale-95 group/btn ${
-              isAdminAuthenticated
-                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30 hover:text-white'
-                : 'bg-[#2a2a2c] hover:bg-[#e0358d] text-[#ffb0cd] hover:text-white border-[#353437] hover:border-[#e0358d]'
-            }`}
-            title="Open Admin Panel & Media Controls"
-          >
-            <span className="material-symbols-outlined text-base group-hover/btn:text-white transition-colors">admin_panel_settings</span>
-            <span className="hidden lg:inline group-hover/btn:text-white transition-colors">{isAdminAuthenticated ? 'Admin Portal' : t.admin}</span>
-          </button>
-        )}
-
-        {/* Upload Button */}
-        <button
-          onClick={onOpenUpload}
-          className="w-10 h-10 sm:w-auto sm:px-4 sm:py-2 rounded-2xl sm:rounded-xl bg-[#e0358d] hover:bg-[#c9287a] text-white font-black text-xs shadow-lg shadow-[#e0358d]/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0"
-          title="Upload Video"
-        >
-          <span className="material-symbols-outlined text-xl">upload</span>
-          <span className="hidden sm:inline uppercase text-[11px] tracking-wider">{t.upload}</span>
-        </button>
-
-        {/* Search Icon Button */}
-        <button
-          onClick={onOpenSearch}
-          className="lg:hidden text-zinc-700 dark:text-zinc-200 hover:text-rose-500 p-1.5 rounded-full transition-colors cursor-pointer active:scale-95 shrink-0"
-          aria-label="Search"
-        >
-          <span className="material-symbols-outlined text-2xl">search</span>
-        </button>
-
-        {userEmail ? (
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#2a2a2c] border border-white/10 text-xs text-[#e5e1e4]">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span className="font-bold max-w-[120px] truncate">{userEmail.split('@')[0]}</span>
-            </div>
-            <button
-              onClick={onSignOut}
-              className="hidden sm:block px-3 py-2 rounded-lg bg-rose-950/40 border border-rose-500/30 text-rose-300 font-bold text-xs uppercase hover:bg-rose-900/50 transition-colors cursor-pointer"
-              title="Sign Out"
-            >
-              {t.signOut}
-            </button>
-          </div>
-        ) : (
-          <div className="hidden lg:flex items-center gap-2">
-            <button
-              onClick={() => onNavigate('signin')}
-              className="px-4 py-2 rounded-lg bg-[#2a2a2c] hover:bg-[#ec4899] border border-[#353437] hover:border-[#ec4899] text-[#e5e1e4] hover:text-white font-semibold text-xs tracking-wider uppercase transition-colors cursor-pointer group/btn"
-            >
-              <span className="group-hover/btn:text-white transition-colors">{t.signIn}</span>
-            </button>
-          </div>
-        )}
       </div>
     </header>
   );
