@@ -72,14 +72,14 @@ export const Header: React.FC<HeaderProps> = ({
   const prefDropdownRefMobile = useRef<HTMLDivElement>(null);
   const langDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdowns on outside click
+  // Close dropdowns on outside click cleanly across desktop and mobile
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (
-        prefDropdownRef.current && !prefDropdownRef.current.contains(target) &&
-        prefDropdownRefMobile.current && !prefDropdownRefMobile.current.contains(target)
-      ) {
+      const clickedOutsidePrefDesktop = !prefDropdownRef.current || !prefDropdownRef.current.contains(target);
+      const clickedOutsidePrefMobile = !prefDropdownRefMobile.current || !prefDropdownRefMobile.current.contains(target);
+
+      if (clickedOutsidePrefDesktop && clickedOutsidePrefMobile) {
         setIsPrefMenuOpen(false);
       }
       if (langDropdownRef.current && !langDropdownRef.current.contains(target)) {
