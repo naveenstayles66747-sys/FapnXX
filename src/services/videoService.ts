@@ -105,10 +105,51 @@ export class VideoService {
   }
 
   /**
-   * Fetch all active videos from Cloud Firestore (with LocalStorage fallback)
+   * Fetch static video catalog JSON from Vercel Edge CDN (/data/videos_page1.json)
+   */
+  async fetchStaticCatalog(): Promise<Video[]> {
+    try {
+      const response = await fetch('/data/videos_page1.json', { cache: 'no-cache' });
+      if (response.ok) {
+        const json = await response.json();
+        if (Array.isArray(json) && json.length > 0) {
+          return json.map((item: any) => ({
+            id: item.id || `vid_${Math.random().toString(36).substring(2, 7)}`,
+            title: item.title || 'Untitled Video',
+            embedUrl: item.embed_url || item.embedUrl || '',
+            thumbnail: item.thumbnail || '',
+            category: item.category || 'amateur',
+            categoryLabel: item.categoryLabel || item.category || 'Amateur',
+            tags: item.tags || ['HD'],
+            duration: item.duration || '05:00',
+            quality: item.quality || 'HD',
+            viewsCount: typeof item.viewsCount === 'number' ? item.viewsCount : 1200,
+            views: `${item.viewsCount || 1200} views`,
+            likesCount: item.likesCount || 340,
+            rating: item.rating || '98%',
+            timeAgo: item.timeAgo || 'Just now',
+            createdAt: item.createdAt || new Date().toISOString(),
+            performerName: item.performerName || 'User Uploaded',
+            description: item.description || '',
+            isEmbed: true,
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('[VideoService] Static catalog fetch error:', err);
+    }
+    return [];
+  }
+
+  /**
+   * Lightning-Fast Hybrid Fetch: Static Vercel Edge CDN JSON + Cloud Firestore Realtime Sync
    */
   async fetchVideos(): Promise<Video[]> {
+    // 1. Fetch static JSON catalog (Instant Vercel Edge CDN load)
+    const staticCatalog = await this.fetchStaticCatalog();
+
     try {
+      // 2. Fetch Firestore real-time videos doc Snapshot
       const q = query(collection(db, COLLECTIONS.VIDEOS));
       const querySnapshot = await getDocs(q);
 
@@ -159,19 +200,32 @@ export class VideoService {
           });
         }
 
-        setStoredVideos(firestoreVideos);
-        return firestoreVideos;
-      }
+        // Merge Static JSON catalog and Firestore videos in-memory by matching ID with 0 UI flickering
+        const mergedMap = new Map<string, Video>();
+        staticCatalog.forEach((v) => mergedMap.set(v.id, v));
+        firestoreVideos.forEach((v) => {
+          const existing = mergedMap.get(v.id);
+          if (existing) {
+            mergedMap.set(v.id, {
+              ...existing,
+              ...v,
+              viewsCount: Math.max(existing.viewsCount || 0, v.viewsCount || 0),
+              likesCount: Math.max(existing.likesCount || 0, v.likesCount || 0),
+            });
+          } else {
+            mergedMap.set(v.id, v);
+          }
+        });
 
-      console.log('[VideoService] Seeding initial videos into Cloud Firestore...');
-      for (const v of INITIAL_VIDEOS) {
-        await this.saveVideo(v);
+        const mergedList = Array.from(mergedMap.values());
+        setStoredVideos(mergedList);
+        return mergedList;
       }
-      return INITIAL_VIDEOS;
     } catch (error) {
       console.warn('[VideoService] Firestore fetch error:', error);
     }
 
+    if (staticCatalog.length > 0) return staticCatalog;
     return getStoredVideos();
   }
 
@@ -215,8 +269,26 @@ export class VideoService {
                 orientation: data.orientation || 'horizontal',
               } as Video);
             });
-            setStoredVideos(firestoreVideos);
-            callback(firestoreVideos);
+            const staticCatalog = await this.fetchStaticCatalog();
+            const mergedMap = new Map<string, Video>();
+            staticCatalog.forEach((v) => mergedMap.set(v.id, v));
+            firestoreVideos.forEach((v) => {
+              const existing = mergedMap.get(v.id);
+              if (existing) {
+                mergedMap.set(v.id, {
+                  ...existing,
+                  ...v,
+                  viewsCount: Math.max(existing.viewsCount || 0, v.viewsCount || 0),
+                  likesCount: Math.max(existing.likesCount || 0, v.likesCount || 0),
+                });
+              } else {
+                mergedMap.set(v.id, v);
+              }
+            });
+
+            const mergedList = Array.from(mergedMap.values());
+            setStoredVideos(mergedList);
+            callback(mergedList);
           }
         },
         (err) => {
