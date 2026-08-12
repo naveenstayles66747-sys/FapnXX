@@ -44,8 +44,9 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack })
       <div className="relative z-10 w-full max-w-[440px] glass-panel rounded-2xl p-8 sm:p-10 shadow-2xl flex flex-col gap-6 border border-[#353437]">
         {/* Header */}
         <div className="text-center mb-2">
-          <h1 className="text-3xl font-extrabold text-[#ffb0cd] tracking-tighter italic mb-2">
-            IndianHubXX
+          <h1 className="text-3xl font-extrabold tracking-tighter italic mb-2">
+            <span className="text-[#e0358d] drop-shadow-[0_0_10px_rgba(224,53,141,0.5)] font-black">Fap</span>
+            <span className="text-white font-black">nXX</span>
           </h1>
           <h2 className="text-2xl font-bold text-[#e5e1e4]">Sign In</h2>
         </div>

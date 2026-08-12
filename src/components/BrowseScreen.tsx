@@ -29,7 +29,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
   {
     id: 'banner-2',
     title: 'Private VIP Encounters',
-    subtitle: 'Unfiltered, raw, and intense scenes curated specifically for IndianHubXX members.',
+    subtitle: 'Unfiltered, raw, and intense scenes curated specifically for FapnXX members.',
     bannerImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBTSrT7ZfnLWJmVyGjfLgykiPkmf7a4I4Z57uEg4c8C2_mJ0w3Y2UlFj5Gp5iEtMegkDAtFW4BKpVK3JE5pODTLTPETiDTQyukLYcV--2v9vb8b-OEkgHaWihpbbRppVRY0YbgqDfyvtuphn5xrfVZWgyDUKRJA2wZVxWJTWpDmQ6DpzeuUmUe8ySRNKup3oJc5VLYhRtM6nfKRK-UOZLtbi132Yme7AQeLMsUzD79lpUUp9Ckdox0HQQ',
     tag: 'Exclusive VIP',
     targetCategory: 'milf',

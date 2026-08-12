@@ -1,6 +1,6 @@
 {
-  "name": "IndianHubXX",
-  "description": "IndianHubXX - Premium streaming platform with Admin Authentication, RBAC video uploads, Category CRUD management, and full visual media customization.",
+  "name": "FapnXX",
+  "description": "FapnXX - Premium streaming platform with Admin Authentication, RBAC video uploads, Category CRUD management, and full visual media customization.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

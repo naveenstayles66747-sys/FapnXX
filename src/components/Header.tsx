@@ -174,8 +174,8 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => onNavigate('browse')}
           className="text-lg sm:text-xl md:text-2xl font-black tracking-tight cursor-pointer select-none active:scale-95 transition-transform whitespace-nowrap"
         >
-          <span className="header-brand-indian">Indian</span>
-          <span className="text-[#e0358d] drop-shadow-[0_0_10px_rgba(224,53,141,0.5)] font-black">HubXX</span>
+          <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
+          <span className="header-brand-nxx font-black">nXX</span>
         </h1>
       </div>
 

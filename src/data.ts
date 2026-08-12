@@ -6,7 +6,7 @@ export const CATEGORIES: CategoryInfo[] = [
     name: 'Trending',
     icon: 'local_fire_department',
     heroImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCoYe4d2pIABe86FsPcEzfnsBgshTwLMpB3JldWw6KpYDhCxwmc-ts6JLePq7jRgzo7T0CR6cluXgWh5POzYkOubjPkkPHZyeuo05COHnK577vd4Gv1TWhzqJ5uqE5ImXEd7q6s48cXZKHvI5wTWZYsy1grVbKoFBbzeEJfbZ5Et7B8Ns-muFWNe95tNNSmEI7ZSANX2TFAu6rFz4XlMQ7h3hl-UAHtcUZ0jFC0pDJPQNoEUnGmB1KqBg',
-    description: 'The hottest and most popular exclusive content trending across IndianHubXX.'
+    description: 'The hottest and most popular exclusive content trending across FapnXX.'
   },
   {
     id: 'amateur',
@@ -96,7 +96,7 @@ export const INITIAL_LANDING_BANNERS: import('./types').LandingBanner[] = [
   {
     id: 'banner-2',
     title: 'Private VIP Encounters',
-    subtitle: 'Unfiltered, raw, and intense scenes curated specifically for IndianHubXX members.',
+    subtitle: 'Unfiltered, raw, and intense scenes curated specifically for FapnXX members.',
     bannerImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBTSrT7ZfnLWJmVyGjfLgykiPkmf7a4I4Z57uEg4c8C2_mJ0w3Y2UlFj5Gp5iEtMegkDAtFW4BKpVK3JE5pODTLTPETiDTQyukLYcV--2v9vb8b-OEkgHaWihpbbRppVRY0YbgqDfyvtuphn5xrfVZWgyDUKRJA2wZVxWJTWpDmQ6DpzeuUmUe8ySRNKup3oJc5VLYhRtM6nfKRK-UOZLtbi132Yme7AQeLMsUzD79lpUUp9Ckdox0HQQ',
     tag: 'Exclusive VIP',
     targetCategory: 'milf',

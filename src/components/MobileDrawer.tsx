@@ -55,9 +55,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               onNavigate('browse');
               onClose();
             }}
-            className="text-2xl font-black text-[#ffb0cd] italic cursor-pointer"
+            className="text-2xl font-black italic cursor-pointer tracking-tight"
           >
-            IndianHubXX
+            <span className="text-[#e0358d] drop-shadow-[0_0_10px_rgba(224,53,141,0.5)] font-black">Fap</span>
+            <span className="mobile-drawer-text font-black">nXX</span>
           </div>
           <button
             onClick={onClose}

@@ -10,7 +10,7 @@ interface AdManagementModalProps {
 const INITIAL_CAMPAIGNS: AdCampaign[] = [
   {
     id: 'ad-1',
-    brandName: 'IndianHubXX VIP Pass',
+    brandName: 'FapnXX VIP Pass',
     title: 'Unlock Unlimited 4K Streaming & Original Content',
     bannerImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCoYe4d2pIABe86FsPcEzfnsBgshTwLMpB3JldWw6KpYDhCxwmc-ts6JLePq7jRgzo7T0CR6cluXgWh5POzYkOubjPkkPHZyeuo05COHnK577vd4Gv1TWhzqJ5uqE5ImXEd7q6s48cXZKHvI5wTWZYsy1grVbKoFBbzeEJfbZ5Et7B8Ns-muFWNe95tNNSmEI7ZSANX2TFAu6rFz4XlMQ7h3hl-UAHtcUZ0jFC0pDJPQNoEUnGmB1KqBg',
     targetUrl: '#vip-upgrade',
@@ -194,7 +194,7 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
                   required
                   value={brandName}
                   onChange={(e) => setBrandName(e.target.value)}
-                  placeholder="e.g. IndianHubXX Luxe Cosmetics"
+                  placeholder="e.g. FapnXX Luxe Cosmetics"
                   className="w-full bg-[#2a2a2c] border border-[#353437] rounded-lg p-2.5 text-xs text-[#e5e1e4] focus:outline-none focus:border-[#eab308]"
                 />
               </div>

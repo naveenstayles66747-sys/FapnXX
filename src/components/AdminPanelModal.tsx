@@ -110,7 +110,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [upCategory, setUpCategory] = useState(categories[0]?.id || 'trending');
   const [upTags, setUpTags] = useState('Exclusive, 4K, AdminVerified');
   const [upQuality, setUpQuality] = useState<'4K' | 'HD' | 'UHD'>('4K');
-  const [upPerformer, setUpPerformer] = useState('IndianHubXX Admin');
+  const [upPerformer, setUpPerformer] = useState('FapnXX Admin');
   const [upThumbnail, setUpThumbnail] = useState('');
   const [upEmbedUrl, setUpEmbedUrl] = useState('');
   const [upPreviewMp4Url, setUpPreviewMp4Url] = useState('');
@@ -317,7 +317,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       quality: upQuality,
       views: '1 View',
       timeAgo: 'Just now',
-      performerName: upPerformer || 'IndianHubXX Admin',
+      performerName: upPerformer || 'FapnXX Admin',
       performerAvatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDvu8sGdltZki91ehu4_TciVh4ojFc2rkzEbjdpwT0f5CLnFmvQzwYrEOQxEFJ_5nuaxrYR5ciK2iYmRsy2xBkg_ftrLdEVMKzs0Mo7wZJj8dGjATtrpcrXvwKvJX9cojHQ3HXSmrDB9oyFdG_EbNoZ_IyKVxNxSzjWcNqxV9DZCb9emwKm10HSw50UmQCf-2beum05L1bV6fTQBVtTvEbXbkY0kh99hiKCxl2v-kLPTgTtkEfqFhfeYQ',
       description: upDesc || 'Published directly via Admin Management Console.',
       isNew: true,
@@ -333,7 +333,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setUpEmbedUrl('');
     setUpPreviewMp4Url('');
     setUpDesc('');
-    alert('Video published successfully to IndianHubXX catalogue!');
+    alert('Video published successfully to FapnXX catalogue!');
   };
 
   const filteredVideos = videos.filter(
@@ -361,7 +361,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl md:text-2xl font-black text-white italic tracking-tight">
-                  IndianHubXX Admin Panel
+                  <span className="text-[#e0358d] font-black">Fap</span><span>nXX</span> Admin Panel
                 </h2>
                 {isAdminAuthenticated ? (
                   <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
