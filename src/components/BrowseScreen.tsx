@@ -504,15 +504,15 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
           <div className="relative" ref={sortDropdownRef}>
             <button
               onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-              className="sort-filter-btn flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1c1b1f] hover:bg-[#27272a] text-white border border-white/10 hover:border-[#e0358d] text-base font-black transition-all shadow-none cursor-pointer active:scale-95"
+              className="sort-filter-btn flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-[#1c1b1f] hover:bg-[#27272a] text-white border border-white/10 hover:border-[#e0358d] transition-all shadow-none cursor-pointer active:scale-95"
               title="Click to change video sorting filter"
             >
-              <span className="font-black text-xl md:text-2xl italic tracking-tight flex items-center gap-1.5">
+              <span className="font-bold text-sm sm:text-base flex items-center gap-1.5">
                 {selectedCategory === 'all'
                   ? (sortBy === 'latest' ? 'Latest' : sortBy === 'most_relevant' ? 'Most Relevant' : 'Top Rated')
                   : `${selectedCategoryObj?.name || selectedCategory.toUpperCase()} (${sortBy === 'latest' ? 'Latest' : sortBy === 'most_relevant' ? 'Most Relevant' : 'Top Rated'})`}
               </span>
-              <span className="material-symbols-outlined text-lg opacity-80">expand_more</span>
+              <span className="material-symbols-outlined text-sm sm:text-base opacity-80">expand_more</span>
             </button>
 
             {isSortDropdownOpen && (
