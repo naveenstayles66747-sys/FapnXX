@@ -208,21 +208,32 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
   const sortedVideos = React.useMemo(() => {
     const list = [...justAddedVideos];
+    const parseViews = (v: Video): number => {
+      if (typeof v.viewsCount === 'number' && v.viewsCount > 0) return v.viewsCount;
+      const str = v.views || '';
+      const num = parseFloat(str.replace(/[^0-9.]/g, ''));
+      if (isNaN(num)) return 0;
+      if (/k/i.test(str)) return num * 1000;
+      if (/m/i.test(str)) return num * 1000000;
+      return num;
+    };
+
+    const parseRating = (v: Video): number => {
+      return parseInt((v.rating || '0').replace('%', ''), 10) || 0;
+    };
+
     if (sortBy === 'latest') {
+      // Sort by newest upload date timestamp
       list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-    } else if (sortBy === 'top_rated') {
-      list.sort((a, b) => {
-        const ratingA = parseInt((a.rating || '0').replace('%', ''), 10) || 0;
-        const ratingB = parseInt((b.rating || '0').replace('%', ''), 10) || 0;
-        const scoreA = (a.viewsCount || 0) + ratingA * 100;
-        const scoreB = (b.viewsCount || 0) + ratingB * 100;
-        return scoreB - scoreA;
-      });
     } else if (sortBy === 'most_relevant') {
+      // Sort strictly by views count descending (highest views first)
+      list.sort((a, b) => parseViews(b) - parseViews(a));
+    } else if (sortBy === 'top_rated') {
+      // Sort by user interest engine (rating percentage + likes + view engagement)
       list.sort((a, b) => {
-        const scoreA = (a.likesCount || 0) * 10 + (a.viewsCount || 0);
-        const scoreB = (b.likesCount || 0) * 10 + (b.viewsCount || 0);
-        return scoreB - scoreA;
+        const interestA = parseRating(a) * 100 + (a.likesCount || 0) * 10 + parseViews(a);
+        const interestB = parseRating(b) * 100 + (b.likesCount || 0) * 10 + parseViews(b);
+        return interestB - interestA;
       });
     }
     return list;
@@ -488,50 +499,30 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
       {/* Video Grid Section */}
       <section className="w-full">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <h2 className="text-2xl font-black text-white italic tracking-tight">
-            {selectedCategory === 'all'
-              ? 'Latest'
-              : `${selectedCategoryObj?.name || selectedCategory.toUpperCase()} Videos`}
-          </h2>
-
-          {/* Interactive Sort Dropdown Filter (Most Relevant / Latest / Top Rated) */}
+        <div className="flex items-center justify-between gap-4 mb-6">
+          {/* Interactive Sort Dropdown Header (Replaces static Latest text) */}
           <div className="relative" ref={sortDropdownRef}>
             <button
               onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-              className="sort-filter-btn flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1c1b1f] hover:bg-[#27272a] text-white border border-white/10 hover:border-[#e0358d] text-xs font-bold transition-all shadow-none cursor-pointer active:scale-95"
-              title="Change Video Sort Order"
+              className="sort-filter-btn flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1c1b1f] hover:bg-[#27272a] text-white border border-white/10 hover:border-[#e0358d] text-base font-black transition-all shadow-none cursor-pointer active:scale-95"
+              title="Click to change video sorting filter"
             >
-              <span className="font-extrabold">
-                {sortBy === 'latest' && 'Latest'}
-                {sortBy === 'most_relevant' && 'Most Relevant'}
-                {sortBy === 'top_rated' && 'Top Rated'}
+              <span className="font-black text-xl md:text-2xl italic tracking-tight flex items-center gap-1.5">
+                {selectedCategory === 'all'
+                  ? (sortBy === 'latest' ? 'Latest' : sortBy === 'most_relevant' ? 'Most Relevant' : 'Top Rated')
+                  : `${selectedCategoryObj?.name || selectedCategory.toUpperCase()} (${sortBy === 'latest' ? 'Latest' : sortBy === 'most_relevant' ? 'Most Relevant' : 'Top Rated'})`}
               </span>
-              <span className="material-symbols-outlined text-sm opacity-70">expand_more</span>
+              <span className="material-symbols-outlined text-lg opacity-80">expand_more</span>
             </button>
 
             {isSortDropdownOpen && (
-              <div className="dropdown-modal-menu absolute right-0 mt-2 w-44 rounded-2xl shadow-2xl py-1.5 z-50 text-xs border border-white/10 animate-in fade-in zoom-in-95 duration-150">
+              <div className="dropdown-modal-menu absolute left-0 mt-2 w-48 rounded-2xl shadow-2xl py-1.5 z-50 text-xs border border-white/10 animate-in fade-in zoom-in-95 duration-150">
                 <div className="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
                   <span>Sort Videos</span>
                   <span className="text-[#e0358d] text-[9px] font-mono">FILTER</span>
                 </div>
 
-                {/* Option 1: Most Relevant */}
-                <button
-                  onClick={() => {
-                    setSortBy('most_relevant');
-                    setIsSortDropdownOpen(false);
-                  }}
-                  className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                    sortBy === 'most_relevant' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
-                  }`}
-                >
-                  <span className="font-bold text-xs">Most Relevant</span>
-                  {sortBy === 'most_relevant' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
-                </button>
-
-                {/* Option 2: Latest */}
+                {/* Option 1: Latest */}
                 <button
                   onClick={() => {
                     setSortBy('latest');
@@ -543,6 +534,20 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 >
                   <span className="font-bold text-xs">Latest</span>
                   {sortBy === 'latest' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                </button>
+
+                {/* Option 2: Most Relevant */}
+                <button
+                  onClick={() => {
+                    setSortBy('most_relevant');
+                    setIsSortDropdownOpen(false);
+                  }}
+                  className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                    sortBy === 'most_relevant' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                  }`}
+                >
+                  <span className="font-bold text-xs">Most Relevant</span>
+                  {sortBy === 'most_relevant' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
                 </button>
 
                 {/* Option 3: Top Rated */}
