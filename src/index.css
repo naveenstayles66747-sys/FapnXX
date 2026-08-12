@@ -258,52 +258,54 @@ html.light ::-webkit-scrollbar-thumb:hover {
 /* 8. Dropdown Popup Menus High Contrast in both Dark and Light Modes */
 .dropdown-modal-menu {
   background-color: #18171a !important;
-  border-color: #353437 !important;
+  border: 1px solid #353437 !important;
+  color: #ffffff !important;
 }
 
+.dropdown-modal-menu header,
+.dropdown-modal-menu div,
+.dropdown-modal-menu span,
 .dropdown-modal-menu button {
   color: #ffffff !important;
 }
 
-.dropdown-modal-menu button.active-option {
-  color: #ffb0cd !important;
-  background-color: rgba(236, 72, 153, 0.15) !important;
+.dropdown-modal-menu button:hover,
+.dropdown-modal-menu button:hover * {
+  background-color: rgba(224, 53, 141, 0.15) !important;
+  color: #e0358d !important;
 }
 
+.dropdown-modal-menu button.active-option,
+.dropdown-modal-menu button.active-option * {
+  color: #e0358d !important;
+  background-color: rgba(224, 53, 141, 0.2) !important;
+}
+
+/* Light Mode Overrides for Dropdown Menus (Day Theme) */
 html.light .dropdown-modal-menu {
   background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
-}
-
-html.light .dropdown-modal-menu button {
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.15) !important;
   color: #0f172a !important;
 }
 
-html.light .dropdown-modal-menu button:hover {
+html.light .dropdown-modal-menu div,
+html.light .dropdown-modal-menu span,
+html.light .dropdown-modal-menu button,
+html.light .dropdown-modal-menu button * {
+  color: #0f172a !important;
+}
+
+html.light .dropdown-modal-menu button:hover,
+html.light .dropdown-modal-menu button:hover * {
   background-color: #f1f5f9 !important;
+  color: #e0358d !important;
 }
 
-html.light .dropdown-modal-menu button.active-option {
-  color: #db2777 !important;
-  background-color: rgba(236, 72, 153, 0.1) !important;
-}
-
-/* 9. Header Buttons Hover White Light Text in Light & Dark Mode */
-html.light header button:hover,
-html.light header button:hover *,
-html.light header button:hover .material-symbols-outlined,
-html.light header .group\/search:hover input,
-html.light header .group\/search:hover span,
-header input:hover::placeholder,
-header .group\/search:hover input::placeholder,
-html.light header input:hover::placeholder,
-html.light header .group\/search:hover input::placeholder,
-input:hover::placeholder,
-input:focus::placeholder {
-  color: #ffffff !important;
-  opacity: 1 !important;
-  border-color: #ec4899 !important;
+html.light .dropdown-modal-menu button.active-option,
+html.light .dropdown-modal-menu button.active-option * {
+  color: #e0358d !important;
+  background-color: rgba(224, 53, 141, 0.12) !important;
 }
 
 /* 10. Hero Banner Overlay Text Protection (Always Pure White over dark hero image & gradients) */
