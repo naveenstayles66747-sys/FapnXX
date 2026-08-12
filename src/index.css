@@ -308,6 +308,18 @@ html.light .dropdown-modal-menu button.active-option * {
   background-color: rgba(224, 53, 141, 0.12) !important;
 }
 
+/* Light Mode Overrides for Sort Filter Button (Day Theme) */
+html.light .sort-filter-btn {
+  background-color: #ffffff !important;
+  color: #e0358d !important;
+  border-color: rgba(224, 53, 141, 0.4) !important;
+  box-shadow: 0 4px 16px rgba(224, 53, 141, 0.15) !important;
+}
+
+html.light .sort-filter-btn * {
+  color: #e0358d !important;
+}
+
 /* 10. Hero Banner Overlay Text Protection (Always Pure White over dark hero image & gradients) */
 .hero-banner-container,
 .hero-banner-container *,

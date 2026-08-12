@@ -499,14 +499,13 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
           <div className="relative" ref={sortDropdownRef}>
             <button
               onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1c1b1f] hover:bg-[#27272a] text-white border border-white/10 hover:border-[#e0358d] text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
+              className="sort-filter-btn flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1c1b1f] hover:bg-[#27272a] text-white border border-white/10 hover:border-[#e0358d] text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
               title="Change Video Sort Order"
             >
-              <span className="text-[#e0358d] font-mono text-[10px] uppercase tracking-wider font-bold">SORT:</span>
-              <span className="font-extrabold flex items-center gap-1.5">
-                {sortBy === 'latest' && <><span className="material-symbols-outlined text-sm text-[#e0358d]">schedule</span> Latest</>}
-                {sortBy === 'most_relevant' && <><span className="material-symbols-outlined text-sm text-[#e0358d]">auto_awesome</span> Most Relevant</>}
-                {sortBy === 'top_rated' && <><span className="material-symbols-outlined text-sm text-[#e0358d]">star</span> Top Rated</>}
+              <span className="font-extrabold">
+                {sortBy === 'latest' && 'Latest'}
+                {sortBy === 'most_relevant' && 'Most Relevant'}
+                {sortBy === 'top_rated' && 'Top Rated'}
               </span>
               <span className="material-symbols-outlined text-sm opacity-70">expand_more</span>
             </button>
@@ -528,10 +527,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     sortBy === 'most_relevant' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-base text-[#e0358d]">auto_awesome</span>
-                    <span className="font-bold text-xs">Most Relevant</span>
-                  </div>
+                  <span className="font-bold text-xs">Most Relevant</span>
                   {sortBy === 'most_relevant' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
                 </button>
 
@@ -545,10 +541,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     sortBy === 'latest' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-base text-[#e0358d]">schedule</span>
-                    <span className="font-bold text-xs">Latest</span>
-                  </div>
+                  <span className="font-bold text-xs">Latest</span>
                   {sortBy === 'latest' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
                 </button>
 
@@ -562,10 +555,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     sortBy === 'top_rated' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-base text-[#e0358d]">star</span>
-                    <span className="font-bold text-xs">Top Rated</span>
-                  </div>
+                  <span className="font-bold text-xs">Top Rated</span>
                   {sortBy === 'top_rated' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
                 </button>
               </div>
