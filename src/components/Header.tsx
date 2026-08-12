@@ -136,8 +136,8 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 w-full z-50 header-container backdrop-blur-xl border-b flex justify-between items-center px-3 md:px-8 h-16 md:h-20 shrink-0 relative overflow-hidden box-border">
-      {/* 1. Left Action Buttons (Hamburger Menu + Gender Preference Filter) */}
-      <div className="flex items-center gap-2 shrink-0 z-20">
+      {/* 1. Left Section: Hamburger + Brand Logo (Desktop) / Gender Button (Mobile) */}
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0 z-20">
         {/* Hamburger Menu Button */}
         <button
           onClick={onToggleMobileDrawer}
@@ -147,8 +147,19 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="material-symbols-outlined text-xl">menu</span>
         </button>
 
-        {/* Gender Preference Filter Button */}
-        <div className="relative shrink-0" ref={prefDropdownRefMobile}>
+        {/* Brand Logo (Visible on Left in Desktop Web View) */}
+        <div
+          onClick={() => onNavigate('browse')}
+          className="hidden lg:flex items-center cursor-pointer select-none active:scale-95 transition-transform"
+        >
+          <h1 className="text-xl md:text-2xl font-black tracking-tight whitespace-nowrap">
+            <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
+            <span className="header-brand-nxx font-black">nXX</span>
+          </h1>
+        </div>
+
+        {/* Mobile Only: Gender Preference Filter Button */}
+        <div className="relative shrink-0 lg:hidden" ref={prefDropdownRefMobile}>
           <button
             onClick={() => { setIsPrefMenuOpen(!isPrefMenuOpen); setIsLangMenuOpen(false); }}
             className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700/80 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
@@ -168,47 +179,48 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* 2. CENTERED BRAND LOGO (Absolute Center on Mobile Viewport) */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-10 pointer-events-auto">
+      {/* 2. Mobile Center Logo (Only on Mobile screens < lg) */}
+      <div className="lg:hidden absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-10 pointer-events-auto">
         <h1
           onClick={() => onNavigate('browse')}
-          className="text-lg sm:text-xl md:text-2xl font-black tracking-tight cursor-pointer select-none active:scale-95 transition-transform whitespace-nowrap"
+          className="text-lg sm:text-xl font-black tracking-tight cursor-pointer select-none active:scale-95 transition-transform whitespace-nowrap"
         >
           <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
           <span className="header-brand-nxx font-black">nXX</span>
         </h1>
       </div>
 
-      {/* Desktop Centered Search Bar */}
-      <div className="hidden lg:flex flex-1 max-w-md xl:max-w-xl mx-6 relative group/search min-w-0 z-20">
+      {/* 3. Desktop Centered Search Bar */}
+      <div className="hidden lg:flex flex-1 max-w-xs xl:max-w-md mx-4 relative group/search min-w-0 z-20">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onFocus={onOpenSearch}
           placeholder="Search videos, creators..."
-          className="w-full header-search-input rounded-full py-2.5 pl-6 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#e0358d]/50 transition-all shadow-inner border"
+          className="w-full header-search-input rounded-full py-2 pl-5 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-[#e0358d]/50 transition-all shadow-inner border"
         />
-        <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 header-search-icon transition-colors text-xl pointer-events-none">
+        <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 header-search-icon transition-colors text-lg pointer-events-none">
           search
         </span>
       </div>
 
+      {/* 4. Right Action Buttons */}
       <div className="flex items-center gap-2 md:gap-2.5 shrink-0 z-20">
         {/* Desktop Content Preference Filter Dropdown */}
         <div className="relative hidden lg:block" ref={prefDropdownRef}>
           <button
             onClick={() => { setIsPrefMenuOpen(!isPrefMenuOpen); setIsLangMenuOpen(false); }}
-            className="header-icon-btn rounded-full border text-[#e0358d] flex items-center justify-center w-7 h-7 p-1 transition-all cursor-pointer active:scale-95 shadow-sm"
+            className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700/80 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
             title="Content Filter Preference"
             aria-label="Content Preference"
           >
             {contentPreference === 'straight' ? (
-              <IntertwinedGenderIcon className="w-4 h-4 text-[#e0358d]" />
+              <IntertwinedGenderIcon className="w-5 h-5" />
+            ) : contentPreference === 'lesbian' ? (
+              <span className="material-symbols-outlined text-lg text-[#e0358d]">female</span>
             ) : (
-              <span className="material-symbols-outlined text-sm font-bold">
-                {contentPreference === 'gay' ? 'male' : 'female'}
-              </span>
+              <span className="material-symbols-outlined text-lg text-zinc-900 dark:text-zinc-100">male</span>
             )}
           </button>
 
