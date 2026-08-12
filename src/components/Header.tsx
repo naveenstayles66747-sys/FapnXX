@@ -163,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative shrink-0 lg:hidden" ref={prefDropdownRefMobile}>
           <button
             onClick={() => { setIsPrefMenuOpen(!isPrefMenuOpen); setIsLangMenuOpen(false); }}
-            className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700/80 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
+            className="gender-btn-glow w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
             title="Content Filter Preference"
             aria-label="Content Preference"
           >
@@ -212,7 +212,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Desktop Theme Toggle Button (Light/Dark Mode) */}
         <button
           onClick={onToggleTheme}
-          className="hidden lg:flex w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700/80 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
+          className="gender-btn-glow hidden lg:flex w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
           title={themeMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           aria-label="Toggle theme mode"
         >
@@ -225,7 +225,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative hidden lg:block" ref={prefDropdownRef}>
           <button
             onClick={() => { setIsPrefMenuOpen(!isPrefMenuOpen); setIsLangMenuOpen(false); }}
-            className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700/80 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
+            className="gender-btn-glow w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
             title="Content Filter Preference"
             aria-label="Content Preference"
           >
@@ -245,11 +245,11 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative" ref={langDropdownRef}>
           <button
             onClick={() => { setIsLangMenuOpen(!isLangMenuOpen); setIsPrefMenuOpen(false); }}
-            className="hidden lg:flex header-icon-btn rounded-full border px-3 py-2 text-xs font-bold items-center gap-1 transition-all cursor-pointer"
+            className="hidden lg:flex header-icon-btn rounded-full border px-3.5 py-2 text-xs font-extrabold items-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm"
             title="Switch Language / भाषा बदलें"
           >
             <span className="material-symbols-outlined text-base text-[#e0358d]">translate</span>
-            <span className="uppercase tracking-wider font-bold">{language === 'en' ? 'EN' : 'हिन्दी'}</span>
+            <span className="uppercase tracking-wider font-extrabold">{language === 'en' ? 'EN' : 'हिन्दी'}</span>
             <span className="material-symbols-outlined text-sm opacity-70">expand_more</span>
           </button>
 

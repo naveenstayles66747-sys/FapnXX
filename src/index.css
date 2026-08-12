@@ -474,10 +474,23 @@ html.light .video-loading-screen * {
   background-color: #232328 !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.2s ease-in-out !important;
 }
 
 .header-icon-btn:hover {
-  background-color: #2d2d34 !important;
+  border-color: #e0358d !important;
+  color: #e0358d !important;
+  background-color: rgba(224, 53, 141, 0.08) !important;
+}
+
+.gender-btn-glow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.gender-btn-glow:hover {
+  border-color: #e0358d !important;
+  box-shadow: 0 0 16px rgba(224, 53, 141, 0.65), inset 0 0 8px rgba(224, 53, 141, 0.2) !important;
+  transform: scale(1.06) !important;
 }
 
 .header-guest-pill {
@@ -524,7 +537,9 @@ html.light .header-icon-btn {
 }
 
 html.light .header-icon-btn:hover {
-  background-color: #e2e8f0 !important;
+  border-color: #e0358d !important;
+  color: #e0358d !important;
+  background-color: rgba(224, 53, 141, 0.08) !important;
 }
 
 html.light .header-guest-pill {
