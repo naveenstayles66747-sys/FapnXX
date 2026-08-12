@@ -58,7 +58,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             className="text-2xl font-black italic cursor-pointer tracking-tight"
           >
             <span className="text-[#e0358d] drop-shadow-[0_0_10px_rgba(224,53,141,0.5)] font-black">Fap</span>
-            <span className="mobile-drawer-text font-black">nXX</span>
+            <span className="brand-letter-n font-black">n</span>
+            <span className="mobile-drawer-text font-black">XX</span>
           </div>
           <button
             onClick={onClose}

@@ -154,7 +154,8 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <h1 className="text-xl md:text-2xl font-black tracking-tight whitespace-nowrap">
             <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
-            <span className="header-brand-nxx font-black">nXX</span>
+            <span className="brand-letter-n font-black">n</span>
+            <span className="header-brand-nxx font-black">XX</span>
           </h1>
         </div>
 
@@ -186,7 +187,8 @@ export const Header: React.FC<HeaderProps> = ({
           className="text-lg sm:text-xl font-black tracking-tight cursor-pointer select-none active:scale-95 transition-transform whitespace-nowrap"
         >
           <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
-          <span className="header-brand-nxx font-black">nXX</span>
+          <span className="brand-letter-n font-black">n</span>
+          <span className="header-brand-nxx font-black">XX</span>
         </h1>
       </div>
 

@@ -448,6 +448,14 @@ html.light .video-loading-screen * {
   color: #ffffff !important;
 }
 
+.brand-letter-n {
+  background: linear-gradient(135deg, #e0358d 48%, #ffffff 52%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+}
+
 .header-search-input {
   background-color: #232328 !important;
   color: #ffffff !important;
@@ -486,6 +494,13 @@ html.light .header-container {
 
 html.light .header-brand-nxx {
   color: #0f172a !important;
+}
+
+html.light .brand-letter-n {
+  background: linear-gradient(135deg, #e0358d 48%, #0f172a 52%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 html.light .header-search-input {

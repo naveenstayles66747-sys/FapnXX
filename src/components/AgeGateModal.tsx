@@ -23,7 +23,8 @@ export const AgeGateModal: React.FC<AgeGateModalProps> = ({ onConfirm, onDecline
       <div className="glass-panel p-8 md:p-12 rounded-2xl max-w-md w-full text-center border-t border-white/10 shadow-[0_0_50px_rgba(247,81,161,0.15)] relative overflow-hidden animate-in fade-in zoom-in-95 duration-300">
         <h1 className="font-extrabold text-3xl md:text-4xl italic mb-2 tracking-tighter">
           <span className="text-[#e0358d] drop-shadow-[0_0_10px_rgba(224,53,141,0.5)] font-black">Fap</span>
-          <span className="text-white font-black">nXX</span>
+          <span className="brand-letter-n font-black">n</span>
+          <span className="text-white font-black">XX</span>
         </h1>
         <h2 className="text-2xl md:text-3xl font-bold text-[#e5e1e4] mb-6">
           18+ Only

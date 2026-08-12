@@ -361,7 +361,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl md:text-2xl font-black text-white italic tracking-tight">
-                  <span className="text-[#e0358d] font-black">Fap</span><span>nXX</span> Admin Panel
+                  <span className="text-[#e0358d] font-black">Fap</span>
+                  <span className="brand-letter-n font-black">n</span>
+                  <span>XX</span> Admin Panel
                 </h2>
                 {isAdminAuthenticated ? (
                   <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
