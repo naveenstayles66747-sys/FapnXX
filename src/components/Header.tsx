@@ -35,13 +35,13 @@ const IntertwinedGenderIcon: React.FC<{ className?: string }> = ({ className = '
   >
     {/* Female (Venus ♀) Circle & Cross in Swatch Pink #e0358d */}
     <g>
-      <circle cx="8.5" cy="12.5" r="4.2" stroke="#e0358d" />
-      <line x1="8.5" y1="16.7" x2="8.5" y2="22" stroke="#e0358d" />
-      <line x1="5.5" y1="19.5" x2="11.5" y2="19.5" stroke="#e0358d" />
+      <circle cx="8.5" cy="12.5" r="4.2" className="stroke-[#e0358d] group-hover/gender:stroke-white transition-colors" />
+      <line x1="8.5" y1="16.7" x2="8.5" y2="22" className="stroke-[#e0358d] group-hover/gender:stroke-white transition-colors" />
+      <line x1="5.5" y1="19.5" x2="11.5" y2="19.5" className="stroke-[#e0358d] group-hover/gender:stroke-white transition-colors" />
     </g>
 
     {/* Male (Mars ♂) Circle & Arrow in Black / Theme Dark */}
-    <g className="text-zinc-900 dark:text-zinc-100 stroke-current">
+    <g className="text-zinc-900 dark:text-zinc-100 stroke-current group-hover/gender:text-white transition-colors">
       <circle cx="14.5" cy="8.5" r="4.2" />
       <line x1="17.5" y1="5.5" x2="22" y2="1" />
       <polyline points="17 1 22 1 22 6" />
@@ -213,11 +213,11 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Desktop Theme Toggle Button (Light/Dark Mode) */}
         <button
           onClick={onToggleTheme}
-          className="gender-btn-glow hidden lg:flex w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
+          className="header-btn-hover-pink hidden lg:flex w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10 group/theme"
           title={themeMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           aria-label="Toggle theme mode"
         >
-          <span className="material-symbols-outlined text-lg text-amber-500 dark:text-amber-400">
+          <span className="material-symbols-outlined text-lg text-amber-500 dark:text-amber-400 group-hover/theme:text-white transition-colors">
             {themeMode === 'dark' ? 'light_mode' : 'dark_mode'}
           </span>
         </button>
@@ -226,16 +226,16 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative hidden lg:block" ref={prefDropdownRef}>
           <button
             onClick={() => { setIsPrefMenuOpen(!isPrefMenuOpen); setIsLangMenuOpen(false); }}
-            className="gender-btn-glow w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
+            className="header-btn-hover-pink w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10 group/gender"
             title="Content Filter Preference"
             aria-label="Content Preference"
           >
             {contentPreference === 'straight' ? (
               <IntertwinedGenderIcon className="w-5 h-5" />
             ) : contentPreference === 'lesbian' ? (
-              <span className="material-symbols-outlined text-lg text-[#e0358d]">female</span>
+              <span className="material-symbols-outlined text-lg text-[#e0358d] group-hover/gender:text-white transition-colors">female</span>
             ) : (
-              <span className="material-symbols-outlined text-lg text-zinc-900 dark:text-zinc-100">male</span>
+              <span className="material-symbols-outlined text-lg text-zinc-900 dark:text-zinc-100 group-hover/gender:text-white transition-colors">male</span>
             )}
           </button>
 
@@ -246,13 +246,13 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative" ref={langDropdownRef}>
           <button
             onClick={() => { setIsLangMenuOpen(!isLangMenuOpen); setIsPrefMenuOpen(false); }}
-            className="hidden lg:flex header-icon-btn rounded-full border px-3.5 py-2 text-xs font-extrabold items-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm"
+            className="hidden lg:flex header-icon-btn header-btn-hover-pink rounded-full border px-3.5 py-2 text-xs font-extrabold items-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm group/lang"
             title="Switch Language & Regional Content / भाषा बदलें"
           >
-            <span className="material-symbols-outlined text-base text-[#e0358d]">translate</span>
+            <span className="material-symbols-outlined text-base text-[#e0358d] group-hover/lang:text-white transition-colors">translate</span>
             <span className="text-sm">{currentLanguageMeta?.flag || '🇬🇧'}</span>
-            <span className="uppercase tracking-wider font-extrabold">{currentLanguageMeta?.label || 'EN'}</span>
-            <span className="material-symbols-outlined text-sm opacity-70">expand_more</span>
+            <span className="uppercase tracking-wider font-extrabold group-hover/lang:text-white transition-colors">{currentLanguageMeta?.label || 'EN'}</span>
+            <span className="material-symbols-outlined text-sm opacity-70 group-hover/lang:text-white transition-colors">expand_more</span>
           </button>
 
           {isLangMenuOpen && (
