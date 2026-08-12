@@ -499,7 +499,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
           <div className="relative" ref={sortDropdownRef}>
             <button
               onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-              className="sort-filter-btn flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1c1b1f] hover:bg-[#27272a] text-white border border-white/10 hover:border-[#e0358d] text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
+              className="sort-filter-btn flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1c1b1f] hover:bg-[#27272a] text-white border border-white/10 hover:border-[#e0358d] text-xs font-bold transition-all shadow-none cursor-pointer active:scale-95"
               title="Change Video Sort Order"
             >
               <span className="font-extrabold">

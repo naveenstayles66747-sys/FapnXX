@@ -312,8 +312,8 @@ html.light .dropdown-modal-menu button.active-option * {
 html.light .sort-filter-btn {
   background-color: #ffffff !important;
   color: #e0358d !important;
-  border-color: rgba(224, 53, 141, 0.4) !important;
-  box-shadow: 0 4px 16px rgba(224, 53, 141, 0.15) !important;
+  border: 1px solid rgba(224, 53, 141, 0.4) !important;
+  box-shadow: none !important;
 }
 
 html.light .sort-filter-btn * {
