@@ -237,7 +237,7 @@ export class VideoService {
       const q = query(collection(db, COLLECTIONS.VIDEOS));
       return onSnapshot(
         q,
-        (snapshot) => {
+        async (snapshot) => {
           if (!snapshot.empty) {
             const firestoreVideos: Video[] = [];
             snapshot.forEach((docSnap) => {
