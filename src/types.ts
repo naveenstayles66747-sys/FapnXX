@@ -23,7 +23,7 @@ export interface Video {
   rating?: string;
   timeAgo: string;
   performerName: string;
-  performerAvatar: string;
+  performerAvatar?: string;
   description: string;
   orientation?: ContentPreference | 'horizontal' | 'vertical' | 'vr' | string;
   isExclusive?: boolean;

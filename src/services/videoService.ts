@@ -130,6 +130,7 @@ export class VideoService {
             timeAgo: item.timeAgo || 'Just now',
             createdAt: item.createdAt || new Date().toISOString(),
             performerName: item.performerName || 'User Uploaded',
+            performerAvatar: item.performerAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150&auto=format&fit=crop',
             description: item.description || '',
             isEmbed: true,
           }));
