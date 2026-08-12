@@ -1,25 +1,29 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Language, translations, Translations } from './translations';
+import { Language, translations, Translations, LANGUAGE_LIST, LanguageMeta } from './translations';
 
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: Translations;
+  currentLanguageMeta: LanguageMeta;
 }
 
-const STORAGE_KEY = 'indianfullxx_lang';
+const STORAGE_KEY = 'fapnxx_lang';
+
+const defaultMeta = LANGUAGE_LIST[0];
 
 const LanguageContext = createContext<LanguageContextType>({
   language: 'en',
   setLanguage: () => {},
   t: translations.en,
+  currentLanguageMeta: defaultMeta,
 });
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY) as Language;
-      if (saved && (saved === 'en' || saved === 'hi')) {
+      if (saved && LANGUAGE_LIST.some((l) => l.code === saved)) {
         return saved;
       }
     } catch {
@@ -41,12 +45,15 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     document.documentElement.lang = language;
   }, [language]);
 
+  const currentLanguageMeta = LANGUAGE_LIST.find((l) => l.code === language) || defaultMeta;
+
   return (
     <LanguageContext.Provider
       value={{
         language,
         setLanguage,
         t: translations[language] || translations.en,
+        currentLanguageMeta,
       }}
     >
       {children}

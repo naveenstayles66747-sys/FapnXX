@@ -88,7 +88,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   searchQuery = '',
   setSearchQuery,
 }) => {
-  const { t } = useLanguage();
+  const { t, language, setLanguage, currentLanguageMeta } = useLanguage();
   const [rankedTrendingVideos, setRankedTrendingVideos] = useState<Video[]>([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [isHoveredSlider, setIsHoveredSlider] = useState<boolean>(false);
@@ -163,10 +163,35 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       )
     : activeVideos;
 
+  // Smart Language-Based Regional Recommendation Engine
+  const regionalVideos = React.useMemo(() => {
+    if (!currentLanguageMeta || !currentLanguageMeta.keywords || currentLanguageMeta.code === 'en') {
+      return searchedVideos;
+    }
+    const keywords = currentLanguageMeta.keywords.map((k) => k.toLowerCase());
+    const scored = searchedVideos.map((video) => {
+      let matchCount = 0;
+      const titleLower = video.title.toLowerCase();
+      const descLower = video.description.toLowerCase();
+      const tagsLower = video.tags.map((t) => t.toLowerCase());
+
+      keywords.forEach((kw) => {
+        if (titleLower.includes(kw)) matchCount += 3;
+        if (descLower.includes(kw)) matchCount += 1;
+        if (tagsLower.some((t) => t.includes(kw))) matchCount += 2;
+      });
+
+      return { video, score: matchCount };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.map((item) => item.video);
+  }, [searchedVideos, currentLanguageMeta]);
+
   const justAddedVideos =
     selectedCategory === 'all'
-      ? searchedVideos
-      : searchedVideos.filter((v) => v.category === selectedCategory);
+      ? regionalVideos
+      : regionalVideos.filter((v) => v.category === selectedCategory);
 
   const selectedCategoryObj = categories.find((c) => c.id === selectedCategory);
 
@@ -194,6 +219,36 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
               Clear Search
             </button>
           )}
+        </section>
+      )}
+
+      {/* Smart Regional Recommendation Banner (Shown when non-English language selected & no active search query) */}
+      {!cleanSearch && currentLanguageMeta && currentLanguageMeta.code !== 'en' && (
+        <section className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-[#e0358d]/20 via-[#1f1d24] to-[#09090b] border border-[#e0358d]/40 flex flex-wrap items-center justify-between gap-3 shadow-[0_0_20px_rgba(224,53,141,0.15)] animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{currentLanguageMeta.flag}</span>
+            <div>
+              <div className="text-xs font-bold text-white flex items-center gap-1.5 flex-wrap">
+                <span>Smart Regional Content Recommended for:</span>
+                <span className="text-[#e0358d] font-extrabold underline decoration-[#e0358d]/40">
+                  {currentLanguageMeta.label} ({currentLanguageMeta.englishName})
+                </span>
+                <span className="bg-[#e0358d]/20 text-[#e0358d] border border-[#e0358d]/30 text-[10px] font-mono px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                  AUTO-FILTERED
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-400 mt-0.5">
+                Surfacing top local & regional picks for your language without searching! You can still search any global content anytime.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setLanguage('en')}
+            className="text-xs font-extrabold px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer flex items-center gap-1 shrink-0 border border-white/10"
+          >
+            <span className="material-symbols-outlined text-sm text-[#e0358d]">public</span>
+            Reset to Global English
+          </button>
         </section>
       )}
 

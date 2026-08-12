@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ContentPreference, ScreenId } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
+import { LANGUAGE_LIST } from '../i18n/translations';
 import { ThemeMode } from '../utils/storage';
 
 interface HeaderProps {
@@ -64,7 +65,7 @@ export const Header: React.FC<HeaderProps> = ({
   contentPreference,
   onChangeContentPreference,
 }) => {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage, t, currentLanguageMeta } = useLanguage();
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isPrefMenuOpen, setIsPrefMenuOpen] = useState(false);
   const prefDropdownRef = useRef<HTMLDivElement>(null);
@@ -246,39 +247,42 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => { setIsLangMenuOpen(!isLangMenuOpen); setIsPrefMenuOpen(false); }}
             className="hidden lg:flex header-icon-btn rounded-full border px-3.5 py-2 text-xs font-extrabold items-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm"
-            title="Switch Language / भाषा बदलें"
+            title="Switch Language & Regional Content / भाषा बदलें"
           >
             <span className="material-symbols-outlined text-base text-[#e0358d]">translate</span>
-            <span className="uppercase tracking-wider font-extrabold">{language === 'en' ? 'EN' : 'हिन्दी'}</span>
+            <span className="text-sm">{currentLanguageMeta?.flag || '🇬🇧'}</span>
+            <span className="uppercase tracking-wider font-extrabold">{currentLanguageMeta?.label || 'EN'}</span>
             <span className="material-symbols-outlined text-sm opacity-70">expand_more</span>
           </button>
 
           {isLangMenuOpen && (
-            <div className="dropdown-modal-menu absolute right-0 mt-2 w-36 rounded-xl shadow-2xl py-1.5 z-50 text-xs">
-              <button
-                onClick={() => {
-                  setLanguage('en');
-                  setIsLangMenuOpen(false);
-                }}
-                className={`w-full px-4 py-2 text-left flex items-center justify-between hover:bg-white/10 transition-colors cursor-pointer ${
-                  language === 'en' ? 'active-option font-bold' : 'text-white'
-                }`}
-              >
-                <span>English</span>
-                {language === 'en' && <span className="material-symbols-outlined text-sm">check</span>}
-              </button>
-              <button
-                onClick={() => {
-                  setLanguage('hi');
-                  setIsLangMenuOpen(false);
-                }}
-                className={`w-full px-4 py-2 text-left flex items-center justify-between hover:bg-white/10 transition-colors cursor-pointer ${
-                  language === 'hi' ? 'active-option font-bold' : 'text-white'
-                }`}
-              >
-                <span>हिन्दी (Hindi)</span>
-                {language === 'hi' && <span className="material-symbols-outlined text-sm">check</span>}
-              </button>
+            <div className="dropdown-modal-menu absolute right-0 mt-2 w-56 rounded-2xl shadow-2xl py-2 z-50 text-xs max-h-80 overflow-y-auto custom-scrollbar border border-white/10">
+              <div className="px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
+                <span>Select Language</span>
+                <span className="text-[#e0358d] text-[9px] font-mono">REGIONAL PICKS</span>
+              </div>
+              {LANGUAGE_LIST.map((item) => {
+                const isSelected = language === item.code;
+                return (
+                  <button
+                    key={item.code}
+                    onClick={() => {
+                      setLanguage(item.code);
+                      setIsLangMenuOpen(false);
+                    }}
+                    className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      isSelected ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="text-base">{item.flag}</span>
+                      <span className="font-bold">{item.label}</span>
+                      <span className="text-[10px] opacity-60">({item.englishName})</span>
+                    </span>
+                    {isSelected && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
