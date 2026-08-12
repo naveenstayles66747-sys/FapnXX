@@ -71,8 +71,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
         <nav className="flex-1 overflow-y-auto py-4">
           <ul className="flex flex-col px-3 gap-1">
-            {/* Mobile Theme Switcher Toggle */}
-            <li>
+            {/* Mobile Theme Switcher Toggle (Hidden in Web View drawer) */}
+            <li className="lg:hidden">
               <button
                 onClick={onToggleTheme}
                 className="mobile-drawer-card w-full flex items-center justify-between px-4 py-3 rounded-xl text-[#e5e1e4] bg-[#27272a]/70 hover:bg-white/10 transition-all font-semibold text-sm border border-white/5 cursor-pointer shadow-sm active:scale-95"
@@ -89,8 +89,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               </button>
             </li>
 
-            {/* Mobile Content Preference Selector (Straight / Gay / Lesbian) */}
-            <li className="my-1">
+            {/* Mobile Content Preference Selector (Hidden in Web View drawer) */}
+            <li className="my-1 lg:hidden">
               <div className="mobile-drawer-card p-3 rounded-xl bg-[#27272a]/70 border border-white/5 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="mobile-drawer-text-sub text-[11px] font-bold text-[#debec8] uppercase tracking-wider flex items-center gap-1.5">
