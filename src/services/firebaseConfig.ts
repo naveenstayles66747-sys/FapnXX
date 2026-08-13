@@ -2,8 +2,9 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 
-// New Firebase configuration for project: indianfullxx
+// Firebase configuration for project: indianfullxx
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAtpBRAM63FCgK6poFeM2mN27Bgh85dRzk",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "indianfullxx.firebaseapp.com",
@@ -18,4 +19,5 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+export const auth = getAuth(app);
 export default app;

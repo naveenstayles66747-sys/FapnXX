@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { CategoryInfo, DMCAReport, LandingBanner, ReportStatus, Video } from '../types';
 import { getStoredReports, setStoredReports } from '../utils/storage';
 import { videoService } from '../services/videoService';
+import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
+import app from '../services/firebaseConfig';
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -26,10 +28,10 @@ interface AdminPanelModalProps {
   onDeleteBanner: (bannerId: string) => void;
 }
 
-export const ADMIN_CREDENTIALS = {
-  email: 'Naveenstayles66747@gmail.com',
-  password: 'Naveen7011',
-};
+// Admin email whitelist — only these emails can access the admin panel
+const ADMIN_WHITELIST = [
+  'naveenstayles66747@gmail.com',
+];
 
 export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   isOpen,
@@ -72,16 +74,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     }
   }, [isOpen]);
   
-  // Multi-Step 2FA Login Form state
-  const [authStep, setAuthStep] = useState<'credentials' | 'otp'>('credentials');
-  const [emailInput, setEmailInput] = useState(ADMIN_CREDENTIALS.email);
-  const [passwordInput, setPasswordInput] = useState(ADMIN_CREDENTIALS.password);
-  const [otpInput, setOtpInput] = useState('');
-  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
-  const [otpCountdown, setOtpCountdown] = useState<number>(60);
-  const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false);
+  // Auth form state — no pre-filled values
+  const [authStep, setAuthStep] = useState<'credentials'>('credentials');
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState('');
-  const [otpNotice, setOtpNotice] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Category Edit / Create state
   const [editingCategory, setEditingCategory] = useState<CategoryInfo | null>(null);
@@ -118,82 +116,56 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [upDesc, setUpDesc] = useState('');
   const [upIsExclusive, setUpIsExclusive] = useState(true);
 
-  // Countdown Timer Effect for OTP Expiration
-  useEffect(() => {
-    let timer: ReturnType<typeof setInterval>;
-    if (authStep === 'otp' && otpCountdown > 0) {
-      timer = setInterval(() => {
-        setOtpCountdown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [authStep, otpCountdown]);
 
   if (!isOpen) return null;
 
-  // Dispatch OTP Code to Admin Email
-  const sendOtpCodeToEmail = async (targetEmail: string, pass: string) => {
-    setIsSendingOtp(true);
-    setLoginError('');
-    try {
-      const cleanEmail = targetEmail.trim().toLowerCase();
-      const adminEmail = ADMIN_CREDENTIALS.email.trim().toLowerCase();
-
-      if (cleanEmail !== adminEmail || pass.trim() !== ADMIN_CREDENTIALS.password) {
-        throw new Error('Invalid admin email or password credentials.');
-      }
-
-      // Generate cryptographically secure 6-digit OTP code
-      const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedOtp(generatedCode);
-      setAuthStep('otp');
-      setOtpInput('');
-      setOtpCountdown(300); // 5 minutes
-      setOtpNotice(`6-digit verification code sent to ${cleanEmail}. (Security Code: ${generatedCode})`);
-    } catch (err: any) {
-      setLoginError(err.message || 'Error requesting verification code.');
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  // Step 1: Validate Email & Password Credentials
-  const handleCredentialsSubmit = (e: React.FormEvent) => {
+  // Real Firebase Authentication Login
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    setIsLoggingIn(true);
 
     const cleanEmail = emailInput.trim().toLowerCase();
-    const cleanPass = passwordInput.trim();
 
-    sendOtpCodeToEmail(cleanEmail, cleanPass);
-  };
-
-  // Step 2: Validate 2FA Verification Code (OTP)
-  const handleVerifyOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError('');
-
-    if (!otpInput.trim() || otpInput.trim().length !== 6) {
-      setLoginError('Please enter a valid 6-digit verification code (OTP).');
+    // Step 1: Check admin whitelist
+    if (!ADMIN_WHITELIST.includes(cleanEmail)) {
+      setLoginError('Access denied. This email is not authorized as admin.');
+      setIsLoggingIn(false);
       return;
     }
 
-    if (generatedOtp && otpInput.trim() !== generatedOtp.trim()) {
-      setLoginError('Incorrect 6-digit verification code. Please try again.');
-      return;
-    }
+    try {
+      // Step 2: Real Firebase Auth sign in
+      const auth = getAuth(app);
+      await signInWithEmailAndPassword(auth, emailInput.trim(), passwordInput.trim());
 
-    // Grant Super Admin Authorization
-    onAdminLogin(ADMIN_CREDENTIALS.email);
-    setLoginError('');
-    setOtpNotice('');
-    setActiveTab('categories');
+      // Step 3: Grant admin access
+      onAdminLogin(cleanEmail);
+      setLoginError('');
+      setActiveTab('categories');
+    } catch (err: any) {
+      // Firebase error codes → user-friendly messages
+      const code = err?.code || '';
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        setLoginError('Invalid email or password. Please try again.');
+      } else if (code === 'auth/too-many-requests') {
+        setLoginError('Too many failed attempts. Account temporarily locked. Try again later.');
+      } else if (code === 'auth/network-request-failed') {
+        setLoginError('Network error. Please check your internet connection.');
+      } else {
+        setLoginError('Login failed. Please check your credentials and try again.');
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
-  const handleResendOtp = () => {
-    sendOtpCodeToEmail(emailInput.trim().toLowerCase(), passwordInput.trim());
+  const handleAdminLogout = async () => {
+    try {
+      const auth = getAuth(app);
+      await firebaseSignOut(auth);
+    } catch (_) {}
+    onAdminLogout();
   };
 
   const handleSaveCategory = (e: React.FormEvent) => {
@@ -557,12 +529,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       <span>2FA Verification:</span>
                       <span className="text-emerald-400 font-bold flex items-center gap-1">
                         <span className="material-symbols-outlined text-xs">check_circle</span>
-                        OTP Verified
+                        Authenticated via Firebase
                       </span>
                     </div>
                     <div className="flex justify-between text-[#a19fa6]">
                       <span>Admin Email:</span>
-                      <span className="text-white font-mono">{ADMIN_CREDENTIALS.email}</span>
+                      <span className="text-white font-mono">{emailInput || 'Admin'}</span>
                     </div>
                   </div>
 
@@ -576,10 +548,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </button>
                     <button
                       onClick={() => {
-                        onAdminLogout();
+                        handleAdminLogout();
                         setAuthStep('credentials');
-                        setGeneratedOtp(null);
-                        setOtpInput('');
+                        setEmailInput('');
+                        setPasswordInput('');
                       }}
                       className="w-full py-2.5 rounded-xl bg-[#27272a] hover:bg-rose-900/40 text-rose-300 font-bold text-xs transition-colors cursor-pointer border border-rose-500/20 flex items-center justify-center gap-2"
                     >
@@ -588,16 +560,16 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </button>
                   </div>
                 </div>
-              ) : authStep === 'credentials' ? (
-                /* STEP 1: CREDENTIALS INPUT */
+              ) : (
+                /* REAL FIREBASE LOGIN FORM */
                 <form onSubmit={handleCredentialsSubmit} className="bg-[#181719] border border-[#2e2d30] rounded-2xl p-6 md:p-8 shadow-2xl space-y-5">
                   <div className="text-center space-y-1">
                     <div className="w-12 h-12 bg-pink-500/10 border border-pink-500/20 rounded-xl flex items-center justify-center mx-auto text-[#ffb0cd] mb-2">
                       <span className="material-symbols-outlined text-2xl">admin_panel_settings</span>
                     </div>
-                    <h3 className="text-xl font-black text-white italic">Admin Portal Sign In</h3>
+                    <h3 className="text-xl font-black text-white">Admin Portal Sign In</h3>
                     <p className="text-xs text-[#debec8]">
-                      Enter primary admin credentials to trigger Email 2FA OTP.
+                      Authorized personnel only. Secured by Firebase Authentication.
                     </p>
                   </div>
 
@@ -619,7 +591,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           required
                           value={emailInput}
                           onChange={(e) => setEmailInput(e.target.value)}
-                          placeholder="Naveenstayles66747@gmail.com"
+                          placeholder="Enter admin email address"
+                          autoComplete="email"
                           className="w-full bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-3 pl-10 text-xs text-white focus:outline-none focus:border-[#ec4899]"
                         />
                         <span className="material-symbols-outlined text-sm text-[#a19fa6] absolute left-3 top-3.5">
@@ -638,7 +611,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           required
                           value={passwordInput}
                           onChange={(e) => setPasswordInput(e.target.value)}
-                          placeholder="Naveen7011"
+                          placeholder="Enter your password"
+                          autoComplete="current-password"
                           className="w-full bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-3 pl-10 text-xs text-white focus:outline-none focus:border-[#ec4899]"
                         />
                         <span className="material-symbols-outlined text-sm text-[#a19fa6] absolute left-3 top-3.5">
@@ -651,135 +625,28 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   <div className="pt-2">
                     <button
                       type="submit"
-                      disabled={isSendingOtp}
-                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#ec4899] to-[#8b5cf6] text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2"
+                      disabled={isLoggingIn}
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#ec4899] to-[#8b5cf6] text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
                     >
-                      {isSendingOtp ? (
+                      {isLoggingIn ? (
                         <>
                           <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                          <span>Dispatching OTP...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="material-symbols-outlined text-sm">mark_email_unread</span>
-                          Send 2FA Verification Code
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-[#0d0c0e] border border-[#2e2d30] text-[11px] text-[#a19fa6] space-y-1">
-                    <p className="font-bold text-white flex items-center gap-1">
-                      <span className="material-symbols-outlined text-xs text-amber-400">key</span>
-                      Admin Access Configured:
-                    </p>
-                    <p>• Email: <code className="text-[#ffb0cd]">Naveenstayles66747@gmail.com</code></p>
-                    <p>• Password: <code className="text-[#ffb0cd]">Naveen7011</code></p>
-                  </div>
-                </form>
-              ) : (
-                /* STEP 2: 2FA EMAIL OTP VERIFICATION */
-                <form onSubmit={handleVerifyOtpSubmit} className="bg-[#181719] border border-[#2e2d30] rounded-2xl p-6 md:p-8 shadow-2xl space-y-5">
-                  <div className="text-center space-y-1">
-                    <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-center mx-auto text-amber-400 mb-2">
-                      <span className="material-symbols-outlined text-2xl">verified</span>
-                    </div>
-                    <h3 className="text-xl font-black text-white italic">Email 2FA Verification</h3>
-                    <p className="text-xs text-[#debec8]">
-                      Verification code dispatched to <span className="text-white font-mono font-bold">{ADMIN_CREDENTIALS.email}</span>
-                    </p>
-                  </div>
-
-                  {/* Real-time Email Dispatch Status Banner */}
-                  <div className="p-4 rounded-xl bg-[#0d0c0e] border border-amber-500/30 text-xs space-y-2 relative overflow-hidden shadow-lg">
-                    <div className="flex items-center justify-between text-amber-400 font-bold">
-                      <span className="flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-sm text-amber-400 animate-pulse">
-                          mark_email_read
-                        </span>
-                        Email Dispatched to: {ADMIN_CREDENTIALS.email}
-                      </span>
-                      <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30 font-mono">
-                        Valid 5 mins
-                      </span>
-                    </div>
-                    <p className="text-[#a19fa6] text-[11px]">
-                      Enter the 6-digit authentication code sent to your email inbox (or check terminal server log).
-                    </p>
-                  </div>
-
-                  {loginError && (
-                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-                      <span className="material-symbols-outlined text-sm shrink-0">gpp_bad</span>
-                      <span>{loginError}</span>
-                    </div>
-                  )}
-
-                  {otpNotice && !loginError && (
-                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
-                      <span className="material-symbols-outlined text-sm shrink-0">info</span>
-                      <span>{otpNotice}</span>
-                    </div>
-                  )}
-
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center mb-1.5">
-                        <label className="block text-xs font-semibold text-[#a19fa6]">
-                          6-Digit Verification Code (OTP)
-                        </label>
-                        <span className="text-[11px] font-mono font-bold text-amber-400">
-                          {Math.floor(otpCountdown / 60)}:{(otpCountdown % 60).toString().padStart(2, '0')}
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        maxLength={6}
-                        required
-                        value={otpInput}
-                        onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
-                        placeholder="• • • • • •"
-                        className="w-full bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-3.5 text-center font-mono font-black text-2xl tracking-[0.5em] text-[#ffb0cd] focus:outline-none focus:border-[#ec4899] focus:ring-1 focus:ring-[#ec4899] transition-all"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3">
-                      <button
-                        type="button"
-                        onClick={handleResendOtp}
-                        disabled={isSendingOtp || otpCountdown > 240}
-                        className="text-xs font-semibold text-[#debec8] hover:text-white disabled:opacity-40 transition-colors flex items-center gap-1 cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-sm">refresh</span>
-                        Resend Code
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setAuthStep('credentials')}
-                        className="text-xs font-semibold text-[#a19fa6] hover:text-white transition-colors"
-                      >
-                        Change Credentials
-                      </button>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isSendingOtp || otpInput.trim().length !== 6}
-                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#ec4899] hover:from-amber-600 hover:to-[#db2777] text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-neon-pink disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95"
-                    >
-                      {isSendingOtp ? (
-                        <>
-                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                          <span>Verifying OTP...</span>
+                          <span>Verifying...</span>
                         </>
                       ) : (
                         <>
                           <span className="material-symbols-outlined text-sm">lock_open</span>
-                          Verify OTP & Unlock Admin Panel
+                          Sign In to Admin Panel
                         </>
                       )}
                     </button>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-[#0d0c0e] border border-[#2e2d30] text-[11px] text-[#a19fa6]">
+                    <p className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-xs text-emerald-400">verified_user</span>
+                      <span>Secured by <strong className="text-white">Firebase Authentication</strong> — credentials are never stored in code.</span>
+                    </p>
                   </div>
                 </form>
               )}
