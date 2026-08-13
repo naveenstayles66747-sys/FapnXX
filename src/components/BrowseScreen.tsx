@@ -569,7 +569,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         </div>
 
         {sortedVideos.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-y-5 gap-x-4 sm:gap-6">
             {sortedVideos.map((video) => (
               <VideoCard
                 key={video.id}

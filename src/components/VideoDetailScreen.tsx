@@ -404,7 +404,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
             <span className="material-symbols-outlined text-rose-500 text-lg">grid_view</span>
             <span>Recommended Videos</span>
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5">
             {(topRelatedVideos || []).map((relatedVideo) => (
               <div key={relatedVideo.id} className="relative group">
                 <VideoCard

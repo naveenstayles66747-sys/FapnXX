@@ -487,66 +487,87 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
         {/* Dynamic Video Fallback Preview (for MP4 previews if no WebP) */}
         {shouldPlayPreview && !webpPreviewUrl && renderPreviewOverlay()}
 
-        {/* Gradient Overlay for Badges */}
-        {!shouldPlayPreview && (
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 pointer-events-none z-10" />
-        )}
-
-        {/* Mobile Touch Eye Preview Button (Smooth Fade Out on Preview Start, Fade In on Stop) */}
-        {isMobile && (
-          <button
-            type="button"
-            onClick={toggleMobilePreview}
-            className={`absolute bottom-2 right-2 z-30 p-1.5 sm:p-2 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-xl flex items-center justify-center cursor-pointer active:scale-90 ${
-              shouldPlayPreview
-                ? 'opacity-0 pointer-events-none scale-90'
-                : 'opacity-100 scale-100 bg-black/75 hover:bg-black/90 text-white border border-white/25'
-            }`}
-            title="Toggle Video Preview"
-          >
-            <span className="material-symbols-outlined text-base sm:text-lg">
-              visibility
-            </span>
-          </button>
-        )}
+      {/* ─── Thumbnail badges: HD top-right, Duration bottom-right (no mobile preview btn overlap) ─── */}
 
         {/* Top-Right Quality Badge */}
         {!shouldPlayPreview && (
           <div className="absolute top-2 right-2 z-20">
-            <span className="bg-[#282830]/90 border border-white/10 text-white px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md">
+            <span className="bg-black/85 text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
               {video.quality || 'HD'}
             </span>
           </div>
         )}
 
-        {/* Video Duration Badge */}
+        {/* Duration Badge — bottom-right on desktop, bottom-left on mobile so preview btn doesn't overlap */}
         {!shouldPlayPreview && (
           <div
             className={`absolute bottom-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-white z-20 shadow-md ${
               isMobile ? 'left-2' : 'right-2'
             }`}
           >
-            {video.duration || '20:59'}
+            {video.duration || '05:00'}
           </div>
+        )}
+
+        {/* Mobile Touch Eye Preview Button */}
+        {isMobile && (
+          <button
+            type="button"
+            onClick={toggleMobilePreview}
+            className={`absolute bottom-2 right-2 z-30 p-1.5 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-xl flex items-center justify-center cursor-pointer active:scale-90 ${
+              shouldPlayPreview
+                ? 'opacity-0 pointer-events-none scale-90'
+                : 'opacity-100 scale-100 bg-black/75 hover:bg-black/90 text-white border border-white/25'
+            }`}
+            title="Toggle Video Preview"
+          >
+            <span className="material-symbols-outlined text-base">
+              visibility
+            </span>
+          </button>
         )}
       </div>
 
-      {/* Video Title & Metadata */}
-      <div className="pt-2 px-1 space-y-1">
-        <h3 className="font-bold text-sm md:text-base text-white group-hover:text-[#ffb0cd] transition-colors line-clamp-2 leading-snug tracking-tight hover:underline cursor-pointer">
+      {/* ─── Card Info Below Thumbnail ─── */}
+      <div className="pt-2 px-0.5 space-y-1.5">
+        {/* Title */}
+        <h3 className="font-bold text-sm md:text-[15px] text-white group-hover:text-rose-300 transition-colors line-clamp-2 leading-snug tracking-tight">
           {video.title}
         </h3>
 
-        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-[#a19fa6] font-medium pt-0.5 leading-snug">
-          {video.performerName && (
-            <>
-              <span className="text-[#debec8] truncate max-w-[110px] font-semibold">{video.performerName}</span>
-              <span>•</span>
-            </>
+        {/* Stats Row: Views • Rating • Time — reference image style */}
+        <div className="flex items-center gap-3 text-[11px] text-white/55 font-medium">
+          {/* Views */}
+          <span className="flex items-center gap-1">
+            <span className="material-symbols-outlined text-[13px] text-white/40">visibility</span>
+            <span className="text-white/70 font-semibold">
+              {(() => {
+                const n = video.viewsCount;
+                if (typeof n === 'number') {
+                  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+                  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+                  return `${n}`;
+                }
+                return (video.views || '1').replace(/[^0-9KMk.]/g, '') || '1';
+              })()}
+            </span>
+          </span>
+
+          {/* Rating / Likes % */}
+          {video.rating && (
+            <span className="flex items-center gap-1">
+              <span className="material-symbols-outlined text-[13px] text-white/40">thumb_up</span>
+              <span className="text-white/70 font-semibold">{video.rating}</span>
+            </span>
           )}
-          <span className="whitespace-nowrap">{formatViews(video.viewsCount, video.views)}</span>
-          <span>•</span>
-          <span className="whitespace-nowrap">{formatTimeAgo(video.createdAt, video.timeAgo)}</span>
+
+          {/* Time Ago */}
+          <span className="flex items-center gap-1">
+            <span className="material-symbols-outlined text-[13px] text-white/40">calendar_month</span>
+            <span className="text-white/55">
+              {formatTimeAgo(video.createdAt, video.timeAgo)}
+            </span>
+          </span>
         </div>
       </div>
     </article>
