@@ -516,7 +516,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   <div>
                     <h3 className="text-xl font-bold text-white">2FA Verified Admin Session</h3>
                     <p className="text-xs text-[#debec8] mt-1">
-                      Logged in as <span className="text-emerald-400 font-mono font-bold">{ADMIN_CREDENTIALS.email}</span>
+                      Logged in as <span className="text-emerald-400 font-mono font-bold">{emailInput || 'Admin'}</span>
                     </p>
                   </div>
                   
