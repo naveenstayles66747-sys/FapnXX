@@ -70,6 +70,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(['trending']);
   const [isUploadingPreview, setIsUploadingPreview] = useState<boolean>(false);
   const [previewUploadStatus, setPreviewUploadStatus] = useState<string | null>(null);
+  // Credit & copyright fields
+  const [performersInput, setPerformersInput] = useState('');
+  const [channelNameInput, setChannelNameInput] = useState('');
+  const [sourceWebsiteInput, setSourceWebsiteInput] = useState('');
+  const [sourceWebsiteUrlInput, setSourceWebsiteUrlInput] = useState('');
 
   const handlePreviewFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -302,6 +307,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150&auto=format&fit=crop',
         description: description.trim() || '',
         isNew: true,
+        // Credit & copyright attribution fields
+        performers: performersInput.trim()
+          ? performersInput.split(',').map((p) => p.trim()).filter(Boolean)
+          : parsedModels.length > 0 ? parsedModels : undefined,
+        channelName: channelNameInput.trim() || undefined,
+        sourceWebsite: sourceWebsiteInput.trim() || undefined,
+        sourceWebsiteUrl: sourceWebsiteUrlInput.trim() || undefined,
       };
 
       await videoService.saveVideo(newVideo);
@@ -338,6 +350,10 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setSelectedCategoryIds(['trending']);
     setIsRequestingCategory(false);
     setRequestedCategoryName('');
+    setPerformersInput('');
+    setChannelNameInput('');
+    setSourceWebsiteInput('');
+    setSourceWebsiteUrlInput('');
   };
 
   if (!isOpen) return null;
@@ -615,6 +631,76 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 <option value="vertical">Vertical (Shorts / Reel 9:16)</option>
                 <option value="vr">VR (360° / 180°)</option>
               </select>
+            </div>
+          </div>
+
+          {/* ─── Credit & Copyright Attribution ─── */}
+          <div className="border border-rose-500/20 rounded-xl p-3 space-y-3 bg-rose-500/5">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="material-symbols-outlined text-rose-400 text-base">verified_user</span>
+              <span className="text-xs font-black text-rose-400 uppercase tracking-wider">Credit & Copyright Attribution</span>
+            </div>
+            <p className="text-[10px] text-white/50">Fill these to give proper credit and reduce copyright claims.</p>
+
+            {/* Performers / Stars */}
+            <div>
+              <label className="block text-xs font-bold opacity-80 mb-1 flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs text-rose-400">star</span>
+                Performer Stars (Comma separated)
+              </label>
+              <input
+                type="text"
+                value={performersInput}
+                onChange={(e) => setPerformersInput(e.target.value)}
+                placeholder="e.g. Reese Rideout, Kasey Kei, Bella Joie"
+                className="w-full upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500"
+              />
+            </div>
+
+            {/* Channel Name & Source Website */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold opacity-80 mb-1 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs text-rose-400">subscriptions</span>
+                  Channel Name
+                </label>
+                <input
+                  type="text"
+                  value={channelNameInput}
+                  onChange={(e) => setChannelNameInput(e.target.value)}
+                  placeholder="e.g. Transfixed"
+                  className="w-full upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold opacity-80 mb-1 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs text-rose-400">language</span>
+                  Source Website
+                </label>
+                <input
+                  type="text"
+                  value={sourceWebsiteInput}
+                  onChange={(e) => setSourceWebsiteInput(e.target.value)}
+                  placeholder="e.g. Adult Time, Brazzers"
+                  className="w-full upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500"
+                />
+              </div>
+            </div>
+
+            {/* Source Website URL */}
+            <div>
+              <label className="block text-xs font-bold opacity-80 mb-1 flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs text-rose-400">link</span>
+                Source Website URL (Optional)
+              </label>
+              <input
+                type="url"
+                value={sourceWebsiteUrlInput}
+                onChange={(e) => setSourceWebsiteUrlInput(e.target.value)}
+                placeholder="https://www.adulttime.com"
+                className="w-full upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500 font-mono"
+              />
             </div>
           </div>
 

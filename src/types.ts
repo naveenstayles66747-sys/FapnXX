@@ -13,6 +13,10 @@ export interface Video {
   tags: string[];
   models_actors?: string[];
   modelsActors?: string[];
+  performers?: string[];       // Star performers list (for credit display)
+  channelName?: string;        // Channel name (e.g. "Transfixed")
+  sourceWebsite?: string;      // Source website (e.g. "Adult Time")
+  sourceWebsiteUrl?: string;   // Source website URL for linking
   thumbnail: string;
   thumbnailUrl?: string;
   duration: string;

@@ -39,76 +39,44 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   const { t } = useLanguage();
   const isGuest = !userEmail;
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
   const [likeCount, setLikeCount] = useState<number>(() =>
     typeof video.likesCount === 'number' ? video.likesCount : 1200
   );
   const [showShareNotification, setShowShareNotification] = useState(false);
-  const [progressPercent, setProgressPercent] = useState(35);
-
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
-    }
-  };
-
-  // DRM & Tokenized playback state
-  const [streamToken, setStreamToken] = useState<string | null>(null);
-  const [isVerifyingToken, setIsVerifyingToken] = useState<boolean>(true);
-  const [streamError, setStreamError] = useState<string | null>(null);
 
   // DMCA Report Modal State
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportSuccessToast, setReportSuccessToast] = useState(false);
 
-  // Real-time Views & Watch Time Counter
+  // Real-time Views Counter
   const [currentViewsCount, setCurrentViewsCount] = useState<number>(() => video.viewsCount || 1);
   const [watchSeconds, setWatchSeconds] = useState<number>(0);
-  const [hasIncrementedView, setHasIncrementedView] = useState<boolean>(false);
   const hasCountedRef = useRef<boolean>(false);
 
-  // Initialize stream session token & liked/saved status
+  // Initialize liked/saved status
   useEffect(() => {
-    setIsVerifyingToken(true);
-    setStreamError(null);
-    setStreamToken(`firebase_stream_${video.id}`);
-    setIsVerifyingToken(false);
-
     const liked = getStoredLikedVideos().includes(video.id);
     const saved = getStoredSavedVideos().includes(video.id);
     setIsLiked(liked);
     setIsSaved(saved);
-
     setCurrentViewsCount(video.viewsCount || 1);
     setLikeCount(typeof video.likesCount === 'number' ? video.likesCount : 1200);
-
     if (!isGuest) {
       addStoredWatchHistory(video.id);
     }
   }, [video.id, video.viewsCount, video.likesCount, isGuest]);
 
-  // 5-second watch threshold timer to trigger real-time Firestore view increment
+  // 5-second watch threshold for view increment
   useEffect(() => {
     hasCountedRef.current = false;
     setWatchSeconds(0);
-    setHasIncrementedView(false);
-
     const timer = setInterval(() => {
       setWatchSeconds((prev) => {
         const next = prev + 1;
         if (next >= 5 && !hasCountedRef.current) {
           hasCountedRef.current = true;
-          setHasIncrementedView(true);
-
-          // Atomic Cloud Firestore + Local Cache View Count Increment
           videoService.incrementVideoViews(video.id).then((newViewsCount) => {
             setCurrentViewsCount(newViewsCount);
             if (onVideoUpdated) {
@@ -122,7 +90,6 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
         return next;
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, [video.id]);
 
@@ -130,10 +97,8 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     const nextLikedState = !isLiked;
     setIsLiked(nextLikedState);
     toggleStoredLikedVideo(video.id);
-
     const updatedLikes = await videoService.incrementVideoLikes(video.id, nextLikedState);
     setLikeCount(updatedLikes);
-
     if (onVideoUpdated) {
       onVideoUpdated(video.id, { likesCount: updatedLikes });
     }
@@ -141,9 +106,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
 
   const handleSave = () => {
     if (isGuest) {
-      if (onOpenSoftLogin) {
-        onOpenSoftLogin('Cloud Bookmarks & Sync');
-      }
+      if (onOpenSoftLogin) onOpenSoftLogin('Cloud Bookmarks & Sync');
       return;
     }
     toggleStoredSavedVideo(video.id);
@@ -156,9 +119,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
       navigator.clipboard.writeText(currentUrl).catch(() => {});
     }
     setShowShareNotification(true);
-    setTimeout(() => {
-      setShowShareNotification(false);
-    }, 3000);
+    setTimeout(() => setShowShareNotification(false), 3000);
   };
 
   const handleReportSubmitted = (report: DMCAReport) => {
@@ -167,56 +128,13 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     setTimeout(() => setReportSuccessToast(false), 4000);
   };
 
-  // Advanced Recommendation Engine - Calculate relevance score for related videos
-  const relatedVideosWithScore = (videos || VIDEOS || [])
-    .filter((v) => v && v.id !== video.id && !v.isTakenDown)
-    .map((candidate) => {
-      let matchScore = 50; // base match
-
-      if (candidate.category === video.category) matchScore += 35;
-      if (candidate.performerName === video.performerName) matchScore += 30;
-
-      // Overlapping tags
-      const candidateTags = candidate.tags || [];
-      const videoTags = video.tags || [];
-      const sharedTags = candidateTags.filter((tag) => videoTags.includes(tag));
-      matchScore += sharedTags.length * 10;
-
-      return {
-        ...candidate,
-        relevanceScore: Math.min(matchScore, 99),
-      };
-    });
-
-  relatedVideosWithScore.sort((a, b) => b.relevanceScore - a.relevanceScore);
-  const topRelatedVideos = relatedVideosWithScore.slice(0, 4);
-
-  // Stream Loading & Buffering Simulation State (1 to 4 seconds)
+  // Stream buffering simulation
   const [isBufferingStream, setIsBufferingStream] = useState<boolean>(true);
-  const [bufferProgress, setBufferProgress] = useState<number>(0);
-  const [bufferStatusText, setBufferStatusText] = useState<string>('Initializing Stream Request...');
-
-  // Simulate 1 to 4 second stream initialization whenever selected video changes
   useEffect(() => {
     setIsBufferingStream(true);
-    setBufferProgress(10);
-    setBufferStatusText('Connecting to Encrypted CDN...');
-
-    const step1 = setTimeout(() => {
-      setBufferProgress(45);
-      setBufferStatusText('Connecting to High-Speed CDN...');
-    }, 800);
-
-    const step2 = setTimeout(() => {
-      setBufferProgress(85);
-      setBufferStatusText('Buffering Stream Segments...');
-    }, 1600);
-
-    const finish = setTimeout(() => {
-      setBufferProgress(100);
-      setIsBufferingStream(false);
-    }, 2400);
-
+    const step1 = setTimeout(() => {}, 800);
+    const step2 = setTimeout(() => {}, 1600);
+    const finish = setTimeout(() => setIsBufferingStream(false), 2400);
     return () => {
       clearTimeout(step1);
       clearTimeout(step2);
@@ -224,18 +142,62 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     };
   }, [video.id]);
 
+  // Related videos engine
+  const relatedVideosWithScore = (videos || VIDEOS || [])
+    .filter((v) => v && v.id !== video.id && !v.isTakenDown)
+    .map((candidate) => {
+      let matchScore = 50;
+      if (candidate.category === video.category) matchScore += 35;
+      if (candidate.performerName === video.performerName) matchScore += 30;
+      const sharedTags = (candidate.tags || []).filter((tag) => (video.tags || []).includes(tag));
+      matchScore += sharedTags.length * 10;
+      return { ...candidate, relevanceScore: Math.min(matchScore, 99) };
+    });
+  relatedVideosWithScore.sort((a, b) => b.relevanceScore - a.relevanceScore);
+  const topRelatedVideos = relatedVideosWithScore.slice(0, 8);
+
+  // Derive performers list from all possible fields
+  const performersList: string[] = (() => {
+    if (video.performers && video.performers.length > 0) return video.performers;
+    if (video.modelsActors && video.modelsActors.length > 0) return video.modelsActors;
+    if (video.models_actors && video.models_actors.length > 0) return video.models_actors;
+    if (video.performerName && video.performerName !== 'Anonymous' && video.performerName !== 'User Uploaded') {
+      return [video.performerName];
+    }
+    return [];
+  })();
+
+  // Source site domain display
+  const sourceSiteDomain = video.sourceWebsite || video.channelName
+    ? (video.sourceWebsite || video.channelName)
+    : null;
+
   return (
-    <main className="flex-grow lg:pl-64 pb-12 w-full max-w-6xl mx-auto px-3 md:px-6 pt-2 overflow-x-hidden">
-      {/* Video Player Theater Container: Responsive Iframe & Video Player Wrapper */}
-      <section className="player-wrapper video-player-container relative flex items-center justify-center border border-white/10 overflow-hidden">
-        {/* Stream Buffering Loader: Classic Dotted Circle Spinner on Pure Black Screen */}
+    <main className="flex-grow lg:pl-64 pb-16 w-full max-w-6xl mx-auto overflow-x-hidden">
+
+      {/* ═══════════════════════════════════════════════
+          TOP AD STRIP — exactly like reference image
+          Small banner above video player
+      ═══════════════════════════════════════════════ */}
+      <div className="w-full px-3 md:px-6 pt-2">
+        <AdBanner position="banner_top" title="Featured Sponsor" />
+        {/* Fallback compact ad strip if no campaign configured */}
+        <div className="w-full bg-[#111114] border border-white/8 rounded-lg px-3 py-2 flex items-center justify-between text-xs mb-2"
+          style={{ display: 'none' }} id="top-ad-fallback">
+          <span className="text-white/50 font-bold">AD</span>
+          <span className="text-white font-semibold">Featured Partner – Visit Now</span>
+          <span className="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded">AD</span>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════
+          VIDEO PLAYER — Full width, no padding on mobile
+      ═══════════════════════════════════════════════ */}
+      <section className="player-wrapper video-player-container relative flex items-center justify-center border-y border-white/10 overflow-hidden">
+        {/* Buffering spinner */}
         {isBufferingStream ? (
           <div className="absolute inset-0 bg-black video-loading-screen z-30 flex items-center justify-center">
-            <svg
-              className="w-12 h-12 animate-spin text-white"
-              viewBox="0 0 100 100"
-              fill="currentColor"
-            >
+            <svg className="w-12 h-12 animate-spin text-white" viewBox="0 0 100 100" fill="currentColor">
               <circle cx="50" cy="14" r="7.5" opacity="1.0" />
               <circle cx="75" cy="25" r="7.5" opacity="0.9" />
               <circle cx="86" cy="50" r="7.5" opacity="0.8" />
@@ -247,110 +209,202 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
             </svg>
           </div>
         ) : null}
-
-        {!isBufferingStream && (
-          <FluidPlayerWrapper video={video} autoPlay={true} />
-        )}
+        {!isBufferingStream && <FluidPlayerWrapper video={video} autoPlay={true} />}
       </section>
 
-      {/* Compact Video Details & Meta Section */}
-      <div className="py-3 flex flex-col gap-2.5 overflow-hidden">
-        {/* Title Heading */}
-        <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight leading-snug break-words">
+      {/* ═══════════════════════════════════════════════
+          VIDEO INFO SECTION — Reference layout below player
+      ═══════════════════════════════════════════════ */}
+      <div className="px-3 md:px-6 py-3 flex flex-col gap-0 overflow-hidden">
+
+        {/* Video Title */}
+        <h1 className="text-base md:text-xl font-extrabold text-white tracking-tight leading-snug break-words mb-2">
           {video.title}
         </h1>
 
-        {/* Sub-row: Views & Creator Info on Left, Action Pill Buttons on Right */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3 border-white/10">
-          {/* Views, Duration & Creator Avatar Pill */}
-          <div className="flex items-center gap-2.5 text-xs font-medium text-white/80 flex-wrap">
-            <span className="font-bold text-white">
-              {currentViewsCount.toLocaleString()} {currentViewsCount === 1 ? 'view' : 'views'}
-            </span>
-            <span className="text-white/30">|</span>
-            <span className="font-mono font-bold text-rose-400 flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm">schedule</span>
-              {video.duration || '05:00'}
-            </span>
-            <span className="text-white/30">|</span>
-            <div className="flex items-center gap-2 bg-[#232328] px-3 py-1 rounded-full border border-white/10">
-              <img
-                src={video.performerAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150&auto=format&fit=crop'}
-                alt={video.performerName}
-                className="w-4 h-4 rounded-full object-cover"
-              />
-              <span className="font-bold text-white text-xs">{video.performerName}</span>
-              <span className="material-symbols-outlined text-rose-500 text-xs fill-1">check_circle</span>
-            </div>
-          </div>
-
-          {/* Sleek Action Pill Buttons (Like, Save, Share) */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            <button
-              onClick={handleLike}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-md border ${
-                isLiked
-                  ? 'bg-rose-500 text-white border-rose-500'
-                  : 'bg-[#282830] hover:bg-[#32323d] text-white border-white/10'
-              }`}
-            >
-              <span
-                className="material-symbols-outlined text-sm"
-                style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
-              >
-                thumb_up
-              </span>
-              <span>Like</span>
-            </button>
-
-            <button
-              onClick={handleSave}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-md border ${
-                isSaved
-                  ? 'bg-rose-500 text-white border-rose-500'
-                  : 'bg-[#282830] hover:bg-[#32323d] text-white border-white/10'
-              }`}
-            >
-              <span
-                className="material-symbols-outlined text-sm"
-                style={{ fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0" }}
-              >
-                bookmark
-              </span>
-              <span>Save</span>
-            </button>
-
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-[#282830] hover:bg-[#32323d] text-white border border-white/10 transition-all cursor-pointer shadow-md"
-              title="Copy link to clipboard"
-            >
-              <span className="material-symbols-outlined text-sm">share</span>
-              <span>Share</span>
-            </button>
-
-            {/* Dedicated Report / Flag Video Button directly below player */}
-            <button
-              onClick={() => setIsReportModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-all cursor-pointer shadow-md"
-              title="Report broken stream, DMCA, or policy issue"
-            >
-              <span className="material-symbols-outlined text-sm">flag</span>
-              <span>Report</span>
-            </button>
-          </div>
+        {/* Views, Duration, Rating row */}
+        <div className="flex items-center gap-3 text-xs text-white/60 mb-3 flex-wrap">
+          <span className="font-bold text-white/80">
+            {currentViewsCount.toLocaleString()} {currentViewsCount === 1 ? 'view' : 'views'}
+          </span>
+          <span className="text-white/30">•</span>
+          <span className="font-mono font-bold text-rose-400 flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">schedule</span>
+            {video.duration || '05:00'}
+          </span>
+          {video.rating && (
+            <>
+              <span className="text-white/30">•</span>
+              <span className="text-emerald-400 font-bold">👍 {video.rating}</span>
+            </>
+          )}
+          <span className="ml-auto bg-white/10 text-white/70 text-[10px] font-black px-2 py-0.5 rounded border border-white/10">
+            {video.quality || 'HD'}
+          </span>
         </div>
 
-        {/* Active Ad Space (Only renders when real ad campaign image/script is configured) */}
+        {/* ─────────────────────────────────────────────
+            REFERENCE LAYOUT INFO BLOCK
+            (White background style like reference image)
+        ───────────────────────────────────────────── */}
+        <div className="bg-[#0e0e11] border border-white/8 rounded-xl overflow-hidden mb-3">
+
+          {/* Source site — "Watch full video at [Site]" */}
+          {sourceSiteDomain && (
+            <div className="px-4 py-3 border-b border-white/8 text-sm">
+              <span className="text-white/70">Watch full video at </span>
+              {video.sourceWebsiteUrl ? (
+                <a
+                  href={video.sourceWebsiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-rose-400 font-bold hover:underline hover:text-rose-300 transition-colors"
+                >
+                  {sourceSiteDomain}
+                </a>
+              ) : (
+                <span className="text-rose-400 font-bold">{sourceSiteDomain}</span>
+              )}
+            </div>
+          )}
+
+          {/* Channel by Website */}
+          {(video.channelName || video.sourceWebsite) && (
+            <div className="px-4 py-3 border-b border-white/8 text-sm">
+              {video.channelName && (
+                <>
+                  <span className="text-white/70">Channel: </span>
+                  <span className="text-rose-400 font-bold">{video.channelName}</span>
+                </>
+              )}
+              {video.channelName && video.sourceWebsite && (
+                <span className="text-white/70"> by </span>
+              )}
+              {video.sourceWebsite && (
+                video.sourceWebsiteUrl ? (
+                  <a
+                    href={video.sourceWebsiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-rose-400 font-bold hover:underline hover:text-rose-300 transition-colors"
+                  >
+                    {video.sourceWebsite}
+                  </a>
+                ) : (
+                  <span className="text-rose-400 font-bold">{video.sourceWebsite}</span>
+                )
+              )}
+            </div>
+          )}
+
+          {/* Performers / Stars */}
+          {performersList.length > 0 && (
+            <div className="px-4 py-3 border-b border-white/8 text-sm flex flex-wrap gap-1 items-center">
+              <span className="text-white/70 mr-1 shrink-0">
+                {performersList.length === 1 ? 'Pornstar:' : 'Pornstars:'}
+              </span>
+              {performersList.map((performer, idx) => (
+                <span key={idx} className="inline-flex items-center">
+                  <span className="text-rose-400 font-bold hover:underline cursor-pointer hover:text-rose-300 transition-colors">
+                    {performer}
+                  </span>
+                  {idx < performersList.length - 1 && (
+                    <span className="text-white/40 mr-1">,</span>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Tags */}
+          {video.tags && video.tags.length > 0 && (
+            <div className="px-4 py-3 flex flex-wrap gap-2 items-start">
+              <span className="text-white/70 text-sm shrink-0 mt-0.5">Tags:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {video.tags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold bg-white/5 hover:bg-rose-500/20 border border-white/10 hover:border-rose-500/40 text-white/70 hover:text-rose-300 px-2.5 py-1 rounded-full cursor-pointer transition-all"
+                  >
+                    <span className="material-symbols-outlined text-[11px] text-white/40">label</span>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ─────────────────────────────────────────────
+            ACTION BUTTONS ROW
+        ───────────────────────────────────────────── */}
+        <div className="flex items-center gap-2 flex-wrap mb-3">
+          <button
+            onClick={handleLike}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-md border ${
+              isLiked
+                ? 'bg-rose-500 text-white border-rose-500'
+                : 'bg-[#282830] hover:bg-[#32323d] text-white border-white/10'
+            }`}
+          >
+            <span
+              className="material-symbols-outlined text-sm"
+              style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
+            >
+              thumb_up
+            </span>
+            <span>{likeCount.toLocaleString()}</span>
+          </button>
+
+          <button
+            onClick={handleSave}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-md border ${
+              isSaved
+                ? 'bg-rose-500 text-white border-rose-500'
+                : 'bg-[#282830] hover:bg-[#32323d] text-white border-white/10'
+            }`}
+          >
+            <span
+              className="material-symbols-outlined text-sm"
+              style={{ fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0" }}
+            >
+              bookmark
+            </span>
+            <span>Save</span>
+          </button>
+
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-[#282830] hover:bg-[#32323d] text-white border border-white/10 transition-all cursor-pointer shadow-md"
+          >
+            <span className="material-symbols-outlined text-sm">share</span>
+            <span>Share</span>
+          </button>
+
+          <button
+            onClick={() => setIsReportModalOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-all cursor-pointer shadow-md"
+          >
+            <span className="material-symbols-outlined text-sm">flag</span>
+            <span>Report</span>
+          </button>
+        </div>
+
+        {/* ═══════════════════════════════════════════════
+            BOTTOM AD STRIP — same size as top ad
+            Placed right after tags, before recommended
+        ═══════════════════════════════════════════════ */}
         <AdBanner position="banner_bottom" title="Featured Partner Sponsor" />
 
-        {/* Recommended / More Like This Section (Immediately under Video Player) */}
+        {/* ─────────────────────────────────────────────
+            RECOMMENDED VIDEOS
+        ───────────────────────────────────────────── */}
         <div className="mt-4 mb-6">
           <h3 className="text-sm md:text-base font-extrabold text-white mb-3 flex items-center gap-2">
             <span className="material-symbols-outlined text-rose-500 text-lg">grid_view</span>
             <span>Recommended Videos</span>
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {(topRelatedVideos || []).map((relatedVideo) => (
               <div key={relatedVideo.id} className="relative group">
                 <VideoCard
@@ -362,8 +416,10 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           </div>
         </div>
 
-        {/* Real-Time Community Comments Section (Positioned at the Absolute Bottom above footer) */}
-        <div className="mt-8 pt-4 border-t border-white/10">
+        {/* ─────────────────────────────────────────────
+            COMMENTS SECTION
+        ───────────────────────────────────────────── */}
+        <div className="mt-4 pt-4 border-t border-white/10">
           <CommentsSection
             videoId={video.id}
             userEmail={userEmail}
@@ -372,7 +428,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
         </div>
       </div>
 
-      {/* DMCA / Content Moderation Report Modal */}
+      {/* DMCA Report Modal */}
       <ReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
