@@ -1134,7 +1134,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-[#a19fa6] mb-1">Performer Name</label>
+                      <label className="block text-xs font-semibold text-[#a19fa6] mb-1">Pornstar Name</label>
                       <input
                         type="text"
                         value={editingVideo.performerName}
@@ -1535,7 +1535,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-[#a19fa6] mb-1">Performer Name</label>
+                      <label className="block text-xs font-semibold text-[#a19fa6] mb-1">Pornstar Name</label>
                       <input
                         type="text"
                         value={upPerformer}

@@ -191,7 +191,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-[#e5e1e4] hover:bg-white/5 transition-colors font-semibold text-sm"
               >
                 <span className="material-symbols-outlined text-[#ffb0cd]">groups</span>
-                <span>Performers</span>
+                <span>Pornstars</span>
               </button>
             </li>
 

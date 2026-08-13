@@ -53,7 +53,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
         >
           groups
         </span>
-        <span className="text-[11px] font-semibold tracking-wide">Performers</span>
+        <span className="text-[11px] font-semibold tracking-wide">Pornstars</span>
       </button>
 
       <button

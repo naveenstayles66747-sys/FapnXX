@@ -591,7 +591,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold opacity-80 mb-1">
-                Creator Name
+                Pornstar Name
               </label>
               <input
                 type="text"
@@ -646,7 +646,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             <div>
               <label className="block text-xs font-bold opacity-80 mb-1 flex items-center gap-1">
                 <span className="material-symbols-outlined text-xs text-rose-400">star</span>
-                Performer Stars (Comma separated)
+                Pornstar(s) — Comma separated
               </label>
               <input
                 type="text"

@@ -29,7 +29,7 @@ export const PerformersScreen: React.FC = () => {
       {/* Header Section */}
       <section className="mb-8 md:mb-10 text-center md:text-left">
         <h2 className="text-3xl md:text-4xl font-extrabold text-[#e5e1e4] mb-2 tracking-tight">
-          Discover Performers
+          Discover Pornstars
         </h2>
         <p className="text-base text-[#debec8] max-w-2xl">
           Explore exclusive content and connect with top talent.
@@ -101,7 +101,7 @@ export const PerformersScreen: React.FC = () => {
       ) : (
         <div className="p-12 text-center text-[#debec8] bg-[#1c1b1d] rounded-2xl border border-[#353437] space-y-3">
           <span className="material-symbols-outlined text-5xl text-[#ffb0cd]">group_off</span>
-          <h3 className="text-xl font-bold text-white">No Performers Listed Yet</h3>
+          <h3 className="text-xl font-bold text-white">No Pornstars Listed Yet</h3>
           <p className="text-sm text-[#debec8] max-w-md mx-auto">
             Your platform is connected to Firebase Firestore. Use the Admin Portal or Upload feature to add creator profiles and talent metadata.
           </p>
@@ -115,7 +115,7 @@ export const PerformersScreen: React.FC = () => {
             onClick={() => setVisibleCount((prev) => prev + 5)}
             className="px-8 py-3 rounded-full border border-[#574048] text-[#e5e1e4] font-semibold text-xs tracking-wider uppercase hover:bg-white/10 transition-colors cursor-pointer active:scale-95"
           >
-            Load More Performers ({filteredPerformers.length - visibleCount} remaining)
+            Load More Pornstars ({filteredPerformers.length - visibleCount} remaining)
           </button>
         </div>
       )}
