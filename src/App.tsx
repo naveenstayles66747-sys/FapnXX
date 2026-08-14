@@ -252,6 +252,7 @@ export default function App() {
 
   const handleDeleteCategory = (catId: string) => {
     setCategories((prev) => prev.filter((c) => c.id !== catId));
+    videoService.deleteCategory(catId);
   };
 
   // Admin Handlers - Videos & Media Assets
@@ -286,6 +287,7 @@ export default function App() {
 
   const handleDeleteBanner = (bannerId: string) => {
     setBanners((prev) => prev.filter((b) => b.id !== bannerId));
+    videoService.deleteBanner(bannerId);
   };
 
   const handleUploadSuccess = (newVideo: Video) => {

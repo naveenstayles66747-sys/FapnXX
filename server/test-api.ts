@@ -1,0 +1,206 @@
+import http from 'http';
+import app from './index';
+import { env } from './config/env';
+
+const PORT = 5099; // Dedicated test port
+let server: http.Server;
+let superAdminToken = '';
+let userToken = '';
+
+function request(path: string, options: { method?: string; body?: any; headers?: Record<string, string> } = {}): Promise<{ status: number; data: any }> {
+  return new Promise((resolve, reject) => {
+    const postData = options.body ? JSON.stringify(options.body) : undefined;
+    const req = http.request(
+      `http://localhost:${PORT}${path}`,
+      {
+        method: options.method || 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(postData ? { 'Content-Length': Buffer.byteLength(postData) } : {}),
+          ...(options.headers || {}),
+        },
+      },
+      (res) => {
+        let raw = '';
+        res.on('data', (chunk) => (raw += chunk));
+        res.on('end', () => {
+          try {
+            const json = JSON.parse(raw);
+            resolve({ status: res.statusCode || 500, data: json });
+          } catch {
+            resolve({ status: res.statusCode || 500, data: raw });
+          }
+        });
+      }
+    );
+
+    req.on('error', reject);
+    if (postData) req.write(postData);
+    req.end();
+  });
+}
+
+async function runTests() {
+  console.log('\n======================================================');
+  console.log('🧪 RUNNING COMPREHENSIVE BACKEND & SECURITY TEST SUITE');
+  console.log('======================================================\n');
+
+  let passed = 0;
+  let failed = 0;
+
+  function assert(condition: boolean, testName: string, detail?: any) {
+    if (condition) {
+      console.log(`  ✅ [PASS] ${testName}`);
+      passed++;
+    } else {
+      console.error(`  ❌ [FAIL] ${testName}`);
+      if (detail) console.error('     Detail:', detail);
+      failed++;
+    }
+  }
+
+  try {
+    // 1. Health & Readiness Probes
+    console.log('--- 1. System Health Probes ---');
+    const healthRes = await request('/health');
+    assert(healthRes.status === 200 && healthRes.data.status === 'ok', 'GET /health returns 200 OK');
+
+    const readyRes = await request('/ready');
+    assert(readyRes.status === 200 && readyRes.data.status === 'ready', 'GET /ready returns 200 OK');
+
+    // 2. Public Content APIs
+    console.log('\n--- 2. Public Content APIs ---');
+    const videosRes = await request('/api/v1/videos');
+    assert(videosRes.status === 200 && Array.isArray(videosRes.data.data.videos), 'GET /api/v1/videos lists published videos');
+
+    const categoriesRes = await request('/api/v1/categories');
+    assert(categoriesRes.status === 200 && Array.isArray(categoriesRes.data.data), 'GET /api/v1/categories lists categories');
+
+    const bannersRes = await request('/api/v1/banners');
+    assert(bannersRes.status === 200 && Array.isArray(bannersRes.data.data), 'GET /api/v1/banners lists active banners');
+
+    const adsRes = await request('/api/v1/ads');
+    assert(adsRes.status === 200 && Array.isArray(adsRes.data.data), 'GET /api/v1/ads lists ad campaigns');
+
+    // 3. User Authentication
+    console.log('\n--- 3. User Authentication & Security ---');
+    const registerRes = await request('/api/v1/auth/register', {
+      method: 'POST',
+      body: { email: 'new_test_user@example.com', password: 'Password123!' },
+    });
+    assert(registerRes.status === 201 && registerRes.data.success, 'POST /api/v1/auth/register creates user account');
+
+    const userLoginRes = await request('/api/v1/auth/login', {
+      method: 'POST',
+      body: { email: 'new_test_user@example.com', password: 'Password123!' },
+    });
+    assert(userLoginRes.status === 200 && userLoginRes.data.data.accessToken, 'POST /api/v1/auth/login logs in user');
+    userToken = userLoginRes.data?.data?.accessToken;
+
+    const invalidLoginRes = await request('/api/v1/auth/login', {
+      method: 'POST',
+      body: { email: 'new_test_user@example.com', password: 'WrongPassword!' },
+    });
+    assert(invalidLoginRes.status === 400 || invalidLoginRes.status === 500, 'POST /api/v1/auth/login rejects wrong password');
+
+    // 4. Admin Authentication & Super Admin Setup
+    console.log('\n--- 4. Admin Authentication & RBAC Gates ---');
+    const adminLoginRes = await request('/api/v1/auth/admin-login', {
+      method: 'POST',
+      body: { email: env.SUPER_ADMIN_EMAIL, password: env.SUPER_ADMIN_PASSWORD },
+    });
+    assert(adminLoginRes.status === 200 && adminLoginRes.data.data.user.role === 'SUPER_ADMIN', 'POST /api/v1/auth/admin-login authenticates Super Admin');
+    superAdminToken = adminLoginRes.data?.data?.accessToken;
+
+    // Normal user attempting admin login
+    const normalUserAdminLoginRes = await request('/api/v1/auth/admin-login', {
+      method: 'POST',
+      body: { email: 'new_test_user@example.com', password: 'Password123!' },
+    });
+    assert(normalUserAdminLoginRes.status === 500 || normalUserAdminLoginRes.status === 400 || normalUserAdminLoginRes.status === 403, 'Normal user blocked from admin login');
+
+    // 5. RBAC Protection
+    console.log('\n--- 5. RBAC & Route Access Control ---');
+    const unauthAdminRes = await request('/api/v1/admin/overview');
+    assert(unauthAdminRes.status === 401, 'Unauthenticated GET /api/v1/admin/overview returns 401 Unauthorized');
+
+    const forbiddenAdminRes = await request('/api/v1/admin/overview', {
+      headers: { Authorization: `Bearer ${userToken}` },
+    });
+    assert(forbiddenAdminRes.status === 403, 'User token GET /api/v1/admin/overview returns 403 Forbidden');
+
+    const allowedAdminRes = await request('/api/v1/admin/overview', {
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+    });
+    assert(allowedAdminRes.status === 200 && allowedAdminRes.data.data.stats, 'Super Admin GET /api/v1/admin/overview returns 200 OK');
+
+    // 6. Immutable Audit Logs
+    console.log('\n--- 6. Audit Logging ---');
+    const auditRes = await request('/api/v1/admin/audit-logs', {
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+    });
+    assert(auditRes.status === 200 && Array.isArray(auditRes.data.data.logs) && auditRes.data.data.logs.length > 0, 'Audit logs recorded and accessible to Super Admin');
+
+    // 7. Video Views & Anti-Spam View Debounce
+    console.log('\n--- 7. View Count Anti-Spam Engine ---');
+    const view1 = await request('/api/v1/videos/vid-test-user-1/views', { method: 'POST' });
+    assert(view1.status === 200 && view1.data.data.counted === true, 'First view increment counted');
+
+    const view2 = await request('/api/v1/videos/vid-test-user-1/views', { method: 'POST' });
+    assert(view2.status === 200 && view2.data.data.counted === false, 'Immediate repeat view debounced (anti-spam protection active)');
+
+    // 8. Video Likes Engine
+    console.log('\n--- 8. Like Counter ---');
+    const likeRes = await request('/api/v1/videos/vid-test-user-1/likes', {
+      method: 'POST',
+      body: { isLike: true },
+    });
+    assert(likeRes.status === 200 && typeof likeRes.data.data.likesCount === 'number', 'POST /api/v1/videos/:id/likes updates likes');
+
+    // 9. Input Validation
+    console.log('\n--- 9. Payload Schema Validation ---');
+    const invalidVideoRes = await request('/api/v1/videos', {
+      method: 'POST',
+      body: { title: '' }, // Missing thumbnail and invalid title
+    });
+    assert(invalidVideoRes.status === 422, 'POST /api/v1/videos rejects invalid payload with 422 Unprocessable Entity');
+
+    // 10. Comments & Reports
+    console.log('\n--- 10. Community Comments & DMCA Reports ---');
+    const commentRes = await request('/api/v1/comments', {
+      method: 'POST',
+      body: { videoId: 'vid-test-user-1', text: 'Great 4K scene!' },
+    });
+    assert(commentRes.status === 201 && commentRes.data.data.text === 'Great 4K scene!', 'POST /api/v1/comments creates comment');
+
+    const reportRes = await request('/api/v1/reports', {
+      method: 'POST',
+      body: {
+        videoId: 'vid-test-user-1',
+        videoTitle: 'Desi Romance Scene 4K',
+        reason: 'copyright_dmca',
+        details: 'Copyright claim validation test',
+      },
+    });
+    assert(reportRes.status === 201 && reportRes.data.data.status === 'pending', 'POST /api/v1/reports creates pending DMCA claim');
+
+    // Summary
+    console.log('\n======================================================');
+    console.log(`📊 TEST RESULTS: ${passed} PASSED, ${failed} FAILED`);
+    console.log('======================================================\n');
+
+    if (failed > 0) {
+      process.exit(1);
+    }
+  } catch (e) {
+    console.error('Test execution error:', e);
+    process.exit(1);
+  } finally {
+    server.close();
+    process.exit(0);
+  }
+}
+
+server = app.listen(PORT, () => {
+  runTests();
+});

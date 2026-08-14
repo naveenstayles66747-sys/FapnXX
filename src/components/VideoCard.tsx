@@ -53,19 +53,10 @@ const formatTimeAgo = (createdAt?: string, fallbackStr?: string): string => {
 
 const FALLBACK_THUMBNAIL = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=800&auto=format&fit=crop';
 
-const smartAutoConvertPreviewUrl = (rawUrl: string): string => {
-  if (!rawUrl) return '';
-  let url = rawUrl.trim();
-  if (url.match(/\.(webp|gif|png|jpe?g)($|\?|#)/i)) {
-    url = url.replace(/\.(webp|gif|png|jpe?g)($|\?|#)/i, '.mp4$2');
-  }
-  return url;
-};
-
 const extractPreviewDetails = (video: Video) => {
   let rawInput =
-    smartAutoConvertPreviewUrl(video.previewWebpUrl || '') ||
-    smartAutoConvertPreviewUrl(video.previewMp4Url || '') ||
+    (video.previewWebpUrl || '').trim() ||
+    (video.previewMp4Url || '').trim() ||
     (video.embedUrl || '').trim();
 
   if (!rawInput) {

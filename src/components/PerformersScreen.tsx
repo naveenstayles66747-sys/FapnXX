@@ -103,7 +103,7 @@ export const PerformersScreen: React.FC = () => {
           <span className="material-symbols-outlined text-5xl text-[#ffb0cd]">group_off</span>
           <h3 className="text-xl font-bold text-white">No Pornstars Listed Yet</h3>
           <p className="text-sm text-[#debec8] max-w-md mx-auto">
-            Your platform is connected to Firebase Firestore. Use the Admin Portal or Upload feature to add creator profiles and talent metadata.
+            No creator profiles have been added yet. Check back soon!
           </p>
         </div>
       )}

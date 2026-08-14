@@ -34,20 +34,19 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
     setTimeout(() => setToastMsg(null), 3000);
   };
 
-  // Subtags filter logic
-  const filteredCategoryVideos = categoryVideos.filter((v) => {
-    if (selectedSubtag === 'All') return true;
-    const lowerSubtag = selectedSubtag.toLowerCase();
-    return (
-      v.tags.some((t) => t.toLowerCase().includes(lowerSubtag)) ||
-      v.title.toLowerCase().includes(lowerSubtag) ||
-      v.description.toLowerCase().includes(lowerSubtag)
-    );
-  });
+  // Subtags filter & sorting logic
+  const filteredCategoryVideos = React.useMemo(() => {
+    const list = categoryVideos.filter((v) => {
+      if (selectedSubtag === 'All') return true;
+      const lowerSubtag = selectedSubtag.toLowerCase();
+      return (
+        v.tags.some((t) => t.toLowerCase().includes(lowerSubtag)) ||
+        v.title.toLowerCase().includes(lowerSubtag) ||
+        v.description.toLowerCase().includes(lowerSubtag)
+      );
+    });
 
-  // Sort logic
-  if (sortBy === 'views') {
-    filteredCategoryVideos.sort((a, b) => {
+    if (sortBy === 'views') {
       const getNum = (v: Video) => {
         if (typeof v.viewsCount === 'number' && !isNaN(v.viewsCount)) return v.viewsCount;
         const str = (v.views || '').toUpperCase();
@@ -55,9 +54,13 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
         if (str.includes('K')) return parseFloat(str) * 1_000;
         return parseInt(str.replace(/[^0-9]/g, ''), 10) || 0;
       };
-      return getNum(b) - getNum(a);
-    });
-  }
+      list.sort((a, b) => getNum(b) - getNum(a));
+    } else {
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    }
+
+    return list;
+  }, [categoryVideos, selectedSubtag, sortBy]);
 
   const subtags = ['All', 'Exclusive', 'POV', '4K', 'Romance', 'Sensual'];
 

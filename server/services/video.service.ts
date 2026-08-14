@@ -1,0 +1,332 @@
+import { VideoStatus } from '../config/constants';
+import { auditService } from './audit.service';
+
+export interface VideoRecord {
+  id: string;
+  title: string;
+  category: string;
+  categoryLabel: string;
+  categories?: string[];
+  tags: string[];
+  models_actors?: string[];
+  modelsActors?: string[];
+  performers?: string[];
+  channelName?: string;
+  sourceWebsite?: string;
+  sourceWebsiteUrl?: string;
+  thumbnail: string;
+  thumbnailUrl?: string;
+  duration: string;
+  quality: '4K' | 'HD' | 'UHD';
+  views: string;
+  viewsCount: number;
+  likesCount: number;
+  rating?: string;
+  timeAgo: string;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+  performerName: string;
+  performerAvatar?: string;
+  description: string;
+  orientation?: 'straight' | 'gay' | 'lesbian' | 'horizontal' | 'vertical' | 'vr' | string;
+  isExclusive?: boolean;
+  isNew?: boolean;
+  isOriginal?: boolean;
+  embedUrl?: string;
+  previewMp4Url?: string;
+  previewWebpUrl?: string;
+  vttUrl?: string;
+  spriteUrl?: string;
+  vastAdTagUrl?: string;
+  isEmbed?: boolean;
+  isSponsored?: boolean;
+  status: VideoStatus;
+  createdBy: string;
+  uploadedBy?: string;
+  approvedBy?: string;
+  publishedBy?: string;
+  version: number;
+}
+
+// In-memory video store
+const videos = new Map<string, VideoRecord>();
+
+// View debounce map: `${videoId}_${ipOrSession}` -> lastCountedTimestamp
+const viewCooldowns = new Map<string, number>();
+const VIEW_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
+
+// Initial video seeds
+const INITIAL_SEED_VIDEOS: VideoRecord[] = [
+  {
+    id: 'vid-test-user-1',
+    title: 'Desi Romance Scene 4K',
+    category: 'amateur',
+    categoryLabel: 'Amateur',
+    categories: ['amateur', 'trending'],
+    tags: ['Amateur', 'HD', 'Featured', 'Desi'],
+    models_actors: ['Pooja B', 'Karan'],
+    modelsActors: ['Pooja B', 'Karan'],
+    thumbnail: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop',
+    duration: '05:00',
+    quality: 'HD',
+    views: '1.2K views',
+    viewsCount: 1200,
+    likesCount: 340,
+    rating: '98%',
+    timeAgo: '2 hours ago',
+    createdAt: '2026-08-10T12:00:00.000Z',
+    updatedAt: '2026-08-10T12:00:00.000Z',
+    publishedAt: '2026-08-10T12:00:00.000Z',
+    performerName: 'User Uploaded',
+    performerAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150&auto=format&fit=crop',
+    description: 'Exclusive adult video stream.',
+    orientation: 'straight',
+    isNew: true,
+    embedUrl: 'https://hornhub.embedseek.com/#9sq8g',
+    isEmbed: true,
+    status: VideoStatus.PUBLISHED,
+    createdBy: 'system',
+    version: 1,
+  },
+];
+
+INITIAL_SEED_VIDEOS.forEach((v) => videos.set(v.id, v));
+
+export const videoServiceBackend = {
+  listVideos: (options?: {
+    page?: number;
+    limit?: number;
+    category?: string;
+    orientation?: string;
+    search?: string;
+    status?: VideoStatus;
+    includeUnpublished?: boolean;
+    sort?: 'newest' | 'trending' | 'views' | 'likes';
+  }): { videos: VideoRecord[]; total: number; page: number; totalPages: number } => {
+    const page = Math.max(1, options?.page || 1);
+    const limit = Math.min(100, Math.max(1, options?.limit || 24));
+
+    let list = Array.from(videos.values());
+
+    // By default, public listing only returns PUBLISHED videos unless requested by admin
+    if (!options?.includeUnpublished) {
+      list = list.filter((v) => v.status === VideoStatus.PUBLISHED);
+    } else if (options?.status) {
+      list = list.filter((v) => v.status === options.status);
+    }
+
+    if (options?.category && options.category !== 'all') {
+      const cat = options.category.toLowerCase();
+      list = list.filter(
+        (v) =>
+          v.category?.toLowerCase() === cat ||
+          v.categories?.some((c) => c.toLowerCase() === cat)
+      );
+    }
+
+    if (options?.orientation && options.orientation !== 'all') {
+      const ori = options.orientation.toLowerCase();
+      list = list.filter((v) => !v.orientation || v.orientation.toLowerCase() === ori);
+    }
+
+    if (options?.search) {
+      const q = options.search.toLowerCase();
+      list = list.filter(
+        (v) =>
+          v.title.toLowerCase().includes(q) ||
+          v.description?.toLowerCase().includes(q) ||
+          v.tags?.some((t) => t.toLowerCase().includes(q)) ||
+          v.models_actors?.some((m) => m.toLowerCase().includes(q)) ||
+          v.performerName?.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort order
+    if (options?.sort === 'views') {
+      list.sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0));
+    } else if (options?.sort === 'likes') {
+      list.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
+    } else {
+      // Default: newest first
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
+    const total = list.length;
+    const startIndex = (page - 1) * limit;
+    const paginated = list.slice(startIndex, startIndex + limit);
+
+    return {
+      videos: paginated,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit) || 1,
+    };
+  },
+
+  findById: (id: string): VideoRecord | undefined => {
+    return videos.get(id);
+  },
+
+  create: async (data: Partial<VideoRecord>, actorId: string, actorEmail: string, actorRole: string): Promise<VideoRecord> => {
+    const id = data.id || `vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const now = new Date().toISOString();
+
+    const newVideo: VideoRecord = {
+      id,
+      title: data.title?.trim() || 'Untitled Video',
+      category: data.category || 'trending',
+      categoryLabel: data.categoryLabel || 'Trending',
+      categories: data.categories || (data.category ? [data.category] : ['trending']),
+      tags: data.tags || ['HD'],
+      models_actors: data.models_actors || data.modelsActors || [],
+      modelsActors: data.models_actors || data.modelsActors || [],
+      performers: data.performers || [],
+      channelName: data.channelName,
+      sourceWebsite: data.sourceWebsite,
+      sourceWebsiteUrl: data.sourceWebsiteUrl,
+      thumbnail: data.thumbnail || data.thumbnailUrl || '',
+      thumbnailUrl: data.thumbnailUrl || data.thumbnail || '',
+      duration: data.duration || '05:00',
+      quality: data.quality || 'HD',
+      views: '1 view',
+      viewsCount: 1,
+      likesCount: 0,
+      rating: '100%',
+      timeAgo: 'Just now',
+      createdAt: now,
+      updatedAt: now,
+      publishedAt: data.status === VideoStatus.PUBLISHED ? now : undefined,
+      performerName: data.performerName || 'User Uploaded',
+      performerAvatar: data.performerAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150&auto=format&fit=crop',
+      description: data.description || '',
+      orientation: data.orientation || 'horizontal',
+      isExclusive: !!data.isExclusive,
+      isNew: true,
+      embedUrl: data.embedUrl || '',
+      previewMp4Url: data.previewMp4Url || '',
+      previewWebpUrl: data.previewWebpUrl || '',
+      vttUrl: data.vttUrl || '',
+      spriteUrl: data.spriteUrl || '',
+      isEmbed: true,
+      status: data.status || VideoStatus.PUBLISHED,
+      createdBy: actorId,
+      uploadedBy: actorId,
+      publishedBy: data.status === VideoStatus.PUBLISHED ? actorId : undefined,
+      version: 1,
+    };
+
+    videos.set(id, newVideo);
+
+    await auditService.log({
+      actorId,
+      actorEmail,
+      actorRole,
+      action: 'video.created',
+      targetType: 'video',
+      targetId: id,
+      metadata: { title: newVideo.title, status: newVideo.status },
+    });
+
+    return newVideo;
+  },
+
+  update: async (
+    id: string,
+    updates: Partial<VideoRecord>,
+    actorId: string,
+    actorEmail: string,
+    actorRole: string
+  ): Promise<VideoRecord> => {
+    const existing = videos.get(id);
+    if (!existing) {
+      throw new Error(`Video with ID ${id} not found.`);
+    }
+
+    const now = new Date().toISOString();
+    const updated: VideoRecord = {
+      ...existing,
+      ...updates,
+      id: existing.id, // Immutable ID
+      updatedAt: now,
+      version: (existing.version || 1) + 1,
+    };
+
+    if (updates.status === VideoStatus.PUBLISHED && existing.status !== VideoStatus.PUBLISHED) {
+      updated.publishedAt = now;
+      updated.publishedBy = actorId;
+    }
+
+    videos.set(id, updated);
+
+    await auditService.log({
+      actorId,
+      actorEmail,
+      actorRole,
+      action: 'video.updated',
+      targetType: 'video',
+      targetId: id,
+      metadata: { changedFields: Object.keys(updates) },
+    });
+
+    return updated;
+  },
+
+  delete: async (id: string, actorId: string, actorEmail: string, actorRole: string): Promise<boolean> => {
+    const existing = videos.get(id);
+    if (!existing) {
+      return false;
+    }
+
+    videos.delete(id);
+
+    await auditService.log({
+      actorId,
+      actorEmail,
+      actorRole,
+      action: 'video.deleted',
+      targetType: 'video',
+      targetId: id,
+      metadata: { title: existing.title },
+    });
+
+    return true;
+  },
+
+  incrementViewCount: (videoId: string, clientIdentifier: string): { newViewsCount: number; counted: boolean } => {
+    const video = videos.get(videoId);
+    if (!video) {
+      throw new Error('Video not found.');
+    }
+
+    const cooldownKey = `${videoId}_${clientIdentifier}`;
+    const lastCounted = viewCooldowns.get(cooldownKey);
+    const now = Date.now();
+
+    // Anti-spam debounce: if viewed within last 10 minutes from this client, return current count without incrementing
+    if (lastCounted && now - lastCounted < VIEW_COOLDOWN_MS) {
+      return { newViewsCount: video.viewsCount, counted: false };
+    }
+
+    viewCooldowns.set(cooldownKey, now);
+    video.viewsCount = (video.viewsCount || 0) + 1;
+    video.views = `${video.viewsCount} ${video.viewsCount === 1 ? 'view' : 'views'}`;
+    videos.set(videoId, video);
+
+    return { newViewsCount: video.viewsCount, counted: true };
+  },
+
+  incrementLikes: (videoId: string, isLike: boolean): number => {
+    const video = videos.get(videoId);
+    if (!video) {
+      throw new Error('Video not found.');
+    }
+
+    const delta = isLike ? 1 : -1;
+    video.likesCount = Math.max(0, (video.likesCount || 0) + delta);
+    videos.set(videoId, video);
+
+    return video.likesCount;
+  },
+};

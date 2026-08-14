@@ -108,7 +108,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
             Community Comments ({comments.length})
           </h3>
         </div>
-        <span className="text-xs text-zinc-500 dark:text-white/50 font-medium">Synced with Cloud Firestore</span>
+        <span className="text-xs text-zinc-500 dark:text-white/50 font-medium">Live</span>
       </div>
 
       {/* Post Comment Input Form */}

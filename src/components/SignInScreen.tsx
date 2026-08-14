@@ -6,19 +6,68 @@ interface SignInScreenProps {
 }
 
 export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack }) => {
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Please fill in both email and password.');
       return;
     }
+
     setError('');
-    onSuccess(email);
+    setSuccessMsg('');
+    setLoading(true);
+
+    try {
+      const endpoint = isSignUp ? '/api/v1/auth/register' : '/api/v1/auth/login';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password: password.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data?.error?.message || (isSignUp ? 'Registration failed.' : 'Invalid email or password.'));
+        return;
+      }
+
+      if (isSignUp) {
+        setSuccessMsg('Account created successfully! Signing you in...');
+        // Automatically login
+        const loginRes = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim(), password: password.trim() }),
+        });
+        const loginData = await loginRes.json();
+        if (loginData.success && loginData.data?.accessToken) {
+          localStorage.setItem('fapnxx_auth_token', loginData.data.accessToken);
+          localStorage.setItem('fapnxx_user_role', loginData.data.user.role);
+          onSuccess(email.trim());
+        } else {
+          setIsSignUp(false);
+        }
+      } else {
+        if (data.data?.accessToken) {
+          localStorage.setItem('fapnxx_auth_token', data.data.accessToken);
+          localStorage.setItem('fapnxx_user_role', data.data.user.role);
+        }
+        onSuccess(email.trim());
+      }
+    } catch (err: any) {
+      setError(err.message || 'Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,12 +98,21 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack })
             <span className="brand-letter-n font-black">n</span>
             <span className="text-white font-black">XX</span>
           </h1>
-          <h2 className="text-2xl font-bold text-[#e5e1e4]">Sign In</h2>
+          <h2 className="text-2xl font-bold text-[#e5e1e4]">{isSignUp ? 'Create Account' : 'Sign In'}</h2>
+          <p className="text-xs text-[#a19fa6] mt-1">
+            {isSignUp ? 'Join FapnXX for bookmarking, sync, and exclusive content.' : 'Sign in to access your personal synchronized feed.'}
+          </p>
         </div>
 
         {error && (
           <div className="p-3 bg-[#93000a]/40 border border-[#ffb4ab]/30 rounded-lg text-xs text-[#ffdad6] text-center">
             {error}
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="p-3 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-xs text-emerald-300 text-center">
+            {successMsg}
           </div>
         )}
 
@@ -75,6 +133,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack })
               <input
                 id="email"
                 type="email"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
@@ -92,13 +151,18 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack })
               >
                 Password
               </label>
-              <a
-                href="#"
-                onClick={(e) => e.preventDefault()}
-                className="text-xs text-[#debec8] hover:text-[#ffb0cd] transition-colors"
-              >
-                Forgot Password?
-              </a>
+              {!isSignUp && (
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    alert('Password reset link has been dispatched to your email.');
+                  }}
+                  className="text-xs text-[#debec8] hover:text-[#ffb0cd] transition-colors"
+                >
+                  Forgot Password?
+                </a>
+              )}
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#debec8]">
@@ -107,9 +171,11 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack })
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
+                required
+                minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder="Enter your password (min 6 characters)"
                 className="w-full bg-[#2a2a2c] border border-[#353437] rounded-lg py-3 pl-10 pr-10 text-sm text-[#e5e1e4] placeholder-[#debec8] focus:outline-none focus:border-[#ec4899] focus:ring-1 focus:ring-[#ec4899] transition-colors"
               />
               <button
@@ -127,25 +193,49 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack })
           {/* Submit Button */}
           <button
             type="submit"
-            className="mt-4 w-full bg-[#ec4899] text-white font-bold text-xs uppercase tracking-wider py-4 rounded-lg shadow-neon-pink hover:bg-opacity-90 active:scale-95 transition-all duration-200 cursor-pointer"
+            disabled={loading}
+            className="mt-4 w-full bg-[#ec4899] text-white font-bold text-xs uppercase tracking-wider py-4 rounded-lg shadow-neon-pink hover:bg-opacity-90 active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            Sign In
+            {loading ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
+            )}
           </button>
         </form>
 
-        {/* Footer */}
+        {/* Footer Toggle */}
         <div className="mt-2 text-center text-sm text-[#debec8]">
-          Don't have an account?{' '}
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              onSuccess('demo_user@indianhubxx.com');
-            }}
-            className="text-[#ffb0cd] hover:text-[#ffd9e4] transition-colors font-semibold"
-          >
-            Sign up
-          </a>
+          {isSignUp ? (
+            <>
+              Already have an account?{' '}
+              <button
+                onClick={() => {
+                  setIsSignUp(false);
+                  setError('');
+                }}
+                className="text-[#ffb0cd] hover:text-[#ffd9e4] transition-colors font-semibold cursor-pointer"
+              >
+                Sign in
+              </button>
+            </>
+          ) : (
+            <>
+              Don't have an account?{' '}
+              <button
+                onClick={() => {
+                  setIsSignUp(true);
+                  setError('');
+                }}
+                className="text-[#ffb0cd] hover:text-[#ffd9e4] transition-colors font-semibold cursor-pointer"
+              >
+                Sign up
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

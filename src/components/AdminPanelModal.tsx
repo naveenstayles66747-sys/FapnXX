@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { CategoryInfo, DMCAReport, LandingBanner, ReportStatus, Video } from '../types';
 import { getStoredReports, setStoredReports } from '../utils/storage';
 import { videoService } from '../services/videoService';
-import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
-import app from '../services/firebaseConfig';
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -28,11 +26,6 @@ interface AdminPanelModalProps {
   onDeleteBanner: (bannerId: string) => void;
 }
 
-// Admin email whitelist — only these emails can access the admin panel
-const ADMIN_WHITELIST = [
-  'naveenstayles66747@gmail.com',
-];
-
 export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   isOpen,
   onClose,
@@ -52,7 +45,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   onUpdateBanner,
   onDeleteBanner,
 }) => {
-  const [activeTab, setActiveTab] = useState<'auth' | 'categories' | 'videos' | 'banners' | 'upload' | 'reports' | 'usage'>('auth');
+  const [activeTab, setActiveTab] = useState<'auth' | 'categories' | 'videos' | 'banners' | 'upload' | 'reports' | 'usage' | 'audit'>('auth');
+  const [auditLogsList, setAuditLogsList] = useState<any[]>([]);
+  const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   
   // DMCA / Content Moderation Reports state
   const [reportsList, setReportsList] = useState<DMCAReport[]>(() => getStoredReports());
@@ -117,9 +112,39 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [upIsExclusive, setUpIsExclusive] = useState(true);
 
 
+  // Fetch audit logs when opening or switching to audit tab
+  const fetchAuditLogs = async () => {
+    setIsLoadingAudit(true);
+    try {
+      const token = localStorage.getItem('fapnxx_auth_token');
+      const res = await fetch('/api/v1/admin/audit-logs?limit=50', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data?.logs) {
+          setAuditLogsList(json.data.logs);
+        }
+      }
+    } catch (err) {
+      console.warn('Audit logs fetch error:', err);
+    } finally {
+      setIsLoadingAudit(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && (isAdminAuthenticated || activeTab === 'audit')) {
+      fetchAuditLogs();
+    }
+  }, [isOpen, activeTab, isAdminAuthenticated]);
+
   if (!isOpen) return null;
 
-  // Real Firebase Authentication Login
+  // Real Backend Authentication Login
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
@@ -127,34 +152,30 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
     const cleanEmail = emailInput.trim().toLowerCase();
 
-    // Step 1: Check admin whitelist
-    if (!ADMIN_WHITELIST.includes(cleanEmail)) {
-      setLoginError('Access denied. This email is not authorized as admin.');
-      setIsLoggingIn(false);
-      return;
-    }
-
     try {
-      // Step 2: Real Firebase Auth sign in
-      const auth = getAuth(app);
-      await signInWithEmailAndPassword(auth, emailInput.trim(), passwordInput.trim());
+      const response = await fetch('/api/v1/auth/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, password: passwordInput.trim() }),
+      });
 
-      // Step 3: Grant admin access
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setLoginError(data?.error?.message || 'Access denied. Invalid credentials or insufficient admin privileges.');
+        return;
+      }
+
+      if (data.data?.accessToken) {
+        localStorage.setItem('fapnxx_auth_token', data.data.accessToken);
+        localStorage.setItem('fapnxx_user_role', data.data.user.role);
+      }
+
       onAdminLogin(cleanEmail);
       setLoginError('');
       setActiveTab('categories');
     } catch (err: any) {
-      // Firebase error codes → user-friendly messages
-      const code = err?.code || '';
-      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-        setLoginError('Invalid email or password. Please try again.');
-      } else if (code === 'auth/too-many-requests') {
-        setLoginError('Too many failed attempts. Account temporarily locked. Try again later.');
-      } else if (code === 'auth/network-request-failed') {
-        setLoginError('Network error. Please check your internet connection.');
-      } else {
-        setLoginError('Login failed. Please check your credentials and try again.');
-      }
+      setLoginError(err.message || 'Login failed. Please check your network and try again.');
     } finally {
       setIsLoggingIn(false);
     }
@@ -162,9 +183,17 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const handleAdminLogout = async () => {
     try {
-      const auth = getAuth(app);
-      await firebaseSignOut(auth);
+      const token = localStorage.getItem('fapnxx_auth_token');
+      await fetch('/api/v1/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
     } catch (_) {}
+    localStorage.removeItem('fapnxx_auth_token');
+    localStorage.removeItem('fapnxx_user_role');
     onAdminLogout();
   };
 
@@ -349,7 +378,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-[#debec8]">
-                Central control panel for categories, RBAC uploads, media assets, and site banners.
+                Central control panel for categories, uploads, media assets, and site banners.
               </p>
             </div>
           </div>
@@ -453,7 +482,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             }`}
           >
             <span className="material-symbols-outlined text-sm">cloud_upload</span>
-            RBAC Video Upload
+            Video Upload
           </button>
 
           <button
@@ -498,7 +527,28 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             }`}
           >
             <span className="material-symbols-outlined text-sm text-cyan-400">database</span>
-            Firebase Usage Monitor
+            Usage Monitor
+          </button>
+
+          <button
+            onClick={() => {
+              if (!isAdminAuthenticated) {
+                setActiveTab('auth');
+                return;
+              }
+              setActiveTab('audit');
+              fetchAuditLogs();
+            }}
+            className={`py-3.5 px-4 font-bold text-xs tracking-wide border-b-2 flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+              !isAdminAuthenticated ? 'opacity-50 cursor-not-allowed' : ''
+            } ${
+              activeTab === 'audit'
+                ? 'border-[#ec4899] text-[#ffb0cd]'
+                : 'border-transparent text-[#a19fa6] hover:text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-sm text-amber-400">shield</span>
+            Audit Logs ({auditLogsList.length})
           </button>
         </div>
 
@@ -523,13 +573,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   <div className="p-3 bg-[#0d0c0e] rounded-xl text-left text-xs space-y-1.5 border border-[#2e2d30]">
                     <div className="flex justify-between text-[#a19fa6]">
                       <span>Role Privilege:</span>
-                      <span className="text-emerald-400 font-mono font-bold">SUPER_ADMIN_RBAC</span>
+                      <span className="text-emerald-400 font-mono font-bold">SUPER_ADMIN</span>
                     </div>
                     <div className="flex justify-between text-[#a19fa6]">
                       <span>2FA Verification:</span>
                       <span className="text-emerald-400 font-bold flex items-center gap-1">
                         <span className="material-symbols-outlined text-xs">check_circle</span>
-                        Authenticated via Firebase
+                        Authenticated & Verified
                       </span>
                     </div>
                     <div className="flex justify-between text-[#a19fa6]">
@@ -569,7 +619,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
                     <h3 className="text-xl font-black text-white">Admin Portal Sign In</h3>
                     <p className="text-xs text-[#debec8]">
-                      Authorized personnel only. Secured by Firebase Authentication.
+                      Authorized personnel only. Access is strictly controlled.
                     </p>
                   </div>
 
@@ -645,7 +695,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   <div className="p-3 rounded-xl bg-[#0d0c0e] border border-[#2e2d30] text-[11px] text-[#a19fa6]">
                     <p className="flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-xs text-emerald-400">verified_user</span>
-                      <span>Secured by <strong className="text-white">Firebase Authentication</strong> — credentials are never stored in code.</span>
+                      <span>Your credentials are encrypted and never stored in plaintext.</span>
                     </p>
                   </div>
                 </form>
@@ -688,7 +738,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       </h4>
                     </div>
                     <span className="bg-[#ec4899]/20 text-[#ffb0cd] text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-[#ec4899]/40">
-                      Live Firestore Notifications
+                      Live Notifications
                     </span>
                   </div>
 
@@ -1023,14 +1073,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-[#a19fa6] mb-1">
-                        Preview URL (Firebase Storage CDN or WebP/GIF/MP4 Link)
+                        Preview URL (CDN / WebP / GIF / MP4 Link)
                       </label>
                       <div className="flex gap-2">
                         <input
                           type="url"
                           value={editingVideo.previewMp4Url || ''}
                           onChange={(e) => setEditingVideo({ ...editingVideo, previewMp4Url: e.target.value })}
-                          placeholder="Firebase Storage URL or https://domain.com/preview.webp"
+                          placeholder="https://domain.com/preview.webp or CDN URL"
                           className="flex-1 bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ec4899]"
                         />
                         <label className="px-3.5 py-2.5 bg-[#ec4899] hover:bg-[#db2777] rounded-xl text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors shrink-0">
@@ -1330,7 +1380,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     Admin Restricted Video Upload Console
                   </h3>
                   <p className="text-xs text-[#debec8] mt-1">
-                    Upload new videos directly to the public catalogue under RBAC verification.
+                    Upload new videos directly to the public catalogue.
                   </p>
                 </div>
 
@@ -1586,22 +1636,22 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             </div>
           )}
 
-          {/* TAB 7: FIREBASE USAGE & FREE TIER MONITOR */}
+          {/* TAB 7: USAGE & RESOURCE MONITOR */}
           {activeTab === 'usage' && (
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-[#181719] p-5 rounded-2xl border border-[#2e2d30]">
                 <div>
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <span className="material-symbols-outlined text-cyan-400">monitoring</span>
-                    Firebase Database & Storage Usage Monitor
+                    Database & Storage Usage Monitor
                   </h3>
                   <p className="text-xs text-[#debec8]">
-                    Real-time resource tracking and Spark Free Tier quota estimator for Cloud Firestore & Storage.
+                    Real-time resource tracking and quota estimator for Database & Cloud Storage.
                   </p>
                 </div>
                 <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Firebase Spark Tier Active (100% Free)
+                  Free Tier Active (100% Free)
                 </span>
               </div>
 
@@ -1610,7 +1660,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 {/* Card 1: Cloud Firestore Documents */}
                 <div className="bg-[#181719] p-5 rounded-2xl border border-[#2e2d30] space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#debec8] uppercase tracking-wider">Total Firestore Docs</span>
+                    <span className="text-xs font-bold text-[#debec8] uppercase tracking-wider">Total DB Records</span>
                     <span className="material-symbols-outlined text-cyan-400 text-xl">dataset</span>
                   </div>
                   <div className="text-2xl font-black text-white">
@@ -1633,7 +1683,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 {/* Card 2: Cloud Storage Usage */}
                 <div className="bg-[#181719] p-5 rounded-2xl border border-[#2e2d30] space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#debec8] uppercase tracking-wider">Firebase Storage</span>
+                    <span className="text-xs font-bold text-[#debec8] uppercase tracking-wider">Cloud Storage</span>
                     <span className="material-symbols-outlined text-emerald-400 text-xl">cloud_done</span>
                   </div>
                   <div className="text-2xl font-black text-emerald-400">
@@ -1663,7 +1713,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     50,000 Reads / Day
                   </div>
                   <p className="text-[11px] text-[#a19fa6]">
-                    Firebase Spark Free Tier limits: 50,000 document reads and 20,000 document writes per day.
+                    Free Tier limits: 50,000 document reads and 20,000 document writes per day.
                   </p>
                   <div className="space-y-1 pt-2">
                     <div className="flex justify-between text-[11px] font-semibold text-[#a19fa6]">
@@ -1676,6 +1726,83 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 8: IMMUTABLE AUDIT LOGS */}
+          {activeTab === 'audit' && (
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-[#181719] p-5 rounded-2xl border border-[#2e2d30]">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <span className="material-symbols-outlined text-amber-400">shield</span>
+                    Tamper-Proof Audit Logs & Security History
+                  </h3>
+                  <p className="text-xs text-[#debec8]">
+                    Immutable operational records of all administrative actions, logins, state changes, and content mutations.
+                  </p>
+                </div>
+                <button
+                  onClick={fetchAuditLogs}
+                  disabled={isLoadingAudit}
+                  className="px-4 py-2 bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <span className={`material-symbols-outlined text-sm ${isLoadingAudit ? 'animate-spin' : ''}`}>
+                    refresh
+                  </span>
+                  Refresh Logs
+                </button>
+              </div>
+
+              {auditLogsList.length === 0 ? (
+                <div className="text-center py-12 text-[#a19fa6] text-xs bg-[#181719] rounded-2xl border border-white/5">
+                  <span className="material-symbols-outlined text-3xl mb-2 block opacity-40">policy</span>
+                  No audit log entries recorded yet.
+                </div>
+              ) : (
+                <div className="bg-[#181719] rounded-2xl border border-[#2e2d30] overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-[#e5e1e4]">
+                      <thead className="bg-[#141315] border-b border-[#2e2d30] text-[#a19fa6] uppercase text-[10px] font-bold">
+                        <tr>
+                          <th className="py-3 px-4">Timestamp</th>
+                          <th className="py-3 px-4">Actor</th>
+                          <th className="py-3 px-4">Role</th>
+                          <th className="py-3 px-4">Action</th>
+                          <th className="py-3 px-4">Target</th>
+                          <th className="py-3 px-4">IP / Details</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#2e2d30]">
+                        {auditLogsList.map((log: any) => (
+                          <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                            <td className="py-3 px-4 font-mono text-[11px] text-zinc-400">
+                              {new Date(log.timestamp).toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-white">
+                              {log.actorEmail}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="bg-[#ec4899]/20 text-[#ffb0cd] border border-[#ec4899]/30 text-[10px] font-bold px-2 py-0.5 rounded">
+                                {log.actorRole}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-mono font-bold text-amber-400">
+                              {log.action}
+                            </td>
+                            <td className="py-3 px-4 text-zinc-300">
+                              {log.targetType} {log.targetId ? `(${log.targetId})` : ''}
+                            </td>
+                            <td className="py-3 px-4 text-[11px] text-zinc-400 font-mono">
+                              {log.ipAddress || '127.0.0.1'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

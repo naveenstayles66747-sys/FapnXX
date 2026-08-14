@@ -12,14 +12,7 @@ interface UploadModalProps {
   categories?: CategoryInfo[];
 }
 
-export const smartAutoConvertPreviewUrl = (rawUrl: string): string => {
-  if (!rawUrl) return '';
-  let url = rawUrl.trim();
-  if (url.match(/\.(webp|gif|png|jpe?g)($|\?|#)/i)) {
-    url = url.replace(/\.(webp|gif|png|jpe?g)($|\?|#)/i, '.mp4$2');
-  }
-  return url;
-};
+
 
 export const UploadModal: React.FC<UploadModalProps> = ({
   isOpen,
@@ -80,7 +73,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       setIsUploadingPreview(true);
-      setPreviewUploadStatus('Uploading preview to Firebase Storage...');
+      setPreviewUploadStatus('Uploading preview...');
       try {
         const storageUrl = await videoService.uploadPreviewToStorage(file);
         if (file.name.toLowerCase().endsWith('.webp') || file.type === 'image/webp') {
@@ -291,7 +284,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         vttUrl: vttUrlInput.trim() || undefined,
         spriteUrl: vttUrlInput.trim() || previewWebpUrl.trim() || undefined,
         thumbnail: finalThumbnail,
-        previewMp4Url: previewMp4Url.trim() || (previewWebpUrl.trim() ? smartAutoConvertPreviewUrl(previewWebpUrl.trim()) : undefined),
+        previewMp4Url: previewMp4Url.trim() || undefined,
         previewWebpUrl: previewWebpUrl.trim() || undefined,
         embedUrl: finalEmbedUrl,
         isEmbed: true,
@@ -733,14 +726,18 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             <div className="flex items-center gap-2">
               <input
                 type="url"
-                value={previewMp4Url || previewWebpUrl}
+                value={previewWebpUrl || previewMp4Url}
                 onChange={(e) => {
-                  const val = e.target.value;
-                  const converted = smartAutoConvertPreviewUrl(val);
-                  setPreviewMp4Url(converted);
-                  setPreviewWebpUrl('');
+                  const val = e.target.value.trim();
+                  if (val.match(/\.(webp|gif|png|jpe?g|avif)($|\?|#)/i)) {
+                    setPreviewWebpUrl(val);
+                    setPreviewMp4Url('');
+                  } else {
+                    setPreviewMp4Url(val);
+                    setPreviewWebpUrl('');
+                  }
                 }}
-                placeholder="Paste preview link (e.g. https://domain.com/preview.webp auto-converts to .mp4) ->"
+                placeholder="Paste preview link (e.g. https://domain.com/preview.webp or .mp4) ->"
                 className="flex-1 upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500 font-mono"
               />
 
@@ -759,7 +756,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             {previewUploadStatus && (
               <p className="text-[11px] text-rose-500 mt-1 flex items-center gap-1">
                 <span className="material-symbols-outlined text-xs">info</span>
-                <span>{previewUploadStatus}</span>
+                <span>{previewUploadStatus === 'Preview uploaded successfully!' ? '✓ Uploaded' : previewUploadStatus === 'Upload failed. Try again.' ? 'Upload failed. Try again.' : 'Uploading...'}</span>
               </p>
             )}
           </div>
