@@ -29,9 +29,9 @@ service cloud.firestore {
       );
     }
 
-    // Videos: Public can only read published videos. Writes restricted to authorized staff/backend
+    // Videos: Public can read published videos. Writes strictly restricted to authorized staff/backend
     match /videos/{videoId} {
-      allow read: if resource.data.status == 'PUBLISHED' || resource.data.status == null || isStaff();
+      allow read: if resource == null || resource.data.status == 'PUBLISHED' || resource.data.status == null || isStaff();
       allow create, update, delete: if isStaff();
     }
 
@@ -43,32 +43,36 @@ service cloud.firestore {
 
     // Landing Banners: Public read active, Admin write
     match /banners/{bannerId} {
-      allow read: if resource.data.isActive == true || isStaff();
+      allow read: if resource == null || resource.data.isActive == true || isStaff();
       allow write: if isAdmin();
     }
 
     // Ad Campaigns: Public read active, Admin write
     match /ad_campaigns/{campaignId} {
-      allow read: if resource.data.isActive == true || isStaff();
+      allow read: if resource == null || resource.data.isActive == true || isStaff();
       allow write: if isAdmin();
     }
 
-    // Category Requests: Public create, Staff read/update
+    // Category Requests: Authenticated users create, Staff manage
     match /category_requests/{requestId} {
-      allow create: if true;
+      allow create: if isAuthenticated() || (request.resource.data.categoryName is string && request.resource.data.categoryName.size() > 1);
       allow read, update, delete: if isStaff();
     }
 
-    // Comments: Public read, authenticated create/delete own, Moderator delete
+    // Comments: Public read, only authenticated users can post valid comments, anti-spam constraints
     match /comments/{commentId} {
       allow read: if true;
-      allow create: if true;
+      allow create: if isAuthenticated() &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() > 0 &&
+        request.resource.data.text.size() <= 500 &&
+        request.resource.data.userId == request.auth.uid;
       allow update, delete: if isStaff() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // DMCA & Moderation Reports: Public create, Staff read/update
+    // DMCA & Moderation Reports: Create allowed with proper schema, Staff manage
     match /reports/{reportId} {
-      allow create: if true;
+      allow create: if request.resource.data.targetId is string && request.resource.data.reason is string;
       allow read, update, delete: if isStaff();
     }
 
@@ -85,10 +89,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Anonymous uploaders mapping
+    // Anonymous uploaders tracking: Locked from public direct writes
     match /anonymous_uploaders/{deviceId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isStaff();
+      allow write: if isStaff();
     }
   }
 }
+

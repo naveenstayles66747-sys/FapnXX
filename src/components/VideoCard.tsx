@@ -53,79 +53,44 @@ const formatTimeAgo = (createdAt?: string, fallbackStr?: string): string => {
 
 const FALLBACK_THUMBNAIL = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=800&auto=format&fit=crop';
 
+// ─── Extract ONLY dedicated preview media (WebP animated / MP4 clip) ───────────
+// IMPORTANT: embedUrl is STRICTLY for the video player page — it is NEVER used
+// as a hover preview on video cards, to avoid thumbnail/embed mismatch confusion.
 const extractPreviewDetails = (video: Video) => {
-  let rawInput =
-    (video.previewWebpUrl || '').trim() ||
-    (video.previewMp4Url || '').trim() ||
-    (video.embedUrl || '').trim();
-
-  if (!rawInput) {
-    return { previewSrc: '', previewType: 'none' as const };
+  // Priority 1: Animated WebP / GIF thumbnail preview (best for cards)
+  const webpSrc = (video.previewWebpUrl || '').trim();
+  if (webpSrc) {
+    const urlPath = webpSrc.split('?')[0].split('#')[0].toLowerCase();
+    const isImage = /\.(webp|gif|png|jpe?g|avif|svg)$/i.test(urlPath);
+    const isVideo = /\.(mp4|webm|m3u8|mov|ogg)$/i.test(urlPath);
+    if (isImage) return { previewSrc: webpSrc, previewType: 'image' as const };
+    if (isVideo) return { previewSrc: webpSrc, previewType: 'video' as const };
   }
 
-  let src = rawInput;
-  if (src.startsWith('<iframe') || src.includes('src=')) {
-    const match = src.match(/src=["']([^"']+)["']/);
-    if (match && match[1]) src = match[1];
-  }
-  src = src.replace(/^["']|["']$/g, '').trim();
-
-  const urlPath = src.split('?')[0].split('#')[0].toLowerCase();
-  const decodedPath = decodeURIComponent(urlPath);
-
-  // 1. Image Preview detection (.webp, .gif, .png, .jpg, .jpeg, .avif, .svg)
-  const isImage = /\.(webp|gif|png|jpe?g|avif|svg)$/i.test(urlPath) || /\.(webp|gif|png|jpe?g|avif|svg)$/i.test(decodedPath);
-  if (isImage) {
-    return { previewSrc: src, previewType: 'image' as const };
-  }
-
-  // 2. Direct Video File (.mp4, .webm, .m3u8, .mov, .ogg)
-  const isDirectVideo = /\.(mp4|webm|m3u8|mov|ogg)$/i.test(urlPath) || /\.(mp4|webm|m3u8|mov|ogg)$/i.test(decodedPath);
-  if (isDirectVideo) {
-    return { previewSrc: src, previewType: 'video' as const };
-  }
-
-  // 3. YouTube URL auto-conversion to embed player
-  if (src.includes('youtube.com') || src.includes('youtu.be')) {
-    let yId = '';
-    if (src.includes('youtu.be/')) yId = src.split('youtu.be/')[1]?.split('?')[0] || '';
-    else if (src.includes('watch?v=')) yId = src.split('watch?v=')[1]?.split('&')[0] || '';
-    else if (src.includes('embed/')) yId = src.split('embed/')[1]?.split('?')[0] || '';
-    if (yId) {
-      return {
-        previewSrc: `https://www.youtube.com/embed/${yId}?autoplay=1&muted=1&mute=1&controls=0&loop=1&playlist=${yId}`,
-        previewType: 'embed' as const,
-      };
+  // Priority 2: Dedicated MP4/WebM preview clip (short 10-30s clip separate from embed)
+  const mp4Src = (video.previewMp4Url || '').trim();
+  if (mp4Src) {
+    const urlPath = mp4Src.split('?')[0].split('#')[0].toLowerCase();
+    const isVideo = /\.(mp4|webm|m3u8|mov|ogg)$/i.test(urlPath);
+    const isImage = /\.(webp|gif|png|jpe?g|avif|svg)$/i.test(urlPath);
+    if (isVideo) return { previewSrc: mp4Src, previewType: 'video' as const };
+    if (isImage) return { previewSrc: mp4Src, previewType: 'image' as const };
+    // If mp4Url is actually an embed link (wrongly stored) — skip it, don't show
+    // embedseek / hornhub / external embed links are NOT preview media
+    const isExternalEmbed = /embedseek|hornhub|iframe|embed\./.test(urlPath);
+    if (!isExternalEmbed && mp4Src.startsWith('http')) {
+      // Could be a direct CDN stream
+      return { previewSrc: mp4Src, previewType: 'video' as const };
     }
   }
 
-  // 4. Vimeo URL auto-conversion
-  if (src.includes('vimeo.com')) {
-    const vId = src.split('vimeo.com/')[1]?.split('?')[0] || '';
-    if (vId && !isNaN(Number(vId))) {
-      return {
-        previewSrc: `https://player.vimeo.com/video/${vId}?autoplay=1&muted=1&autopause=0&background=1`,
-        previewType: 'embed' as const,
-      };
-    }
-  }
+  // embedUrl is intentionally NOT used here — it belongs only to VideoDetailScreen player
+  return { previewSrc: '', previewType: 'none' as const };
+};
 
-  // 5. Explicit Embed / iFrame links
-  if (src.includes('embed') || src.includes('player') || src.includes('iframe') || src.includes('embedseek')) {
-    let embedSrc = src;
-    if (!embedSrc.includes('muted=1') && !embedSrc.includes('mute=1')) {
-      const connector = embedSrc.includes('?') ? '&' : '?';
-      embedSrc = `${embedSrc}${connector}autoplay=1&muted=1&mute=1&controls=0`;
-    }
-    return { previewSrc: embedSrc, previewType: 'embed' as const };
-  }
-
-  // 6. If rawInput is a non-media webpage link, return none
-  if (!src.match(/\.(mp4|webm|m3u8|mov|ogg|webp|gif|png|jpe?g)$/i)) {
-    return { previewSrc: '', previewType: 'none' as const };
-  }
-
-  return { previewSrc: src, previewType: 'video' as const };
+// Check if a video has an embed source (for badge display)
+const hasEmbedSource = (video: Video): boolean => {
+  return Boolean(video.embedUrl?.trim() || video.isEmbed);
 };
 
 export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = 'grid' }) => {
@@ -245,14 +210,14 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
     }
   }, [shouldPlayPreview, previewType]);
 
+  // Always use THIS video's own thumbnail — never fall back to another video's embed/preview URL.
+  // If thumbnail is a Google placeholder, use a generic fallback instead.
   const primaryThumb = (video.thumbnail || video.thumbnailUrl || '').trim();
-  const isPlaceholderThumb = primaryThumb.includes('lh3.googleusercontent.com');
-  const displayThumbnail =
-    (primaryThumb && !isPlaceholderThumb
-      ? primaryThumb
-      : previewType === 'image' && previewSrc
-      ? previewSrc
-      : primaryThumb) || FALLBACK_THUMBNAIL;
+  const isPlaceholderThumb =
+    primaryThumb.includes('lh3.googleusercontent.com') ||
+    primaryThumb.includes('embedseek') ||
+    primaryThumb.includes('hornhub');
+  const displayThumbnail = (primaryThumb && !isPlaceholderThumb ? primaryThumb : '') || FALLBACK_THUMBNAIL;
 
   const renderPreviewOverlay = () => {
     if (!shouldPlayPreview || !previewSrc) return null;
@@ -273,22 +238,6 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
           }}
           className="absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-300 z-10"
         />
-      );
-    }
-
-    if (previewType === 'embed') {
-      return (
-        <div className="iframe-wrapper absolute inset-0 w-full h-full bg-black overflow-hidden pointer-events-none z-10">
-          <iframe
-            src={previewSrc}
-            title={video.title}
-            allow="autoplay; fullscreen; picture-in-picture"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            className="w-full h-full border-none block bg-black scale-105"
-            style={{ border: 'none' }}
-          />
-        </div>
       );
     }
 
@@ -423,7 +372,10 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
     );
   }
 
-  const webpPreviewUrl = video.previewWebpUrl || (previewType === 'image' ? previewSrc : '');
+  // Dedicated animated preview (WebP/GIF) — only from previewWebpUrl field
+  const webpPreviewUrl = (video.previewWebpUrl || '').trim() || (previewType === 'image' ? previewSrc : '');
+  // Has embed video for player page
+  const showEmbedBadge = hasEmbedSource(video) && !previewSrc;
 
   return (
     <article
@@ -480,12 +432,18 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
 
       {/* ─── Thumbnail badges: HD top-right, Duration bottom-right (no mobile preview btn overlap) ─── */}
 
-        {/* Top-Right Quality Badge */}
+        {/* Top-Right: Quality Badge + Embed indicator */}
         {!shouldPlayPreview && (
-          <div className="absolute top-2 right-2 z-20">
+          <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1">
             <span className="bg-black/85 text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
               {video.quality || 'HD'}
             </span>
+            {showEmbedBadge && (
+              <span className="bg-rose-600/90 text-white px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider shadow-md flex items-center gap-0.5">
+                <span className="material-symbols-outlined text-[10px]">play_circle</span>
+                EMBED
+              </span>
+            )}
           </div>
         )}
 

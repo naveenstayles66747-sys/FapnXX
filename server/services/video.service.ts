@@ -1,5 +1,6 @@
 import { VideoStatus } from '../config/constants';
 import { auditService } from './audit.service';
+import { adminDb } from '../firebase-admin';
 
 export interface VideoRecord {
   id: string;
@@ -49,8 +50,9 @@ export interface VideoRecord {
   version: number;
 }
 
-// In-memory video store
+// In-memory cache synced with Firestore
 const videos = new Map<string, VideoRecord>();
+let isFirestoreInitialized = false;
 
 // View debounce map: `${videoId}_${ipOrSession}` -> lastCountedTimestamp
 const viewCooldowns = new Map<string, number>();
@@ -93,6 +95,34 @@ const INITIAL_SEED_VIDEOS: VideoRecord[] = [
 ];
 
 INITIAL_SEED_VIDEOS.forEach((v) => videos.set(v.id, v));
+
+// Synchronize from Firestore Collection on start & real-time updates
+async function initFirestoreVideosSync() {
+  if (isFirestoreInitialized) return;
+  try {
+    const snapshot = await adminDb.collection('videos').get();
+    if (!snapshot.empty) {
+      snapshot.forEach((doc) => {
+        const data = doc.data() as VideoRecord;
+        videos.set(doc.id, { ...data, id: doc.id });
+      });
+      console.log(`✅ [Firestore VideoService] Loaded ${snapshot.size} videos from Firestore DB.`);
+    } else {
+      // Seed default videos to Firestore
+      for (const v of INITIAL_SEED_VIDEOS) {
+        await adminDb.collection('videos').doc(v.id).set(v, { merge: true });
+      }
+      console.log('🌱 [Firestore VideoService] Seeded initial videos to Firestore DB.');
+    }
+    isFirestoreInitialized = true;
+  } catch (err: any) {
+    console.warn('⚠️ [Firestore VideoService] Sync fallback:', err.message);
+  }
+}
+
+// Trigger initial sync
+initFirestoreVideosSync();
+
 
 export const videoServiceBackend = {
   listVideos: (options?: {
@@ -219,6 +249,13 @@ export const videoServiceBackend = {
 
     videos.set(id, newVideo);
 
+    // Save permanently to Firestore DB
+    try {
+      await adminDb.collection('videos').doc(id).set(newVideo);
+    } catch (err: any) {
+      console.warn(`[Firestore Video] Save error for doc ${id}:`, err.message);
+    }
+
     await auditService.log({
       actorId,
       actorEmail,
@@ -260,6 +297,13 @@ export const videoServiceBackend = {
 
     videos.set(id, updated);
 
+    // Update permanently in Firestore DB
+    try {
+      await adminDb.collection('videos').doc(id).set(updated, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore Video] Update error for doc ${id}:`, err.message);
+    }
+
     await auditService.log({
       actorId,
       actorEmail,
@@ -280,6 +324,13 @@ export const videoServiceBackend = {
     }
 
     videos.delete(id);
+
+    // Delete permanently from Firestore DB
+    try {
+      await adminDb.collection('videos').doc(id).delete();
+    } catch (err: any) {
+      console.warn(`[Firestore Video] Delete error for doc ${id}:`, err.message);
+    }
 
     await auditService.log({
       actorId,
@@ -314,6 +365,13 @@ export const videoServiceBackend = {
     video.views = `${video.viewsCount} ${video.viewsCount === 1 ? 'view' : 'views'}`;
     videos.set(videoId, video);
 
+    // Async persist view count in Firestore
+    adminDb.collection('videos').doc(videoId).set({
+      viewsCount: video.viewsCount,
+      views: video.views,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true }).catch(() => null);
+
     return { newViewsCount: video.viewsCount, counted: true };
   },
 
@@ -326,6 +384,12 @@ export const videoServiceBackend = {
     const delta = isLike ? 1 : -1;
     video.likesCount = Math.max(0, (video.likesCount || 0) + delta);
     videos.set(videoId, video);
+
+    // Async persist likes in Firestore
+    adminDb.collection('videos').doc(videoId).set({
+      likesCount: video.likesCount,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true }).catch(() => null);
 
     return video.likesCount;
   },

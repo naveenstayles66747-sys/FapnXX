@@ -1,4 +1,5 @@
 import { auditService } from './audit.service';
+import { adminDb } from '../firebase-admin';
 
 export interface AdCampaignRecord {
   id: string;
@@ -16,6 +17,7 @@ export interface AdCampaignRecord {
 }
 
 const adCampaigns = new Map<string, AdCampaignRecord>();
+let isFirestoreAdsInitialized = false;
 
 const INITIAL_ADS: AdCampaignRecord[] = [
   {
@@ -46,6 +48,26 @@ const INITIAL_ADS: AdCampaignRecord[] = [
 
 INITIAL_ADS.forEach((a) => adCampaigns.set(a.id, a));
 
+// Sync from Firestore DB
+async function initFirestoreAdsSync() {
+  if (isFirestoreAdsInitialized) return;
+  try {
+    const snapshot = await adminDb.collection('ad_campaigns').get();
+    if (!snapshot.empty) {
+      snapshot.forEach((doc) => {
+        const data = doc.data() as AdCampaignRecord;
+        adCampaigns.set(doc.id, { ...data, id: doc.id });
+      });
+      console.log(`✅ [Firestore AdService] Loaded ${snapshot.size} ad campaigns from Firestore.`);
+    }
+    isFirestoreAdsInitialized = true;
+  } catch (err: any) {
+    console.warn('⚠️ [Firestore AdService] Sync fallback:', err.message);
+  }
+}
+
+initFirestoreAdsSync();
+
 export const adService = {
   listAds: (activeOnly = false): AdCampaignRecord[] => {
     let list = Array.from(adCampaigns.values());
@@ -72,6 +94,13 @@ export const adService = {
     };
 
     adCampaigns.set(id, newAd);
+
+    // Save to Firestore DB
+    try {
+      await adminDb.collection('ad_campaigns').doc(id).set(newAd);
+    } catch (err: any) {
+      console.warn(`[Firestore AdCampaign] Save error for doc ${id}:`, err.message);
+    }
 
     await auditService.log({
       actorId,
@@ -101,6 +130,13 @@ export const adService = {
 
     adCampaigns.set(id, updated);
 
+    // Update in Firestore DB
+    try {
+      await adminDb.collection('ad_campaigns').doc(id).set(updated, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore AdCampaign] Update error for doc ${id}:`, err.message);
+    }
+
     await auditService.log({
       actorId,
       actorEmail,
@@ -120,6 +156,13 @@ export const adService = {
 
     adCampaigns.delete(id);
 
+    // Delete from Firestore DB
+    try {
+      await adminDb.collection('ad_campaigns').doc(id).delete();
+    } catch (err: any) {
+      console.warn(`[Firestore AdCampaign] Delete error for doc ${id}:`, err.message);
+    }
+
     await auditService.log({
       actorId,
       actorEmail,
@@ -138,6 +181,11 @@ export const adService = {
     if (ad && ad.isActive) {
       ad.impressions += 1;
       adCampaigns.set(id, ad);
+
+      // Async update in Firestore DB
+      adminDb.collection('ad_campaigns').doc(id).set({
+        impressions: ad.impressions,
+      }, { merge: true }).catch(() => null);
     }
   },
 
@@ -146,6 +194,12 @@ export const adService = {
     if (ad && ad.isActive) {
       ad.clicks += 1;
       adCampaigns.set(id, ad);
+
+      // Async update in Firestore DB
+      adminDb.collection('ad_campaigns').doc(id).set({
+        clicks: ad.clicks,
+      }, { merge: true }).catch(() => null);
     }
   },
 };
+

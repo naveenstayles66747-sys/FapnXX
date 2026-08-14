@@ -7,3 +7,6 @@ coverage/
 .env*
 !.env.example
 .vercel
+serviceAccountKey*.json
+*serviceAccountKey*.json
+credentials/

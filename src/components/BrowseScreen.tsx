@@ -3,6 +3,7 @@ import { CategoryId, CategoryInfo, LandingBanner, Video } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { useLanguage } from '../i18n/LanguageContext';
+import { getBannerImageUrl, handleBannerImageError } from '../utils/mediaHelper';
 
 interface BrowseScreenProps {
   onSelectVideo: (video: Video) => void;
@@ -20,7 +21,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
     id: 'banner-1',
     title: 'Neon Midnight Fantasies',
     subtitle: 'Exclusive 4K Ultra-HD release featuring top international performers in a private penthouse setting.',
-    bannerImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCoYe4d2pIABe86FsPcEzfnsBgshTwLMpB3JldWw6KpYDhCxwmc-ts6JLePq7jRgzo7T0CR6cluXgWh5POzYkOubjPkkPHZyeuo05COHnK577vd4Gv1TWhzqJ5uqE5ImXEd7q6s48cXZKHvI5wTWZYsy1grVbKoFBbzeEJfbZ5Et7B8Ns-muFWNe95tNNSmEI7ZSANX2TFAu6rFz4XlMQ7h3hl-UAHtcUZ0jFC0pDJPQNoEUnGmB1KqBg',
+    bannerImage: '/assets/banners/banner1.jpg',
     tag: 'Featured 4K Release',
     targetCategory: 'trending',
     ctaText: 'Watch Now in 4K',
@@ -30,7 +31,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
     id: 'banner-2',
     title: 'Private VIP Encounters',
     subtitle: 'Unfiltered, raw, and intense scenes curated specifically for FapnXX members.',
-    bannerImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBTSrT7ZfnLWJmVyGjfLgykiPkmf7a4I4Z57uEg4c8C2_mJ0w3Y2UlFj5Gp5iEtMegkDAtFW4BKpVK3JE5pODTLTPETiDTQyukLYcV--2v9vb8b-OEkgHaWihpbbRppVRY0YbgqDfyvtuphn5xrfVZWgyDUKRJA2wZVxWJTWpDmQ6DpzeuUmUe8ySRNKup3oJc5VLYhRtM6nfKRK-UOZLtbi132Yme7AQeLMsUzD79lpUUp9Ckdox0HQQ',
+    bannerImage: '/assets/banners/banner2.jpg',
     tag: 'Exclusive VIP',
     targetCategory: 'milf',
     ctaText: 'Explore VIP Series',
@@ -40,7 +41,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
     id: 'banner-3',
     title: 'Subtle Illumination & Passion',
     subtitle: 'Experience intimate POV and aesthetic romance shot on high-resolution cinema sensors.',
-    bannerImage: 'https://lh3.googleusercontent.com/aida/AP1WRLs5y8ft3CThjXzumEpc3azxLY3QKyR8aZ3p0q786H2ndH2rdcjcbpMGVerFh_bCioKAuQRfUOdkx48FNdonP0tx-OxsMFArRHUx9_QMZ2q3VzQfWAIUBUZRvK9VGHJC3MYO8-zKg1JY36tH2BC8gl54Fg4OZqAl6Hu5nnfDFy8rgLjErqdnCiXTkuhA-Z7dKwuX0Z5XdGhS8uBLxIWlygmG82L4DvNTvPVWLxnZMiLdsJspXJESERcqnj4w',
+    bannerImage: '/assets/banners/banner3.jpg',
     tag: 'Trending POV',
     targetCategory: 'pov',
     ctaText: 'Stream Immediately',
@@ -50,7 +51,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
     id: 'banner-4',
     title: 'Velvet Dusk Rendezvous',
     subtitle: 'Sophisticated glamour and dramatic moonlight encounters in 60FPS Ultra HD.',
-    bannerImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBE-0RTWMQV-7aa5pGek-uZcH-J6NVY0INtMVyfRl352aCeM1uLLWSiSffe_5UkDXumbA8P3mzZ8nlChpgEnecAWSvWzXNqVF9bdRrgn4ZLRJ0p4JPa9gHP10i8FLpBvywDMR2gwDmptUGPby7rE6kgzi1eMivMfKRgQnn9pVpXkpeoFyMXZ4pY8uuvPTDbXWKvLc4gDcITGq9j9T1u3RoFCipZwkUoxWZl6_xUwgrJW_EK5rGwLAtbqQ',
+    bannerImage: '/assets/banners/banner4.jpg',
     tag: '4K Ultra-HD',
     targetCategory: 'amateur',
     ctaText: 'Watch Amateur Cut',
@@ -60,7 +61,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
     id: 'banner-5',
     title: 'Midnight Penthouse Encounter',
     subtitle: 'Uncut cinematic releases with immersive surround audio and 60fps streaming.',
-    bannerImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAvVmv9cY2dl_zIEo33CGIwiRDN909BI0EosxDqwew2wWmzQP_fALhg57IyLPUEyXtxxUMdzTRHoU0b9duqmKCxKFHCaeOISv7kzyqQWZSkSvX5nQoG2fSInUivHEMqe740-4kJ8zEnE66XQAAe5y_iKuxl9fyETTTK2S3XuvUPBR8LeBvKRBZ7dWH7xKWCDTBBIS2NHus-SKFoVKwTAg2FwIYbonIdNIJRVcHnX3UV-TD_hHUgC1J6yw',
+    bannerImage: '/assets/banners/banner5.jpg',
     tag: '60FPS Cinema',
     targetCategory: 'lesbian',
     ctaText: 'Stream 60FPS',
@@ -70,7 +71,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
     id: 'banner-6',
     title: 'City Lights Encounters',
     subtitle: 'Vibrant urban aesthetic, moody neon lighting, and high-energy intimate encounters.',
-    bannerImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA-OYI524BZ48HOkZ2JX5LYqmyIji7hU1exKz5GYHfhzSmB-U9IkbGli86UCYFTtvOQH6an4ENmj1uvF4sp72yvfkdjfOxj4DabRz53a-5QteTtz51X2hJV59fVqCRf3CrvuQnvsBdSIKtFTJccaSZBw0iKvQmyqLiRjp1PVyDgBCKIjG7Dg9_ImGXxeIWah3swnYZ874JWJFH3yph7U5Z1lVuSuGTNd2F8mgXi84tEP0lIYp8o_MLS4A',
+    bannerImage: '/assets/banners/banner6.jpg',
     tag: 'Top Choice',
     targetCategory: 'teen',
     ctaText: 'Discover Highlights',
@@ -324,9 +325,10 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                   className="w-full h-full flex-shrink-0 relative flex items-end p-4 pb-10 sm:p-8 xl:p-12 cursor-pointer"
                 >
                   <img
-                    src={banner.bannerImage || DEFAULT_DESKTOP_BANNERS[0].bannerImage}
+                    src={getBannerImageUrl(banner, index)}
                     alt={banner.title}
                     decoding="async"
+                    onError={(e) => handleBannerImageError(e, index)}
                     className="absolute inset-0 w-full h-full object-cover gpu-accelerated"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/95 via-[#09090b]/40 to-transparent pointer-events-none" />

@@ -1,4 +1,5 @@
 import { auditService } from './audit.service';
+import { adminDb } from '../firebase-admin';
 
 export interface CommentRecord {
   id: string;
@@ -13,6 +14,26 @@ export interface CommentRecord {
 }
 
 const comments = new Map<string, CommentRecord>();
+let isFirestoreCommentsInitialized = false;
+
+async function initFirestoreCommentsSync() {
+  if (isFirestoreCommentsInitialized) return;
+  try {
+    const snapshot = await adminDb.collection('comments').limit(200).get();
+    if (!snapshot.empty) {
+      snapshot.forEach((doc) => {
+        const data = doc.data() as CommentRecord;
+        comments.set(doc.id, { ...data, id: doc.id });
+      });
+      console.log(`✅ [Firestore CommentService] Loaded ${snapshot.size} comments from Firestore.`);
+    }
+    isFirestoreCommentsInitialized = true;
+  } catch (err: any) {
+    console.warn('⚠️ [Firestore CommentService] Sync fallback:', err.message);
+  }
+}
+
+initFirestoreCommentsSync();
 
 export const commentService = {
   listByVideo: (videoId: string): CommentRecord[] => {
@@ -47,6 +68,14 @@ export const commentService = {
     };
 
     comments.set(id, newComment);
+
+    // Save to Firestore DB
+    try {
+      await adminDb.collection('comments').doc(id).set(newComment);
+    } catch (err: any) {
+      console.warn(`[Firestore Comment] Save error for doc ${id}:`, err.message);
+    }
+
     return newComment;
   },
 
@@ -57,6 +86,12 @@ export const commentService = {
     }
     comment.likesCount += 1;
     comments.set(id, comment);
+
+    // Async persist like in Firestore
+    adminDb.collection('comments').doc(id).set({
+      likesCount: comment.likesCount,
+    }, { merge: true }).catch(() => null);
+
     return comment.likesCount;
   },
 
@@ -81,6 +116,13 @@ export const commentService = {
 
     comments.delete(id);
 
+    // Delete from Firestore DB
+    try {
+      await adminDb.collection('comments').doc(id).delete();
+    } catch (err: any) {
+      console.warn(`[Firestore Comment] Delete error for doc ${id}:`, err.message);
+    }
+
     if (isStaff && !isOwner) {
       await auditService.log({
         actorId,
@@ -96,3 +138,4 @@ export const commentService = {
     return true;
   },
 };
+

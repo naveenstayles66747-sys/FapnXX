@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { videoService } from '../services/videoService';
+
 
 interface SignInScreenProps {
   onSuccess: (email: string) => void;
@@ -52,6 +54,9 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack })
         if (loginData.success && loginData.data?.accessToken) {
           localStorage.setItem('fapnxx_auth_token', loginData.data.accessToken);
           localStorage.setItem('fapnxx_user_role', loginData.data.user.role);
+          if (loginData.data?.firebaseCustomToken) {
+            videoService.syncFirebaseAuthToken(loginData.data.firebaseCustomToken).catch(() => null);
+          }
           onSuccess(email.trim());
         } else {
           setIsSignUp(false);
@@ -60,9 +65,13 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack })
         if (data.data?.accessToken) {
           localStorage.setItem('fapnxx_auth_token', data.data.accessToken);
           localStorage.setItem('fapnxx_user_role', data.data.user.role);
+          if (data.data?.firebaseCustomToken) {
+            videoService.syncFirebaseAuthToken(data.data.firebaseCustomToken).catch(() => null);
+          }
         }
         onSuccess(email.trim());
       }
+
     } catch (err: any) {
       setError(err.message || 'Network error. Please try again.');
     } finally {

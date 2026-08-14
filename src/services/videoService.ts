@@ -21,9 +21,25 @@ import {
 } from '../utils/storage';
 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from './firebaseConfig';
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+  limit,
+} from 'firebase/firestore';
+import { signInWithCustomToken } from 'firebase/auth';
+import { storage, db, auth } from './firebaseConfig';
 
 const API_BASE = '/api/v1';
+
 
 export class VideoService {
   private getAuthHeaders(): HeadersInit {
@@ -117,6 +133,21 @@ export class VideoService {
   }
 
   /**
+   * Seamless Firebase Auth Token synchronization
+   */
+  async syncFirebaseAuthToken(customToken?: string): Promise<boolean> {
+    if (!customToken) return false;
+    try {
+      await signInWithCustomToken(auth, customToken);
+      console.log('✅ [FirebaseAuth] Signed in with Custom Token successfully.');
+      return true;
+    } catch (err: any) {
+      console.warn('⚠️ [FirebaseAuth] Client custom token sign-in fallback:', err.message);
+      return false;
+    }
+  }
+
+  /**
    * Fetch static video catalog JSON from Vercel Edge CDN (/data/videos_page1.json)
    */
   async fetchStaticCatalog(): Promise<Video[]> {
@@ -157,13 +188,60 @@ export class VideoService {
   }
 
   /**
-   * Fetch all videos via Backend API with static catalog and local storage fallbacks
+   * Fetch all videos via direct Firestore SDK with Backend API and CDN fallbacks
    */
   async fetchVideos(category?: string): Promise<Video[]> {
-    const query = category && category !== 'all' ? `?category=${encodeURIComponent(category)}` : '';
-    
+    // 1. Direct Firestore attempt
+    try {
+      let videoCollectionRef = collection(db, 'videos');
+      let snap;
+      if (category && category !== 'all') {
+        snap = await getDocs(query(videoCollectionRef, where('category', '==', category.toLowerCase())));
+      } else {
+        snap = await getDocs(videoCollectionRef);
+      }
+
+      if (!snap.empty) {
+        const firestoreVideos: Video[] = [];
+        snap.forEach((d) => {
+          const data = d.data() as any;
+          firestoreVideos.push({
+            id: d.id,
+            title: data.title || 'Untitled',
+            embedUrl: data.embedUrl || '',
+            thumbnail: data.thumbnail || data.thumbnailUrl || '',
+            category: data.category || 'amateur',
+            categoryLabel: data.categoryLabel || 'Amateur',
+            categories: data.categories || [data.category || 'amateur'],
+            tags: data.tags || ['HD'],
+            duration: data.duration || '05:00',
+            quality: data.quality || 'HD',
+            viewsCount: data.viewsCount || 1200,
+            views: data.views || `${data.viewsCount || 1200} views`,
+            likesCount: data.likesCount || 340,
+            rating: data.rating || '98%',
+            timeAgo: data.timeAgo || 'Recent',
+            createdAt: data.createdAt || new Date().toISOString(),
+            performerName: data.performerName || 'User Uploaded',
+            performerAvatar: data.performerAvatar || '',
+            description: data.description || '',
+            isEmbed: true,
+          });
+        });
+
+        if (firestoreVideos.length > 0) {
+          setStoredVideos(firestoreVideos);
+          return firestoreVideos;
+        }
+      }
+    } catch (firestoreErr: any) {
+      console.warn('⚠️ [Firestore Client] fetchVideos fallback to API:', firestoreErr.message);
+    }
+
+    // 2. Fallback to backend API
+    const queryParam = category && category !== 'all' ? `?category=${encodeURIComponent(category)}` : '';
     return this.apiFetch<{ videos: Video[]; total: number }>(
-      `/videos${query}`,
+      `/videos${queryParam}`,
       { method: 'GET' },
       async () => {
         const staticCatalog = await this.fetchStaticCatalog();
@@ -181,36 +259,66 @@ export class VideoService {
   }
 
   /**
-   * Subscribe to videos (poller / live updates)
+   * Subscribe to videos (live updates)
    */
   subscribeToVideos(callback: (videos: Video[]) => void) {
-    const interval = setInterval(async () => {
-      try {
-        const videos = await this.fetchVideos();
-        if (videos && videos.length > 0) {
-          callback(videos);
+    try {
+      const q = query(collection(db, 'videos'), limit(50));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const list: Video[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as any;
+            list.push({ ...data, id: d.id });
+          });
+          if (list.length > 0) {
+            setStoredVideos(list);
+            callback(list);
+          }
         }
-      } catch {}
-    }, 15000);
-
-    return () => clearInterval(interval);
+      }, (err) => {
+        console.warn('⚠️ [Firestore] Realtime subscription fallback to polling:', err.message);
+      });
+      return unsubscribe;
+    } catch {
+      const interval = setInterval(async () => {
+        try {
+          const videos = await this.fetchVideos();
+          if (videos && videos.length > 0) {
+            callback(videos);
+          }
+        } catch {}
+      }, 15000);
+      return () => clearInterval(interval);
+    }
   }
 
   /**
-   * Save a new video to the Backend API
+   * Save a new video to Firestore and Backend API
    */
   async saveVideo(video: Video): Promise<Video> {
+    const videoId = video.id || `vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const fullVideo = { ...video, id: videoId };
+
+    // 1. Direct Firestore write
+    try {
+      await setDoc(doc(db, 'videos', videoId), fullVideo, { merge: true });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] saveVideo fallback to API:', err.message);
+    }
+
+    // 2. Sync to Backend API
     return this.apiFetch<Video>(
       '/videos',
       {
         method: 'POST',
-        body: JSON.stringify(video),
+        body: JSON.stringify(fullVideo),
       },
       () => {
         const current = getStoredVideos();
-        const updated = [video, ...current.filter((v) => v.id !== video.id)];
+        const updated = [fullVideo, ...current.filter((v) => v.id !== fullVideo.id)];
         setStoredVideos(updated);
-        return video;
+        return fullVideo;
       }
     ).then((saved) => {
       const current = getStoredVideos();
@@ -221,9 +329,17 @@ export class VideoService {
   }
 
   /**
-   * Update an existing video
+   * Update an existing video in Firestore and Backend API
    */
   async updateVideo(video: Video): Promise<Video> {
+    // 1. Direct Firestore update
+    try {
+      await setDoc(doc(db, 'videos', video.id), video, { merge: true });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] updateVideo fallback to API:', err.message);
+    }
+
+    // 2. Sync to Backend API
     return this.apiFetch<Video>(
       `/videos/${video.id}`,
       {
@@ -245,9 +361,17 @@ export class VideoService {
   }
 
   /**
-   * Delete a video
+   * Delete a video from Firestore and Backend API
    */
   async deleteVideo(videoId: string): Promise<boolean> {
+    // 1. Direct Firestore delete
+    try {
+      await deleteDoc(doc(db, 'videos', videoId));
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] deleteVideo fallback to API:', err.message);
+    }
+
+    // 2. Sync to Backend API
     return this.apiFetch<{ id: string }>(
       `/videos/${videoId}`,
       { method: 'DELETE' },
@@ -264,6 +388,7 @@ export class VideoService {
       return true;
     });
   }
+
 
   /**
    * Secure Anti-Spam View Counter
@@ -320,9 +445,25 @@ export class VideoService {
   }
 
   /**
-   * Fetch all categories
+   * Fetch all categories via direct Firestore SDK with API and default fallback
    */
   async fetchCategories(): Promise<CategoryInfo[]> {
+    try {
+      const snap = await getDocs(collection(db, 'categories'));
+      if (!snap.empty) {
+        const firestoreCats: CategoryInfo[] = [];
+        snap.forEach((d) => {
+          firestoreCats.push({ ...(d.data() as CategoryInfo), id: d.id });
+        });
+        if (firestoreCats.length > 0) {
+          setStoredCategories(firestoreCats);
+          return firestoreCats;
+        }
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] fetchCategories fallback:', err.message);
+    }
+
     return this.apiFetch<CategoryInfo[]>(
       '/categories',
       { method: 'GET' },
@@ -334,20 +475,29 @@ export class VideoService {
   }
 
   /**
-   * Save a category
+   * Save a category to Firestore and Backend API
    */
   async saveCategory(category: CategoryInfo): Promise<CategoryInfo> {
+    const id = category.id.trim().toLowerCase().replace(/\s+/g, '-');
+    const fullCategory = { ...category, id };
+
+    try {
+      await setDoc(doc(db, 'categories', id), fullCategory, { merge: true });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] saveCategory fallback:', err.message);
+    }
+
     return this.apiFetch<CategoryInfo>(
       '/categories',
       {
         method: 'POST',
-        body: JSON.stringify(category),
+        body: JSON.stringify(fullCategory),
       },
       () => {
         const current = getStoredCategories();
-        const updated = [...current.filter((c) => c.id !== category.id), category];
+        const updated = [...current.filter((c) => c.id !== fullCategory.id), fullCategory];
         setStoredCategories(updated);
-        return category;
+        return fullCategory;
       }
     ).then((saved) => {
       const current = getStoredCategories();
@@ -358,9 +508,15 @@ export class VideoService {
   }
 
   /**
-   * Update category
+   * Update category in Firestore and Backend API
    */
   async updateCategory(category: CategoryInfo): Promise<CategoryInfo> {
+    try {
+      await setDoc(doc(db, 'categories', category.id), category, { merge: true });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] updateCategory fallback:', err.message);
+    }
+
     return this.apiFetch<CategoryInfo>(
       `/categories/${category.id}`,
       {
@@ -377,9 +533,15 @@ export class VideoService {
   }
 
   /**
-   * Delete category
+   * Delete category from Firestore and Backend API
    */
   async deleteCategory(categoryId: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(db, 'categories', categoryId));
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] deleteCategory fallback:', err.message);
+    }
+
     return this.apiFetch<{ id: string }>(
       `/categories/${categoryId}`,
       { method: 'DELETE' },
@@ -396,17 +558,22 @@ export class VideoService {
    * Submit category request
    */
   async saveCategoryRequest(categoryReq: CategoryRequest): Promise<CategoryRequest> {
+    const reqId = `cat-req-${Date.now()}`;
+    const fullReq = { ...categoryReq, id: reqId, createdAt: new Date().toISOString(), status: 'pending' as const };
+
+    try {
+      await setDoc(doc(db, 'category_requests', reqId), fullReq);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] saveCategoryRequest fallback:', err.message);
+    }
+
     return this.apiFetch<CategoryRequest>(
       '/categories/requests',
       {
         method: 'POST',
-        body: JSON.stringify({
-          categoryName: categoryReq.categoryName,
-          videoTitle: categoryReq.videoTitle,
-          requestedByEmail: categoryReq.requestedByEmail,
-        }),
+        body: JSON.stringify(fullReq),
       },
-      () => categoryReq
+      () => fullReq
     );
   }
 
@@ -414,6 +581,17 @@ export class VideoService {
    * Fetch all category requests (Admin)
    */
   async fetchCategoryRequests(): Promise<CategoryRequest[]> {
+    try {
+      const snap = await getDocs(collection(db, 'category_requests'));
+      if (!snap.empty) {
+        const list: CategoryRequest[] = [];
+        snap.forEach((d) => list.push({ ...(d.data() as CategoryRequest), id: d.id }));
+        return list;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] fetchCategoryRequests fallback:', err.message);
+    }
+
     return this.apiFetch<CategoryRequest[]>(
       '/categories/admin/requests',
       { method: 'GET' },
@@ -425,6 +603,12 @@ export class VideoService {
    * Update category request status (Admin)
    */
   async updateCategoryRequestStatus(requestId: string, status: 'approved' | 'rejected'): Promise<void> {
+    try {
+      await setDoc(doc(db, 'category_requests', requestId), { status }, { merge: true });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] updateCategoryRequestStatus fallback:', err.message);
+    }
+
     await this.apiFetch(
       `/categories/admin/requests/${requestId}`,
       {
@@ -436,9 +620,25 @@ export class VideoService {
   }
 
   /**
-   * Fetch landing banners
+   * Fetch landing banners via direct Firestore SDK with fallback
    */
   async fetchBanners(): Promise<LandingBanner[]> {
+    try {
+      const snap = await getDocs(collection(db, 'banners'));
+      if (!snap.empty) {
+        const firestoreBanners: LandingBanner[] = [];
+        snap.forEach((d) => {
+          firestoreBanners.push({ ...(d.data() as LandingBanner), id: d.id });
+        });
+        if (firestoreBanners.length > 0) {
+          setStoredBanners(firestoreBanners);
+          return firestoreBanners;
+        }
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] fetchBanners fallback:', err.message);
+    }
+
     return this.apiFetch<LandingBanner[]>(
       '/banners',
       { method: 'GET' },
@@ -450,20 +650,29 @@ export class VideoService {
   }
 
   /**
-   * Save banner
+   * Save banner to Firestore and Backend API
    */
   async saveBanner(banner: LandingBanner): Promise<LandingBanner> {
+    const id = banner.id || `banner-${Date.now()}`;
+    const fullBanner = { ...banner, id };
+
+    try {
+      await setDoc(doc(db, 'banners', id), fullBanner, { merge: true });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] saveBanner fallback:', err.message);
+    }
+
     return this.apiFetch<LandingBanner>(
       '/banners',
       {
         method: 'POST',
-        body: JSON.stringify(banner),
+        body: JSON.stringify(fullBanner),
       },
       () => {
         const current = getStoredBanners();
-        const updated = [banner, ...current.filter((b) => b.id !== banner.id)];
+        const updated = [fullBanner, ...current.filter((b) => b.id !== fullBanner.id)];
         setStoredBanners(updated);
-        return banner;
+        return fullBanner;
       }
     ).then((saved) => {
       const current = getStoredBanners();
@@ -474,9 +683,15 @@ export class VideoService {
   }
 
   /**
-   * Update banner
+   * Update banner in Firestore and Backend API
    */
   async updateBanner(banner: LandingBanner): Promise<LandingBanner> {
+    try {
+      await setDoc(doc(db, 'banners', banner.id), banner, { merge: true });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] updateBanner fallback:', err.message);
+    }
+
     return this.apiFetch<LandingBanner>(
       `/banners/${banner.id}`,
       {
@@ -493,9 +708,15 @@ export class VideoService {
   }
 
   /**
-   * Delete banner
+   * Delete banner from Firestore and Backend API
    */
   async deleteBanner(bannerId: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(db, 'banners', bannerId));
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] deleteBanner fallback:', err.message);
+    }
+
     return this.apiFetch<{ id: string }>(
       `/banners/${bannerId}`,
       { method: 'DELETE' },
@@ -509,9 +730,26 @@ export class VideoService {
   }
 
   /**
-   * Fetch comments for a video
+   * Fetch comments for a video from Firestore with API fallback
    */
   async fetchComments(videoId: string): Promise<VideoComment[]> {
+    try {
+      const q = query(
+        collection(db, 'comments'),
+        where('videoId', '==', videoId),
+        orderBy('createdAt', 'desc'),
+        limit(100)
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const list: VideoComment[] = [];
+        snap.forEach((d) => list.push({ ...(d.data() as VideoComment), id: d.id }));
+        return list;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] fetchComments fallback to API:', err.message);
+    }
+
     return this.apiFetch<VideoComment[]>(
       `/comments/video/${videoId}`,
       { method: 'GET' },
@@ -520,35 +758,61 @@ export class VideoService {
   }
 
   /**
-   * Subscribe to comments
+   * Subscribe to comments with Firestore Realtime onSnapshot
    */
   subscribeToComments(videoId: string, callback: (comments: VideoComment[]) => void) {
-    const interval = setInterval(async () => {
-      try {
-        const comments = await this.fetchComments(videoId);
-        callback(comments);
-      } catch {}
-    }, 10000);
-
-    return () => clearInterval(interval);
+    try {
+      const q = query(
+        collection(db, 'comments'),
+        where('videoId', '==', videoId),
+        limit(100)
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const list: VideoComment[] = [];
+        snapshot.forEach((d) => list.push({ ...(d.data() as VideoComment), id: d.id }));
+        // Sort newest first
+        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        callback(list);
+      }, (err) => {
+        console.warn('⚠️ [Firestore Client] Comment realtime subscription fallback:', err.message);
+      });
+      return unsubscribe;
+    } catch {
+      const interval = setInterval(async () => {
+        try {
+          const comments = await this.fetchComments(videoId);
+          callback(comments);
+        } catch {}
+      }, 10000);
+      return () => clearInterval(interval);
+    }
   }
 
   /**
-   * Save comment
+   * Save comment to Firestore and Backend API
    */
   async saveComment(comment: VideoComment): Promise<VideoComment> {
+    const id = comment.id || `comment_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const fullComment: VideoComment = {
+      ...comment,
+      id,
+      createdAt: comment.createdAt || new Date().toISOString(),
+      likesCount: comment.likesCount || 0,
+    };
+
+    try {
+      await setDoc(doc(db, 'comments', id), fullComment);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] saveComment fallback:', err.message);
+    }
+
     return this.apiFetch<VideoComment>(
       '/comments',
       {
         method: 'POST',
-        body: JSON.stringify({
-          videoId: comment.videoId,
-          text: comment.text,
-          userName: comment.userName,
-          userAvatar: comment.userAvatar,
-        }),
+        body: JSON.stringify(fullComment),
       },
-      () => comment
+      () => fullComment
     );
   }
 
@@ -567,6 +831,12 @@ export class VideoService {
    * Delete comment
    */
   async deleteComment(commentId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'comments', commentId));
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] deleteComment fallback:', err.message);
+    }
+
     await this.apiFetch(
       `/comments/${commentId}`,
       { method: 'DELETE' },
@@ -578,17 +848,26 @@ export class VideoService {
    * Save DMCA/Moderation Report
    */
   async saveReport(report: DMCAReport): Promise<DMCAReport> {
+    const id = report.id || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const fullReport: DMCAReport = { ...report, id, createdAt: new Date().toISOString() };
+
+    try {
+      await setDoc(doc(db, 'reports', id), fullReport);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] saveReport fallback:', err.message);
+    }
+
     return this.apiFetch<DMCAReport>(
       '/reports',
       {
         method: 'POST',
-        body: JSON.stringify(report),
+        body: JSON.stringify(fullReport),
       },
       () => {
         const current = getStoredReports();
-        const updated = [report, ...current.filter((r) => r.id !== report.id)];
+        const updated = [fullReport, ...current.filter((r) => r.id !== fullReport.id)];
         setStoredReports(updated);
-        return report;
+        return fullReport;
       }
     ).then((saved) => {
       const current = getStoredReports();
@@ -602,6 +881,17 @@ export class VideoService {
    * Fetch reports (Admin)
    */
   async fetchReports(): Promise<DMCAReport[]> {
+    try {
+      const snap = await getDocs(collection(db, 'reports'));
+      if (!snap.empty) {
+        const list: DMCAReport[] = [];
+        snap.forEach((d) => list.push({ ...(d.data() as DMCAReport), id: d.id }));
+        return list;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] fetchReports fallback:', err.message);
+    }
+
     return this.apiFetch<DMCAReport[]>(
       '/reports',
       { method: 'GET' },
@@ -613,6 +903,12 @@ export class VideoService {
    * Update report status (Admin)
    */
   async updateReportStatus(reportId: string, status: ReportStatus): Promise<void> {
+    try {
+      await setDoc(doc(db, 'reports', reportId), { status, resolvedAt: new Date().toISOString() }, { merge: true });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] updateReportStatus fallback:', err.message);
+    }
+
     await this.apiFetch(
       `/reports/${reportId}/status`,
       {
@@ -624,9 +920,20 @@ export class VideoService {
   }
 
   /**
-   * Fetch ad campaigns
+   * Fetch ad campaigns via Firestore SDK with fallback
    */
   async fetchAdCampaigns(): Promise<AdCampaign[]> {
+    try {
+      const snap = await getDocs(collection(db, 'ad_campaigns'));
+      if (!snap.empty) {
+        const list: AdCampaign[] = [];
+        snap.forEach((d) => list.push({ ...(d.data() as AdCampaign), id: d.id }));
+        return list;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] fetchAdCampaigns fallback:', err.message);
+    }
+
     return this.apiFetch<AdCampaign[]>(
       '/ads',
       { method: 'GET' },
@@ -635,16 +942,25 @@ export class VideoService {
   }
 
   /**
-   * Save ad campaign
+   * Save ad campaign to Firestore and Backend API
    */
   async saveAdCampaign(campaign: AdCampaign): Promise<AdCampaign> {
+    const id = campaign.id || `ad-${Date.now()}`;
+    const fullAd = { ...campaign, id };
+
+    try {
+      await setDoc(doc(db, 'ad_campaigns', id), fullAd, { merge: true });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] saveAdCampaign fallback:', err.message);
+    }
+
     return this.apiFetch<AdCampaign>(
       '/ads',
       {
         method: 'POST',
-        body: JSON.stringify(campaign),
+        body: JSON.stringify(fullAd),
       },
-      () => campaign
+      () => fullAd
     );
   }
 
@@ -652,6 +968,12 @@ export class VideoService {
    * Update ad campaign
    */
   async updateAdCampaign(campaign: AdCampaign): Promise<AdCampaign> {
+    try {
+      await setDoc(doc(db, 'ad_campaigns', campaign.id), campaign, { merge: true });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] updateAdCampaign fallback:', err.message);
+    }
+
     return this.apiFetch<AdCampaign>(
       `/ads/${campaign.id}`,
       {
@@ -666,6 +988,12 @@ export class VideoService {
    * Delete ad campaign
    */
   async deleteAdCampaign(campaignId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'ad_campaigns', campaignId));
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore Client] deleteAdCampaign fallback:', err.message);
+    }
+
     await this.apiFetch(
       `/ads/${campaignId}`,
       { method: 'DELETE' },
@@ -708,3 +1036,4 @@ export class VideoService {
 
 export const videoService = new VideoService();
 export default videoService;
+

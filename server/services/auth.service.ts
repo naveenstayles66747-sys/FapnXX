@@ -4,6 +4,7 @@ import { tokenUtil, TokenPayload } from '../utils/token';
 import { otpUtil } from '../utils/otp';
 import { userService, sanitizeUser, User } from './user.service';
 import { auditService } from './audit.service';
+import { adminAuth } from '../firebase-admin';
 
 export const authService = {
   login: async (params: {
@@ -11,7 +12,7 @@ export const authService = {
     password: string;
     ipAddress?: string;
     userAgent?: string;
-  }): Promise<{ user: Omit<User, 'passwordHash'>; accessToken: string; refreshToken: string }> => {
+  }): Promise<{ user: Omit<User, 'passwordHash'>; accessToken: string; refreshToken: string; firebaseCustomToken?: string }> => {
     const cleanEmail = params.email.trim().toLowerCase();
     const user = userService.findByEmail(cleanEmail);
 
@@ -63,6 +64,17 @@ export const authService = {
     const accessToken = tokenUtil.signAccessToken(payload);
     const refreshToken = tokenUtil.signRefreshToken({ userId: user.id });
 
+    // Generate Firebase Custom Token for seamless Firebase Auth & Firestore Rules matching
+    let firebaseCustomToken: string | undefined;
+    try {
+      firebaseCustomToken = await adminAuth.createCustomToken(user.id, {
+        role: user.role,
+        admin: user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN,
+      });
+    } catch (err: any) {
+      console.warn('⚠️ [FirebaseAuth] Custom token generation fallback:', err.message);
+    }
+
     await auditService.log({
       actorId: user.id,
       actorEmail: user.email,
@@ -78,6 +90,7 @@ export const authService = {
       user: sanitizeUser(user),
       accessToken,
       refreshToken,
+      firebaseCustomToken,
     };
   },
 
@@ -86,7 +99,7 @@ export const authService = {
     password: string;
     ipAddress?: string;
     userAgent?: string;
-  }): Promise<{ user: Omit<User, 'passwordHash'>; accessToken: string; refreshToken: string }> => {
+  }): Promise<{ user: Omit<User, 'passwordHash'>; accessToken: string; refreshToken: string; firebaseCustomToken?: string }> => {
     const res = await authService.login(params);
     if (res.user.role !== Role.ADMIN && res.user.role !== Role.SUPER_ADMIN && res.user.role !== Role.EDITOR) {
       throw new Error('Access denied. This account does not possess administrative privileges.');
@@ -104,6 +117,7 @@ export const authService = {
 
     return res;
   },
+
 
   register: async (params: { email: string; password: string }): Promise<Omit<User, 'passwordHash'>> => {
     const newUser = await userService.create({

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CategoryInfo, DMCAReport, LandingBanner, ReportStatus, Video } from '../types';
 import { getStoredReports, setStoredReports } from '../utils/storage';
 import { videoService } from '../services/videoService';
+import { getCategoryHeroImage, handleCategoryImageError, getBannerImageUrl, handleBannerImageError } from '../utils/mediaHelper';
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -169,7 +170,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       if (data.data?.accessToken) {
         localStorage.setItem('fapnxx_auth_token', data.data.accessToken);
         localStorage.setItem('fapnxx_user_role', data.data.user.role);
+        if (data.data?.firebaseCustomToken) {
+          videoService.syncFirebaseAuthToken(data.data.firebaseCustomToken).catch(() => null);
+        }
       }
+
 
       onAdminLogin(cleanEmail);
       setLoginError('');
@@ -924,8 +929,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     >
                       <div className="h-32 relative overflow-hidden">
                         <img
-                          src={cat.heroImage}
+                          src={getCategoryHeroImage(cat)}
                           alt={cat.name}
+                          onError={(e) => handleCategoryImageError(e, cat.id)}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#181719] via-[#181719]/40 to-transparent" />
@@ -1024,15 +1030,74 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-[#a19fa6] mb-1">Thumbnail Cover Image URL</label>
-                      <input
-                        type="url"
-                        required
-                        value={editingVideo.thumbnail}
-                        onChange={(e) => setEditingVideo({ ...editingVideo, thumbnail: e.target.value })}
-                        className="w-full bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ec4899]"
-                      />
+                    <div className="md:col-span-2">
+                      {/* ━ Paired Thumbnail + Embed Preview Card ━ */}
+                      <div className="bg-[#0d0c0e] border border-[#2e2d30] rounded-2xl overflow-hidden">
+                        <div className="px-4 pt-3 pb-2 border-b border-[#2e2d30] flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[#ec4899] text-sm">link</span>
+                          <span className="text-xs font-bold text-white">Thumbnail ↔ Embed Pair</span>
+                          <span className="ml-auto text-[10px] text-[#a19fa6]">Dono ek hi video ke hone chahiye</span>
+                        </div>
+                        <div className="flex gap-0 md:flex-row flex-col">
+                          {/* Live Thumbnail Preview */}
+                          <div className="md:w-48 w-full flex-shrink-0 bg-black relative">
+                            <div className="aspect-video">
+                              {editingVideo.thumbnail && !editingVideo.thumbnail.includes('lh3.googleusercontent.com') && !editingVideo.thumbnail.includes('embedseek') ? (
+                                <img
+                                  src={editingVideo.thumbnail}
+                                  alt="Thumbnail preview"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=400'; }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-[#a19fa6]">
+                                  <span className="material-symbols-outlined text-2xl">image</span>
+                                  <span className="text-[10px]">No thumbnail</span>
+                                </div>
+                              )}
+                              {/* Embed badge overlay */}
+                              {editingVideo.embedUrl && (
+                                <div className="absolute bottom-1 left-1 bg-rose-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                  <span className="material-symbols-outlined text-[10px]">play_circle</span>
+                                  EMBED READY
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Fields */}
+                          <div className="flex-1 p-4 space-y-3">
+                            <div>
+                              <label className="block text-[10px] font-bold text-[#ec4899] mb-1 uppercase tracking-wider">
+                                📸 Thumbnail Cover URL
+                              </label>
+                              <input
+                                type="url"
+                                required
+                                value={editingVideo.thumbnail}
+                                onChange={(e) => setEditingVideo({ ...editingVideo, thumbnail: e.target.value, thumbnailUrl: e.target.value })}
+                                placeholder="https://cdn.example.com/thumbnail.jpg"
+                                className="w-full bg-[#181719] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ec4899] placeholder:text-[#555]"
+                              />
+                              <p className="text-[10px] text-[#666] mt-0.5">Static cover image jo card pe dikhegi (JPG/PNG/WebP)</p>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-blue-400 mb-1 uppercase tracking-wider">
+                                🎬 Full Video Embed URL
+                              </label>
+                              <input
+                                type="text"
+                                value={editingVideo.embedUrl || ''}
+                                onChange={(e) => setEditingVideo({ ...editingVideo, embedUrl: e.target.value, isEmbed: Boolean(e.target.value) })}
+                                placeholder="https://hornhub.embedseek.com/#abc123  (isi video ka embed link)"
+                                className="w-full bg-[#181719] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 placeholder:text-[#555]"
+                              />
+                              <p className="text-[10px] text-[#666] mt-0.5">Isi video ka embed/iframe link — thumbnail ke saath match karna chahiye</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <div>
@@ -1071,54 +1136,71 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         className="w-full bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ec4899]"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#a19fa6] mb-1">
-                        Preview URL (CDN / WebP / GIF / MP4 Link)
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="url"
-                          value={editingVideo.previewMp4Url || ''}
-                          onChange={(e) => setEditingVideo({ ...editingVideo, previewMp4Url: e.target.value })}
-                          placeholder="https://domain.com/preview.webp or CDN URL"
-                          className="flex-1 bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ec4899]"
-                        />
-                        <label className="px-3.5 py-2.5 bg-[#ec4899] hover:bg-[#db2777] rounded-xl text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors shrink-0">
-                          <span className="material-symbols-outlined text-sm">cloud_upload</span>
-                          <span>Upload Asset</span>
-                          <input
-                            type="file"
-                            accept="image/webp,image/gif,image/png,image/jpeg,video/mp4,video/webm"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (file && editingVideo) {
-                                try {
-                                  const url = await videoService.uploadPreviewToStorage(file, editingVideo.id);
-                                  setEditingVideo({
-                                    ...editingVideo,
-                                    previewMp4Url: url,
-                                    thumbnail: editingVideo.thumbnail && !editingVideo.thumbnail.includes('lh3.googleusercontent.com') ? editingVideo.thumbnail : url,
-                                  });
-                                } catch (err) {
-                                  console.error('Failed to upload preview file:', err);
-                                }
-                              }
-                            }}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-                    </div>
+                    <div className="md:col-span-2">
+                      {/* ━ Preview Clip (Hover Animation) ━ separate from embed ━ */}
+                      <div className="bg-[#0d0c0e] border border-[#2e2d30] rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center gap-2 border-b border-[#2e2d30] pb-2">
+                          <span className="material-symbols-outlined text-emerald-400 text-sm">animation</span>
+                          <span className="text-xs font-bold text-white">Hover Preview Clip</span>
+                          <span className="ml-auto text-[10px] text-[#a19fa6]">Card pe mouse hover karne par chalne wala clip</span>
+                        </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-[#a19fa6] mb-1">Full Video Embed / Stream URL</label>
-                      <input
-                        type="text"
-                        value={editingVideo.embedUrl || ''}
-                        onChange={(e) => setEditingVideo({ ...editingVideo, embedUrl: e.target.value })}
-                        placeholder="https://www.youtube.com/embed/... or direct MP4 link"
-                        className="w-full bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ec4899]"
-                      />
+                        <div className="flex gap-2 items-start">
+                          <div className="flex-1 space-y-3">
+                            <div>
+                              <label className="block text-[10px] font-bold text-emerald-400 mb-1 uppercase tracking-wider">
+                                🎞️ Animated Preview URL (WebP / GIF / MP4 clip)
+                              </label>
+                              <div className="flex gap-2">
+                                <input
+                                  type="url"
+                                  value={editingVideo.previewMp4Url || ''}
+                                  onChange={(e) => setEditingVideo({ ...editingVideo, previewMp4Url: e.target.value })}
+                                  placeholder="https://cdn.example.com/preview-clip.mp4  (isi video ka short clip)"
+                                  className="flex-1 bg-[#181719] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 placeholder:text-[#555]"
+                                />
+                                <label className="px-3.5 py-2.5 bg-[#ec4899] hover:bg-[#db2777] rounded-xl text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors shrink-0">
+                                  <span className="material-symbols-outlined text-sm">cloud_upload</span>
+                                  <span>Upload</span>
+                                  <input
+                                    type="file"
+                                    accept="image/webp,image/gif,image/png,image/jpeg,video/mp4,video/webm"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file && editingVideo) {
+                                        try {
+                                          const url = await videoService.uploadPreviewToStorage(file, editingVideo.id);
+                                          setEditingVideo({
+                                            ...editingVideo,
+                                            previewMp4Url: url,
+                                          });
+                                        } catch (err) {
+                                          console.error('Failed to upload preview file:', err);
+                                        }
+                                      }
+                                    }}
+                                    className="hidden"
+                                  />
+                                </label>
+                              </div>
+                              <p className="text-[10px] text-[#666] mt-0.5">⚠️ Sirf isi video ka preview clip yahan daalo — dusre video ka nahi</p>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-[#a19fa6] mb-1 uppercase tracking-wider">
+                                Animated WebP Preview URL (optional)
+                              </label>
+                              <input
+                                type="url"
+                                value={editingVideo.previewWebpUrl || ''}
+                                onChange={(e) => setEditingVideo({ ...editingVideo, previewWebpUrl: e.target.value })}
+                                placeholder="https://cdn.example.com/preview.webp"
+                                className="w-full bg-[#181719] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#a19fa6] placeholder:text-[#555]"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -1329,7 +1411,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     className="bg-[#181719] rounded-2xl overflow-hidden border border-[#2e2d30] flex flex-col"
                   >
                     <div className="h-40 relative">
-                      <img src={banner.bannerImage} alt={banner.title} className="w-full h-full object-cover" />
+                      <img
+                        src={getBannerImageUrl(banner, idx)}
+                        alt={banner.title}
+                        onError={(e) => handleBannerImageError(e, idx)}
+                        className="w-full h-full object-cover"
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#181719] via-[#181719]/30 to-transparent" />
                       <span className="absolute top-3 left-3 bg-[#ec4899] text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">
                         {banner.tag}

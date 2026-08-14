@@ -2,6 +2,7 @@ import React from 'react';
 import { CategoryId, CategoryInfo, Video } from '../types';
 import { CATEGORIES, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
+import { getCategoryHeroImage, handleCategoryImageError } from '../utils/mediaHelper';
 
 interface CategoryDetailScreenProps {
   categoryId: CategoryId;
@@ -79,10 +80,11 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-[#131315] via-[#131315]/70 to-transparent z-10" />
         <div className="absolute inset-0 z-0">
           <img
-            src={category.heroImage}
+            src={getCategoryHeroImage(category)}
             alt={category.name}
             loading="lazy"
             decoding="async"
+            onError={(e) => handleCategoryImageError(e, category.id)}
             className="w-full h-full object-cover"
           />
         </div>

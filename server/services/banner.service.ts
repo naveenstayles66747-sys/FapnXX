@@ -1,4 +1,5 @@
 import { auditService } from './audit.service';
+import { adminDb } from '../firebase-admin';
 
 export interface LandingBannerRecord {
   id: string;
@@ -15,6 +16,7 @@ export interface LandingBannerRecord {
 }
 
 const banners = new Map<string, LandingBannerRecord>();
+let isFirestoreBannersInitialized = false;
 
 const INITIAL_BANNERS: LandingBannerRecord[] = [
   {
@@ -41,6 +43,26 @@ const INITIAL_BANNERS: LandingBannerRecord[] = [
 
 INITIAL_BANNERS.forEach((b) => banners.set(b.id, b));
 
+// Sync from Firestore DB
+async function initFirestoreBannersSync() {
+  if (isFirestoreBannersInitialized) return;
+  try {
+    const snapshot = await adminDb.collection('banners').get();
+    if (!snapshot.empty) {
+      snapshot.forEach((doc) => {
+        const data = doc.data() as LandingBannerRecord;
+        banners.set(doc.id, { ...data, id: doc.id });
+      });
+      console.log(`✅ [Firestore BannerService] Loaded ${snapshot.size} banners from Firestore.`);
+    }
+    isFirestoreBannersInitialized = true;
+  } catch (err: any) {
+    console.warn('⚠️ [Firestore BannerService] Sync fallback:', err.message);
+  }
+}
+
+initFirestoreBannersSync();
+
 export const bannerService = {
   listBanners: (activeOnly = false): LandingBannerRecord[] => {
     let list = Array.from(banners.values());
@@ -65,6 +87,13 @@ export const bannerService = {
     };
 
     banners.set(id, newBanner);
+
+    // Save to Firestore DB
+    try {
+      await adminDb.collection('banners').doc(id).set(newBanner);
+    } catch (err: any) {
+      console.warn(`[Firestore Banner] Save error for doc ${id}:`, err.message);
+    }
 
     await auditService.log({
       actorId,
@@ -94,6 +123,13 @@ export const bannerService = {
 
     banners.set(id, updated);
 
+    // Update in Firestore DB
+    try {
+      await adminDb.collection('banners').doc(id).set(updated, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore Banner] Update error for doc ${id}:`, err.message);
+    }
+
     await auditService.log({
       actorId,
       actorEmail,
@@ -113,6 +149,13 @@ export const bannerService = {
 
     banners.delete(id);
 
+    // Delete from Firestore DB
+    try {
+      await adminDb.collection('banners').doc(id).delete();
+    } catch (err: any) {
+      console.warn(`[Firestore Banner] Delete error for doc ${id}:`, err.message);
+    }
+
     await auditService.log({
       actorId,
       actorEmail,
@@ -126,3 +169,4 @@ export const bannerService = {
     return true;
   },
 };
+

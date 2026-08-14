@@ -1,5 +1,6 @@
 import { ReportStatus } from '../config/constants';
 import { auditService } from './audit.service';
+import { adminDb } from '../firebase-admin';
 
 export interface DMCAReportRecord {
   id: string;
@@ -17,6 +18,26 @@ export interface DMCAReportRecord {
 }
 
 const reports = new Map<string, DMCAReportRecord>();
+let isFirestoreReportsInitialized = false;
+
+async function initFirestoreReportsSync() {
+  if (isFirestoreReportsInitialized) return;
+  try {
+    const snapshot = await adminDb.collection('reports').get();
+    if (!snapshot.empty) {
+      snapshot.forEach((doc) => {
+        const data = doc.data() as DMCAReportRecord;
+        reports.set(doc.id, { ...data, id: doc.id });
+      });
+      console.log(`✅ [Firestore ReportService] Loaded ${snapshot.size} reports from Firestore.`);
+    }
+    isFirestoreReportsInitialized = true;
+  } catch (err: any) {
+    console.warn('⚠️ [Firestore ReportService] Sync fallback:', err.message);
+  }
+}
+
+initFirestoreReportsSync();
 
 export const reportService = {
   listReports: (options?: { status?: ReportStatus }): DMCAReportRecord[] => {
@@ -41,6 +62,14 @@ export const reportService = {
     };
 
     reports.set(id, newReport);
+
+    // Save to Firestore DB
+    try {
+      await adminDb.collection('reports').doc(id).set(newReport);
+    } catch (err: any) {
+      console.warn(`[Firestore Report] Save error for doc ${id}:`, err.message);
+    }
+
     return newReport;
   },
 
@@ -64,6 +93,13 @@ export const reportService = {
 
     reports.set(id, report);
 
+    // Update in Firestore DB
+    try {
+      await adminDb.collection('reports').doc(id).set(report, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore Report] Update error for doc ${id}:`, err.message);
+    }
+
     await auditService.log({
       actorId,
       actorEmail,
@@ -77,3 +113,4 @@ export const reportService = {
     return report;
   },
 };
+

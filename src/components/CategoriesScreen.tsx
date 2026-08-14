@@ -1,6 +1,6 @@
-import React from 'react';
 import { CategoryId, CategoryInfo, ScreenId } from '../types';
 import { CATEGORIES } from '../data';
+import { getCategoryHeroImage, handleCategoryImageError } from '../utils/mediaHelper';
 
 interface CategoriesScreenProps {
   onSelectCategory: (id: CategoryId) => void;
@@ -32,10 +32,11 @@ export const CategoriesScreen: React.FC<CategoriesScreenProps> = ({
             className="group relative h-64 rounded-2xl overflow-hidden border border-[#27272a] hover:border-[#ffb0cd] transition-all duration-300 cursor-pointer shadow-lg"
           >
             <img
-              src={cat.heroImage}
+              src={getCategoryHeroImage(cat)}
               alt={cat.name}
               loading="lazy"
               decoding="async"
+              onError={(e) => handleCategoryImageError(e, cat.id)}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/40 to-transparent" />

@@ -1,6 +1,7 @@
 import { Role } from '../config/constants';
 import { env } from '../config/env';
 import { passwordUtil } from '../utils/password';
+import { adminDb, adminAuth } from '../firebase-admin';
 
 export interface User {
   id: string;
@@ -18,6 +19,7 @@ export interface User {
 
 // In-memory store for users
 const users = new Map<string, User>();
+let isFirestoreUsersInitialized = false;
 
 // Helper to sanitize user output (never return passwordHash)
 export function sanitizeUser(user: User): Omit<User, 'passwordHash'> {
@@ -25,43 +27,46 @@ export function sanitizeUser(user: User): Omit<User, 'passwordHash'> {
   return rest;
 }
 
-// Seed initial super admin user asynchronously
-async function seedInitialUsers() {
-  const superAdminEmail = env.SUPER_ADMIN_EMAIL.toLowerCase();
-  const hash = await passwordUtil.hash(env.SUPER_ADMIN_PASSWORD);
+// Sync users from Firestore and seed initial super admin
+async function initFirestoreUsersSync() {
+  if (isFirestoreUsersInitialized) return;
+  try {
+    const snapshot = await adminDb.collection('users').get();
+    if (!snapshot.empty) {
+      snapshot.forEach((doc) => {
+        const data = doc.data() as User;
+        users.set(data.email.toLowerCase(), { ...data, id: doc.id });
+      });
+      console.log(`✅ [Firestore UserService] Loaded ${snapshot.size} users from Firestore.`);
+    }
 
-  const superAdmin: User = {
-    id: 'user_super_admin_01',
-    email: superAdminEmail,
-    passwordHash: hash,
-    role: Role.SUPER_ADMIN,
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    savedVideoIds: [],
-    likedVideoIds: [],
-    followingPerformerIds: [],
-  };
-  users.set(superAdminEmail, superAdmin);
+    const superAdminEmail = env.SUPER_ADMIN_EMAIL.toLowerCase();
+    if (!users.has(superAdminEmail)) {
+      const hash = await passwordUtil.hash(env.SUPER_ADMIN_PASSWORD);
+      const superAdmin: User = {
+        id: 'user_super_admin_01',
+        email: superAdminEmail,
+        passwordHash: hash,
+        role: Role.SUPER_ADMIN,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        savedVideoIds: [],
+        likedVideoIds: [],
+        followingPerformerIds: [],
+      };
+      users.set(superAdminEmail, superAdmin);
+      await adminDb.collection('users').doc(superAdmin.id).set(superAdmin, { merge: true });
+      console.log(`🛡️ [Firestore UserService] Super Admin ${superAdminEmail} registered in Firestore.`);
+    }
 
-  // Demo user for testing
-  const demoEmail = 'demo_user@indianhubxx.com';
-  const demoHash = await passwordUtil.hash('DemoUser123!');
-  users.set(demoEmail, {
-    id: 'user_demo_01',
-    email: demoEmail,
-    passwordHash: demoHash,
-    role: Role.USER,
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    savedVideoIds: [],
-    likedVideoIds: [],
-    followingPerformerIds: [],
-  });
+    isFirestoreUsersInitialized = true;
+  } catch (err: any) {
+    console.warn('⚠️ [Firestore UserService] Sync fallback:', err.message);
+  }
 }
 
-seedInitialUsers();
+initFirestoreUsersSync();
 
 export const userService = {
   findByEmail: (email: string): User | undefined => {
@@ -97,6 +102,14 @@ export const userService = {
     };
 
     users.set(cleanEmail, newUser);
+
+    // Save to Firestore DB
+    try {
+      await adminDb.collection('users').doc(newUser.id).set(newUser);
+    } catch (err: any) {
+      console.warn(`[Firestore User] Save error for doc ${newUser.id}:`, err.message);
+    }
+
     return newUser;
   },
 
@@ -113,6 +126,10 @@ export const userService = {
     };
 
     users.set(user.email, updatedUser);
+
+    // Update in Firestore DB
+    adminDb.collection('users').doc(id).set(updatedUser, { merge: true }).catch(() => null);
+
     return updatedUser;
   },
 
@@ -147,8 +164,7 @@ export const userService = {
     };
   },
 
-  updateRole: (targetUserId: string, newRole: Role, actorRole: Role): User => {
-    // Prevent normal admins from creating SUPER_ADMIN or escalating privileges
+  updateRole: async (targetUserId: string, newRole: Role, actorRole: Role): Promise<User> => {
     if (newRole === Role.SUPER_ADMIN && actorRole !== Role.SUPER_ADMIN) {
       throw new Error('Only a SUPER_ADMIN can assign the SUPER_ADMIN role.');
     }
@@ -165,10 +181,32 @@ export const userService = {
     targetUser.role = newRole;
     targetUser.updatedAt = new Date().toISOString();
     users.set(targetUser.email, targetUser);
+
+    // Save in Firestore DB
+    try {
+      await adminDb.collection('users').doc(targetUserId).set({ role: newRole, updatedAt: targetUser.updatedAt }, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore User] Role update error:`, err.message);
+    }
+
+    // Set Firebase Auth Custom Claims if user exists in Firebase Auth
+    try {
+      const firebaseUser = await adminAuth.getUserByEmail(targetUser.email).catch(() => null);
+      if (firebaseUser) {
+        await adminAuth.setCustomUserClaims(firebaseUser.uid, {
+          role: newRole,
+          admin: newRole === Role.ADMIN || newRole === Role.SUPER_ADMIN,
+        });
+        console.log(`🛡️ [FirebaseAuth] Custom claims updated for ${targetUser.email} -> ${newRole}`);
+      }
+    } catch (err: any) {
+      console.warn('[FirebaseAuth] Claims update error:', err.message);
+    }
+
     return targetUser;
   },
 
-  setUserStatus: (targetUserId: string, status: 'active' | 'suspended', actorRole: Role): User => {
+  setUserStatus: async (targetUserId: string, status: 'active' | 'suspended', actorRole: Role): Promise<User> => {
     const targetUser = userService.findById(targetUserId);
     if (!targetUser) {
       throw new Error('Target user not found.');
@@ -185,6 +223,15 @@ export const userService = {
     targetUser.status = status;
     targetUser.updatedAt = new Date().toISOString();
     users.set(targetUser.email, targetUser);
+
+    // Save in Firestore DB
+    try {
+      await adminDb.collection('users').doc(targetUserId).set({ status, updatedAt: targetUser.updatedAt }, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore User] Status update error:`, err.message);
+    }
+
     return targetUser;
   },
 };
+

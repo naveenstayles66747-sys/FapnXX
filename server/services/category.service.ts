@@ -1,4 +1,5 @@
 import { auditService } from './audit.service';
+import { adminDb } from '../firebase-admin';
 
 export interface CategoryRecord {
   id: string;
@@ -21,6 +22,7 @@ export interface CategoryRequestRecord {
 
 const categories = new Map<string, CategoryRecord>();
 const categoryRequests = new Map<string, CategoryRequestRecord>();
+let isFirestoreCategoriesInitialized = false;
 
 const INITIAL_CATEGORIES: CategoryRecord[] = [
   {
@@ -76,6 +78,34 @@ const INITIAL_CATEGORIES: CategoryRecord[] = [
 
 INITIAL_CATEGORIES.forEach((c) => categories.set(c.id, c));
 
+// Sync from Firestore DB
+async function initFirestoreCategoriesSync() {
+  if (isFirestoreCategoriesInitialized) return;
+  try {
+    const snapshot = await adminDb.collection('categories').get();
+    if (!snapshot.empty) {
+      snapshot.forEach((doc) => {
+        const data = doc.data() as CategoryRecord;
+        categories.set(doc.id, { ...data, id: doc.id });
+      });
+      console.log(`✅ [Firestore CategoryService] Loaded ${snapshot.size} categories from Firestore.`);
+    }
+
+    const reqSnap = await adminDb.collection('category_requests').get();
+    if (!reqSnap.empty) {
+      reqSnap.forEach((doc) => {
+        const data = doc.data() as CategoryRequestRecord;
+        categoryRequests.set(doc.id, { ...data, id: doc.id });
+      });
+    }
+    isFirestoreCategoriesInitialized = true;
+  } catch (err: any) {
+    console.warn('⚠️ [Firestore CategoryService] Sync fallback:', err.message);
+  }
+}
+
+initFirestoreCategoriesSync();
+
 export const categoryService = {
   listCategories: (): CategoryRecord[] => {
     return Array.from(categories.values());
@@ -97,6 +127,13 @@ export const categoryService = {
 
     categories.set(id, newCategory);
 
+    // Save to Firestore DB
+    try {
+      await adminDb.collection('categories').doc(id).set(newCategory);
+    } catch (err: any) {
+      console.warn(`[Firestore Category] Save error for doc ${id}:`, err.message);
+    }
+
     await auditService.log({
       actorId,
       actorEmail,
@@ -109,6 +146,7 @@ export const categoryService = {
 
     return newCategory;
   },
+
 
   update: async (id: string, updates: Partial<CategoryRecord>, actorId: string, actorEmail: string, actorRole: string): Promise<CategoryRecord> => {
     const existing = categories.get(id);
@@ -124,6 +162,13 @@ export const categoryService = {
     };
 
     categories.set(id, updated);
+
+    // Save to Firestore DB
+    try {
+      await adminDb.collection('categories').doc(id).set(updated, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore Category] Update error for doc ${id}:`, err.message);
+    }
 
     await auditService.log({
       actorId,
@@ -145,6 +190,13 @@ export const categoryService = {
     }
 
     categories.delete(id);
+
+    // Delete from Firestore DB
+    try {
+      await adminDb.collection('categories').doc(id).delete();
+    } catch (err: any) {
+      console.warn(`[Firestore Category] Delete error for doc ${id}:`, err.message);
+    }
 
     await auditService.log({
       actorId,
@@ -171,6 +223,14 @@ export const categoryService = {
     };
 
     categoryRequests.set(id, newReq);
+
+    // Save request to Firestore DB
+    try {
+      await adminDb.collection('category_requests').doc(id).set(newReq);
+    } catch (err: any) {
+      console.warn(`[Firestore CategoryRequest] Save error:`, err.message);
+    }
+
     return newReq;
   },
 
@@ -193,6 +253,12 @@ export const categoryService = {
     req.status = status;
     categoryRequests.set(id, req);
 
+    try {
+      await adminDb.collection('category_requests').doc(id).set({ status }, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore CategoryRequest] Status update error:`, err.message);
+    }
+
     await auditService.log({
       actorId,
       actorEmail,
@@ -206,3 +272,4 @@ export const categoryService = {
     return req;
   },
 };
+

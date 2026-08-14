@@ -15,17 +15,19 @@ service firebase.storage {
       );
     }
 
-    // Videos folder: Public read, writes restricted to max 500MB video files
+    // Videos folder: Public read, writes restricted to Authenticated/Staff users with max 500MB video files
     match /videos/{videoId} {
       allow read: if true;
-      allow write: if request.resource.size < 500 * 1024 * 1024
+      allow write: if (isAuthenticated() || isStaff())
+                   && request.resource.size < 500 * 1024 * 1024
                    && request.resource.contentType.matches('video/.*');
     }
 
-    // Previews & Thumbnails: Public read, writes restricted to max 20MB image/video files
+    // Previews & Thumbnails: Public read, writes restricted to Authenticated/Staff users with max 20MB image/video files
     match /previews/{previewId} {
       allow read: if true;
-      allow write: if request.resource.size < 20 * 1024 * 1024
+      allow write: if (isAuthenticated() || isStaff())
+                   && request.resource.size < 20 * 1024 * 1024
                    && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
     }
 
@@ -46,3 +48,4 @@ service firebase.storage {
     }
   }
 }
+
