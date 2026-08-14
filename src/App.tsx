@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import { Analytics } from '@vercel/analytics/react';
 import { CategoryId, CategoryInfo, ContentPreference, LandingBanner, ScreenId, Video } from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -517,6 +518,7 @@ export default function App() {
       )}
       
       <SpeedInsights />
+      <Analytics />
     </div>
   );
 }
