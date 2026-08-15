@@ -109,10 +109,11 @@ export const StickyBottomLeaderboard: React.FC = () => {
   }, []);
 
   return (
-    <div
+    <aside
       ref={containerRef}
       id="exoclick-sticky-leaderboard"
-      className="hidden lg:block fixed bottom-0 left-0 right-0 z-[120] pointer-events-auto"
+      aria-label="Sponsored Advertisement"
+      className="hidden lg:flex fixed bottom-0 left-64 right-0 z-[120] justify-center items-center pointer-events-none pb-1"
     />
   );
 };

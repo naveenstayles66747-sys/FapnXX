@@ -597,6 +597,19 @@ html.light .age-gate-card button {
   color: #fafafa !important;
 }
 
+/* ExoClick Sticky Bottom Leaderboard Section-Center Alignment */
+#exoclick-sticky-leaderboard,
+#exoclick-sticky-leaderboard > * {
+  pointer-events: auto;
+}
+
+#exoclick-sticky-leaderboard ins,
+#exoclick-sticky-leaderboard iframe {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  display: block !important;
+}
+
 /* =====================================================================
    VIDEO THEATER & LOADING SCREEN (Always 100% Solid Black in Day & Night)
    ===================================================================== */
