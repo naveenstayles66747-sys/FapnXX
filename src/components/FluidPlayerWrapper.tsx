@@ -205,40 +205,26 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
           ) : (
             // Ad is ready and playing
             <>
-              {/* Top-left: Ad badge */}
+              {/* Non-Skippable Ad Header Info */}
               <div className="absolute top-3 left-3 z-50 flex items-center gap-2">
                 <span className="px-2.5 py-1 bg-amber-500 text-black font-extrabold text-[10px] uppercase tracking-wider rounded shadow-md">
-                  Ad
+                  Advertisement
+                </span>
+                <span className="text-white/80 text-xs font-semibold bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
+                  Video will play after ad
                 </span>
               </div>
 
-              {/* Top-right: Countdown / Skip button */}
-              <div className="absolute top-3 right-3 z-50">
-                {!canSkipAd ? (
-                  <div className="px-3 py-1.5 bg-black/80 border border-white/20 text-white text-xs font-mono rounded-xl backdrop-blur-md">
-                    Skip in {adCountdown}s
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleSkipAd}
-                    className="px-4 py-2 bg-[#e0358d] hover:bg-[#c9287a] text-white font-bold text-xs rounded-xl shadow-2xl transition-all flex items-center gap-1.5 cursor-pointer border border-white/20 active:scale-95"
-                  >
-                    <span>Skip Ad</span>
-                    <span className="material-symbols-outlined text-sm">skip_next</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Ad Video Element (Only rendered when valid playable video URL is present) */}
+              {/* Ad Video Element (Plays full duration non-skippable, transitions on completion) */}
               {vastMediaUrl && (
                 <div className="relative w-full h-full flex items-center justify-center bg-black">
                   <video
                     ref={adVideoRef}
                     src={vastMediaUrl}
                     autoPlay
-                    loop
                     playsInline
                     controls={false}
+                    onEnded={() => setAdPhase('done')}
                     onClick={() => { if (vastClickUrl) window.open(vastClickUrl, '_blank'); }}
                     className="w-full h-full object-contain cursor-pointer"
                   />
