@@ -477,6 +477,9 @@ html.light .upload-modal-input {
 }
 
 html.light .upload-modal-tab-unselected {
+  color: #475569 !important;
+}
+
 /* =====================================================================
    ADMIN PANEL MODAL DESIGN SYSTEM (Dedicated Dark Obsidian Console)
    ===================================================================== */
