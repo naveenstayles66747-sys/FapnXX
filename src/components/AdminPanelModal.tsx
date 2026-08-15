@@ -418,6 +418,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       tags: upTags.split(',').map((t) => t.trim()).filter(Boolean),
       thumbnail: upThumbnail.trim(),
       duration: upDuration || '15:00',
+      quality: upQuality,
       views: '0 views',
       viewsCount: 0,
       likesCount: 0,

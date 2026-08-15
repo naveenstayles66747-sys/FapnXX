@@ -462,6 +462,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         embedUrl: finalEmbedUrl,
         isEmbed: true,
         duration: durationInput.trim() || '05:00',
+        quality: quality,
         views: '0 views',
         viewsCount: 0,
         likesCount: 0,

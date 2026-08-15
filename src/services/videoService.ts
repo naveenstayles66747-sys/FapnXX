@@ -248,6 +248,7 @@ export class VideoService {
             categories: data.categories || [data.category || 'amateur'],
             tags: data.tags || ['HD'],
             duration: data.duration || '05:00',
+            quality: data.quality || 'HD',
             viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 0,
             views: data.views || `${data.viewsCount || 0} views`,
             likesCount: typeof data.likesCount === 'number' ? data.likesCount : 0,
