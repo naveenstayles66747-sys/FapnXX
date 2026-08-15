@@ -9,8 +9,8 @@ interface FluidPlayerWrapperProps {
   className?: string;
 }
 
-// Default in-stream VAST Tag URL
-const DEFAULT_IN_STREAM_VAST_URL = 'https://s.magsrv.com/v1/vast.php?idz=6000128';
+// Default in-stream VAST Tag URL (ExoClick In-Stream Video Ad Zone ID: 6003184)
+const DEFAULT_IN_STREAM_VAST_URL = 'https://s.magsrv.com/v1/vast.php?idz=6003184';
 
 export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   video,
