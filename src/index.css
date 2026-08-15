@@ -254,7 +254,31 @@ html.light .video-card-container .thumb-eye-btn .material-symbols-outlined {
   color: #ffffff !important;
 }
 
-/* Card titles and stats below thumbnails must be sharp dark in Light Mode */
+/* Card titles and stats below thumbnails in Dark Mode (Pure Bright White & High-Contrast) */
+html.dark .video-card-meta-box,
+html.dark .video-card-meta-title,
+html.dark article h3,
+html.dark .video-card h3 {
+  color: #ffffff !important;
+}
+
+html.dark .video-card-meta-title:hover,
+html.dark article h3:hover,
+html.dark .video-card h3:hover {
+  color: #f472b6 !important;
+}
+
+html.dark .video-card-stats-row,
+html.dark .video-card-stats-row span,
+html.dark .video-card-stat-value {
+  color: #f1f5f9 !important;
+}
+
+html.dark .video-card-stats-row .material-symbols-outlined {
+  color: #94a3b8 !important;
+}
+
+/* Card titles and stats below thumbnails in Light Mode (Sharp Solid Dark) */
 html.light .video-card-meta-box,
 html.light .video-card-meta-title,
 html.light article h3,
