@@ -205,71 +205,71 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           {video.title}
         </h1>
 
-        {/* 2. Stats & Actions Row (Duration, Rating, Views, Like, Share, Report) */}
-        <div className="flex items-center justify-between gap-2 text-xs font-semibold flex-wrap">
-          {/* Left Stats: Duration & Rating */}
-          <div className="flex items-center gap-3 sm:gap-4 text-rose-500 dark:text-rose-400">
-            <span className="flex items-center gap-1 font-medium text-xs">
+        {/* 2. Stats & Actions Row: (Schedule) 05:00  (ThumbUp) 100%  (Visibility) Views ... Actions */}
+        <div className="flex items-center justify-between gap-3 text-xs font-semibold flex-wrap">
+          {/* Left Stats Group (All 3 metrics perfectly spaced together) */}
+          <div className="flex items-center gap-4 sm:gap-5 text-rose-500 dark:text-rose-400">
+            {/* Duration */}
+            <span className="flex items-center gap-1.5 font-medium text-xs">
               <span className="material-symbols-outlined text-sm">schedule</span>
               <span>{video.duration || '05:00'}</span>
             </span>
-            <span className="flex items-center gap-1 font-medium text-xs">
+
+            {/* Rating % */}
+            <span className="flex items-center gap-1.5 font-medium text-xs">
               <span className="material-symbols-outlined text-sm">thumb_up</span>
               <span>{video.rating || '100%'}</span>
             </span>
-          </div>
 
-          {/* Center & Right Stats: Views & Action Buttons */}
-          <div className="flex items-center gap-3 sm:gap-4 ml-auto">
             {/* Views with eye icon */}
-            <span className="flex items-center gap-1 text-rose-500 dark:text-rose-400 font-medium text-xs">
+            <span className="flex items-center gap-1.5 font-medium text-xs">
               <span className="material-symbols-outlined text-sm">visibility</span>
               <span>{currentViewsCount.toLocaleString()}</span>
             </span>
+          </div>
 
-            {/* Actions: Like, Share, Report icons */}
-            <div className="flex items-center gap-3 text-zinc-800 dark:text-zinc-200">
-              <button
-                type="button"
-                onClick={handleLike}
-                className="hover:text-rose-500 transition-colors cursor-pointer p-1"
-                title="Like video"
+          {/* Right Action Icons (Like, Share, Report) */}
+          <div className="flex items-center gap-3 sm:gap-4 text-zinc-700 dark:text-zinc-300 ml-auto">
+            <button
+              type="button"
+              onClick={handleLike}
+              className="hover:text-rose-500 transition-colors cursor-pointer p-1"
+              title="Like video"
+            >
+              <span
+                className={`material-symbols-outlined text-lg ${isLiked ? 'text-rose-500 fill-1' : ''}`}
+                style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
               >
-                <span
-                  className={`material-symbols-outlined text-lg ${isLiked ? 'text-rose-500 fill-1' : ''}`}
-                  style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
-                >
-                  thumb_up
-                </span>
-              </button>
+                thumb_up
+              </span>
+            </button>
 
-              <button
-                type="button"
-                onClick={handleShare}
-                className="hover:text-rose-500 transition-colors cursor-pointer p-1"
-                title="Share link"
-              >
-                <span className="material-symbols-outlined text-lg">share</span>
-              </button>
+            <button
+              type="button"
+              onClick={handleShare}
+              className="hover:text-rose-500 transition-colors cursor-pointer p-1"
+              title="Share link"
+            >
+              <span className="material-symbols-outlined text-lg">share</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setIsReportModalOpen(true)}
-                className="hover:text-rose-500 transition-colors cursor-pointer p-1"
-                title="Report content"
-              >
-                <span className="material-symbols-outlined text-lg">flag</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsReportModalOpen(true)}
+              className="hover:text-rose-500 transition-colors cursor-pointer p-1"
+              title="Report content"
+            >
+              <span className="material-symbols-outlined text-lg">flag</span>
+            </button>
           </div>
         </div>
 
-        {/* 3. Rounded Info Card (Pornstar & Tags) */}
-        <div className="rounded-2xl p-4 sm:p-5 border border-zinc-200/80 dark:border-white/10 bg-zinc-50/90 dark:bg-[#0f1523] text-zinc-800 dark:text-zinc-200 space-y-4 shadow-sm">
+        {/* 3. Rounded Info Card (Pornstar & Tags) — High contrast in Light & Dark mode */}
+        <div className="rounded-2xl p-4 sm:p-5 border border-zinc-200 dark:border-white/10 bg-[#f8fafc] dark:bg-[#0f1523] text-zinc-900 dark:text-zinc-100 space-y-4 shadow-sm">
           {/* Pornstar Row */}
           {performersList.length > 0 && (
             <div className="text-xs sm:text-sm font-medium">
-              <span className="text-zinc-600 dark:text-zinc-400">Pornstar: </span>
+              <span className="text-zinc-700 dark:text-zinc-400">Pornstar: </span>
               <span className="text-rose-600 dark:text-rose-400 font-bold ml-1 cursor-pointer hover:underline">
                 {performersList.join(', ')}
               </span>
@@ -278,7 +278,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
 
           {/* Tags Section */}
           <div className="space-y-2">
-            <div className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-medium">
+            <div className="text-xs sm:text-sm text-zinc-700 dark:text-zinc-400 font-medium">
               Tags:
             </div>
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -287,15 +287,15 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
                 video.tags.map((tag, idx) => (
                   <span
                     key={idx}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-white/10 shadow-sm hover:border-rose-400 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-white/10 shadow-sm hover:border-rose-400 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-xs text-zinc-500 dark:text-zinc-400">label</span>
+                    <span className="material-symbols-outlined text-xs text-zinc-600 dark:text-zinc-400">label</span>
                     <span>{tag}</span>
                   </span>
                 ))
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-white/10 shadow-sm">
-                  <span className="material-symbols-outlined text-xs text-zinc-500 dark:text-zinc-400">label</span>
+                <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-white/10 shadow-sm">
+                  <span className="material-symbols-outlined text-xs text-zinc-600 dark:text-zinc-400">label</span>
                   <span>{video.quality || 'HD'}</span>
                 </span>
               )}

@@ -213,17 +213,30 @@ html.light .text-\[\#ffb0cd\] {
   color: #db2777 !important;
 }
 
-/* 5. PRESERVE WHITE TEXT OVER HERO BANNERS & MEDIA THUMBNAILS */
-html.light .aspect-video .text-white,
-html.light .aspect-video h3,
-html.light .aspect-video p,
-html.light .aspect-video span,
+/* 5. PRESERVE WHITE TEXT OVER HERO BANNERS & MEDIA THUMBNAIL OVERLAYS ONLY */
+html.light .aspect-video .absolute .text-white,
+html.light .aspect-video .absolute span,
+html.light .hero-banner-overlay *,
 html.light .bg-gradient-to-t .text-white,
 html.light .bg-gradient-to-t h3,
-html.light .bg-gradient-to-t p,
-html.light [class*="aspect-video"] *,
-html.light [class*="bg-gradient"] * {
+html.light .bg-gradient-to-t p {
   color: #ffffff !important;
+}
+
+/* Card titles and stats below thumbnails must be sharp dark in Light Mode */
+html.light article h3,
+html.light .video-card h3 {
+  color: #0f172a !important;
+}
+
+html.light article h3:hover,
+html.light .video-card h3:hover {
+  color: #e0358d !important;
+}
+
+html.light article .material-symbols-outlined,
+html.light .video-card .material-symbols-outlined {
+  color: #475569 !important;
 }
 
 html.light .aspect-video .text-\[\#debec8\],

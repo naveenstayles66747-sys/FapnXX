@@ -449,11 +449,11 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
         </h3>
 
         {/* Stats Row: 👁️ 12k   👍 95%   🕒 08:20 */}
-        <div className="flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs text-zinc-600 dark:text-zinc-400 font-medium">
+        <div className="flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-zinc-700 dark:text-zinc-300">
           {/* 1. Views */}
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] sm:text-sm text-zinc-500 dark:text-zinc-400">visibility</span>
-            <span className="text-zinc-800 dark:text-zinc-200 font-semibold">
+            <span className="text-zinc-900 dark:text-zinc-100 font-bold">
               {(() => {
                 const n = video.viewsCount;
                 if (typeof n === 'number') {
@@ -469,13 +469,13 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
           {/* 2. Rating % */}
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] sm:text-sm text-zinc-500 dark:text-zinc-400">thumb_up</span>
-            <span className="text-zinc-800 dark:text-zinc-200 font-semibold">{video.rating || '100%'}</span>
+            <span className="text-zinc-900 dark:text-zinc-100 font-bold">{video.rating || '100%'}</span>
           </span>
 
           {/* 3. Duration */}
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] sm:text-sm text-zinc-500 dark:text-zinc-400">schedule</span>
-            <span className="text-zinc-800 dark:text-zinc-200 font-semibold">
+            <span className="text-zinc-900 dark:text-zinc-100 font-bold">
               {video.duration || '05:00'}
             </span>
           </span>
