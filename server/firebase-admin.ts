@@ -5,7 +5,9 @@ import { getStorage, Storage } from 'firebase-admin/storage';
 import path from 'path';
 import fs from 'fs';
 
-const serviceAccountPath = path.resolve(process.cwd(), 'serviceAccountKey.json');
+const serviceAccountPath1 = path.resolve(process.cwd(), 'server', 'serviceAccountKey.json');
+const serviceAccountPath2 = path.resolve(process.cwd(), 'serviceAccountKey.json');
+const serviceAccountPath = fs.existsSync(serviceAccountPath1) ? serviceAccountPath1 : serviceAccountPath2;
 let app: App;
 
 if (getApps().length === 0) {

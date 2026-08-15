@@ -1,4 +1,4 @@
-import { adminDb } from './firebase-admin';
+import { adminDb } from './firebase-admin.js';
 
 async function resetFakeData() {
   console.log('🧹 [Cleanup] Starting reset of fake/demo Firestore documents...');

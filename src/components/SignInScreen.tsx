@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { videoService } from '../services/videoService';
-
+import { auth, db } from '../services/firebaseConfig';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface SignInScreenProps {
   onSuccess: (email: string) => void;
@@ -28,52 +30,47 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack })
     setLoading(true);
 
     try {
-      const endpoint = isSignUp ? '/api/v1/auth/register' : '/api/v1/auth/login';
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password: password.trim() }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        setError(data?.error?.message || (isSignUp ? 'Registration failed.' : 'Invalid email or password.'));
-        return;
-      }
-
       if (isSignUp) {
+        // Direct Firebase Auth User Creation
+        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password.trim());
+        const user = cred.user;
+        
+        // Create Firestore user record in 'users' collection
+        await setDoc(doc(db, 'users', user.uid), {
+          id: user.uid,
+          email: user.email,
+          role: 'USER',
+          createdAt: new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
+        }, { merge: true });
+
         setSuccessMsg('Account created successfully! Signing you in...');
-        // Automatically login
-        const loginRes = await fetch('/api/v1/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim(), password: password.trim() }),
-        });
-        const loginData = await loginRes.json();
-        if (loginData.success && loginData.data?.accessToken) {
-          localStorage.setItem('fapnxx_auth_token', loginData.data.accessToken);
-          localStorage.setItem('fapnxx_user_role', loginData.data.user.role);
-          if (loginData.data?.firebaseCustomToken) {
-            videoService.syncFirebaseAuthToken(loginData.data.firebaseCustomToken).catch(() => null);
-          }
-          onSuccess(email.trim());
-        } else {
-          setIsSignUp(false);
-        }
+        onSuccess(email.trim());
       } else {
-        if (data.data?.accessToken) {
-          localStorage.setItem('fapnxx_auth_token', data.data.accessToken);
-          localStorage.setItem('fapnxx_user_role', data.data.user.role);
-          if (data.data?.firebaseCustomToken) {
-            videoService.syncFirebaseAuthToken(data.data.firebaseCustomToken).catch(() => null);
-          }
-        }
+        // Direct Firebase Auth Sign In
+        const cred = await signInWithEmailAndPassword(auth, email.trim(), password.trim());
+        const user = cred.user;
+
+        // Update last active / login timestamp in Firestore
+        await setDoc(doc(db, 'users', user.uid), {
+          id: user.uid,
+          email: user.email,
+          lastLoginAt: new Date().toISOString(),
+        }, { merge: true });
+
         onSuccess(email.trim());
       }
-
     } catch (err: any) {
-      setError(err.message || 'Network error. Please try again.');
+      console.warn('[SignIn] Notice:', err);
+      if (err.code === 'auth/email-already-in-use') {
+        setError('An account with this email already exists. Please Sign In.');
+      } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+        setError('Invalid email or password.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Password should be at least 6 characters.');
+      } else {
+        setError(err.message || 'Authentication failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
