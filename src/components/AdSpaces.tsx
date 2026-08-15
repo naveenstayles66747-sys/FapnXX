@@ -196,4 +196,49 @@ export const PopunderTrigger: React.FC<{ popunderUrl?: string }> = ({ popunderUr
   return null;
 };
 
+/**
+ * Desktop Fullpage Interstitial Ad (Zone ID: 6003174)
+ * Loads asynchronously on Web / Desktop viewports. Interstitial overlay is handled by ExoClick SDK with built-in close button.
+ */
+export const DesktopFullpageInterstitial: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const adInjected = useRef(false);
+
+  useEffect(() => {
+    // Only load on desktop / laptop viewports
+    if (typeof window === 'undefined' || window.innerWidth < 1024 || adInjected.current) return;
+
+    try {
+      // 1. Inject script provider if not already present
+      if (!document.getElementById('pemsrv-ad-provider')) {
+        const script = document.createElement('script');
+        script.id = 'pemsrv-ad-provider';
+        script.type = 'application/javascript';
+        script.async = true;
+        script.src = 'https://a.pemsrv.com/ad-provider.js';
+        document.head.appendChild(script);
+      }
+
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+        const ins = document.createElement('ins');
+        ins.className = 'eas6a97888e35';
+        ins.setAttribute('data-zoneid', '6003174');
+        containerRef.current.appendChild(ins);
+
+        const serveScript = document.createElement('script');
+        serveScript.innerHTML = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+        containerRef.current.appendChild(serveScript);
+
+        adInjected.current = true;
+      }
+    } catch (e) {
+      console.warn('[ExoClick] Error serving interstitial ad:', e);
+    }
+  }, []);
+
+  return <div ref={containerRef} className="hidden lg:block w-0 h-0 overflow-hidden" />;
+};
+
 export default AdBanner;
+
