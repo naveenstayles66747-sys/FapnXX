@@ -1,50 +1,59 @@
 import { adminDb } from './firebase-admin.js';
 
-async function resetFakeData() {
-  console.log('🧹 [Cleanup] Starting reset of fake/demo Firestore documents...');
+async function purgeAllFakeCollections() {
+  console.log('🧹 [Purge] Starting complete wipe of demo/fake seeded collections in Firestore...');
 
-  // 1. Reset ad_campaigns with 0 impressions & 0 clicks or purge fake ads
-  const adSnap = await adminDb.collection('ad_campaigns').get();
-  if (!adSnap.empty) {
-    const batch = adminDb.batch();
-    adSnap.forEach((doc) => {
-      batch.update(doc.ref, {
-        impressions: 0,
-        clicks: 0,
+  const collectionsToClean = [
+    'ad_campaigns',
+    'banners',
+    'comments',
+    'reports',
+  ];
+
+  for (const colName of collectionsToClean) {
+    const snap = await adminDb.collection(colName).get();
+    if (!snap.empty) {
+      const batch = adminDb.batch();
+      snap.forEach((doc) => {
+        batch.delete(doc.ref);
       });
-    });
-    await batch.commit();
-    console.log(`✅ Reset ${adSnap.size} ad campaigns to 0 impressions & 0 clicks`);
-  }
-
-  // 2. Clean fake videos (vid-001 to vid-005) or reset views to real 1/0
-  const vidSnap = await adminDb.collection('videos').get();
-  if (!vidSnap.empty) {
-    const batch = adminDb.batch();
-    let count = 0;
-    vidSnap.forEach((doc) => {
-      const data = doc.data();
-      // If it has fake 120000 / 67300 views from old seed script, reset to 0/1
-      if (data.viewsCount && data.viewsCount > 10000) {
-        batch.update(doc.ref, {
-          viewsCount: 1,
-          views: '1 view',
-          likesCount: 0,
-        });
-        count++;
-      }
-    });
-    if (count > 0) {
       await batch.commit();
-      console.log(`✅ Reset ${count} seeded videos with fake views down to 1 view & 0 likes`);
+      console.log(`🗑️ Deleted all ${snap.size} documents from collection: ${colName}`);
+    } else {
+      console.log(`✨ Collection ${colName} is already empty`);
     }
   }
 
-  console.log('🎉 [Cleanup] Firestore is now 100% clean with zero fake numbers!');
+  // Also clean demo videos (vid-001, vid-002, etc.) but keep any user uploads (vid-user-...)
+  const vidSnap = await adminDb.collection('videos').get();
+  if (!vidSnap.empty) {
+    const batch = adminDb.batch();
+    let deletedCount = 0;
+    vidSnap.forEach((doc) => {
+      const id = doc.id;
+      // Delete seeded dummy videos
+      if (id.startsWith('vid-00') || id.startsWith('video-') || id === 'vid-test-user-1') {
+        batch.delete(doc.ref);
+        deletedCount++;
+      } else {
+        // If user upload, ensure clean views and likes
+        batch.update(doc.ref, {
+          viewsCount: doc.data().viewsCount || 1,
+          likesCount: doc.data().likesCount || 0,
+        });
+      }
+    });
+    if (deletedCount > 0) {
+      await batch.commit();
+      console.log(`🗑️ Deleted ${deletedCount} demo seed videos from 'videos' collection`);
+    }
+  }
+
+  console.log('🎉 [Purge Complete] Firestore has been completely cleared of demo data!');
   process.exit(0);
 }
 
-resetFakeData().catch((err) => {
-  console.error('❌ Reset error:', err);
+purgeAllFakeCollections().catch((err) => {
+  console.error('❌ Purge error:', err);
   process.exit(1);
 });
