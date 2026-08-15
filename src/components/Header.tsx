@@ -286,14 +286,14 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 4. Right Action Buttons */}
       <div className="flex items-center gap-2 md:gap-2.5 shrink-0 z-20">
-        {/* Desktop Theme Toggle Button (Light/Dark Mode) */}
+        {/* Desktop Theme Toggle Button (Light/Dark Mode) — Sleek Theme Matching Pill */}
         <button
           onClick={onToggleTheme}
-          className="header-btn-hover-pink hidden lg:flex w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10 group/theme"
+          className="hidden lg:flex w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/90 hover:bg-[#e0358d] dark:hover:bg-[#e0358d] text-zinc-700 dark:text-zinc-200 hover:text-white dark:hover:text-white items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-300 dark:border-white/10 transition-all duration-200 group/theme"
           title={themeMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           aria-label="Toggle theme mode"
         >
-          <span className="material-symbols-outlined text-lg text-amber-500 dark:text-amber-400 group-hover/theme:text-white transition-colors">
+          <span className="material-symbols-outlined text-[18px] text-[#e0358d] dark:text-[#f472b6] group-hover/theme:text-white transition-colors">
             {themeMode === 'dark' ? 'light_mode' : 'dark_mode'}
           </span>
         </button>
