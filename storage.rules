@@ -1,9 +1,77 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow public read and write for media uploads (videos, previews, banners, avatars)
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        request.auth.token.role == 'ADMIN' ||
+        request.auth.token.role == 'SUPER_ADMIN' ||
+        request.auth.token.email == 'naveenstayles66747@gmail.com'
+      );
+    }
+
+    function isModerator() {
+      return isAuthenticated() && (
+        isAdmin() ||
+        request.auth.token.role == 'MODERATOR' ||
+        request.auth.token.role == 'EDITOR'
+      );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Public Media Assets: Videos, Previews, Thumbnails, Banners
+    // ─────────────────────────────────────────────────────────────────────────────
+    match /videos/{videoId} {
+      allow read: if true;
+      // Allow video upload (MP4/WebM, max 2GB)
+      allow write: if (
+        request.resource.size < 2048 * 1024 * 1024 &&
+        (request.resource.contentType.matches('video/.*') || request.resource.contentType.matches('application/x-mpegURL'))
+      ) || isModerator();
+    }
+
+    match /previews/{previewId} {
+      allow read: if true;
+      // Allow preview / thumbnail upload (Images/WebP, max 50MB)
+      allow write: if (
+        request.resource.size < 50 * 1024 * 1024 &&
+        (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'))
+      ) || isModerator();
+    }
+
+    match /thumbnails/{thumbId} {
+      allow read: if true;
+      allow write: if (
+        request.resource.size < 20 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*')
+      ) || isModerator();
+    }
+
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow write: if isModerator();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isModerator();
+    }
+
+    // User-specific upload directory
+    match /users/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if (isAuthenticated() && request.auth.uid == userId) || isModerator();
+    }
+
+    // Default fallback
     match /{allPaths=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isModerator();
     }
   }
 }

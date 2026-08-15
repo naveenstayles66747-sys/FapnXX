@@ -18,6 +18,8 @@ import { AdminPanelModal } from './components/AdminPanelModal';
 import { SoftLoginModal } from './components/SoftLoginModal';
 import { VIDEOS } from './data';
 import { videoService } from './services/videoService';
+import { auth } from './services/firebaseConfig';
+import { onAuthStateChanged, onIdTokenChanged } from 'firebase/auth';
 import {
   getStoredAgeVerified,
   getStoredBanners,
@@ -98,83 +100,45 @@ export default function App() {
   });
   const filteredVideosList = preferredVideos.length > 0 ? preferredVideos : videosList;
 
-  // Admin Authentication & Device-Isolated Persistent Session Management (30-day session per authenticated device)
-  const ADMIN_EMAIL = 'naveenstayles66747@gmail.com';
-  const ADMIN_SESSION_KEY = 'fapnxx_admin_secure_session';
+  // Real Firebase Auth & Custom Claims Observer
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
-    try {
-      const raw = localStorage.getItem(ADMIN_SESSION_KEY);
-      if (raw) {
-        const session = JSON.parse(raw);
-        if (
-          session &&
-          session.email === ADMIN_EMAIL &&
-          session.expiresAt &&
-          session.expiresAt > Date.now()
-        ) {
-          return true;
+  // Observe real-time Firebase Auth token changes and verify staff/admin claims
+  useEffect(() => {
+    const unsubscribe = onIdTokenChanged(auth, async (user) => {
+      if (user && user.email) {
+        setUserEmail(user.email);
+        try {
+          const idTokenResult = await user.getIdTokenResult();
+          const claims = idTokenResult.claims;
+          const isStaff =
+            claims.admin === true ||
+            claims.role === 'ADMIN' ||
+            claims.role === 'SUPER_ADMIN' ||
+            user.email.toLowerCase() === 'naveenstayles66747@gmail.com';
+          setIsAdminAuthenticated(isStaff);
+        } catch {
+          setIsAdminAuthenticated(user.email.toLowerCase() === 'naveenstayles66747@gmail.com');
         }
+      } else {
+        setUserEmail(null);
+        setIsAdminAuthenticated(false);
       }
-    } catch {}
-    return false;
-  });
+    });
 
-  const [userEmail, setUserEmail] = useState<string | null>(() => {
-    try {
-      const raw = localStorage.getItem(ADMIN_SESSION_KEY);
-      if (raw) {
-        const session = JSON.parse(raw);
-        if (session && session.email && session.expiresAt > Date.now()) {
-          return session.email;
-        }
-      }
-    } catch {}
-    return null;
-  });
+    return () => unsubscribe();
+  }, []);
 
   const handleAdminLogin = (email: string) => {
-    setIsAdminAuthenticated(true);
     setUserEmail(email);
-    try {
-      const session = {
-        email: email.trim().toLowerCase(),
-        token: 'fapnxx_admin_token_' + Date.now(),
-        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30-day isolated session on this device
-        loggedInAt: new Date().toISOString(),
-      };
-      localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
-      localStorage.setItem('fapnxx_auth_token', session.token);
-      localStorage.setItem('fapnxx_user_role', 'SUPER_ADMIN');
-    } catch {}
+    setIsAdminAuthenticated(true);
   };
 
   const handleAdminLogout = () => {
-    setIsAdminAuthenticated(false);
     setUserEmail(null);
-    try {
-      localStorage.removeItem(ADMIN_SESSION_KEY);
-      localStorage.removeItem('fapnxx_auth_token');
-      localStorage.removeItem('fapnxx_user_role');
-    } catch {}
+    setIsAdminAuthenticated(false);
   };
-
-  // Periodic session validity check (checks every 30 seconds for automatic auto-logout upon expiry)
-  useEffect(() => {
-    const checkExpiry = () => {
-      try {
-        const raw = localStorage.getItem(ADMIN_SESSION_KEY);
-        if (raw) {
-          const session = JSON.parse(raw);
-          if (session && session.expiresAt && session.expiresAt <= Date.now()) {
-            handleAdminLogout();
-          }
-        }
-      } catch {}
-    };
-    const timer = setInterval(checkExpiry, 30000);
-    return () => clearInterval(timer);
-  }, []);
 
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
 

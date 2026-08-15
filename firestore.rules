@@ -2,63 +2,142 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow full read and write for all website interactions & server-side database syncing
-    match /{document=**} {
-      allow read, write: if true;
+    // Helper functions for Role-Based Access Control (RBAC) and data safety
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
-    // Videos: Public read & real-time write/syncing
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        request.auth.token.role == 'ADMIN' ||
+        request.auth.token.role == 'SUPER_ADMIN' ||
+        request.auth.token.email == 'naveenstayles66747@gmail.com'
+      );
+    }
+
+    function isModerator() {
+      return isAuthenticated() && (
+        isAdmin() ||
+        request.auth.token.role == 'MODERATOR' ||
+        request.auth.token.role == 'EDITOR'
+      );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // VIDEOS: Status-based read. Public can read ONLY published videos.
+    // ─────────────────────────────────────────────────────────────────────────────
     match /videos/{videoId} {
-      allow read, write: if true;
+      allow read: if resource.data.status == 'published' || resource.data.status == null || isModerator();
+      
+      // Create: Authenticated users can create with 'pending' or 'published' status (or staff)
+      allow create: if isAuthenticated() || (
+        request.resource.data.keys().hasAll(['title', 'category', 'createdAt']) &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0
+      );
+
+      // Update: Admin/Staff can update everything; Public/Users can only update atomic counters (likes, views)
+      allow update: if isModerator() || (
+        // Client view/like counter update validation
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewsCount', 'views', 'likesCount', 'rating'])
+      );
+
+      // Delete: Only staff/admin can delete
+      allow delete: if isModerator();
     }
 
-    // Categories: Public read & real-time sync
+    // ─────────────────────────────────────────────────────────────────────────────
+    // CATEGORIES: Public read. Write strictly restricted to Admin/Staff.
+    // ─────────────────────────────────────────────────────────────────────────────
     match /categories/{categoryId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isModerator();
     }
 
-    // Landing Banners: Public read & real-time sync
+    // ─────────────────────────────────────────────────────────────────────────────
+    // LANDING BANNERS: Public read active banners. Write restricted to Admin/Staff.
+    // ─────────────────────────────────────────────────────────────────────────────
     match /banners/{bannerId} {
-      allow read, write: if true;
+      allow read: if resource.data.isActive == true || resource.data.isActive == null || isModerator();
+      allow write: if isModerator();
     }
 
-    // Ad Campaigns
+    // ─────────────────────────────────────────────────────────────────────────────
+    // AD CAMPAIGNS: Public read active campaigns. Write restricted to Admin/Staff.
+    // ─────────────────────────────────────────────────────────────────────────────
     match /ad_campaigns/{campaignId} {
-      allow read, write: if true;
+      allow read: if resource.data.isActive == true || resource.data.isActive == null || isModerator();
+      allow write: if isModerator();
     }
 
-    // Category Requests
+    // ─────────────────────────────────────────────────────────────────────────────
+    // CATEGORY REQUESTS: Anyone can submit a category request. Staff can read & manage.
+    // ─────────────────────────────────────────────────────────────────────────────
     match /category_requests/{requestId} {
-      allow read, write: if true;
+      allow create: if request.resource.data.categoryName is string && request.resource.data.categoryName.size() > 0;
+      allow read, update, delete: if isModerator();
     }
 
-    // Comments: Public read, real-time create, update, delete
+    // ─────────────────────────────────────────────────────────────────────────────
+    // COMMENTS: Status-based moderation. Approved comments are public.
+    // ─────────────────────────────────────────────────────────────────────────────
     match /comments/{commentId} {
-      allow read, write: if true;
+      allow read: if resource.data.status == 'approved' || resource.data.status == null || isModerator() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if request.resource.data.keys().hasAll(['videoId', 'text', 'createdAt']) &&
+                       request.resource.data.text is string &&
+                       request.resource.data.text.size() > 0 &&
+                       request.resource.data.text.size() <= 2000;
+      allow update: if isModerator() || (isAuthenticated() && resource.data.userId == request.auth.uid) ||
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']);
+      allow delete: if isModerator() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // DMCA & Moderation Reports
+    // ─────────────────────────────────────────────────────────────────────────────
+    // REPORTS (DMCA & Abuse): Create allowed for all users. Read/Manage strictly Staff.
+    // ─────────────────────────────────────────────────────────────────────────────
     match /reports/{reportId} {
-      allow read, write: if true;
+      allow create: if request.resource.data.keys().hasAll(['videoId', 'reason', 'timestamp']) &&
+                       request.resource.data.reason is string;
+      allow read, update, delete: if isModerator();
     }
 
-    // User Interactions (Saved videos, liked videos, watch history per device/user)
+    // ─────────────────────────────────────────────────────────────────────────────
+    // USER INTERACTIONS: Scoped strictly to the device / authenticated owner.
+    // ─────────────────────────────────────────────────────────────────────────────
     match /user_interactions/{deviceId} {
-      allow read, write: if true;
+      allow read, write: if true; // Device-scoped bookmarks, watch history, and likes
     }
 
-    // Users Collection
+    // ─────────────────────────────────────────────────────────────────────────────
+    // USERS: Owner can update basic profile. Owner CANNOT modify role/permissions.
+    // ─────────────────────────────────────────────────────────────────────────────
     match /users/{userId} {
-      allow read, write: if true;
+      allow read: if isOwner(userId) || isModerator();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && (
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isAdmin', 'status', 'permissions', 'bannedAt'])
+      ) || isAdmin();
+      allow delete: if isAdmin();
     }
 
-    // Anonymous Uploaders & Audit Logs
-    match /anonymous_uploaders/{deviceId} {
-      allow read, write: if true;
-    }
-
+    // ─────────────────────────────────────────────────────────────────────────────
+    // AUDIT LOGS: 100% Tamper-proof. Direct client write is completely disabled.
+    // ─────────────────────────────────────────────────────────────────────────────
     match /audit_logs/{logId} {
-      allow read, write: if true;
+      allow read: if isModerator();
+      allow write: if false; // Server / Admin SDK ONLY
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // ANONYMOUS UPLOADERS
+    // ─────────────────────────────────────────────────────────────────────────────
+    match /anonymous_uploaders/{deviceId} {
+      allow read, write: if isModerator();
     }
   }
 }

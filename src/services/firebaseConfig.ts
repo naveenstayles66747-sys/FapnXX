@@ -3,6 +3,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 // Firebase configuration for project: indianfullxx
 const firebaseConfig = {
@@ -17,6 +18,21 @@ const firebaseConfig = {
 
 // Initialize Firebase instance safely
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+// Initialize App Check in browser environment if key is configured
+if (typeof window !== 'undefined') {
+  try {
+    const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+    if (recaptchaSiteKey) {
+      initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(recaptchaSiteKey),
+        isTokenAutoRefreshEnabled: true,
+      });
+    }
+  } catch (appCheckErr) {
+    console.warn('[Firebase AppCheck] Initialization notice:', appCheckErr);
+  }
+}
 
 // Initialize Firestore with ignoreUndefinedProperties enabled
 let firestoreInstance;
@@ -51,4 +67,3 @@ export function cleanForFirestore<T extends Record<string, any>>(obj: T): T {
 }
 
 export default app;
-

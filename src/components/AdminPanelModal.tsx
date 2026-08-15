@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { CategoryInfo, DMCAReport, LandingBanner, ReportStatus, Video } from '../types';
 import { getStoredReports, setStoredReports } from '../utils/storage';
 import { videoService } from '../services/videoService';
+import { auth } from '../services/firebaseConfig';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import {
   getCategoryHeroImage,
   handleCategoryImageError,
@@ -186,7 +188,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Frontend Admin Authentication (direct credential check)
+  // Production Admin Authentication using Firebase Authentication SDK and backend verification
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
@@ -195,25 +197,54 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     const cleanEmail = emailInput.trim().toLowerCase();
     const cleanPassword = passwordInput.trim();
 
-    // Simulate slight loading delay for UX
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
     try {
-      // Admin credentials check (frontend-based since no backend server is deployed)
-      const ADMIN_EMAIL = 'naveenstayles66747@gmail.com';
-      const ADMIN_PASSWORD = 'Naveen7011';
+      // 1. Authenticate with real Firebase Authentication
+      const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
+      const user = userCredential.user;
 
-      if (cleanEmail === ADMIN_EMAIL && cleanPassword === ADMIN_PASSWORD) {
-        localStorage.setItem('fapnxx_auth_token', 'admin_local_token');
-        localStorage.setItem('fapnxx_user_role', 'SUPER_ADMIN');
+      // 2. Get ID token and custom claims
+      const idTokenResult = await user.getIdTokenResult(true);
+      const claims = idTokenResult.claims;
+
+      const isStaffOrAdmin =
+        claims.admin === true ||
+        claims.role === 'ADMIN' ||
+        claims.role === 'SUPER_ADMIN' ||
+        cleanEmail === 'naveenstayles66747@gmail.com';
+
+      if (isStaffOrAdmin) {
         onAdminLogin(cleanEmail);
         setLoginError('');
         setActiveTab('categories');
       } else {
-        setLoginError('Access denied. Invalid credentials or insufficient admin privileges.');
+        await signOut(auth);
+        setLoginError('Access denied. This account does not possess administrator privileges.');
       }
     } catch (err: any) {
-      setLoginError('Login failed. Please try again.');
+      console.warn('[AdminAuth] Firebase authentication notice:', err?.message || err);
+      // Fallback check against backend API
+      try {
+        const res = await fetch('/api/v1/auth/admin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && (json.data?.user?.role === 'ADMIN' || json.data?.user?.role === 'SUPER_ADMIN')) {
+            onAdminLogin(cleanEmail);
+            setLoginError('');
+            setActiveTab('categories');
+            return;
+          }
+        }
+      } catch {}
+
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+        setLoginError('Invalid email or password. Please verify your credentials.');
+      } else {
+        setLoginError(err.message || 'Authentication failed. Please verify credentials.');
+      }
     } finally {
       setIsLoggingIn(false);
     }
@@ -221,17 +252,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const handleAdminLogout = async () => {
     try {
-      const token = localStorage.getItem('fapnxx_auth_token');
-      await fetch('/api/v1/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+      await signOut(auth);
     } catch (_) {}
-    localStorage.removeItem('fapnxx_auth_token');
-    localStorage.removeItem('fapnxx_user_role');
+    try {
+      await fetch('/api/v1/auth/logout', { method: 'POST' });
+    } catch (_) {}
     onAdminLogout();
   };
 
