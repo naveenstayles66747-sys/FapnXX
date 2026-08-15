@@ -82,20 +82,20 @@ export const AdBanner: React.FC<AdBannerProps> = ({
 
 /**
  * Smart Sticky Bottom Leaderboard (728x90) for Web View:
- * Dynamically mounts the ExoClick 6003172 ad, reserves smooth dynamic bottom spacing
- * so feed content is never obstructed, auto-collapses if closed, and re-allocates padding
- * when the 30-sec ad refresh triggers.
+ * - Listens for clicks on the ad iframe/content OR on ExoClick's native close button
+ * - Instantly collapses the sticky bar AND the reserved bottom padding cleanly
+ * - Re-opens cleanly after 30 seconds refresh cycle
  */
 export const StickyBottomLeaderboard: React.FC = () => {
   const [isVisible, setIsVisible] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  const asideRef = useRef<HTMLElement>(null);
   const adInjected = useRef(false);
 
   useEffect(() => {
     if (!isVisible || !containerRef.current || adInjected.current) return;
 
     try {
-      // 1. Inject ExoClick Ad Provider script if not already present
       if (!document.getElementById('exoclick-ad-provider')) {
         const script = document.createElement('script');
         script.id = 'exoclick-ad-provider';
@@ -105,7 +105,6 @@ export const StickyBottomLeaderboard: React.FC = () => {
         document.head.appendChild(script);
       }
 
-      // 2. Clear previous and mount fresh ad ins tag
       containerRef.current.innerHTML = '';
       const ins = document.createElement('ins');
       ins.className = 'eas6a97888e17';
@@ -115,7 +114,6 @@ export const StickyBottomLeaderboard: React.FC = () => {
       ins.style.height = '90px';
       containerRef.current.appendChild(ins);
 
-      // 3. Serve ad via AdProvider queue
       const serveScript = document.createElement('script');
       serveScript.innerHTML = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
       containerRef.current.appendChild(serveScript);
@@ -126,8 +124,8 @@ export const StickyBottomLeaderboard: React.FC = () => {
     }
   }, [isVisible]);
 
-  // If user closed ad, hide and set timer to re-open on next refresh cycle
-  const handleClose = () => {
+  // Handle Close & Click-away dismiss
+  const handleDismiss = () => {
     setIsVisible(false);
     adInjected.current = false;
     // Re-surface cleanly after 30 seconds
@@ -135,6 +133,39 @@ export const StickyBottomLeaderboard: React.FC = () => {
       setIsVisible(true);
     }, 30000);
   };
+
+  // Detect when user clicks inside the ad or on native close elements
+  useEffect(() => {
+    if (!isVisible) return;
+
+    // Window blur listener (fires when user clicks iframe ad or opens advertiser tab)
+    const onWindowBlur = () => {
+      if (document.activeElement && containerRef.current?.contains(document.activeElement)) {
+        handleDismiss();
+      }
+    };
+
+    // MutationObserver to watch if ExoClick script self-hides or closes
+    const observer = new MutationObserver(() => {
+      if (containerRef.current) {
+        const ins = containerRef.current.querySelector('ins');
+        if (ins && (ins.style.display === 'none' || ins.getAttribute('data-status') === 'closed')) {
+          handleDismiss();
+        }
+      }
+    });
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current, { attributes: true, subtree: true });
+    }
+
+    window.addEventListener('blur', onWindowBlur);
+
+    return () => {
+      window.removeEventListener('blur', onWindowBlur);
+      observer.disconnect();
+    };
+  }, [isVisible]);
 
   if (!isVisible) return null;
 
@@ -145,6 +176,7 @@ export const StickyBottomLeaderboard: React.FC = () => {
 
       {/* Floating Sticky Bottom Banner Container (Desktop only: left-64 avoids sidebar collision) */}
       <aside
+        ref={asideRef}
         aria-label="Sponsored Advertisement"
         className="hidden lg:flex fixed bottom-0 left-64 right-0 z-[120] items-center justify-center p-2 bg-[#0d0c0e]/95 backdrop-blur-xl border-t border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] transition-all duration-300 animate-in slide-in-from-bottom-6"
       >
@@ -152,7 +184,7 @@ export const StickyBottomLeaderboard: React.FC = () => {
           {/* Close Button at top-right corner of ad */}
           <button
             type="button"
-            onClick={handleClose}
+            onClick={handleDismiss}
             title="Close Advertisement"
             aria-label="Close Advertisement"
             className="absolute -top-2.5 -right-2.5 z-20 w-6 h-6 rounded-full bg-zinc-800 hover:bg-[#e0358d] text-white border border-white/20 flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-90"
@@ -166,7 +198,11 @@ export const StickyBottomLeaderboard: React.FC = () => {
           </span>
 
           {/* ExoClick Mounting Point */}
-          <div ref={containerRef} className="flex items-center justify-center overflow-hidden rounded" />
+          <div
+            ref={containerRef}
+            onClick={handleDismiss}
+            className="flex items-center justify-center overflow-hidden rounded"
+          />
         </div>
       </aside>
     </>
@@ -198,18 +234,15 @@ export const PopunderTrigger: React.FC<{ popunderUrl?: string }> = ({ popunderUr
 
 /**
  * Desktop Fullpage Interstitial Ad (Zone ID: 6003174)
- * Loads asynchronously on Web / Desktop viewports. Interstitial overlay is handled by ExoClick SDK with built-in close button.
  */
 export const DesktopFullpageInterstitial: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const adInjected = useRef(false);
 
   useEffect(() => {
-    // Only load on desktop / laptop viewports
     if (typeof window === 'undefined' || window.innerWidth < 1024 || adInjected.current) return;
 
     try {
-      // 1. Inject script provider if not already present
       if (!document.getElementById('pemsrv-ad-provider')) {
         const script = document.createElement('script');
         script.id = 'pemsrv-ad-provider';
@@ -241,4 +274,3 @@ export const DesktopFullpageInterstitial: React.FC = () => {
 };
 
 export default AdBanner;
-
