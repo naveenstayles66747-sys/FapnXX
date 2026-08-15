@@ -477,7 +477,13 @@ export default function App() {
             currentScreen={currentScreen}
             onNavigate={handleNavigate}
             onToggleMobileDrawer={() => setIsMobileDrawerOpen(true)}
-            onOpenSearch={() => handleNavigate('browse')}
+            onOpenSearch={() => {
+              if (currentScreen !== 'browse') {
+                setCurrentScreen('browse');
+                syncUrlWithState('browse');
+              }
+              setSelectedCategoryId('all');
+            }}
             onOpenUpload={() => setIsUploadModalOpen(true)}
             onOpenAds={() => setIsAdModalOpen(true)}
             onOpenAdminPanel={() => setIsAdminModalOpen(true)}
