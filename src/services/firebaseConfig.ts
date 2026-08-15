@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 
@@ -17,7 +17,38 @@ const firebaseConfig = {
 
 // Initialize Firebase instance safely
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-export const db = getFirestore(app);
+
+// Initialize Firestore with ignoreUndefinedProperties enabled
+let firestoreInstance;
+try {
+  firestoreInstance = initializeFirestore(app, {
+    ignoreUndefinedProperties: true,
+  });
+} catch {
+  firestoreInstance = getFirestore(app);
+}
+
+export const db = firestoreInstance;
 export const storage = getStorage(app);
 export const auth = getAuth(app);
+
+/**
+ * Utility helper to safely clean any undefined properties before writing to Firestore
+ */
+export function cleanForFirestore<T extends Record<string, any>>(obj: T): T {
+  if (!obj || typeof obj !== 'object') return obj;
+  const cleaned: any = Array.isArray(obj) ? [] : {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+        cleaned[key] = cleanForFirestore(value);
+      } else {
+        cleaned[key] = value;
+      }
+    }
+  }
+  return cleaned;
+}
+
 export default app;
+

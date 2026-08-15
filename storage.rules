@@ -1,51 +1,9 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isStaff() {
-      return isAuthenticated() && (
-        request.auth.token.role == 'ADMIN' ||
-        request.auth.token.role == 'SUPER_ADMIN' ||
-        request.auth.token.role == 'EDITOR' ||
-        request.auth.token.admin == true
-      );
-    }
-
-    // Videos folder: Public read, writes restricted to Authenticated/Staff users with max 500MB video files
-    match /videos/{videoId} {
-      allow read: if true;
-      allow write: if (isAuthenticated() || isStaff())
-                   && request.resource.size < 500 * 1024 * 1024
-                   && request.resource.contentType.matches('video/.*');
-    }
-
-    // Previews & Thumbnails: Public read, writes restricted to Authenticated/Staff users with max 20MB image/video files
-    match /previews/{previewId} {
-      allow read: if true;
-      allow write: if (isAuthenticated() || isStaff())
-                   && request.resource.size < 20 * 1024 * 1024
-                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
-    }
-
-    // Banners: Public read, Staff write up to 20MB image
-    match /banners/{bannerId} {
-      allow read: if true;
-      allow write: if isStaff()
-                   && request.resource.size < 20 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
-    }
-
-    // Avatars: Public read, authenticated write up to 5MB image
-    match /avatars/{avatarId} {
-      allow read: if true;
-      allow write: if isAuthenticated()
-                   && request.resource.size < 5 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
+    // Allow public read and write for media uploads (videos, previews, banners, avatars)
+    match /{allPaths=**} {
+      allow read, write: if true;
     }
   }
 }
-

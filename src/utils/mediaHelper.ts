@@ -1,8 +1,4 @@
-/**
- * Dynamic Media Helper
- * Resolves images from local public/ folder (e.g. /assets/banners/ and /assets/categories/)
- * with seamless high-res fallbacks if local files are not yet uploaded.
- */
+import React from 'react';
 
 // Default high-quality fallbacks for categories if local file is missing
 export const DEFAULT_CATEGORY_FALLBACKS: Record<string, string> = {
@@ -83,4 +79,116 @@ export function handleBannerImageError(e: React.SyntheticEvent<HTMLImageElement,
   if (target.src !== fallback) {
     target.src = fallback;
   }
+}
+
+/**
+ * Automatically extracts a high-quality thumbnail URL from various embed / video URLs
+ */
+export function extractThumbnailFromEmbedUrl(url: string): string | null {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+
+  // If already an image link (jpg, png, webp, etc.)
+  if (/\.(jpe?g|png|webp|gif|avif)($|\?)/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  // YouTube
+  if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
+    let videoId = '';
+    if (trimmed.includes('youtu.be/')) videoId = trimmed.split('youtu.be/')[1]?.split('?')[0] || '';
+    else if (trimmed.includes('watch?v=')) videoId = trimmed.split('watch?v=')[1]?.split('&')[0] || '';
+    else if (trimmed.includes('embed/')) videoId = trimmed.split('embed/')[1]?.split('?')[0] || '';
+    if (videoId) {
+      return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    }
+  }
+
+  // SpankBang
+  if (trimmed.includes('spankbang.com')) {
+    const match = trimmed.match(/spankbang\.com\/([a-zA-Z0-9]+)/);
+    if (match && match[1]) {
+      return `https://spankbang.com/${match[1]}/embed/`;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Captures a video frame (at specified second) from a direct video file or video URL using HTML5 Canvas snapshot
+ */
+export async function captureVideoFrame(
+  source: string | File,
+  seekTime: number = 1.0
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let urlToRevoke: string | null = null;
+    let videoSrc = '';
+
+    if (source instanceof File) {
+      videoSrc = URL.createObjectURL(source);
+      urlToRevoke = videoSrc;
+    } else if (typeof source === 'string') {
+      videoSrc = source.trim();
+    } else {
+      return reject(new Error('Invalid video source'));
+    }
+
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.playsInline = true;
+    video.autoplay = false;
+    video.preload = 'metadata';
+
+    const cleanup = () => {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      if (urlToRevoke) {
+        URL.revokeObjectURL(urlToRevoke);
+      }
+    };
+
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('Thumbnail capture timed out.'));
+    }, 8000);
+
+    video.onloadedmetadata = () => {
+      // Seek to specified time or 1s (or middle of short clips)
+      const targetTime = Math.min(seekTime, Math.max(0.1, video.duration ? video.duration / 2 : 1.0));
+      video.currentTime = targetTime;
+    };
+
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 360;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          clearTimeout(timeout);
+          cleanup();
+          resolve(dataUrl);
+          return;
+        }
+      } catch (err) {
+        clearTimeout(timeout);
+        cleanup();
+        reject(err);
+      }
+    };
+
+    video.onerror = (e) => {
+      clearTimeout(timeout);
+      cleanup();
+      reject(new Error('Failed to load video stream for frame capture.'));
+    };
+
+    video.src = videoSrc;
+  });
 }

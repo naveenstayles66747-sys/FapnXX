@@ -72,6 +72,41 @@ export const setStoredAgeVerified = (verified: boolean): void => {
   }
 };
 
+// Watch History
+export interface HistoryItem {
+  videoId: string;
+  watchedAt: number;
+}
+
+// User Interaction Sync Dispatcher
+type UserInteractionSyncData = {
+  savedVideos?: string[];
+  likedVideos?: string[];
+  watchHistory?: HistoryItem[];
+  contentPreference?: string;
+};
+
+type SyncListener = (data: UserInteractionSyncData) => void;
+const syncListeners: SyncListener[] = [];
+
+export const registerUserInteractionSync = (listener: SyncListener): (() => void) => {
+  syncListeners.push(listener);
+  return () => {
+    const idx = syncListeners.indexOf(listener);
+    if (idx !== -1) syncListeners.splice(idx, 1);
+  };
+};
+
+const notifyInteractionSync = (data: UserInteractionSyncData): void => {
+  syncListeners.forEach((fn) => {
+    try {
+      fn(data);
+    } catch (e) {
+      console.warn('Sync listener error:', e);
+    }
+  });
+};
+
 // Saved Videos (Bookmarks)
 export const getStoredSavedVideos = (): string[] => {
   try {
@@ -82,6 +117,15 @@ export const getStoredSavedVideos = (): string[] => {
   }
 };
 
+export const setStoredSavedVideos = (saved: string[]): void => {
+  try {
+    localStorage.setItem(KEYS.SAVED_VIDEOS, JSON.stringify(saved));
+    notifyInteractionSync({ savedVideos: saved });
+  } catch (e) {
+    console.error('LocalStorage write failed:', e);
+  }
+};
+
 export const toggleStoredSavedVideo = (videoId: string): string[] => {
   try {
     const current = getStoredSavedVideos();
@@ -89,6 +133,7 @@ export const toggleStoredSavedVideo = (videoId: string): string[] => {
       ? current.filter((id) => id !== videoId)
       : [...current, videoId];
     localStorage.setItem(KEYS.SAVED_VIDEOS, JSON.stringify(updated));
+    notifyInteractionSync({ savedVideos: updated });
     return updated;
   } catch {
     return [];
@@ -105,6 +150,15 @@ export const getStoredLikedVideos = (): string[] => {
   }
 };
 
+export const setStoredLikedVideos = (liked: string[]): void => {
+  try {
+    localStorage.setItem(KEYS.LIKED_VIDEOS, JSON.stringify(liked));
+    notifyInteractionSync({ likedVideos: liked });
+  } catch (e) {
+    console.error('LocalStorage write failed:', e);
+  }
+};
+
 export const toggleStoredLikedVideo = (videoId: string): string[] => {
   try {
     const current = getStoredLikedVideos();
@@ -112,17 +166,12 @@ export const toggleStoredLikedVideo = (videoId: string): string[] => {
       ? current.filter((id) => id !== videoId)
       : [...current, videoId];
     localStorage.setItem(KEYS.LIKED_VIDEOS, JSON.stringify(updated));
+    notifyInteractionSync({ likedVideos: updated });
     return updated;
   } catch {
     return [];
   }
 };
-
-// Watch History
-export interface HistoryItem {
-  videoId: string;
-  watchedAt: number;
-}
 
 export const getStoredWatchHistory = (): HistoryItem[] => {
   try {
@@ -133,11 +182,21 @@ export const getStoredWatchHistory = (): HistoryItem[] => {
   }
 };
 
+export const setStoredWatchHistory = (history: HistoryItem[]): void => {
+  try {
+    localStorage.setItem(KEYS.WATCH_HISTORY, JSON.stringify(history));
+    notifyInteractionSync({ watchHistory: history });
+  } catch (e) {
+    console.error('LocalStorage write failed:', e);
+  }
+};
+
 export const addStoredWatchHistory = (videoId: string): HistoryItem[] => {
   try {
     const current = getStoredWatchHistory().filter((item) => item.videoId !== videoId);
     const updated = [{ videoId, watchedAt: Date.now() }, ...current].slice(0, 50); // Keep last 50
     localStorage.setItem(KEYS.WATCH_HISTORY, JSON.stringify(updated));
+    notifyInteractionSync({ watchHistory: updated });
     return updated;
   } catch {
     return [];

@@ -210,14 +210,9 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
     }
   }, [shouldPlayPreview, previewType]);
 
-  // Always use THIS video's own thumbnail — never fall back to another video's embed/preview URL.
-  // If thumbnail is a Google placeholder, use a generic fallback instead.
-  const primaryThumb = (video.thumbnail || video.thumbnailUrl || '').trim();
-  const isPlaceholderThumb =
-    primaryThumb.includes('lh3.googleusercontent.com') ||
-    primaryThumb.includes('embedseek') ||
-    primaryThumb.includes('hornhub');
-  const displayThumbnail = (primaryThumb && !isPlaceholderThumb ? primaryThumb : '') || FALLBACK_THUMBNAIL;
+  // Video's own thumbnail — with priority: custom thumbnail -> animated webp -> fallback
+  const primaryThumb = (video.thumbnail || video.thumbnailUrl || video.previewWebpUrl || '').trim();
+  const displayThumbnail = primaryThumb || FALLBACK_THUMBNAIL;
 
   const renderPreviewOverlay = () => {
     if (!shouldPlayPreview || !previewSrc) return null;
@@ -280,33 +275,21 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
         className="group relative bg-[#131315] rounded-2xl overflow-hidden border border-[#353437] hover:border-[#ffb0cd]/50 transition-colors cursor-pointer flex flex-col md:flex-row"
       >
         <div className="relative w-full md:w-2/5 aspect-video md:aspect-auto overflow-hidden bg-black">
-          {/* Default Static Thumbnail (Video First Frame / Poster or Image) */}
-          {previewType === 'video' && previewSrc ? (
-            <video
-              src={`${previewSrc}#t=0.1`}
-              preload="metadata"
-              muted
-              playsInline
-              className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <img
-              src={displayThumbnail}
-              alt={video.title}
-              loading="lazy"
-              decoding="async"
-              referrerPolicy="no-referrer"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                if (previewType === 'image' && previewSrc && target.src !== previewSrc) {
-                  target.src = previewSrc;
-                } else if (target.src !== FALLBACK_THUMBNAIL) {
-                  target.src = FALLBACK_THUMBNAIL;
-                }
-              }}
-              className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-            />
-          )}
+          {/* Default Static Thumbnail */}
+          <img
+            src={displayThumbnail}
+            alt={video.title}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              if (target.src !== FALLBACK_THUMBNAIL) {
+                target.src = FALLBACK_THUMBNAIL;
+              }
+            }}
+            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+          />
 
           {/* Active Preview Overlay */}
           {renderPreviewOverlay()}
@@ -386,33 +369,21 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
     >
       {/* 16:9 Full-Width Thumbnail Container matching requested spec */}
       <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b]">
-        {/* Default Static Thumbnail (Video First Frame / Poster or Image) */}
-        {previewType === 'video' && previewSrc ? (
-          <video
-            src={`${previewSrc}#t=0.1`}
-            preload="metadata"
-            muted
-            playsInline
-            className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <img
-            src={displayThumbnail}
-            alt={video.title}
-            loading="lazy"
-            decoding="async"
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              if (previewType === 'image' && previewSrc && target.src !== previewSrc) {
-                target.src = previewSrc;
-              } else if (target.src !== FALLBACK_THUMBNAIL) {
-                target.src = FALLBACK_THUMBNAIL;
-              }
-            }}
-            className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-          />
-        )}
+        {/* Default Static Thumbnail */}
+        <img
+          src={displayThumbnail}
+          alt={video.title}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            if (target.src !== FALLBACK_THUMBNAIL) {
+              target.src = FALLBACK_THUMBNAIL;
+            }
+          }}
+          className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+        />
 
         {/* Hover Animated WebP Preview */}
         {shouldPlayPreview && webpPreviewUrl && (

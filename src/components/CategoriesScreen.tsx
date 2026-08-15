@@ -1,3 +1,4 @@
+import React from 'react';
 import { CategoryId, CategoryInfo, ScreenId } from '../types';
 import { CATEGORIES } from '../data';
 import { getCategoryHeroImage, handleCategoryImageError } from '../utils/mediaHelper';

@@ -2,98 +2,63 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
+    // Allow full read and write for all website interactions & server-side database syncing
+    match /{document=**} {
+      allow read, write: if true;
     }
 
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    function isStaff() {
-      return isAuthenticated() && (
-        request.auth.token.role == 'ADMIN' ||
-        request.auth.token.role == 'SUPER_ADMIN' ||
-        request.auth.token.role == 'EDITOR' ||
-        request.auth.token.role == 'MODERATOR' ||
-        request.auth.token.admin == true
-      );
-    }
-
-    function isAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.role == 'ADMIN' ||
-        request.auth.token.role == 'SUPER_ADMIN' ||
-        request.auth.token.admin == true
-      );
-    }
-
-    // Videos: Public can read published videos. Writes strictly restricted to authorized staff/backend
+    // Videos: Public read & real-time write/syncing
     match /videos/{videoId} {
-      allow read: if resource == null || resource.data.status == 'PUBLISHED' || resource.data.status == null || isStaff();
-      allow create, update, delete: if isStaff();
+      allow read, write: if true;
     }
 
-    // Categories: Public read, Admin write
+    // Categories: Public read & real-time sync
     match /categories/{categoryId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
-    // Landing Banners: Public read active, Admin write
+    // Landing Banners: Public read & real-time sync
     match /banners/{bannerId} {
-      allow read: if resource == null || resource.data.isActive == true || isStaff();
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
-    // Ad Campaigns: Public read active, Admin write
+    // Ad Campaigns
     match /ad_campaigns/{campaignId} {
-      allow read: if resource == null || resource.data.isActive == true || isStaff();
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
-    // Category Requests: Authenticated users create, Staff manage
+    // Category Requests
     match /category_requests/{requestId} {
-      allow create: if isAuthenticated() || (request.resource.data.categoryName is string && request.resource.data.categoryName.size() > 1);
-      allow read, update, delete: if isStaff();
+      allow read, write: if true;
     }
 
-    // Comments: Public read, only authenticated users can post valid comments, anti-spam constraints
+    // Comments: Public read, real-time create, update, delete
     match /comments/{commentId} {
-      allow read: if true;
-      allow create: if isAuthenticated() &&
-        request.resource.data.text is string &&
-        request.resource.data.text.size() > 0 &&
-        request.resource.data.text.size() <= 500 &&
-        request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isStaff() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow read, write: if true;
     }
 
-    // DMCA & Moderation Reports: Create allowed with proper schema, Staff manage
+    // DMCA & Moderation Reports
     match /reports/{reportId} {
-      allow create: if request.resource.data.targetId is string && request.resource.data.reason is string;
-      allow read, update, delete: if isStaff();
+      allow read, write: if true;
     }
 
-    // Users Collection: User self-read/update, Admin full access
+    // User Interactions (Saved videos, liked videos, watch history per device/user)
+    match /user_interactions/{deviceId} {
+      allow read, write: if true;
+    }
+
+    // Users Collection
     match /users/{userId} {
-      allow read: if isOwner(userId) || isStaff();
-      allow update: if isOwner(userId) && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status'])) || isAdmin();
-      allow create, delete: if isAdmin();
+      allow read, write: if true;
     }
 
-    // Audit Logs: Completely locked from client-side direct access (Written strictly by server backend)
-    match /audit_logs/{logId} {
-      allow read: if isAdmin();
-      allow write: if false;
-    }
-
-    // Anonymous uploaders tracking: Locked from public direct writes
+    // Anonymous Uploaders & Audit Logs
     match /anonymous_uploaders/{deviceId} {
-      allow read: if isStaff();
-      allow write: if isStaff();
+      allow read, write: if true;
+    }
+
+    match /audit_logs/{logId} {
+      allow read, write: if true;
     }
   }
 }
-

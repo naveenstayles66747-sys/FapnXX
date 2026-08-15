@@ -4,6 +4,7 @@ import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { useLanguage } from '../i18n/LanguageContext';
 import { getBannerImageUrl, handleBannerImageError } from '../utils/mediaHelper';
+import { smartSearch, hasRealMatches } from '../utils/searchEngine';
 
 interface BrowseScreenProps {
   onSelectVideo: (video: Video) => void;
@@ -165,17 +166,12 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     );
   }, [videos]);
 
-  // Filter videos by category and search query
-  const cleanSearch = searchQuery.trim().toLowerCase();
+  // Smart search engine — fuzzy multi-field matching, always returns results
+  const cleanSearch = searchQuery.trim();
   const searchedVideos = cleanSearch
-    ? activeVideos.filter(
-        (v) =>
-          v.title.toLowerCase().includes(cleanSearch) ||
-          v.description.toLowerCase().includes(cleanSearch) ||
-          v.tags.some((t) => t.toLowerCase().includes(cleanSearch)) ||
-          v.performerName?.toLowerCase().includes(cleanSearch)
-      )
+    ? smartSearch(activeVideos, cleanSearch)
     : activeVideos;
+  const isRealMatch = cleanSearch ? hasRealMatches(activeVideos, cleanSearch) : true;
 
   // Smart Language-Based Regional Recommendation Engine
   const regionalVideos = React.useMemo(() => {
@@ -246,15 +242,23 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     <main className="flex-1 overflow-y-auto bg-[#09090b] p-4 md:p-12 pb-32 lg:ml-64">
       {/* Search Header Banner */}
       {cleanSearch && (
-        <section className="mb-8 p-4 rounded-xl bg-[#1e1d21] border border-[#ec4899]/40 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <section className="mb-8 p-4 rounded-xl bg-[#1e1d21] border border-[#ec4899]/40 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <span className="material-symbols-outlined text-[#ffb0cd]">search</span>
             <div>
-              <span className="text-xs text-[#a19fa6]">Search results for:</span>
+              <span className="text-xs text-[#a19fa6]">
+                {isRealMatch ? 'Search results for:' : 'No exact match — showing popular videos for:'}
+              </span>
               <h3 className="text-lg font-bold text-white italic">"{searchQuery}"</h3>
             </div>
-            <span className="bg-[#ec4899]/20 text-[#ffb0cd] border border-[#ec4899]/30 text-xs font-bold px-2.5 py-0.5 rounded-full ml-2">
-              {justAddedVideos.length} {justAddedVideos.length === 1 ? 'video' : 'videos'} found
+            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+              isRealMatch
+                ? 'bg-[#ec4899]/20 text-[#ffb0cd] border-[#ec4899]/30'
+                : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+            }`}>
+              {isRealMatch
+                ? `${justAddedVideos.length} ${justAddedVideos.length === 1 ? 'video' : 'videos'} found`
+                : 'Showing popular content'}
             </span>
           </div>
           {setSearchQuery && (

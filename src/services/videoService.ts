@@ -34,9 +34,10 @@ import {
   where,
   orderBy,
   limit,
+  increment,
 } from 'firebase/firestore';
 import { signInWithCustomToken } from 'firebase/auth';
-import { storage, db, auth } from './firebaseConfig';
+import { storage, db, auth, cleanForFirestore } from './firebaseConfig';
 
 const API_BASE = '/api/v1';
 
@@ -188,6 +189,36 @@ export class VideoService {
   }
 
   /**
+   * Helper to seed initial catalog, categories, and banners into Firestore if database is empty
+   */
+  async seedInitialVideosToFirestore(): Promise<void> {
+    try {
+      console.log('🔄 [Firestore] Seeding initial video catalog to Firestore database...');
+      // Seed categories
+      for (const cat of CATEGORIES) {
+        if (cat && cat.id) {
+          await setDoc(doc(db, 'categories', cat.id), cleanForFirestore(cat), { merge: true });
+        }
+      }
+      // Seed banners
+      for (const banner of INITIAL_LANDING_BANNERS) {
+        if (banner && banner.id) {
+          await setDoc(doc(db, 'banners', banner.id), cleanForFirestore(banner), { merge: true });
+        }
+      }
+      // Seed videos
+      for (const v of INITIAL_VIDEOS) {
+        if (v && v.id) {
+          await setDoc(doc(db, 'videos', v.id), cleanForFirestore(v), { merge: true });
+        }
+      }
+      console.log('✅ [Firestore] Initial catalog seeded successfully to Firestore worldwide!');
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Seeding notice:', err?.message);
+    }
+  }
+
+  /**
    * Fetch all videos via direct Firestore SDK with Backend API and CDN fallbacks
    */
   async fetchVideos(category?: string): Promise<Video[]> {
@@ -210,29 +241,45 @@ export class VideoService {
             title: data.title || 'Untitled',
             embedUrl: data.embedUrl || '',
             thumbnail: data.thumbnail || data.thumbnailUrl || '',
+            previewMp4Url: data.previewMp4Url || undefined,
+            previewWebpUrl: data.previewWebpUrl || undefined,
             category: data.category || 'amateur',
             categoryLabel: data.categoryLabel || 'Amateur',
             categories: data.categories || [data.category || 'amateur'],
             tags: data.tags || ['HD'],
             duration: data.duration || '05:00',
             quality: data.quality || 'HD',
-            viewsCount: data.viewsCount || 1200,
+            viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 1200,
             views: data.views || `${data.viewsCount || 1200} views`,
-            likesCount: data.likesCount || 340,
+            likesCount: typeof data.likesCount === 'number' ? data.likesCount : 340,
             rating: data.rating || '98%',
             timeAgo: data.timeAgo || 'Recent',
             createdAt: data.createdAt || new Date().toISOString(),
             performerName: data.performerName || 'User Uploaded',
             performerAvatar: data.performerAvatar || '',
             description: data.description || '',
-            isEmbed: true,
+            isEmbed: data.isEmbed !== undefined ? data.isEmbed : true,
+            orientation: data.orientation || 'horizontal',
+            performers: data.performers || undefined,
+            channelName: data.channelName || undefined,
+            sourceWebsite: data.sourceWebsite || undefined,
+            sourceWebsiteUrl: data.sourceWebsiteUrl || undefined,
+            vttUrl: data.vttUrl || undefined,
+            spriteUrl: data.spriteUrl || undefined,
+            modelsActors: data.modelsActors || data.models_actors || undefined,
+            models_actors: data.models_actors || data.modelsActors || undefined,
           });
         });
 
         if (firestoreVideos.length > 0) {
+          // Sort newest first
+          firestoreVideos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           setStoredVideos(firestoreVideos);
           return firestoreVideos;
         }
+      } else {
+        // Firestore is empty — auto-seed initial videos into Firestore
+        this.seedInitialVideosToFirestore();
       }
     } catch (firestoreErr: any) {
       console.warn('⚠️ [Firestore Client] fetchVideos fallback to API:', firestoreErr.message);
@@ -259,19 +306,26 @@ export class VideoService {
   }
 
   /**
-   * Subscribe to videos (live updates)
+   * Subscribe to videos (live updates across all worldwide devices)
    */
   subscribeToVideos(callback: (videos: Video[]) => void) {
     try {
-      const q = query(collection(db, 'videos'), limit(50));
+      const q = query(collection(db, 'videos'));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
           const list: Video[] = [];
           snapshot.forEach((d) => {
             const data = d.data() as any;
-            list.push({ ...data, id: d.id });
+            list.push({
+              ...data,
+              id: d.id,
+              isEmbed: data.isEmbed !== undefined ? data.isEmbed : true,
+              viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 1200,
+              likesCount: typeof data.likesCount === 'number' ? data.likesCount : 340,
+            });
           });
           if (list.length > 0) {
+            list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
             setStoredVideos(list);
             callback(list);
           }
@@ -298,13 +352,21 @@ export class VideoService {
    */
   async saveVideo(video: Video): Promise<Video> {
     const videoId = video.id || `vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const fullVideo = { ...video, id: videoId };
+    const fullVideo = {
+      ...video,
+      id: videoId,
+      createdAt: video.createdAt || new Date().toISOString(),
+      viewsCount: typeof video.viewsCount === 'number' ? video.viewsCount : 1,
+      likesCount: typeof video.likesCount === 'number' ? video.likesCount : 0,
+      views: video.views || '1 view',
+    };
 
     // 1. Direct Firestore write
     try {
-      await setDoc(doc(db, 'videos', videoId), fullVideo, { merge: true });
+      await setDoc(doc(db, 'videos', videoId), cleanForFirestore(fullVideo), { merge: true });
+      console.log('✅ [Firestore] Video saved to cloud database:', videoId);
     } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] saveVideo fallback to API:', err.message);
+      console.warn('⚠️ [Firestore Client] saveVideo notice:', err.message);
     }
 
     // 2. Sync to Backend API
@@ -334,7 +396,7 @@ export class VideoService {
   async updateVideo(video: Video): Promise<Video> {
     // 1. Direct Firestore update
     try {
-      await setDoc(doc(db, 'videos', video.id), video, { merge: true });
+      await setDoc(doc(db, 'videos', video.id), cleanForFirestore(video), { merge: true });
     } catch (err: any) {
       console.warn('⚠️ [Firestore Client] updateVideo fallback to API:', err.message);
     }
@@ -391,9 +453,35 @@ export class VideoService {
 
 
   /**
-   * Secure Anti-Spam View Counter
+   * Worldwide Real-time View Counter with Direct Atomic Firestore Increment
    */
   async incrementVideoViews(videoId: string): Promise<number> {
+    try {
+      const vRef = doc(db, 'videos', videoId);
+      const vSnap = await getDoc(vRef);
+      if (vSnap.exists()) {
+        const cur = vSnap.data().viewsCount || 0;
+        const newCount = cur + 1;
+        await updateDoc(vRef, {
+          viewsCount: increment(1),
+          views: `${newCount} ${newCount === 1 ? 'view' : 'views'}`,
+          lastViewedAt: new Date().toISOString(),
+        });
+        return newCount;
+      } else {
+        // Document not in Firestore yet — create it with initial view count
+        const existingVideo = getStoredVideos().find((v) => v.id === videoId);
+        const newCount = (existingVideo?.viewsCount || 0) + 1;
+        const videoData = existingVideo
+          ? { ...existingVideo, viewsCount: newCount, views: `${newCount} views` }
+          : { id: videoId, viewsCount: newCount, views: `${newCount} views`, createdAt: new Date().toISOString() };
+        await setDoc(vRef, cleanForFirestore(videoData), { merge: true });
+        return newCount;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] incrementVideoViews sync notice:', err?.message);
+    }
+
     return this.apiFetch<{ newViewsCount: number; counted: boolean }>(
       `/videos/${videoId}/views`,
       { method: 'POST' },
@@ -418,9 +506,34 @@ export class VideoService {
   }
 
   /**
-   * Secure Likes Counter
+   * Worldwide Real-time Likes Counter with Direct Atomic Firestore Increment
    */
   async incrementVideoLikes(videoId: string, isLike: boolean): Promise<number> {
+    const delta = isLike ? 1 : -1;
+    try {
+      const vRef = doc(db, 'videos', videoId);
+      const vSnap = await getDoc(vRef);
+      if (vSnap.exists()) {
+        const cur = vSnap.data().likesCount || 0;
+        const newCount = Math.max(0, cur + delta);
+        await updateDoc(vRef, {
+          likesCount: increment(delta),
+          lastLikedAt: new Date().toISOString(),
+        });
+        return newCount;
+      } else {
+        const existingVideo = getStoredVideos().find((v) => v.id === videoId);
+        const newLikes = Math.max(0, (existingVideo?.likesCount || 0) + delta);
+        const videoData = existingVideo
+          ? { ...existingVideo, likesCount: newLikes }
+          : { id: videoId, likesCount: newLikes, createdAt: new Date().toISOString() };
+        await setDoc(vRef, cleanForFirestore(videoData), { merge: true });
+        return newLikes;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] incrementVideoLikes sync notice:', err?.message);
+    }
+
     return this.apiFetch<{ likesCount: number }>(
       `/videos/${videoId}/likes`,
       {
@@ -430,7 +543,6 @@ export class VideoService {
       () => {
         const current = getStoredVideos();
         let newCount = 1200;
-        const delta = isLike ? 1 : -1;
         const updated = current.map((v) => {
           if (v.id === videoId) {
             newCount = Math.max(0, (v.likesCount || 1200) + delta);
@@ -482,7 +594,8 @@ export class VideoService {
     const fullCategory = { ...category, id };
 
     try {
-      await setDoc(doc(db, 'categories', id), fullCategory, { merge: true });
+      await setDoc(doc(db, 'categories', id), cleanForFirestore(fullCategory), { merge: true });
+      console.log('✅ [Firestore] Category saved to cloud:', id);
     } catch (err: any) {
       console.warn('⚠️ [Firestore Client] saveCategory fallback:', err.message);
     }
@@ -512,7 +625,7 @@ export class VideoService {
    */
   async updateCategory(category: CategoryInfo): Promise<CategoryInfo> {
     try {
-      await setDoc(doc(db, 'categories', category.id), category, { merge: true });
+      await setDoc(doc(db, 'categories', category.id), cleanForFirestore(category), { merge: true });
     } catch (err: any) {
       console.warn('⚠️ [Firestore Client] updateCategory fallback:', err.message);
     }
@@ -562,7 +675,7 @@ export class VideoService {
     const fullReq = { ...categoryReq, id: reqId, createdAt: new Date().toISOString(), status: 'pending' as const };
 
     try {
-      await setDoc(doc(db, 'category_requests', reqId), fullReq);
+      await setDoc(doc(db, 'category_requests', reqId), cleanForFirestore(fullReq));
     } catch (err: any) {
       console.warn('⚠️ [Firestore Client] saveCategoryRequest fallback:', err.message);
     }
@@ -657,7 +770,8 @@ export class VideoService {
     const fullBanner = { ...banner, id };
 
     try {
-      await setDoc(doc(db, 'banners', id), fullBanner, { merge: true });
+      await setDoc(doc(db, 'banners', id), cleanForFirestore(fullBanner), { merge: true });
+      console.log('✅ [Firestore] Banner saved to cloud:', id);
     } catch (err: any) {
       console.warn('⚠️ [Firestore Client] saveBanner fallback:', err.message);
     }
@@ -687,7 +801,7 @@ export class VideoService {
    */
   async updateBanner(banner: LandingBanner): Promise<LandingBanner> {
     try {
-      await setDoc(doc(db, 'banners', banner.id), banner, { merge: true });
+      await setDoc(doc(db, 'banners', banner.id), cleanForFirestore(banner), { merge: true });
     } catch (err: any) {
       console.warn('⚠️ [Firestore Client] updateBanner fallback:', err.message);
     }
@@ -730,20 +844,20 @@ export class VideoService {
   }
 
   /**
-   * Fetch comments for a video from Firestore with API fallback
+   * Fetch comments for a video from Firestore with memory sorting to prevent index errors
    */
   async fetchComments(videoId: string): Promise<VideoComment[]> {
     try {
       const q = query(
         collection(db, 'comments'),
         where('videoId', '==', videoId),
-        orderBy('createdAt', 'desc'),
         limit(100)
       );
       const snap = await getDocs(q);
       if (!snap.empty) {
         const list: VideoComment[] = [];
         snap.forEach((d) => list.push({ ...(d.data() as VideoComment), id: d.id }));
+        list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
         return list;
       }
     } catch (err: any) {
@@ -758,7 +872,7 @@ export class VideoService {
   }
 
   /**
-   * Subscribe to comments with Firestore Realtime onSnapshot
+   * Subscribe to comments with Firestore Realtime onSnapshot (Live across all worldwide users)
    */
   subscribeToComments(videoId: string, callback: (comments: VideoComment[]) => void) {
     try {
@@ -770,8 +884,8 @@ export class VideoService {
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const list: VideoComment[] = [];
         snapshot.forEach((d) => list.push({ ...(d.data() as VideoComment), id: d.id }));
-        // Sort newest first
-        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        // Sort newest first in memory
+        list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
         callback(list);
       }, (err) => {
         console.warn('⚠️ [Firestore Client] Comment realtime subscription fallback:', err.message);
@@ -789,7 +903,7 @@ export class VideoService {
   }
 
   /**
-   * Save comment to Firestore and Backend API
+   * Save comment to Firestore worldwide and Backend API
    */
   async saveComment(comment: VideoComment): Promise<VideoComment> {
     const id = comment.id || `comment_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -797,13 +911,14 @@ export class VideoService {
       ...comment,
       id,
       createdAt: comment.createdAt || new Date().toISOString(),
-      likesCount: comment.likesCount || 0,
+      likesCount: typeof comment.likesCount === 'number' ? comment.likesCount : 0,
     };
 
     try {
-      await setDoc(doc(db, 'comments', id), fullComment);
+      await setDoc(doc(db, 'comments', id), cleanForFirestore(fullComment));
+      console.log('✅ [Firestore] Comment posted to cloud database:', id);
     } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] saveComment fallback:', err.message);
+      console.warn('⚠️ [Firestore Client] saveComment notice:', err.message);
     }
 
     return this.apiFetch<VideoComment>(
@@ -817,9 +932,16 @@ export class VideoService {
   }
 
   /**
-   * Like comment
+   * Like comment with Direct Atomic Firestore update
    */
   async likeComment(commentId: string): Promise<void> {
+    try {
+      const cRef = doc(db, 'comments', commentId);
+      await updateDoc(cRef, { likesCount: increment(1) });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] likeComment notice:', err?.message);
+    }
+
     await this.apiFetch(
       `/comments/${commentId}/like`,
       { method: 'POST' },
@@ -852,7 +974,8 @@ export class VideoService {
     const fullReport: DMCAReport = { ...report, id, createdAt: new Date().toISOString() };
 
     try {
-      await setDoc(doc(db, 'reports', id), fullReport);
+      await setDoc(doc(db, 'reports', id), cleanForFirestore(fullReport));
+      console.log('✅ [Firestore] Report saved to cloud database:', id);
     } catch (err: any) {
       console.warn('⚠️ [Firestore Client] saveReport fallback:', err.message);
     }
@@ -949,7 +1072,7 @@ export class VideoService {
     const fullAd = { ...campaign, id };
 
     try {
-      await setDoc(doc(db, 'ad_campaigns', id), fullAd, { merge: true });
+      await setDoc(doc(db, 'ad_campaigns', id), cleanForFirestore(fullAd), { merge: true });
     } catch (err: any) {
       console.warn('⚠️ [Firestore Client] saveAdCampaign fallback:', err.message);
     }
@@ -969,7 +1092,7 @@ export class VideoService {
    */
   async updateAdCampaign(campaign: AdCampaign): Promise<AdCampaign> {
     try {
-      await setDoc(doc(db, 'ad_campaigns', campaign.id), campaign, { merge: true });
+      await setDoc(doc(db, 'ad_campaigns', campaign.id), cleanForFirestore(campaign), { merge: true });
     } catch (err: any) {
       console.warn('⚠️ [Firestore Client] updateAdCampaign fallback:', err.message);
     }
@@ -1032,8 +1155,82 @@ export class VideoService {
     localStorage.setItem(STORAGE_KEY_NAME, assignedName);
     return assignedName;
   }
+
+  /**
+   * Get or initialize unique device/client identifier for cloud sync
+   */
+  getDeviceId(): string {
+    const DEVICE_ID_KEY = 'fapnxx_device_uid';
+    let devId = '';
+    try {
+      devId = localStorage.getItem(DEVICE_ID_KEY) || '';
+    } catch {}
+
+    if (!devId) {
+      devId = `dev_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+      try {
+        localStorage.setItem(DEVICE_ID_KEY, devId);
+      } catch {}
+    }
+    return devId;
+  }
+
+  /**
+   * Sync all user interactions (saved videos, liked videos, watch history, preferences) to Firestore server database
+   */
+  async syncUserInteractionsToFirestore(data: {
+    savedVideos?: string[];
+    likedVideos?: string[];
+    watchHistory?: any[];
+    contentPreference?: string;
+    theme?: string;
+    ageVerified?: boolean;
+  }): Promise<void> {
+    try {
+      const deviceId = this.getDeviceId();
+      const userDocRef = doc(db, 'user_interactions', deviceId);
+      await setDoc(
+        userDocRef,
+        {
+          ...data,
+          deviceId,
+          lastActiveAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+      console.log('✅ [Firestore] User interactions synced to server-side database for device:', deviceId);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] User interactions server sync notice:', err?.message);
+    }
+  }
+
+  /**
+   * Fetch saved user interactions from Firestore server database
+   */
+  async fetchUserInteractionsFromFirestore(): Promise<{
+    savedVideos?: string[];
+    likedVideos?: string[];
+    watchHistory?: any[];
+    contentPreference?: string;
+    ageVerified?: boolean;
+  } | null> {
+    try {
+      const deviceId = this.getDeviceId();
+      const userDocRef = doc(db, 'user_interactions', deviceId);
+      const snapshot = await getDoc(userDocRef);
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        console.log('✅ [Firestore] Loaded user interactions from server-side database for device:', deviceId);
+        return data as any;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] fetchUserInteractionsFromFirestore notice:', err?.message);
+    }
+    return null;
+  }
 }
 
 export const videoService = new VideoService();
 export default videoService;
+
 

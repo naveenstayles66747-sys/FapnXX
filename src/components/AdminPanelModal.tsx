@@ -2,7 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { CategoryInfo, DMCAReport, LandingBanner, ReportStatus, Video } from '../types';
 import { getStoredReports, setStoredReports } from '../utils/storage';
 import { videoService } from '../services/videoService';
-import { getCategoryHeroImage, handleCategoryImageError, getBannerImageUrl, handleBannerImageError } from '../utils/mediaHelper';
+import {
+  getCategoryHeroImage,
+  handleCategoryImageError,
+  getBannerImageUrl,
+  handleBannerImageError,
+  captureVideoFrame,
+  extractThumbnailFromEmbedUrl,
+} from '../utils/mediaHelper';
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -111,6 +118,40 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [upDuration, setUpDuration] = useState('18:45');
   const [upDesc, setUpDesc] = useState('');
   const [upIsExclusive, setUpIsExclusive] = useState(true);
+  const [isCapturingAdminFrame, setIsCapturingAdminFrame] = useState(false);
+
+  const handleAdminCaptureFrame = async () => {
+    const src = upPreviewMp4Url || upEmbedUrl;
+    if (!src.trim()) {
+      alert('Please enter a Video / Embed URL first.');
+      return;
+    }
+    setIsCapturingAdminFrame(true);
+    try {
+      const frame = await captureVideoFrame(src.trim(), 1.0);
+      setUpThumbnail(frame);
+    } catch {
+      alert('Could not capture frame from this source. Please paste an image URL or upload an image file.');
+    } finally {
+      setIsCapturingAdminFrame(false);
+    }
+  };
+
+  const handleAdminThumbUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const storageUrl = await videoService.uploadPreviewToStorage(file);
+        setUpThumbnail(storageUrl);
+      } catch {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') setUpThumbnail(reader.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
 
 
   // Fetch audit logs when opening or switching to audit tab
@@ -298,31 +339,75 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setBannerTag('Featured');
   };
 
+  const cleanAdminEmbedUrl = (input: string): string => {
+    const trimmed = input.trim();
+    if (trimmed.includes('<iframe')) {
+      const srcMatch = trimmed.match(/src=["']([^"']+)["']/);
+      if (srcMatch && srcMatch[1]) return srcMatch[1];
+    }
+    if (
+      trimmed.includes('streamtape.com') ||
+      trimmed.includes('streamtape.to') ||
+      trimmed.includes('streamtape.net') ||
+      trimmed.includes('streamta.pe') ||
+      trimmed.includes('streamtape.xyz') ||
+      trimmed.includes('streamtape.cc') ||
+      trimmed.includes('streamhide.to')
+    ) {
+      const match = trimmed.match(/\/(?:v|e)\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return `https://streamtape.com/e/${match[1]}/`;
+      }
+      const parts = trimmed.split('/').filter(Boolean);
+      const tapeId = parts[parts.length - 1]?.split('?')[0] || '';
+      return `https://streamtape.com/e/${tapeId}/`;
+    }
+    if (trimmed.includes('spankbang.com')) {
+      const match = trimmed.match(/spankbang\.com\/([a-zA-Z0-9]+)/);
+      if (match && match[1]) return `https://spankbang.com/${match[1]}/embed/`;
+    }
+    if (trimmed.includes('xvideos.com')) {
+      const match = trimmed.match(/video-?([a-zA-Z0-9_]+)|\/prof-video-click\/[^\/]+\/([0-9]+)/) || trimmed.match(/([0-9]{5,})/);
+      const vidNum = match ? match[1] || match[2] || match[0] : '';
+      if (vidNum) return `https://www.xvideos.com/embedframe/${vidNum}`;
+    }
+    if (trimmed.includes('filemoon') || trimmed.includes('filemoon.sx')) {
+      const match = trimmed.match(/\/(?:e|d)\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) return `https://filemoon.sx/e/${match[1]}`;
+    }
+    return trimmed;
+  };
+
   const handleAdminUploadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!upTitle || !upThumbnail) return;
 
     const categoryObj = categories.find((c) => c.id === upCategory) || categories[0];
+    const parsedEmbed = upEmbedUrl ? cleanAdminEmbedUrl(upEmbedUrl) : undefined;
 
     const newVideo: Video = {
       id: `admin-video-${Date.now()}`,
-      title: upTitle,
+      title: upTitle.trim(),
       category: upCategory,
       categoryLabel: categoryObj?.name || 'Exclusive',
       tags: upTags.split(',').map((t) => t.trim()).filter(Boolean),
-      thumbnail: upThumbnail,
+      thumbnail: upThumbnail.trim(),
       duration: upDuration || '15:00',
       quality: upQuality,
-      views: '1 View',
+      views: '1 view',
+      viewsCount: 1,
+      likesCount: 0,
+      rating: '100%',
       timeAgo: 'Just now',
-      performerName: upPerformer || 'FapnXX Admin',
+      createdAt: new Date().toISOString(),
+      performerName: upPerformer.trim() || 'FapnXX Admin',
       performerAvatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDvu8sGdltZki91ehu4_TciVh4ojFc2rkzEbjdpwT0f5CLnFmvQzwYrEOQxEFJ_5nuaxrYR5ciK2iYmRsy2xBkg_ftrLdEVMKzs0Mo7wZJj8dGjATtrpcrXvwKvJX9cojHQ3HXSmrDB9oyFdG_EbNoZ_IyKVxNxSzjWcNqxV9DZCb9emwKm10HSw50UmQCf-2beum05L1bV6fTQBVtTvEbXbkY0kh99hiKCxl2v-kLPTgTtkEfqFhfeYQ',
-      description: upDesc || 'Published directly via Admin Management Console.',
+      description: upDesc.trim() || 'Published directly via Admin Management Console.',
       isNew: true,
       isExclusive: upIsExclusive,
-      embedUrl: upEmbedUrl || undefined,
-      previewMp4Url: upPreviewMp4Url || undefined,
-      isEmbed: Boolean(upEmbedUrl),
+      embedUrl: parsedEmbed,
+      previewMp4Url: upPreviewMp4Url.trim() || undefined,
+      isEmbed: Boolean(parsedEmbed),
     };
 
     onUploadVideoSuccess(newVideo);
@@ -331,7 +416,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setUpEmbedUrl('');
     setUpPreviewMp4Url('');
     setUpDesc('');
-    alert('Video published successfully to FapnXX catalogue!');
+    alert('Video published successfully to cloud database & catalog!');
   };
 
   const filteredVideos = videos.filter(
@@ -1397,7 +1482,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {banners.map((banner) => (
+                {banners.map((banner, idx) => (
                   <div
                     key={banner.id}
                     className="bg-[#181719] rounded-2xl overflow-hidden border border-[#2e2d30] flex flex-col"
@@ -1507,26 +1592,96 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a19fa6] mb-1">Thumbnail Cover Image URL</label>
-                    <input
-                      type="url"
-                      required
-                      value={upThumbnail}
-                      onChange={(e) => setUpThumbnail(e.target.value)}
-                      placeholder="https://..."
-                      className="w-full bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#ec4899]"
-                    />
-                  </div>
-
-                  <div>
                     <label className="block text-xs font-semibold text-[#a19fa6] mb-1">Direct Video URL or Embed URL (Optional)</label>
                     <input
                       type="text"
                       value={upEmbedUrl}
-                      onChange={(e) => setUpEmbedUrl(e.target.value)}
-                      placeholder="https://www.youtube.com/embed/... or mp4 link"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setUpEmbedUrl(val);
+                        const autoThumb = extractThumbnailFromEmbedUrl(val);
+                        if (autoThumb && !upThumbnail) setUpThumbnail(autoThumb);
+                      }}
+                      placeholder="https://streamtape.com/v/... or https://hornhub.embedseek.com/#... or .mp4 link"
                       className="w-full bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#ec4899]"
                     />
+                  </div>
+
+                  {/* Thumbnail / Cover section with Live Preview & Frame Capture */}
+                  <div className="border border-[#ec4899]/30 bg-[#161518] p-3.5 rounded-xl space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-white flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[#ec4899] text-sm">photo_library</span>
+                        <span>Video Thumbnail / Card Cover *</span>
+                      </label>
+                      {upThumbnail && (
+                        <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-0.5">
+                          <span className="material-symbols-outlined text-xs">check_circle</span>
+                          <span>Ready</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Live Preview Box */}
+                    {upThumbnail && (
+                      <div className="relative aspect-video w-full max-w-xs mx-auto rounded-xl overflow-hidden border-2 border-[#ec4899]/50 shadow-lg bg-black group">
+                        <img
+                          src={upThumbnail}
+                          alt="Admin Thumbnail Preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[11px] font-bold text-white">
+                          <span className="truncate max-w-[150px]">{upTitle || 'Video Title'}</span>
+                          <span className="px-1.5 py-0.5 bg-black/80 backdrop-blur rounded font-mono text-[10px]">
+                            {upDuration}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setUpThumbnail('')}
+                          className="absolute top-2 right-2 w-6 h-6 bg-black/80 hover:bg-[#ec4899] rounded-full flex items-center justify-center text-white transition-colors cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-xs">close</span>
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        required
+                        value={upThumbnail}
+                        onChange={(e) => setUpThumbnail(e.target.value)}
+                        placeholder="Paste image URL (e.g. https://.../thumb.jpg) ->"
+                        className="flex-1 bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ec4899] font-mono"
+                      />
+
+                      <label className="px-3 py-2.5 bg-[#252428] hover:bg-[#323136] text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-colors shrink-0 border border-white/10">
+                        <span className="material-symbols-outlined text-sm text-[#ec4899]">image</span>
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAdminThumbUpload}
+                          className="hidden"
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={handleAdminCaptureFrame}
+                        disabled={isCapturingAdminFrame || !upEmbedUrl.trim()}
+                        className="px-3 py-2.5 bg-[#ec4899] hover:bg-[#db2777] disabled:opacity-40 text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-all shrink-0"
+                      >
+                        {isCapturingAdminFrame ? (
+                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <span className="material-symbols-outlined text-sm">camera_alt</span>
+                        )}
+                        <span>Capture Frame</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

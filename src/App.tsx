@@ -31,6 +31,7 @@ import {
   setStoredThemeMode,
   getStoredContentPreference,
   setStoredContentPreference,
+  registerUserInteractionSync,
 } from './utils/storage';
 import { usePrivacyStorage } from './hooks/usePrivacyStorage';
 
@@ -41,7 +42,6 @@ export default function App() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   // Theme Mode State (Auto time-based default: 6 AM - 6 PM Light, 6 PM - 6 AM Dark, + Manual toggle & localStorage)
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => getInitialThemeMode());
@@ -81,7 +81,6 @@ export default function App() {
   const [banners, setBanners] = useState<LandingBanner[]>(() => getStoredBanners());
 
   // Filtered videos based on content preference
-  // Videos without an explicit orientation tag or if filter returns empty fallback to full list
   const preferredVideos = videosList.filter((v) => {
     if (!v) return false;
     if (!v.orientation) return true;
@@ -89,8 +88,84 @@ export default function App() {
   });
   const filteredVideosList = preferredVideos.length > 0 ? preferredVideos : videosList;
 
-  // Admin Authentication & Modal State
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
+  // Admin Authentication & Device-Isolated Persistent Session Management (30-day session per authenticated device)
+  const ADMIN_EMAIL = 'naveenstayles66747@gmail.com';
+  const ADMIN_SESSION_KEY = 'fapnxx_admin_secure_session';
+
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    try {
+      const raw = localStorage.getItem(ADMIN_SESSION_KEY);
+      if (raw) {
+        const session = JSON.parse(raw);
+        if (
+          session &&
+          session.email === ADMIN_EMAIL &&
+          session.expiresAt &&
+          session.expiresAt > Date.now()
+        ) {
+          return true;
+        }
+      }
+    } catch {}
+    return false;
+  });
+
+  const [userEmail, setUserEmail] = useState<string | null>(() => {
+    try {
+      const raw = localStorage.getItem(ADMIN_SESSION_KEY);
+      if (raw) {
+        const session = JSON.parse(raw);
+        if (session && session.email && session.expiresAt > Date.now()) {
+          return session.email;
+        }
+      }
+    } catch {}
+    return null;
+  });
+
+  const handleAdminLogin = (email: string) => {
+    setIsAdminAuthenticated(true);
+    setUserEmail(email);
+    try {
+      const session = {
+        email: email.trim().toLowerCase(),
+        token: 'fapnxx_admin_token_' + Date.now(),
+        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30-day isolated session on this device
+        loggedInAt: new Date().toISOString(),
+      };
+      localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
+      localStorage.setItem('fapnxx_auth_token', session.token);
+      localStorage.setItem('fapnxx_user_role', 'SUPER_ADMIN');
+    } catch {}
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdminAuthenticated(false);
+    setUserEmail(null);
+    try {
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      localStorage.removeItem('fapnxx_auth_token');
+      localStorage.removeItem('fapnxx_user_role');
+    } catch {}
+  };
+
+  // Periodic session validity check (checks every 30 seconds for automatic auto-logout upon expiry)
+  useEffect(() => {
+    const checkExpiry = () => {
+      try {
+        const raw = localStorage.getItem(ADMIN_SESSION_KEY);
+        if (raw) {
+          const session = JSON.parse(raw);
+          if (session && session.expiresAt && session.expiresAt <= Date.now()) {
+            handleAdminLogout();
+          }
+        }
+      } catch {}
+    };
+    const timer = setInterval(checkExpiry, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
 
   // Upload and Ad Modal State
@@ -109,10 +184,15 @@ export default function App() {
       }
     });
 
-    // Real-time listener for views, likes, and video updates
+    // Real-time listener for views, likes, and video updates across all users worldwide
     const unsubscribe = videoService.subscribeToVideos((updatedVideos) => {
       if (updatedVideos && updatedVideos.length > 0) {
         setVideosList(updatedVideos);
+        setSelectedVideo((prev) => {
+          if (!prev) return prev;
+          const matched = updatedVideos.find((v) => v.id === prev.id);
+          return matched || prev;
+        });
       }
     });
 
@@ -123,7 +203,33 @@ export default function App() {
       if (b && b.length > 0) setBanners(b);
     });
 
-    return () => unsubscribe();
+    // Fetch user cloud interactions (saved videos, liked videos, watch history) from Firestore
+    videoService.fetchUserInteractionsFromFirestore().then((interactions) => {
+      if (interactions) {
+        if (interactions.savedVideos && Array.isArray(interactions.savedVideos)) {
+          localStorage.setItem('indianfullxx_saved_videos', JSON.stringify(interactions.savedVideos));
+        }
+        if (interactions.likedVideos && Array.isArray(interactions.likedVideos)) {
+          localStorage.setItem('indianfullxx_liked_videos', JSON.stringify(interactions.likedVideos));
+        }
+        if (interactions.watchHistory && Array.isArray(interactions.watchHistory)) {
+          localStorage.setItem('indianfullxx_watch_history', JSON.stringify(interactions.watchHistory));
+        }
+        if (interactions.contentPreference) {
+          setContentPreference(interactions.contentPreference as ContentPreference);
+        }
+      }
+    });
+
+    // Register live cloud syncing for any interaction (saved, liked, history)
+    const unregisterSync = registerUserInteractionSync((data) => {
+      videoService.syncUserInteractionsToFirestore(data);
+    });
+
+    return () => {
+      unsubscribe();
+      unregisterSync();
+    };
   }, [isAgeVerified]);
 
   // Synchronize localStorage when state changes
@@ -410,6 +516,7 @@ export default function App() {
             onToggleTheme={toggleTheme}
             contentPreference={contentPreference}
             onChangeContentPreference={handleChangeContentPreference}
+            videos={filteredVideosList}
           />
 
           <MobileDrawer

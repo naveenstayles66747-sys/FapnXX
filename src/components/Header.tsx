@@ -1,8 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ContentPreference, ScreenId } from '../types';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { ContentPreference, ScreenId, Video } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
 import { LANGUAGE_LIST } from '../i18n/translations';
 import { ThemeMode } from '../utils/storage';
+import { getSearchSuggestions, SearchSuggestion } from '../utils/searchEngine';
+import { SearchSuggestionsDropdown } from './SearchSuggestionsDropdown';
 
 interface HeaderProps {
   currentScreen: ScreenId;
@@ -21,6 +23,7 @@ interface HeaderProps {
   onToggleTheme: () => void;
   contentPreference: ContentPreference;
   onChangeContentPreference: (pref: ContentPreference) => void;
+  videos?: Video[];
 }
 
 // Custom Dual-Color SVG Icon matching the interlinked Male + Female (Venus & Mars) heterosexual gender symbol
@@ -74,6 +77,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme,
   contentPreference,
   onChangeContentPreference,
+  videos = [],
 }) => {
   const { language, setLanguage, t, currentLanguageMeta } = useLanguage();
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -84,6 +88,37 @@ export const Header: React.FC<HeaderProps> = ({
   const prefDropdownRef = useRef<HTMLDivElement>(null);
   const prefDropdownRefMobile = useRef<HTMLDivElement>(null);
   const langDropdownRef = useRef<HTMLDivElement>(null);
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+
+  // Search suggestions state
+  const [desktopSuggestionsOpen, setDesktopSuggestionsOpen] = useState(false);
+  const [mobileSuggestionsOpen, setMobileSuggestionsOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+
+  // Generate suggestions whenever query changes
+  useEffect(() => {
+    if (searchQuery.trim().length >= 1 && videos.length > 0) {
+      setSuggestions(getSearchSuggestions(videos, searchQuery, 8));
+    } else {
+      setSuggestions([]);
+    }
+  }, [searchQuery, videos]);
+
+  useEffect(() => {
+    if (mobileSearchInput.trim().length >= 1 && videos.length > 0) {
+      setSuggestions(getSearchSuggestions(videos, mobileSearchInput, 8));
+    } else if (!mobileSearchActive) {
+      setSuggestions([]);
+    }
+  }, [mobileSearchInput, videos, mobileSearchActive]);
+
+  const handleSuggestionSelect = useCallback((text: string) => {
+    setSearchQuery(text);
+    setMobileSearchInput(text);
+    setDesktopSuggestionsOpen(false);
+    setMobileSuggestionsOpen(false);
+    onOpenSearch();
+  }, [setSearchQuery, onOpenSearch]);
 
   // Close dropdowns on outside click cleanly across desktop and mobile
   useEffect(() => {
@@ -104,7 +139,12 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   const renderPrefDropdownMenu = () => (
-    <div className="dropdown-modal-menu absolute left-0 lg:left-auto lg:right-0 mt-2 w-48 rounded-2xl shadow-2xl py-2 z-50 text-xs animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+    <div
+      className="dropdown-modal-menu absolute left-0 lg:left-auto lg:right-0 mt-2 w-48 rounded-2xl shadow-2xl py-2 z-50 text-xs animate-in fade-in zoom-in-95 duration-150 overflow-hidden overscroll-contain"
+      style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+      onWheel={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
+    >
       <div className="px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
         <span className="flex items-center gap-1.5">
           <span className="material-symbols-outlined text-sm text-[#e0358d]">tune</span>
@@ -207,17 +247,26 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* 3. Desktop Centered Search Bar */}
-      <div className="hidden lg:flex flex-1 max-w-xs xl:max-w-md mx-4 relative group/search min-w-0 z-20">
+      <div ref={desktopSearchRef} className="hidden lg:flex flex-1 max-w-xs xl:max-w-md mx-4 relative group/search min-w-0 z-20">
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => { setSearchQuery(e.target.value); onOpenSearch(); }}
-          onKeyDown={(e) => { if (e.key === 'Enter') { onOpenSearch(); } }}
-          placeholder="Search videos, creators..."
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            onOpenSearch();
+            setDesktopSuggestionsOpen(true);
+          }}
+          onFocus={() => { if (searchQuery.trim()) setDesktopSuggestionsOpen(true); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { onOpenSearch(); setDesktopSuggestionsOpen(false); }
+            if (e.key === 'Escape') { setDesktopSuggestionsOpen(false); }
+          }}
+          placeholder="Search videos, performers, tags..."
           className="w-full header-search-input rounded-full py-2 pl-5 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-[#e0358d]/50 transition-all shadow-inner border"
+          autoComplete="off"
         />
         <button
-          onClick={() => { onOpenSearch(); }}
+          onClick={() => { onOpenSearch(); setDesktopSuggestionsOpen(false); }}
           className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#e0358d]/20 transition-colors cursor-pointer"
           aria-label="Search"
         >
@@ -225,6 +274,14 @@ export const Header: React.FC<HeaderProps> = ({
             search
           </span>
         </button>
+        {/* Desktop Suggestions Dropdown */}
+        <SearchSuggestionsDropdown
+          suggestions={suggestions}
+          query={searchQuery}
+          onSelect={handleSuggestionSelect}
+          onClose={() => setDesktopSuggestionsOpen(false)}
+          visible={desktopSuggestionsOpen && suggestions.length > 0}
+        />
       </div>
 
       {/* 4. Right Action Buttons */}
@@ -287,35 +344,47 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="uppercase text-[11px] tracking-wider">{t.upload}</span>
         </button>
 
-        {/* Mobile Search — Inline expandable search bar */}
+        {/* Mobile Search — Inline expandable search bar with suggestions */}
         <div className="lg:hidden flex items-center relative">
           {mobileSearchActive ? (
-            <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-4 duration-200">
-              <input
-                ref={mobileSearchRef}
-                type="text"
-                value={mobileSearchInput}
-                autoFocus
-                onChange={(e) => {
-                  setMobileSearchInput(e.target.value);
-                  setSearchQuery(e.target.value);
-                  if (e.target.value.trim()) onOpenSearch();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { onOpenSearch(); setMobileSearchActive(false); }
-                  if (e.key === 'Escape') { setMobileSearchActive(false); setMobileSearchInput(''); setSearchQuery(''); }
-                }}
-                placeholder="Search..."
-                className="w-36 sm:w-48 header-search-input rounded-full py-1.5 pl-3 pr-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#e0358d]/50 border"
-              />
+            <div className="relative flex items-center gap-1 animate-in fade-in slide-in-from-right-4 duration-200">
+              <div className="relative">
+                <input
+                  ref={mobileSearchRef}
+                  type="text"
+                  value={mobileSearchInput}
+                  autoFocus
+                  autoComplete="off"
+                  onChange={(e) => {
+                    setMobileSearchInput(e.target.value);
+                    setSearchQuery(e.target.value);
+                    setMobileSuggestionsOpen(true);
+                    if (e.target.value.trim()) onOpenSearch();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { onOpenSearch(); setMobileSearchActive(false); setMobileSuggestionsOpen(false); }
+                    if (e.key === 'Escape') { setMobileSearchActive(false); setMobileSearchInput(''); setSearchQuery(''); setMobileSuggestionsOpen(false); }
+                  }}
+                  placeholder="Search videos, performers..."
+                  className="w-36 sm:w-52 header-search-input rounded-full py-1.5 pl-3 pr-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#e0358d]/50 border"
+                />
+                {/* Mobile Suggestions Dropdown */}
+                <SearchSuggestionsDropdown
+                  suggestions={suggestions}
+                  query={mobileSearchInput}
+                  onSelect={(text) => { handleSuggestionSelect(text); setMobileSearchActive(false); }}
+                  onClose={() => setMobileSuggestionsOpen(false)}
+                  visible={mobileSuggestionsOpen && suggestions.length > 0}
+                />
+              </div>
               <button
-                onClick={() => { onOpenSearch(); setMobileSearchActive(false); }}
+                onClick={() => { onOpenSearch(); setMobileSearchActive(false); setMobileSuggestionsOpen(false); }}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-[#e0358d] text-white shrink-0"
               >
                 <span className="material-symbols-outlined text-base">search</span>
               </button>
               <button
-                onClick={() => { setMobileSearchActive(false); setMobileSearchInput(''); setSearchQuery(''); }}
+                onClick={() => { setMobileSearchActive(false); setMobileSearchInput(''); setSearchQuery(''); setMobileSuggestionsOpen(false); }}
                 className="text-zinc-400 hover:text-white p-1 shrink-0"
               >
                 <span className="material-symbols-outlined text-xl">close</span>
@@ -362,14 +431,25 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => { setIsLangMenuOpen(!isLangMenuOpen); setIsPrefMenuOpen(false); }}
             className="header-btn-hover-pink w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10 group/lang"
-            title={`Switch Language: ${currentLanguageMeta?.englishName || 'English'} (${currentLanguageMeta?.label || 'EN'}) / भाषा बदलें`}
-            aria-label="Switch Language"
+            title={isLangMenuOpen ? "Close Language Menu" : `Switch Language: ${currentLanguageMeta?.englishName || 'English'} (${currentLanguageMeta?.label || 'EN'}) / भाषा बदलें`}
+            aria-label={isLangMenuOpen ? "Close Language Menu" : "Switch Language"}
           >
-            <GlobeIcon className="w-[18px] h-[18px] text-[#e0358d] group-hover/lang:text-white transition-colors stroke-current" />
+            {isLangMenuOpen ? (
+              <span className="material-symbols-outlined text-[18px] text-[#e0358d] group-hover/lang:text-white transition-colors">
+                close
+              </span>
+            ) : (
+              <GlobeIcon className="w-[18px] h-[18px] text-[#e0358d] group-hover/lang:text-white transition-colors stroke-current" />
+            )}
           </button>
 
           {isLangMenuOpen && (
-            <div className="dropdown-modal-menu absolute right-0 mt-2 w-56 rounded-2xl shadow-2xl py-2 z-50 text-xs max-h-80 overflow-y-auto custom-scrollbar border border-white/10">
+            <div
+              className="dropdown-modal-menu absolute right-0 mt-2 w-56 rounded-2xl shadow-2xl py-2 z-50 text-xs max-h-80 overflow-y-auto custom-scrollbar border border-white/10 overscroll-contain"
+              style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+              onWheel={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
               <div className="px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
                 <span>Select Language</span>
                 <span className="text-[#e0358d] text-[9px] font-mono">REGIONAL PICKS</span>

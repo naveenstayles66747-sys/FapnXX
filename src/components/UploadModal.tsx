@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CategoryId, CategoryInfo, Video } from '../types';
 import { CATEGORIES } from '../data';
 import { videoService } from '../services/videoService';
+import { captureVideoFrame, extractThumbnailFromEmbedUrl } from '../utils/mediaHelper';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -11,8 +12,6 @@ interface UploadModalProps {
   onOpenAdminAuth?: () => void;
   categories?: CategoryInfo[];
 }
-
-
 
 export const UploadModal: React.FC<UploadModalProps> = ({
   isOpen,
@@ -36,6 +35,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
+
+  // Dedicated Thumbnail / Cover state
+  const [thumbnailUrl, setThumbnailUrl] = useState<string>('');
+  const [isCapturingFrame, setIsCapturingFrame] = useState<boolean>(false);
+  const [isUploadingThumb, setIsUploadingThumb] = useState<boolean>(false);
 
   // Revoke Blob URLs on unmount or filePreviewUrl change to prevent memory leaks
   useEffect(() => {
@@ -68,6 +72,49 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [channelNameInput, setChannelNameInput] = useState('');
   const [sourceWebsiteInput, setSourceWebsiteInput] = useState('');
   const [sourceWebsiteUrlInput, setSourceWebsiteUrlInput] = useState('');
+
+  const handleCaptureFrame = async () => {
+    const src = activeTab === 'file' && selectedFile ? selectedFile : processedEmbedUrl || embedInput;
+    if (!src) {
+      alert('Please enter a video URL or select a video file first.');
+      return;
+    }
+    setIsCapturingFrame(true);
+    try {
+      const frameData = await captureVideoFrame(src, 1.0);
+      setThumbnailUrl(frameData);
+    } catch (err: any) {
+      console.warn('Frame capture error:', err);
+      alert('Could not capture frame from this video source. Please paste a thumbnail image URL or upload an image file.');
+    } finally {
+      setIsCapturingFrame(false);
+    }
+  };
+
+  const handleThumbnailFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file (JPG, PNG, WebP).');
+        return;
+      }
+      setIsUploadingThumb(true);
+      try {
+        const storageUrl = await videoService.uploadPreviewToStorage(file);
+        setThumbnailUrl(storageUrl);
+      } catch {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            setThumbnailUrl(reader.result);
+          }
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setIsUploadingThumb(false);
+      }
+    }
+  };
 
   const handlePreviewFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -145,6 +192,78 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         } else {
           throw new Error('Invalid Vimeo URL.');
         }
+      } else if (
+        trimmed.includes('streamtape.com') ||
+        trimmed.includes('streamtape.to') ||
+        trimmed.includes('streamtape.net') ||
+        trimmed.includes('streamta.pe') ||
+        trimmed.includes('streamtape.xyz') ||
+        trimmed.includes('streamtape.cc') ||
+        trimmed.includes('streamhide.to') ||
+        trimmed.includes('streamhide.com')
+      ) {
+        let tapeId = '';
+        const match = trimmed.match(/\/(?:v|e)\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          tapeId = match[1];
+        } else {
+          const parts = trimmed.split('/').filter(Boolean);
+          tapeId = parts[parts.length - 1]?.split('?')[0] || '';
+        }
+        extractedUrl = `https://streamtape.com/e/${tapeId}/`;
+        autoTitle = 'Streamtape Stream';
+      } else if (trimmed.includes('dood') || trimmed.includes('doodstream') || trimmed.includes('ds2play') || trimmed.includes('doods.pro')) {
+        let doodId = '';
+        const match = trimmed.match(/\/(?:e|d)\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          doodId = match[1];
+        } else {
+          doodId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
+        }
+        extractedUrl = `https://dood.to/e/${doodId}`;
+        autoTitle = 'DoodStream Stream';
+      } else if (trimmed.includes('spankbang.com')) {
+        const match = trimmed.match(/spankbang\.com\/([a-zA-Z0-9]+)/);
+        if (match && match[1]) {
+          extractedUrl = `https://spankbang.com/${match[1]}/embed/`;
+          autoTitle = 'SpankBang Stream';
+        } else {
+          extractedUrl = trimmed;
+          autoTitle = 'SpankBang Stream';
+        }
+      } else if (trimmed.includes('xvideos.com')) {
+        const match = trimmed.match(/video-?([a-zA-Z0-9_]+)|\/prof-video-click\/[^\/]+\/([0-9]+)/) || trimmed.match(/([0-9]{5,})/);
+        const vidNum = match ? match[1] || match[2] || match[0] : '';
+        if (vidNum) {
+          extractedUrl = `https://www.xvideos.com/embedframe/${vidNum}`;
+          autoTitle = 'XVideos Stream';
+        } else {
+          extractedUrl = trimmed;
+          autoTitle = 'XVideos Stream';
+        }
+      } else if (trimmed.includes('filemoon') || trimmed.includes('filemoon.sx') || trimmed.includes('filemoon.to')) {
+        let moonId = '';
+        const match = trimmed.match(/\/(?:e|d)\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          moonId = match[1];
+        } else {
+          moonId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
+        }
+        extractedUrl = `https://filemoon.sx/e/${moonId}`;
+        autoTitle = 'Filemoon Stream';
+      } else if (trimmed.includes('mixdrop.co') || trimmed.includes('mixdrop.to') || trimmed.includes('mixdrop.sx')) {
+        let mixId = '';
+        const match = trimmed.match(/\/(?:e|f)\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          mixId = match[1];
+        } else {
+          mixId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
+        }
+        extractedUrl = `https://mixdrop.co/e/${mixId}`;
+        autoTitle = 'MixDrop Stream';
+      } else if (trimmed.includes('hornhub') || trimmed.includes('embedseek')) {
+        extractedUrl = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
+        autoTitle = 'Exclusive Embed Stream';
       } else if (trimmed.match(/\.(webp)($|\?)/i)) {
         extractedUrl = trimmed;
         autoTitle = 'WebP Animated Preview';
@@ -165,6 +284,16 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       if (!title && autoTitle) {
         setTitle(autoTitle);
       }
+      // Auto-extract thumbnail if available from platform URL
+      const autoThumb = extractThumbnailFromEmbedUrl(extractedUrl || trimmed);
+      if (autoThumb) {
+        setThumbnailUrl(autoThumb);
+      } else if (trimmed.match(/\.(mp4|webm)($|\?)/i)) {
+        captureVideoFrame(trimmed, 1.0).then((frame) => {
+          setThumbnailUrl((prev) => prev || frame);
+        }).catch(() => {});
+      }
+
       setProcessingStatus('Link ready!');
     } catch (err: any) {
       setLinkError(err.message || 'Could not parse link.');
@@ -189,6 +318,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
         setTitle(fileNameWithoutExt);
       }
+
+      // Auto-capture 1st frame as thumbnail from video file
+      captureVideoFrame(file, 1.0).then((frame) => {
+        setThumbnailUrl(frame);
+      }).catch((err) => {
+        console.warn('Auto frame capture notice:', err);
+      });
 
       // Auto-detect exact video duration from HTML5 video metadata
       const tempVideo = document.createElement('video');
@@ -229,6 +365,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     try {
       let finalEmbedUrl = processedEmbedUrl || embedInput.trim();
       let finalThumbnail =
+        thumbnailUrl.trim() ||
         previewWebpUrl.trim() ||
         previewMp4Url.trim() ||
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop';
@@ -292,6 +429,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         quality: quality,
         views: '1 view',
         viewsCount: 1,
+        likesCount: 0,
         rating: '100%',
         timeAgo: 'Just now',
         createdAt: new Date().toISOString(),
@@ -327,6 +465,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setDurationInput('05:00');
     setEmbedInput('');
     setProcessedEmbedUrl('');
+    setThumbnailUrl('');
     setLinkError(null);
     setProcessingStatus(null);
     setSelectedFile(null);
@@ -695,6 +834,94 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 className="w-full upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500 font-mono"
               />
             </div>
+          </div>
+
+          {/* ─── Dedicated Video Thumbnail / Cover Image Section ─── */}
+          <div className="border border-rose-500/30 rounded-xl p-3 space-y-2.5 bg-zinc-900/60 shadow-inner">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-rose-500 text-sm">photo_library</span>
+                <span>Video Thumbnail / Card Cover *</span>
+              </label>
+              {thumbnailUrl && (
+                <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-0.5">
+                  <span className="material-symbols-outlined text-xs">check_circle</span>
+                  <span>Ready</span>
+                </span>
+              )}
+            </div>
+
+            {/* Thumbnail Live Card Preview */}
+            {thumbnailUrl ? (
+              <div className="relative aspect-video w-full max-w-xs mx-auto rounded-xl overflow-hidden border-2 border-rose-500/50 shadow-lg bg-black group">
+                <img
+                  src={thumbnailUrl}
+                  alt="Thumbnail Preview"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[11px] font-bold text-white">
+                  <span className="truncate max-w-[150px]">{title || 'Video Title'}</span>
+                  <span className="px-1.5 py-0.5 bg-black/80 backdrop-blur rounded font-mono text-[10px]">
+                    {durationInput}
+                  </span>
+                </div>
+                <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-rose-600 text-white rounded text-[9px] font-extrabold uppercase">
+                  {quality}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setThumbnailUrl('')}
+                  className="absolute top-2 right-2 w-6 h-6 bg-black/80 hover:bg-rose-600 rounded-full flex items-center justify-center text-white transition-colors cursor-pointer"
+                  title="Remove Thumbnail"
+                >
+                  <span className="material-symbols-outlined text-xs">close</span>
+                </button>
+              </div>
+            ) : null}
+
+            {/* Thumbnail URL Input & Actions */}
+            <div className="flex items-center gap-2">
+              <input
+                type="url"
+                value={thumbnailUrl}
+                onChange={(e) => setThumbnailUrl(e.target.value)}
+                placeholder="Paste Thumbnail Image URL (e.g. https://.../thumb.jpg) ->"
+                className="flex-1 upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500 font-mono"
+              />
+
+              {/* Upload Image Button */}
+              <label className="px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-colors shrink-0 border border-white/10 shadow-sm">
+                <span className="material-symbols-outlined text-sm text-rose-400">image</span>
+                <span>Upload</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/avif"
+                  onChange={handleThumbnailFileUpload}
+                  className="hidden"
+                />
+              </label>
+
+              {/* Capture Video Frame Button */}
+              <button
+                type="button"
+                onClick={handleCaptureFrame}
+                disabled={isCapturingFrame || (!selectedFile && !processedEmbedUrl && !embedInput.trim())}
+                className="px-3 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-all shrink-0 shadow-sm"
+                title="Capture first frame snapshot from video"
+              >
+                {isCapturingFrame ? (
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <span className="material-symbols-outlined text-sm">camera_alt</span>
+                )}
+                <span>Capture Frame</span>
+              </button>
+            </div>
+
+            <p className="text-[10px] text-white/50 flex items-center gap-1">
+              <span>💡 Tip: Paste an image link, upload a photo, or click "Capture Frame" to use the video's first frame.</span>
+            </p>
           </div>
 
           {/* VTT Sprite Sheet URL for Seekbar Hover Scrubbing */}

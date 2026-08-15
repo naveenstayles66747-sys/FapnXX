@@ -105,10 +105,6 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   };
 
   const handleSave = () => {
-    if (isGuest) {
-      if (onOpenSoftLogin) onOpenSoftLogin('Cloud Bookmarks & Sync');
-      return;
-    }
     toggleStoredSavedVideo(video.id);
     setIsSaved(!isSaved);
   };
