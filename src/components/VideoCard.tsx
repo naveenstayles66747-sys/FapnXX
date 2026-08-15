@@ -472,7 +472,15 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
           {/* 2. Rating % */}
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">thumb_up</span>
-            <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">{video.rating || '100%'}</span>
+            <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">
+              {(() => {
+                const likes = typeof video.likesCount === 'number' ? video.likesCount : 0;
+                if (likes === 0) return '0%';
+                const views = typeof video.viewsCount === 'number' && video.viewsCount > 0 ? video.viewsCount : 1;
+                const percent = Math.min(100, Math.round((likes / views) * 100));
+                return `${Math.max(1, percent)}%`;
+              })()}
+            </span>
           </span>
 
           {/* 3. Duration */}

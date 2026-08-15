@@ -215,10 +215,17 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
               <span>{video.duration || '05:00'}</span>
             </span>
 
-            {/* Rating % */}
+            {/* Real Rating % / Likes */}
             <span className="flex items-center gap-1.5 font-medium text-xs">
               <span className="material-symbols-outlined text-sm">thumb_up</span>
-              <span>{video.rating || '100%'}</span>
+              <span>
+                {(() => {
+                  if (likeCount === 0) return '0%';
+                  const views = currentViewsCount || 1;
+                  const percent = Math.min(100, Math.round((likeCount / views) * 100));
+                  return `${Math.max(1, percent)}%`;
+                })()}
+              </span>
             </span>
 
             {/* Views with eye icon */}
