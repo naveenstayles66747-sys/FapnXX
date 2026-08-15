@@ -456,35 +456,35 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-3 md:p-6"
+      className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-2 sm:p-4 md:p-6"
     >
-      <div className="bg-[#121113] border border-[#2e2d30] rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="admin-panel-card bg-[#121113] border border-[#2e2d30] rounded-2xl w-full max-w-5xl h-[92vh] sm:h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         
         {/* Modal Header */}
-        <div className="p-4 md:p-6 bg-[#181719] border-b border-[#2e2d30] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ec4899] to-[#8b5cf6] flex items-center justify-center text-white shadow-lg">
-              <span className="material-symbols-outlined">admin_panel_settings</span>
+        <div className="p-3.5 sm:p-5 md:p-6 bg-[#181719] border-b border-[#2e2d30] flex items-start sm:items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#ec4899] to-[#8b5cf6] flex items-center justify-center text-white shadow-lg shrink-0">
+              <span className="material-symbols-outlined text-lg sm:text-xl">admin_panel_settings</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl md:text-2xl font-black text-white italic tracking-tight">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h2 className="text-base sm:text-xl md:text-2xl font-black text-white italic tracking-tight truncate">
                   <span className="text-[#e0358d] font-black">Fap</span>
                   <span className="brand-letter-n font-black">n</span>
                   <span>XX</span> Admin Panel
                 </h2>
                 {isAdminAuthenticated ? (
-                  <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                     Verified Admin
                   </span>
                 ) : (
-                  <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    Authentication Required
+                  <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+                    Auth Required
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[#debec8]">
+              <p className="text-[11px] sm:text-xs text-[#debec8] line-clamp-1 sm:line-clamp-none mt-0.5">
                 Central control panel for categories, uploads, media assets, and site banners.
               </p>
             </div>
@@ -492,14 +492,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-[#27272a] hover:bg-[#3f3f46] text-[#debec8] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#27272a] hover:bg-[#3f3f46] text-[#debec8] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
           >
-            <span className="material-symbols-outlined text-lg">close</span>
+            <span className="material-symbols-outlined text-base sm:text-lg">close</span>
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-[#141315] border-b border-[#2e2d30] px-4 md:px-6 flex items-center gap-2 overflow-x-auto hide-scrollbar">
+        <div className="bg-[#141315] border-b border-[#2e2d30] px-3 sm:px-6 flex items-center gap-1 sm:gap-2 overflow-x-auto hide-scrollbar shrink-0">
           <button
             onClick={() => setActiveTab('auth')}
             className={`py-3.5 px-4 font-bold text-xs tracking-wide border-b-2 flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
@@ -1672,40 +1672,42 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       </div>
                     )}
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
                       <input
                         type="url"
                         required
                         value={upThumbnail}
                         onChange={(e) => setUpThumbnail(e.target.value)}
-                        placeholder="Paste image URL (e.g. https://.../thumb.jpg) ->"
-                        className="flex-1 bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ec4899] font-mono"
+                        placeholder="Paste image URL (e.g. https://.../thumb.jpg)"
+                        className="w-full sm:flex-1 bg-[#0d0c0e] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ec4899] font-mono min-w-0"
                       />
 
-                      <label className="px-3 py-2.5 bg-[#252428] hover:bg-[#323136] text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-colors shrink-0 border border-white/10">
-                        <span className="material-symbols-outlined text-sm text-[#ec4899]">image</span>
-                        <span>Upload</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAdminThumbUpload}
-                          className="hidden"
-                        />
-                      </label>
+                      <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                        <label className="flex-1 sm:flex-none px-3.5 py-2.5 bg-[#252428] hover:bg-[#323136] text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-colors border border-white/10 shadow-sm active:scale-95">
+                          <span className="material-symbols-outlined text-sm text-[#ec4899]">image</span>
+                          <span>Upload</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAdminThumbUpload}
+                            className="hidden"
+                          />
+                        </label>
 
-                      <button
-                        type="button"
-                        onClick={handleAdminCaptureFrame}
-                        disabled={isCapturingAdminFrame || !upEmbedUrl.trim()}
-                        className="px-3 py-2.5 bg-[#ec4899] hover:bg-[#db2777] disabled:opacity-40 text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-all shrink-0"
-                      >
-                        {isCapturingAdminFrame ? (
-                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <span className="material-symbols-outlined text-sm">camera_alt</span>
-                        )}
-                        <span>Capture Frame</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={handleAdminCaptureFrame}
+                          disabled={isCapturingAdminFrame || !upEmbedUrl.trim()}
+                          className="flex-1 sm:flex-none px-3.5 py-2.5 bg-[#ec4899] hover:bg-[#db2777] disabled:opacity-40 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-sm"
+                        >
+                          {isCapturingAdminFrame ? (
+                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <span className="material-symbols-outlined text-sm">camera_alt</span>
+                          )}
+                          <span>Capture Frame</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -1756,17 +1758,17 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
           {/* TAB 6: DMCA & CONTENT MODERATION QUEUE */}
           {activeTab === 'reports' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between bg-[#181719] p-5 rounded-2xl border border-[#2e2d30]">
-                <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#181719] p-4 sm:p-5 rounded-2xl border border-[#2e2d30]">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                     <span className="material-symbols-outlined text-rose-500">gavel</span>
                     Automated DMCA & Content Moderation Queue
                   </h3>
-                  <p className="text-xs text-[#debec8]">
+                  <p className="text-xs text-[#debec8] mt-0.5">
                     Review user copyright claims, policy violations, and execute automated content takedowns.
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2 flex-wrap shrink-0">
                   <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold px-3 py-1 rounded-full">
                     {reportsList.filter((r) => r.status === 'pending').length} Pending Review
                   </span>

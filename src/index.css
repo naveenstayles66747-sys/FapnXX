@@ -477,11 +477,45 @@ html.light .upload-modal-input {
 }
 
 html.light .upload-modal-tab-unselected {
-  color: #475569 !important;
+/* =====================================================================
+   ADMIN PANEL MODAL DESIGN SYSTEM (Dedicated Dark Obsidian Console)
+   ===================================================================== */
+.admin-panel-card,
+.admin-panel-card * {
+  box-sizing: border-box;
 }
-html.light .upload-modal-tab-unselected:hover {
-  color: #0f172a !important;
-  background-color: rgba(0, 0, 0, 0.04) !important;
+
+.admin-panel-card {
+  background-color: #121113 !important;
+  color: #ffffff !important;
+  border-color: #2e2d30 !important;
+}
+
+.admin-panel-card input,
+.admin-panel-card select,
+.admin-panel-card textarea {
+  background-color: #0d0c0e !important;
+  color: #ffffff !important;
+  border-color: #2e2d30 !important;
+}
+
+.admin-panel-card input:focus,
+.admin-panel-card select:focus,
+.admin-panel-card textarea:focus {
+  border-color: #ec4899 !important;
+}
+
+.admin-panel-card p,
+.admin-panel-card span.text-\[\#debec8\],
+.admin-panel-card span.text-\[\#a19fa6\] {
+  color: #debec8 !important;
+}
+
+.admin-panel-card h1,
+.admin-panel-card h2,
+.admin-panel-card h3,
+.admin-panel-card h4 {
+  color: #ffffff !important;
 }
 
 /* =====================================================================
