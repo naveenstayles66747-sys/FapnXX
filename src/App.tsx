@@ -80,11 +80,21 @@ export default function App() {
   const [videosList, setVideosList] = useState<Video[]>(() => getStoredVideos());
   const [banners, setBanners] = useState<LandingBanner[]>(() => getStoredBanners());
 
-  // Filtered videos based on content preference
+  // Filtered videos based on content preference (straight/gay/lesbian) without breaking standard horizontal/vertical videos
   const preferredVideos = videosList.filter((v) => {
     if (!v) return false;
-    if (!v.orientation) return true;
-    return v.orientation === contentPreference;
+    const ori = (v.orientation || '').toLowerCase();
+    const cat = (v.category || '').toLowerCase();
+    if (contentPreference === 'straight') {
+      return ori !== 'gay' && ori !== 'lesbian' && cat !== 'gay' && cat !== 'lesbian';
+    }
+    if (contentPreference === 'gay') {
+      return ori === 'gay' || cat === 'gay' || v.tags?.some((t) => t.toLowerCase() === 'gay');
+    }
+    if (contentPreference === 'lesbian') {
+      return ori === 'lesbian' || cat === 'lesbian' || v.tags?.some((t) => t.toLowerCase() === 'lesbian');
+    }
+    return true;
   });
   const filteredVideosList = preferredVideos.length > 0 ? preferredVideos : videosList;
 

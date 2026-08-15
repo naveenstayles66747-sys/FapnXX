@@ -272,10 +272,17 @@ export class VideoService {
         });
 
         if (firestoreVideos.length > 0) {
+          const combined = [...firestoreVideos];
+          const firestoreIds = new Set(firestoreVideos.map((v) => v.id));
+          INITIAL_VIDEOS.forEach((defaultVid) => {
+            if (!firestoreIds.has(defaultVid.id)) {
+              combined.push(defaultVid);
+            }
+          });
           // Sort newest first
-          firestoreVideos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          setStoredVideos(firestoreVideos);
-          return firestoreVideos;
+          combined.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          setStoredVideos(combined);
+          return combined;
         }
       } else {
         // Firestore is empty — auto-seed initial videos into Firestore
@@ -314,8 +321,10 @@ export class VideoService {
       const unsubscribe = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
           const list: Video[] = [];
+          const firestoreIds = new Set<string>();
           snapshot.forEach((d) => {
             const data = d.data() as any;
+            firestoreIds.add(d.id);
             list.push({
               ...data,
               id: d.id,
@@ -323,6 +332,11 @@ export class VideoService {
               viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 1200,
               likesCount: typeof data.likesCount === 'number' ? data.likesCount : 340,
             });
+          });
+          INITIAL_VIDEOS.forEach((defaultVid) => {
+            if (!firestoreIds.has(defaultVid.id)) {
+              list.push(defaultVid);
+            }
           });
           if (list.length > 0) {
             list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
