@@ -146,9 +146,10 @@ export const PopunderTrigger: React.FC<{ popunderUrl?: string }> = ({ popunderUr
  */
 export const DesktopFullpageInterstitial: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const adInjected = useRef(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || window.innerWidth < 1024) return;
+    if (typeof window === 'undefined' || window.innerWidth < 1024 || adInjected.current) return;
 
     try {
       if (containerRef.current) {
@@ -158,9 +159,12 @@ export const DesktopFullpageInterstitial: React.FC = () => {
         ins.setAttribute('data-zoneid', '6003174');
         containerRef.current.appendChild(ins);
 
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
+        const script = document.createElement('script');
+        script.type = 'application/javascript';
+        script.innerHTML = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+        containerRef.current.appendChild(script);
+
+        adInjected.current = true;
       }
     } catch (e) {
       console.warn('[ExoClick] Error serving interstitial ad:', e);
@@ -185,7 +189,6 @@ export const MobileInstantMessage: React.FC = () => {
   const adInjected = useRef(false);
 
   useEffect(() => {
-    // Only load on mobile viewports (< 1024px)
     if (typeof window === 'undefined' || window.innerWidth >= 1024 || adInjected.current) return;
 
     try {
@@ -196,9 +199,10 @@ export const MobileInstantMessage: React.FC = () => {
         ins.setAttribute('data-zoneid', '6003178');
         containerRef.current.appendChild(ins);
 
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
+        const script = document.createElement('script');
+        script.type = 'application/javascript';
+        script.innerHTML = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+        containerRef.current.appendChild(script);
 
         adInjected.current = true;
       }
@@ -225,7 +229,6 @@ export const MobileFullpageInterstitial: React.FC = () => {
   const adInjected = useRef(false);
 
   useEffect(() => {
-    // Only load on mobile viewports (< 1024px)
     if (typeof window === 'undefined' || window.innerWidth >= 1024 || adInjected.current) return;
 
     try {
@@ -236,9 +239,10 @@ export const MobileFullpageInterstitial: React.FC = () => {
         ins.setAttribute('data-zoneid', '6003180');
         containerRef.current.appendChild(ins);
 
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
+        const script = document.createElement('script');
+        script.type = 'application/javascript';
+        script.innerHTML = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+        containerRef.current.appendChild(script);
 
         adInjected.current = true;
       }
@@ -276,9 +280,10 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       ins.style.width = '100%';
       containerRef.current.appendChild(ins);
 
-      const win = window as any;
-      win.AdProvider = win.AdProvider || [];
-      win.AdProvider.push({ serve: {} });
+      const script = document.createElement('script');
+      script.type = 'application/javascript';
+      script.innerHTML = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      containerRef.current.appendChild(script);
 
       adInjected.current = true;
     } catch (e) {
