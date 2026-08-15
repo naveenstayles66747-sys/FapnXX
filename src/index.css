@@ -223,7 +223,9 @@ html.light .bg-gradient-to-t p {
   color: #ffffff !important;
 }
 
-/* Explicit Light Mode Thumbnail Overlays: HD badge & Duration stay white on black, Eye button adapts cleanly */
+/* Explicit Light & Dark Thumbnail Overlays: HD badge, Duration, & Preview Eye Button */
+.thumb-hd-badge,
+.thumb-duration-badge,
 html.light .thumb-hd-badge,
 html.light .thumb-duration-badge,
 html.light .video-card-container .thumb-hd-badge,
@@ -232,15 +234,24 @@ html.light .video-card-container .thumb-duration-badge {
   background-color: rgba(0, 0, 0, 0.85) !important;
 }
 
-html.light .thumb-eye-btn {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: rgba(226, 232, 240, 0.9) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;
+/* Eye Preview Button: Sleek Translucent Dark Glass with Pure White Eye Icon (Matching Reference Image) */
+.thumb-eye-btn,
+html.light .thumb-eye-btn,
+html.light .video-card-container .thumb-eye-btn {
+  background-color: rgba(20, 20, 24, 0.75) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
+.thumb-eye-btn span,
+.thumb-eye-btn .material-symbols-outlined,
 html.light .thumb-eye-btn span,
-html.light .thumb-eye-btn .material-symbols-outlined {
-  color: #0f172a !important;
+html.light .thumb-eye-btn .material-symbols-outlined,
+html.light .video-card-container .thumb-eye-btn span,
+html.light .video-card-container .thumb-eye-btn .material-symbols-outlined {
+  color: #ffffff !important;
 }
 
 /* Card titles and stats below thumbnails must be sharp dark in Light Mode */

@@ -422,21 +422,21 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
           </div>
         )}
 
-        {/* Mobile Touch Eye Preview Button — Bright White in Light Mode, Sleek Dark in Dark Mode */}
+        {/* Mobile Touch Eye Preview Button — Exact Translucent Dark Glass with Bright White Eye Icon */}
         {isMobile && (
           <button
             type="button"
             onClick={toggleMobilePreview}
-            className={`thumb-eye-btn absolute bottom-2 right-2 z-30 p-1.5 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-xl flex items-center justify-center cursor-pointer active:scale-90 ${
+            className={`thumb-eye-btn absolute bottom-2 right-2 z-30 p-2 rounded-2xl backdrop-blur-md transition-all duration-300 ease-out shadow-2xl flex items-center justify-center cursor-pointer active:scale-90 ${
               shouldPlayPreview
                 ? 'opacity-0 pointer-events-none scale-90'
-                : 'opacity-100 scale-100 bg-white/95 dark:bg-black/75 hover:bg-white dark:hover:bg-black/90 text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/25 shadow-lg'
+                : 'opacity-100 scale-100 bg-[#141418]/75 text-white border border-white/20'
             }`}
             title="Toggle Video Preview"
           >
             <span
-              className="material-symbols-outlined text-base !text-zinc-900 dark:!text-white"
-              style={{ color: 'inherit' }}
+              className="material-symbols-outlined text-lg !text-white"
+              style={{ color: '#ffffff' }}
             >
               visibility
             </span>
