@@ -223,6 +223,18 @@ html.light .bg-gradient-to-t p {
   color: #ffffff !important;
 }
 
+/* Explicit Light Mode Thumbnail Overlays (HD, Duration, Preview Eye) must always stay white */
+html.light .thumb-hd-badge,
+html.light .thumb-duration-badge,
+html.light .thumb-eye-btn,
+html.light .thumb-eye-btn *,
+html.light .video-card-container .thumb-hd-badge,
+html.light .video-card-container .thumb-duration-badge,
+html.light .video-card-container .thumb-eye-btn,
+html.light .video-card-container .thumb-eye-btn * {
+  color: #ffffff !important;
+}
+
 /* Card titles and stats below thumbnails must be sharp dark in Light Mode */
 html.light article h3,
 html.light .video-card h3 {
@@ -235,21 +247,19 @@ html.light .video-card h3:hover {
 }
 
 /* Card numbers and stats explicitly dark and readable */
-html.light article span,
-html.light .video-card span {
+html.light article div:not(.video-card-container *) > span,
+html.light .video-card div:not(.video-card-container *) > span {
   color: #1e293b !important;
 }
 
-html.light article .material-symbols-outlined,
-html.light .video-card .material-symbols-outlined {
-  color: #64748b !important;
+html.light article div:not(.video-card-container *) > span.text-\[\#0f172a\],
+html.light .video-card div:not(.video-card-container *) > span.text-\[\#0f172a\] {
+  color: #0f172a !important;
 }
 
-/* Keep top-right HD and duration badge on thumbnail dark background */
-html.light article .aspect-video .absolute span,
-html.light .aspect-video .absolute span,
-html.light article .aspect-video .absolute div {
-  color: #ffffff !important;
+html.light article div:not(.video-card-container *) .material-symbols-outlined,
+html.light .video-card div:not(.video-card-container *) .material-symbols-outlined {
+  color: #64748b !important;
 }
 
 html.light .aspect-video .text-\[\#debec8\],

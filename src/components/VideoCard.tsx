@@ -404,8 +404,8 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
 
         {/* Top-Right: Quality Badge only */}
         {!shouldPlayPreview && (
-          <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1">
-            <span className="bg-black/85 text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+          <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
+            <span className="thumb-hd-badge bg-black/85 text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
               {video.quality || 'HD'}
             </span>
           </div>
@@ -414,7 +414,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
         {/* Duration Badge — bottom-right on desktop, bottom-left on mobile so preview btn doesn't overlap */}
         {!shouldPlayPreview && (
           <div
-            className={`absolute bottom-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-white z-20 shadow-md ${
+            className={`thumb-duration-badge absolute bottom-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-white z-20 shadow-md ${
               isMobile ? 'left-2' : 'right-2'
             }`}
           >
@@ -427,14 +427,14 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
           <button
             type="button"
             onClick={toggleMobilePreview}
-            className={`absolute bottom-2 right-2 z-30 p-1.5 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-xl flex items-center justify-center cursor-pointer active:scale-90 ${
+            className={`thumb-eye-btn absolute bottom-2 right-2 z-30 p-1.5 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-xl flex items-center justify-center cursor-pointer active:scale-90 ${
               shouldPlayPreview
                 ? 'opacity-0 pointer-events-none scale-90'
-                : 'opacity-100 scale-100 bg-white/90 dark:bg-black/75 hover:bg-white dark:hover:bg-black/90 text-zinc-900 dark:text-white border border-zinc-300 dark:border-white/25 shadow-md'
+                : 'opacity-100 scale-100 bg-black/75 dark:bg-black/75 hover:bg-black/90 text-white border border-white/25 shadow-md'
             }`}
             title="Toggle Video Preview"
           >
-            <span className="material-symbols-outlined text-base text-zinc-900 dark:text-white">
+            <span className="material-symbols-outlined text-base text-white">
               visibility
             </span>
           </button>
