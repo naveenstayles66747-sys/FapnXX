@@ -115,29 +115,19 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
           extractedClick = clickThroughs[0].textContent.trim();
         }
 
-        // If no active ExoClick campaign is filled yet during compliance review, use live promo stream for testing
-        const sampleAdMedia = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
-        const sampleClick = 'https://fapn-xx.vercel.app';
-
         if (isMounted) {
           if (extractedMedia) {
             setVastMediaUrl(extractedMedia);
             setVastClickUrl(extractedClick);
             setAdPhase('playing');
           } else {
-            // Serve live in-stream pre-roll test video so player ad is 100% active and testable
-            setVastMediaUrl(sampleAdMedia);
-            setVastClickUrl(sampleClick);
-            setAdPhase('playing');
+            // No ad in VAST response → go straight to video
+            setAdPhase('done');
           }
         }
       } catch {
-        if (isMounted) {
-          // Serve live in-stream pre-roll test video so player ad is 100% active and testable
-          setVastMediaUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
-          setVastClickUrl('https://fapn-xx.vercel.app');
-          setAdPhase('playing');
-        }
+        // VAST failed / blocked / empty → go straight to video
+        if (isMounted) setAdPhase('done');
       }
     };
 
