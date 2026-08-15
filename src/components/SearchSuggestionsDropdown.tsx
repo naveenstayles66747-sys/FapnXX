@@ -20,7 +20,7 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
   return (
     <span>
       {text.slice(0, idx)}
-      <span className="text-white font-black">{text.slice(idx, idx + query.length)}</span>
+      <span className="text-rose-600 dark:text-white font-black">{text.slice(idx, idx + query.length)}</span>
       {text.slice(idx + query.length)}
     </span>
   );
