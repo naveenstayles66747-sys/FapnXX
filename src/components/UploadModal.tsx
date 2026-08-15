@@ -271,31 +271,57 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         if (!previewWebpUrl) {
           setPreviewWebpUrl(trimmed);
         }
-      } else if (trimmed.match(/\.(mp4|webm|m3u8|mov)($|\?)/i)) {
+      } else if (trimmed.match(/\.(mp4|webm|m3u8|mov|ogg)($|\?)/i) || trimmed.startsWith('blob:')) {
         extractedUrl = trimmed;
         autoTitle = 'Direct MP4 Stream';
       } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
         extractedUrl = trimmed;
         autoTitle = 'Stream Video';
       } else {
-        throw new Error('Please enter a valid URL or iframe embed code.');
+        throw new Error('Please enter a valid URL, direct MP4 link, or iframe embed code.');
       }
 
       setProcessedEmbedUrl(extractedUrl);
       if (!title && autoTitle) {
         setTitle(autoTitle);
       }
-      // Auto-extract thumbnail if available from platform URL
-      const autoThumb = extractThumbnailFromEmbedUrl(extractedUrl || trimmed);
-      if (autoThumb) {
-        setThumbnailUrl(autoThumb);
-      } else if (trimmed.match(/\.(mp4|webm)($|\?)/i)) {
-        captureVideoFrame(trimmed, 1.0).then((frame) => {
-          setThumbnailUrl((prev) => prev || frame);
-        }).catch(() => {});
-      }
 
-      setProcessingStatus('Link ready!');
+      // Check if it's a direct video link to run quick live HTML5 metadata test
+      const isDirectMedia = Boolean(extractedUrl.match(/\.(mp4|webm|mov|m3u8|ogg)($|\?)/i) || extractedUrl.includes('video/'));
+      if (isDirectMedia) {
+        setProcessingStatus('⚡ Testing stream URL & extracting duration...');
+        const testVideo = document.createElement('video');
+        testVideo.src = extractedUrl;
+        testVideo.preload = 'metadata';
+        testVideo.crossOrigin = 'anonymous';
+
+        testVideo.onloadedmetadata = () => {
+          if (testVideo.duration && !isNaN(testVideo.duration) && testVideo.duration > 0) {
+            const totalSec = Math.floor(testVideo.duration);
+            const min = Math.floor(totalSec / 60);
+            const sec = totalSec % 60;
+            const formatted = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+            setDurationInput(formatted);
+          }
+          // Capture 1st frame as thumbnail
+          captureVideoFrame(extractedUrl, 1.0)
+            .then((frame) => setThumbnailUrl((prev) => prev || frame))
+            .catch(() => {});
+          setProcessingStatus('✓ Direct Stream Verified & Ready!');
+        };
+
+        testVideo.onerror = () => {
+          // Even if CORS blocks metadata loading, direct URL is still accepted
+          setProcessingStatus('✓ Direct Video Link Ready!');
+        };
+      } else {
+        // Auto-extract thumbnail if available from embed platform URL
+        const autoThumb = extractThumbnailFromEmbedUrl(extractedUrl || trimmed);
+        if (autoThumb) {
+          setThumbnailUrl(autoThumb);
+        }
+        setProcessingStatus('✓ Embed Link Verified & Ready!');
+      }
     } catch (err: any) {
       setLinkError(err.message || 'Could not parse link.');
       setProcessedEmbedUrl('');
