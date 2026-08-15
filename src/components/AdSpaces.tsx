@@ -172,36 +172,20 @@ export const StickyBottomLeaderboard: React.FC = () => {
   return (
     <>
       {/* Dynamic Placeholder Gap: Expands page bottom so video feed naturally scrolls above ad */}
-      <div className="hidden lg:block w-full h-[105px] shrink-0 pointer-events-none transition-all duration-300" />
+      <div className="hidden lg:block w-full h-[96px] shrink-0 pointer-events-none transition-all duration-300" />
 
       {/* Floating Sticky Bottom Banner Container (Desktop only: left-64 avoids sidebar collision) */}
       <aside
         ref={asideRef}
         aria-label="Sponsored Advertisement"
-        className="hidden lg:flex fixed bottom-0 left-64 right-0 z-[120] items-center justify-center p-2 bg-[#0d0c0e]/95 backdrop-blur-xl border-t border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] transition-all duration-300 animate-in slide-in-from-bottom-6"
+        className="hidden lg:flex fixed bottom-0 left-64 right-0 z-[120] items-center justify-center p-0 bg-transparent pointer-events-none transition-all duration-300 animate-in slide-in-from-bottom-6"
       >
-        <div className="relative flex items-center justify-center min-w-[728px] min-h-[90px]">
-          {/* Close Button at top-right corner of ad */}
-          <button
-            type="button"
-            onClick={handleDismiss}
-            title="Close Advertisement"
-            aria-label="Close Advertisement"
-            className="absolute -top-2.5 -right-2.5 z-20 w-6 h-6 rounded-full bg-zinc-800 hover:bg-[#e0358d] text-white border border-white/20 flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-90"
-          >
-            <span className="material-symbols-outlined text-xs">close</span>
-          </button>
-
-          {/* Ad Badge */}
-          <span className="absolute -top-2.5 left-0 z-20 text-[9px] font-black uppercase tracking-wider bg-black/80 text-zinc-400 px-1.5 py-0.5 rounded border border-white/10">
-            Ad
-          </span>
-
-          {/* ExoClick Mounting Point */}
+        <div className="relative pointer-events-auto flex items-center justify-center shadow-[0_-8px_24px_rgba(0,0,0,0.6)] rounded-t-lg overflow-hidden bg-black">
+          {/* ExoClick Mounting Point (ExoClick provides its own built-in clean close button & badge) */}
           <div
             ref={containerRef}
             onClick={handleDismiss}
-            className="flex items-center justify-center overflow-hidden rounded"
+            className="flex items-center justify-center"
           />
         </div>
       </aside>
