@@ -256,4 +256,64 @@ export const MobileFullpageInterstitial: React.FC = () => {
   );
 };
 
+/**
+ * Outstream Video Card Ad (Zone ID: 6003190)
+ * Sits naturally inside the video feed grid. Autoplays when scrolled into view.
+ */
+export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ className = '' }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const adInjected = useRef(false);
+
+  useEffect(() => {
+    if (adInjected.current || !containerRef.current) return;
+
+    try {
+      containerRef.current.innerHTML = '';
+      const ins = document.createElement('ins');
+      ins.className = 'eas6a97888e37';
+      ins.setAttribute('data-zoneid', '6003190');
+      ins.style.display = 'block';
+      ins.style.width = '100%';
+      containerRef.current.appendChild(ins);
+
+      const win = window as any;
+      win.AdProvider = win.AdProvider || [];
+      win.AdProvider.push({ serve: {} });
+
+      adInjected.current = true;
+    } catch (e) {
+      console.warn('[ExoClick] Error serving outstream video ad:', e);
+    }
+  }, []);
+
+  return (
+    <div
+      className={`group relative flex flex-col bg-[#141416] dark:bg-[#141416] rounded-2xl border border-white/10 overflow-hidden shadow-lg p-2.5 transition-all duration-300 hover:border-[#e0358d]/50 hover:shadow-xl ${className}`}
+    >
+      {/* Video Card Header Badge */}
+      <div className="flex items-center justify-between px-1.5 py-1 mb-1.5">
+        <span className="bg-[#e0358d]/20 text-[#e0358d] dark:text-[#ec4899] text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-[#e0358d]/30">
+          Sponsored
+        </span>
+        <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1">
+          <span className="material-symbols-outlined text-xs text-[#e0358d]">play_circle</span>
+          Featured Video
+        </span>
+      </div>
+
+      {/* 16:9 Video Canvas Slot */}
+      <div
+        ref={containerRef}
+        className="w-full aspect-[16/9] bg-black/60 rounded-xl overflow-hidden flex items-center justify-center relative min-h-[180px]"
+      />
+
+      {/* Card Info Footer */}
+      <div className="mt-2.5 px-1 flex items-center justify-between text-xs text-zinc-400">
+        <span className="font-semibold text-zinc-200 truncate">Exclusive Partner Spotlight</span>
+        <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">HD 1080p</span>
+      </div>
+    </div>
+  );
+};
+
 export default AdBanner;

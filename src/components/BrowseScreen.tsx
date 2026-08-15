@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CategoryId, CategoryInfo, LandingBanner, Video } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
+import { OutstreamVideoCardAd } from './AdSpaces';
 import { useLanguage } from '../i18n/LanguageContext';
 import { getBannerImageUrl, handleBannerImageError } from '../utils/mediaHelper';
 import { smartSearch, hasRealMatches } from '../utils/searchEngine';
@@ -560,12 +561,17 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
         {sortedVideos.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-y-5 gap-x-4 sm:gap-6">
-            {sortedVideos.map((video) => (
-              <VideoCard
-                key={video.id}
-                video={video}
-                onClick={() => onSelectVideo(video)}
-              />
+            {sortedVideos.map((video, idx) => (
+              <React.Fragment key={video.id}>
+                <VideoCard
+                  video={video}
+                  onClick={() => onSelectVideo(video)}
+                />
+                {/* Organic In-Feed Outstream Video Ad Placement at Position 4 */}
+                {idx === 3 && (
+                  <OutstreamVideoCardAd key="outstream-ad-card" />
+                )}
+              </React.Fragment>
             ))}
           </div>
         ) : (
