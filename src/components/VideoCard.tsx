@@ -447,7 +447,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
       {/* ─── Card Info Below Thumbnail (Exact Reference Design) ─── */}
       <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
         {/* Title */}
-        <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-[#0f172a] dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-300 transition-colors line-clamp-2 leading-snug tracking-tight">
+        <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight">
           {video.title}
         </h3>
 

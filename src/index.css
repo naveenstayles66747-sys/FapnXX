@@ -258,14 +258,11 @@ html.light .video-card-container .thumb-eye-btn .material-symbols-outlined {
 html.dark .video-card-meta-box,
 html.dark .video-card-meta-title,
 html.dark article h3,
-html.dark .video-card h3 {
-  color: #ffffff !important;
-}
-
+html.dark .video-card h3,
 html.dark .video-card-meta-title:hover,
 html.dark article h3:hover,
 html.dark .video-card h3:hover {
-  color: #f472b6 !important;
+  color: #ffffff !important;
 }
 
 html.dark .video-card-stats-row,
