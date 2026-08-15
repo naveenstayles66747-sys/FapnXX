@@ -5,6 +5,7 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
 import { MobileDrawer } from './components/MobileDrawer';
+import { StickyBottomLeaderboard } from './components/AdSpaces';
 import { AgeGateModal } from './components/AgeGateModal';
 import { BrowseScreen } from './components/BrowseScreen';
 import { CategoriesScreen } from './components/CategoriesScreen';
@@ -582,6 +583,9 @@ export default function App() {
               />
             )}
           </div>
+
+          {/* ExoClick 728x90 Smart Sticky Bottom Leaderboard Ad (Web View Only with dynamic spacing) */}
+          <StickyBottomLeaderboard />
 
           <BottomNav
             currentScreen={currentScreen}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface AdBannerProps {
   position: 'banner_top' | 'banner_bottom' | 'card_inline' | 'sidebar';
@@ -77,6 +77,99 @@ export const AdBanner: React.FC<AdBannerProps> = ({
         <img src={bannerImage} alt={title} className="max-h-24 w-full object-contain mx-auto rounded-lg" />
       </a>
     </div>
+  );
+};
+
+/**
+ * Smart Sticky Bottom Leaderboard (728x90) for Web View:
+ * Dynamically mounts the ExoClick 6003172 ad, reserves smooth dynamic bottom spacing
+ * so feed content is never obstructed, auto-collapses if closed, and re-allocates padding
+ * when the 30-sec ad refresh triggers.
+ */
+export const StickyBottomLeaderboard: React.FC = () => {
+  const [isVisible, setIsVisible] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const adInjected = useRef(false);
+
+  useEffect(() => {
+    if (!isVisible || !containerRef.current || adInjected.current) return;
+
+    try {
+      // 1. Inject ExoClick Ad Provider script if not already present
+      if (!document.getElementById('exoclick-ad-provider')) {
+        const script = document.createElement('script');
+        script.id = 'exoclick-ad-provider';
+        script.type = 'application/javascript';
+        script.async = true;
+        script.src = 'https://a.magsrv.com/ad-provider.js';
+        document.head.appendChild(script);
+      }
+
+      // 2. Clear previous and mount fresh ad ins tag
+      containerRef.current.innerHTML = '';
+      const ins = document.createElement('ins');
+      ins.className = 'eas6a97888e17';
+      ins.setAttribute('data-zoneid', '6003172');
+      ins.style.display = 'inline-block';
+      ins.style.width = '728px';
+      ins.style.height = '90px';
+      containerRef.current.appendChild(ins);
+
+      // 3. Serve ad via AdProvider queue
+      const serveScript = document.createElement('script');
+      serveScript.innerHTML = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      containerRef.current.appendChild(serveScript);
+
+      adInjected.current = true;
+    } catch (e) {
+      console.warn('[ExoClick] Error serving sticky bottom ad:', e);
+    }
+  }, [isVisible]);
+
+  // If user closed ad, hide and set timer to re-open on next refresh cycle
+  const handleClose = () => {
+    setIsVisible(false);
+    adInjected.current = false;
+    // Re-surface cleanly after 30 seconds
+    setTimeout(() => {
+      setIsVisible(true);
+    }, 30000);
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <>
+      {/* Dynamic Placeholder Gap: Expands page bottom so video feed naturally scrolls above ad */}
+      <div className="hidden lg:block w-full h-[105px] shrink-0 pointer-events-none transition-all duration-300" />
+
+      {/* Floating Sticky Bottom Banner Container (Desktop only: left-64 avoids sidebar collision) */}
+      <aside
+        aria-label="Sponsored Advertisement"
+        className="hidden lg:flex fixed bottom-0 left-64 right-0 z-[120] items-center justify-center p-2 bg-[#0d0c0e]/95 backdrop-blur-xl border-t border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] transition-all duration-300 animate-in slide-in-from-bottom-6"
+      >
+        <div className="relative flex items-center justify-center min-w-[728px] min-h-[90px]">
+          {/* Close Button at top-right corner of ad */}
+          <button
+            type="button"
+            onClick={handleClose}
+            title="Close Advertisement"
+            aria-label="Close Advertisement"
+            className="absolute -top-2.5 -right-2.5 z-20 w-6 h-6 rounded-full bg-zinc-800 hover:bg-[#e0358d] text-white border border-white/20 flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-90"
+          >
+            <span className="material-symbols-outlined text-xs">close</span>
+          </button>
+
+          {/* Ad Badge */}
+          <span className="absolute -top-2.5 left-0 z-20 text-[9px] font-black uppercase tracking-wider bg-black/80 text-zinc-400 px-1.5 py-0.5 rounded border border-white/10">
+            Ad
+          </span>
+
+          {/* ExoClick Mounting Point */}
+          <div ref={containerRef} className="flex items-center justify-center overflow-hidden rounded" />
+        </div>
+      </aside>
+    </>
   );
 };
 
