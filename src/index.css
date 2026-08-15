@@ -121,6 +121,53 @@ video, iframe {
   -webkit-backface-visibility: hidden;
 }
 
+/* ==========================================================================
+   ULTRA-SMOOTH GPU-ACCELERATED MOBILE DRAWER & SIDEBAR ANIMATIONS
+   ========================================================================== */
+@keyframes smoothDrawerSlideIn {
+  0% {
+    transform: translate3d(-100%, 0, 0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes smoothBackdropFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.mobile-drawer-anim {
+  animation: smoothDrawerSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.mobile-drawer-backdrop-anim {
+  animation: smoothBackdropFadeIn 0.25s ease-out forwards;
+  will-change: opacity;
+}
+
+/* Sidebar Item Micro-Interactions (Smooth Desktop & Mobile Hover) */
+.sidebar-link-interactive {
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, background-color;
+}
+
+.sidebar-link-interactive:hover {
+  transform: translateX(4px);
+}
+
+.sidebar-link-interactive:active {
+  transform: scale(0.98);
+}
+
 /* Smooth Theme Transition Effects (Restricted to major layout containers for instant 0ms hover response) */
 body, main, header, nav, aside {
   transition: background-color 0.15s ease-out, color 0.15s ease-out, border-color 0.15s ease-out;

@@ -41,14 +41,14 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100]">
-      {/* Overlay */}
+      {/* Overlay with smooth backdrop fade */}
       <div
         onClick={onClose}
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+        className="mobile-drawer-backdrop-anim absolute inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
       />
 
-      {/* Drawer Content */}
-      <aside className="mobile-drawer-aside absolute left-0 top-0 h-full w-72 bg-[#131315] border-r border-white/10 flex flex-col z-10 animate-in slide-in-from-left duration-300">
+      {/* Drawer Content with natural spring physics slide */}
+      <aside className="mobile-drawer-aside mobile-drawer-anim absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-[#131315] border-r border-white/10 flex flex-col z-10 shadow-[20px_0_50px_rgba(0,0,0,0.8)]">
         <div className="p-6 flex justify-between items-center border-b border-white/5">
           <div
             onClick={() => {

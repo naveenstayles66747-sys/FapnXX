@@ -43,7 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => {
                 onNavigate('browse');
               }}
-              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
+              className={`sidebar-link-interactive w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide cursor-pointer ${
                 currentScreen === 'browse' && selectedCategoryId === 'all'
                   ? 'bg-[#f751a1]/20 text-[#ffb0cd] border-l-4 border-[#ffb0cd]'
                   : 'text-[#debec8] hover:bg-white/5 hover:text-white'
