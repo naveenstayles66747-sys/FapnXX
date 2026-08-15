@@ -436,6 +436,56 @@ html.light .video-detail-btn:hover {
 }
 
 /* =====================================================================
+   AGE GATE MODAL (Always Dark in Both Day & Night Themes)
+   ===================================================================== */
+.age-gate-overlay,
+html.light .age-gate-overlay {
+  background-color: rgba(0, 0, 0, 0.95) !important;
+}
+
+.age-gate-card,
+html.light .age-gate-card {
+  background: rgba(24, 24, 27, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Force all text inside age gate to be light — overrides light mode text rules */
+.age-gate-card h1,
+.age-gate-card h2,
+.age-gate-card h3,
+.age-gate-card p,
+.age-gate-card span,
+.age-gate-card a,
+html.light .age-gate-card h1,
+html.light .age-gate-card h2,
+html.light .age-gate-card h3,
+html.light .age-gate-card p,
+html.light .age-gate-card span,
+html.light .age-gate-card a {
+  color: inherit !important;
+}
+
+html.light .age-gate-card .text-\\[\\#e5e1e4\\],
+html.light .age-gate-card h2 {
+  color: #e5e1e4 !important;
+}
+
+html.light .age-gate-card .text-\\[\\#debec8\\],
+html.light .age-gate-card p {
+  color: #debec8 !important;
+}
+
+html.light .age-gate-card .text-\\[\\#fafafa\\],
+html.light .age-gate-card button {
+  color: #fafafa !important;
+}
+
+/* Leave Button border visible on dark card */
+html.light .age-gate-card .border-\\[\\#27272a\\] {
+  border-color: #3f3f46 !important;
+}
+
+/* =====================================================================
    VIDEO THEATER & LOADING SCREEN (Always 100% Solid Black in Day & Night)
    ===================================================================== */
 .video-player-container,

@@ -145,42 +145,34 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Real Backend Authentication Login
+  // Frontend Admin Authentication (direct credential check)
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
     setIsLoggingIn(true);
 
     const cleanEmail = emailInput.trim().toLowerCase();
+    const cleanPassword = passwordInput.trim();
+
+    // Simulate slight loading delay for UX
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     try {
-      const response = await fetch('/api/v1/auth/admin-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, password: passwordInput.trim() }),
-      });
+      // Admin credentials check (frontend-based since no backend server is deployed)
+      const ADMIN_EMAIL = 'naveenstayles66747@gmail.com';
+      const ADMIN_PASSWORD = 'Naveen7011';
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        setLoginError(data?.error?.message || 'Access denied. Invalid credentials or insufficient admin privileges.');
-        return;
+      if (cleanEmail === ADMIN_EMAIL && cleanPassword === ADMIN_PASSWORD) {
+        localStorage.setItem('fapnxx_auth_token', 'admin_local_token');
+        localStorage.setItem('fapnxx_user_role', 'SUPER_ADMIN');
+        onAdminLogin(cleanEmail);
+        setLoginError('');
+        setActiveTab('categories');
+      } else {
+        setLoginError('Access denied. Invalid credentials or insufficient admin privileges.');
       }
-
-      if (data.data?.accessToken) {
-        localStorage.setItem('fapnxx_auth_token', data.data.accessToken);
-        localStorage.setItem('fapnxx_user_role', data.data.user.role);
-        if (data.data?.firebaseCustomToken) {
-          videoService.syncFirebaseAuthToken(data.data.firebaseCustomToken).catch(() => null);
-        }
-      }
-
-
-      onAdminLogin(cleanEmail);
-      setLoginError('');
-      setActiveTab('categories');
     } catch (err: any) {
-      setLoginError(err.message || 'Login failed. Please check your network and try again.');
+      setLoginError('Login failed. Please try again.');
     } finally {
       setIsLoggingIn(false);
     }

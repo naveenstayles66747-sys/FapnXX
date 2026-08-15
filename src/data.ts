@@ -54,31 +54,7 @@ export const CATEGORIES: CategoryInfo[] = [
 
 export const PERFORMERS: import('./types').Performer[] = [];
 
-export const VIDEOS: Video[] = [
-  {
-    id: 'vid-test-user-1',
-    title: 'Desi Romance Scene 4K',
-    category: 'amateur',
-    categoryLabel: 'Amateur',
-    tags: ['Amateur', 'HD', 'Featured', 'Desi'],
-    thumbnail: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop',
-    previewMp4Url: '',
-    duration: '05:00',
-    quality: 'HD',
-    views: '1.2K views',
-    viewsCount: 1200,
-    likesCount: 340,
-    rating: '98%',
-    timeAgo: '2 hours ago',
-    createdAt: '2026-08-10T12:00:00.000Z',
-    performerName: 'User Uploaded',
-    performerAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150&auto=format&fit=crop',
-    description: 'Exclusive adult video stream.',
-    isNew: true,
-    embedUrl: 'https://hornhub.embedseek.com/#9sq8g',
-    isEmbed: true,
-  }
-];
+export const VIDEOS: Video[] = [];
 
 export const INITIAL_VIDEOS = VIDEOS;
 
