@@ -244,30 +244,28 @@ html.light .thumb-eye-btn .material-symbols-outlined {
 }
 
 /* Card titles and stats below thumbnails must be sharp dark in Light Mode */
+html.light .video-card-meta-box,
+html.light .video-card-meta-title,
 html.light article h3,
 html.light .video-card h3 {
   color: #0f172a !important;
 }
 
+html.light .video-card-meta-title:hover,
 html.light article h3:hover,
 html.light .video-card h3:hover {
   color: #e0358d !important;
 }
 
-/* Card numbers and stats explicitly dark and readable */
-html.light article div:not(.video-card-container *) > span,
-html.light .video-card div:not(.video-card-container *) > span {
-  color: #1e293b !important;
-}
-
-html.light article div:not(.video-card-container *) > span.text-\[\#0f172a\],
-html.light .video-card div:not(.video-card-container *) > span.text-\[\#0f172a\] {
+/* Card numbers and stats explicitly dark and readable in Light Mode */
+html.light .video-card-stats-row,
+html.light .video-card-stats-row span,
+html.light .video-card-stat-value {
   color: #0f172a !important;
 }
 
-html.light article div:not(.video-card-container *) .material-symbols-outlined,
-html.light .video-card div:not(.video-card-container *) .material-symbols-outlined {
-  color: #64748b !important;
+html.light .video-card-stats-row .material-symbols-outlined {
+  color: #475569 !important;
 }
 
 html.light .aspect-video .text-\[\#debec8\],
