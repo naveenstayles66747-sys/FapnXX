@@ -189,7 +189,7 @@ export const Header: React.FC<HeaderProps> = ({
   );
 
   return (
-    <header className="sticky top-0 w-full z-50 header-container backdrop-blur-xl border-b flex justify-between items-center px-3 md:px-8 h-16 md:h-20 shrink-0 relative box-border">
+    <header className="sticky top-0 w-full z-50 header-container backdrop-blur-xl border-b border-zinc-200/80 dark:border-white/10 flex justify-between items-center px-3 md:px-8 h-16 md:h-20 shrink-0 box-border bg-white/95 dark:bg-[#09090b]/95">
       {/* 1. Left Section: Hamburger + Brand Logo (Desktop) / Gender Button (Mobile) */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0 z-20">
         {/* Hamburger Menu Button */}

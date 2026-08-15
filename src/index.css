@@ -137,6 +137,14 @@ html.light main {
   color: #0f172a !important;
 }
 
+/* Header Freeze / Sticky Navigation Bar */
+header.header-container,
+header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+}
+
 /* 1. Header & Navigation in Light Mode */
 html.light header {
   background-color: rgba(255, 255, 255, 0.95) !important;
