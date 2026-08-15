@@ -404,9 +404,9 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         </section>
       )}
 
-      {/* Advanced Recommendation & Trending Carousel Section */}
+      {/* Advanced Recommendation & Trending Carousel Section — Desktop only */}
       {rankedTrendingVideos.length > 3 && (
-        <section className="mb-12 relative w-full">
+        <section className="hidden md:block mb-12 relative w-full">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl md:text-3xl font-bold text-[#ffb0cd] flex items-center gap-2">
               <span className="material-symbols-outlined fill-1 text-rose-500">local_fire_department</span>
@@ -470,12 +470,12 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         </section>
       )}
 
-      {/* Category Pills Filter */}
+      {/* Category Pills Filter — horizontal scroll on mobile, wrap on desktop */}
       <section className="mb-10 w-full">
-        <div className="flex flex-wrap gap-3">
+        <div className="flex md:flex-wrap gap-2 md:gap-3 overflow-x-auto md:overflow-x-visible hide-scrollbar snap-x snap-mandatory md:snap-none pb-1 md:pb-0">
           <button
             onClick={() => onSelectCategory('all')}
-            className={`px-5 py-2 rounded-full font-semibold text-xs transition-all cursor-pointer active:scale-95 ${
+            className={`snap-start shrink-0 px-4 md:px-5 py-1.5 md:py-2 rounded-full font-semibold text-xs transition-all cursor-pointer active:scale-95 ${
               selectedCategory === 'all'
                 ? 'bg-[#ec4899] text-white border border-[#ec4899] shadow-neon-pink'
                 : 'bg-[#27272a] text-white hover:bg-[#ffb0cd] hover:text-black border border-transparent'
@@ -487,7 +487,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
             <button
               key={cat.id}
               onClick={() => onSelectCategory(cat.id)}
-              className={`px-5 py-2 rounded-full font-semibold text-xs transition-all cursor-pointer active:scale-95 capitalize ${
+              className={`snap-start shrink-0 px-4 md:px-5 py-1.5 md:py-2 rounded-full font-semibold text-xs transition-all cursor-pointer active:scale-95 capitalize ${
                 selectedCategory === cat.id
                   ? 'bg-[#ec4899] text-white border border-[#ec4899] shadow-neon-pink'
                   : 'bg-[#27272a] text-white hover:bg-[#ffb0cd] hover:text-black border border-transparent'

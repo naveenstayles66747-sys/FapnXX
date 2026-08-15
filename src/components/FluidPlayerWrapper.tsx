@@ -331,10 +331,18 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               key={videoMountKey}
               src={currentVideoSrc}
               title={video.title}
-              allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope; clipboard-write; web-share"
+              allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope; clipboard-write; web-share; xr-spatial-tracking"
               allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+              scrolling="no"
+              frameBorder={0}
               className="w-full h-full border-none block bg-black"
-              style={{ border: 'none', width: '100%', height: '100%' }}
+              style={{ border: 'none', width: '100%', height: '100%', display: 'block' }}
+              onLoad={(e) => {
+                // Ensure iframe is fully visible after load
+                const frame = e.currentTarget;
+                frame.style.opacity = '1';
+              }}
             />
           </div>
         )

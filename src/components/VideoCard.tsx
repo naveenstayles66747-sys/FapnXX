@@ -374,8 +374,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
 
   // Dedicated animated preview (WebP/GIF) — only from previewWebpUrl field
   const webpPreviewUrl = (video.previewWebpUrl || '').trim() || (previewType === 'image' ? previewSrc : '');
-  // Has embed video for player page
-  const showEmbedBadge = hasEmbedSource(video) && !previewSrc;
+  // Embed badge intentionally hidden — removed from card UI
 
   return (
     <article
@@ -432,18 +431,12 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
 
       {/* ─── Thumbnail badges: HD top-right, Duration bottom-right (no mobile preview btn overlap) ─── */}
 
-        {/* Top-Right: Quality Badge + Embed indicator */}
+        {/* Top-Right: Quality Badge only */}
         {!shouldPlayPreview && (
           <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1">
             <span className="bg-black/85 text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
               {video.quality || 'HD'}
             </span>
-            {showEmbedBadge && (
-              <span className="bg-rose-600/90 text-white px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider shadow-md flex items-center gap-0.5">
-                <span className="material-symbols-outlined text-[10px]">play_circle</span>
-                EMBED
-              </span>
-            )}
           </div>
         )}
 

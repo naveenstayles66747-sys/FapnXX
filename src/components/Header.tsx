@@ -49,6 +49,16 @@ const IntertwinedGenderIcon: React.FC<{ className?: string }> = ({ className = '
   </svg>
 );
 
+// Globe SVG Icon for Language Switcher
+const GlobeIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
+  <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="12" cy="12" r="10" stroke="currentColor" />
+    <ellipse cx="12" cy="12" rx="4.2" ry="10" stroke="currentColor" />
+    <line x1="2" y1="9" x2="22" y2="9" stroke="currentColor" />
+    <line x1="2" y1="15" x2="22" y2="15" stroke="currentColor" />
+  </svg>
+);
+
 export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   onToggleMobileDrawer,
@@ -68,6 +78,9 @@ export const Header: React.FC<HeaderProps> = ({
   const { language, setLanguage, t, currentLanguageMeta } = useLanguage();
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isPrefMenuOpen, setIsPrefMenuOpen] = useState(false);
+  const [mobileSearchActive, setMobileSearchActive] = useState(false);
+  const [mobileSearchInput, setMobileSearchInput] = useState('');
+  const mobileSearchRef = React.useRef<HTMLInputElement>(null);
   const prefDropdownRef = useRef<HTMLDivElement>(null);
   const prefDropdownRefMobile = useRef<HTMLDivElement>(null);
   const langDropdownRef = useRef<HTMLDivElement>(null);
@@ -198,14 +211,20 @@ export const Header: React.FC<HeaderProps> = ({
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onFocus={onOpenSearch}
+          onChange={(e) => { setSearchQuery(e.target.value); onOpenSearch(); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { onOpenSearch(); } }}
           placeholder="Search videos, creators..."
           className="w-full header-search-input rounded-full py-2 pl-5 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-[#e0358d]/50 transition-all shadow-inner border"
         />
-        <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 header-search-icon transition-colors text-lg pointer-events-none">
-          search
-        </span>
+        <button
+          onClick={() => { onOpenSearch(); }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#e0358d]/20 transition-colors cursor-pointer"
+          aria-label="Search"
+        >
+          <span className="material-symbols-outlined header-search-icon transition-colors text-lg">
+            search
+          </span>
+        </button>
       </div>
 
       {/* 4. Right Action Buttons */}
@@ -258,24 +277,60 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Upload Button */}
+        {/* Upload Button — Desktop only (mobile has it in drawer menu) */}
         <button
           onClick={onOpenUpload}
-          className="w-10 h-10 sm:w-auto sm:px-4 sm:py-2 rounded-2xl sm:rounded-xl bg-[#e0358d] hover:bg-[#c9287a] text-white font-black text-xs shadow-lg shadow-[#e0358d]/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0"
+          className="hidden lg:flex w-auto px-4 py-2 rounded-xl bg-[#e0358d] hover:bg-[#c9287a] text-white font-black text-xs shadow-lg shadow-[#e0358d]/30 items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0"
           title="Upload Video"
         >
           <span className="material-symbols-outlined text-xl">upload</span>
-          <span className="hidden sm:inline uppercase text-[11px] tracking-wider">{t.upload}</span>
+          <span className="uppercase text-[11px] tracking-wider">{t.upload}</span>
         </button>
 
-        {/* Search Icon Button (Mobile Only) */}
-        <button
-          onClick={onOpenSearch}
-          className="lg:hidden text-zinc-700 dark:text-zinc-200 hover:text-rose-500 p-1.5 rounded-full transition-colors cursor-pointer active:scale-95 shrink-0"
-          aria-label="Search"
-        >
-          <span className="material-symbols-outlined text-2xl">search</span>
-        </button>
+        {/* Mobile Search — Inline expandable search bar */}
+        <div className="lg:hidden flex items-center relative">
+          {mobileSearchActive ? (
+            <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-4 duration-200">
+              <input
+                ref={mobileSearchRef}
+                type="text"
+                value={mobileSearchInput}
+                autoFocus
+                onChange={(e) => {
+                  setMobileSearchInput(e.target.value);
+                  setSearchQuery(e.target.value);
+                  if (e.target.value.trim()) onOpenSearch();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { onOpenSearch(); setMobileSearchActive(false); }
+                  if (e.key === 'Escape') { setMobileSearchActive(false); setMobileSearchInput(''); setSearchQuery(''); }
+                }}
+                placeholder="Search..."
+                className="w-36 sm:w-48 header-search-input rounded-full py-1.5 pl-3 pr-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#e0358d]/50 border"
+              />
+              <button
+                onClick={() => { onOpenSearch(); setMobileSearchActive(false); }}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-[#e0358d] text-white shrink-0"
+              >
+                <span className="material-symbols-outlined text-base">search</span>
+              </button>
+              <button
+                onClick={() => { setMobileSearchActive(false); setMobileSearchInput(''); setSearchQuery(''); }}
+                className="text-zinc-400 hover:text-white p-1 shrink-0"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setMobileSearchActive(true)}
+              className="text-zinc-700 dark:text-zinc-200 hover:text-rose-500 p-1.5 rounded-full transition-colors cursor-pointer active:scale-95 shrink-0"
+              aria-label="Search"
+            >
+              <span className="material-symbols-outlined text-2xl">search</span>
+            </button>
+          )}
+        </div>
 
         {userEmail ? (
           <div className="flex items-center gap-2">
@@ -310,7 +365,7 @@ export const Header: React.FC<HeaderProps> = ({
             title={`Switch Language: ${currentLanguageMeta?.englishName || 'English'} (${currentLanguageMeta?.label || 'EN'}) / भाषा बदलें`}
             aria-label="Switch Language"
           >
-            <span className="material-symbols-outlined text-lg text-[#e0358d] group-hover/lang:text-white transition-colors">translate</span>
+            <GlobeIcon className="w-[18px] h-[18px] text-[#e0358d] group-hover/lang:text-white transition-colors stroke-current" />
           </button>
 
           {isLangMenuOpen && (
