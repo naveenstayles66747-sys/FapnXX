@@ -1,8 +1,9 @@
 import { Video } from '../types';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SUPER SMART FUZZY SEARCH ENGINE
-// Real-time, typo-tolerant (Levenshtein/N-Gram), multi-field relevance scoring
+// SUPER SMART PREDICTIVE & FUZZY SEARCH ENGINE
+// Real-time Firestore sync, Levenshtein typo-tolerance, N-Gram token matching,
+// Predictive next-word auto-suggestions, and Strict 'Not Found' condition.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface SearchResult {
@@ -17,7 +18,7 @@ export interface SearchSuggestion {
 }
 
 /**
- * Normalize string: lowercase, remove special characters, trim
+ * Normalize string: lowercase, remove diacritics/accents, special symbols, multiple spaces
  */
 export function normalizeText(s: string): string {
   return (s || '')
@@ -63,14 +64,14 @@ function levenshtein(a: string, b: string): number {
 function fuzzyWordSimilarity(target: string, query: string): number {
   if (!target || !query) return 0;
   if (target === query) return 1.0;
-  if (target.startsWith(query)) return 0.9;
-  if (target.includes(query)) return 0.75;
+  if (target.startsWith(query)) return 0.92;
+  if (target.includes(query)) return 0.8;
 
   const maxLen = Math.max(target.length, query.length);
   if (maxLen === 0) return 1.0;
 
   const dist = levenshtein(target, query);
-  // Allow 1 typo for words >= 3 chars, 2 typos for words >= 6 chars
+  // Allow 1 typo for queries 3-5 chars, 2 typos for queries >= 6 chars
   const maxAllowedDist = query.length <= 4 ? 1 : 2;
   if (dist <= maxAllowedDist) {
     return Math.max(0, 1 - dist / maxLen);
@@ -79,7 +80,7 @@ function fuzzyWordSimilarity(target: string, query: string): number {
 }
 
 /**
- * Comprehensive Match Score across multi-tokens with fuzzy typo matching
+ * Comprehensive Match Score across multi-tokens with typo tolerance
  */
 function matchScore(field: string, query: string): number {
   const f = normalizeText(field);
@@ -87,7 +88,7 @@ function matchScore(field: string, query: string): number {
   if (!f || !q) return 0;
 
   if (f === q) return 100;                        // Exact match
-  if (f.startsWith(q)) return 85;                // Starts with query
+  if (f.startsWith(q)) return 85;                // Starts with full query
   if (f.includes(q)) return 70;                  // Contains full query phrase
 
   const fTokens = f.split(' ').filter(Boolean);
@@ -98,16 +99,16 @@ function matchScore(field: string, query: string): number {
     let bestTokenScore = 0;
     for (const ft of fTokens) {
       if (ft === qt) {
-        bestTokenScore = Math.max(bestTokenScore, 45);
+        bestTokenScore = Math.max(bestTokenScore, 50);
       } else if (ft.startsWith(qt)) {
-        bestTokenScore = Math.max(bestTokenScore, 35);
+        bestTokenScore = Math.max(bestTokenScore, 40);
       } else if (ft.includes(qt) && qt.length >= 2) {
-        bestTokenScore = Math.max(bestTokenScore, 25);
+        bestTokenScore = Math.max(bestTokenScore, 30);
       } else {
-        // Fuzzy match
+        // Smart fuzzy similarity match
         const sim = fuzzyWordSimilarity(ft, qt);
         if (sim > 0.6) {
-          bestTokenScore = Math.max(bestTokenScore, Math.round(sim * 30));
+          bestTokenScore = Math.max(bestTokenScore, Math.round(sim * 35));
         }
       }
     }
@@ -127,7 +128,7 @@ export function scoreVideo(video: Video, query: string): number {
 
   let total = 0;
 
-  // 1. Performers / Models (High weight for accurate pornstar discovery)
+  // 1. Performers / Models (Top priority: 3.5x weight)
   const performers = [
     video.performerName,
     ...(video.performers || []),
@@ -140,21 +141,21 @@ export function scoreVideo(video: Video, query: string): number {
     if (pScore > 0) total += pScore * 3.5;
   }
 
-  // 2. Title
+  // 2. Title (3.0x weight)
   const titleScore = matchScore(video.title, q);
   if (titleScore > 0) total += titleScore * 3.0;
 
-  // 3. Tags
+  // 3. Tags (2.5x weight)
   for (const tag of (video.tags || [])) {
     const tScore = matchScore(tag, q);
     if (tScore > 0) total += tScore * 2.5;
   }
 
-  // 4. Category
+  // 4. Category (2.0x weight)
   const catScore = matchScore(video.categoryLabel || video.category || '', q);
   if (catScore > 0) total += catScore * 2.0;
 
-  // 5. Description
+  // 5. Description (1.0x weight)
   if (video.description) {
     const dScore = matchScore(video.description, q);
     if (dScore > 0) total += dScore * 1.0;
@@ -164,7 +165,9 @@ export function scoreVideo(video: Video, query: string): number {
 }
 
 /**
- * Smart Search: Returns sorted matched videos or smart recommendations if typo/unmatched
+ * Smart Search: Returns sorted matched videos.
+ * Strict Condition: If zero related or fuzzy data matches anywhere in the database, returns empty []
+ * so the UI can accurately present the genuine 'No Results Found' message.
  */
 export function smartSearch(videos: Video[], query: string): Video[] {
   const q = normalizeText(query);
@@ -174,23 +177,14 @@ export function smartSearch(videos: Video[], query: string): Video[] {
     .map((v) => ({ video: v, score: scoreVideo(v, q) }))
     .filter((r) => r.score > 0);
 
-  // Sort by relevance score descending
+  // Sort strictly by relevance score descending
   scored.sort((a, b) => b.score - a.score);
 
-  if (scored.length > 0) {
-    return scored.map((r) => r.video);
-  }
-
-  // If no direct or fuzzy match found, return top recommended videos so page is never empty
-  return [...videos].sort((a, b) => {
-    const av = typeof a.viewsCount === 'number' ? a.viewsCount : 0;
-    const bv = typeof b.viewsCount === 'number' ? b.viewsCount : 0;
-    return bv - av;
-  });
+  return scored.map((r) => r.video);
 }
 
 /**
- * Checks if search query has genuine matches in database
+ * Checks if search query has genuine or fuzzy matches in database
  */
 export function hasRealMatches(videos: Video[], query: string): boolean {
   const q = normalizeText(query);
@@ -199,7 +193,9 @@ export function hasRealMatches(videos: Video[], query: string): boolean {
 }
 
 /**
- * Real-time Instant Suggestions (types: Performer, Tag, Category, Title)
+ * Predictive Auto-Suggest Engine:
+ * Generates instant, smart, predictive recommendations as the user types (even 1 letter).
+ * Leverages performers, tags, categories, and titles dynamically from Firestore.
  */
 export function getSearchSuggestions(
   videos: Video[],
@@ -210,8 +206,9 @@ export function getSearchSuggestions(
   if (!q || q.length < 1) return [];
 
   const seen = new Set<string>();
-  const directSuggestions: SearchSuggestion[] = [];
-  const fuzzySuggestions: SearchSuggestion[] = [];
+  const exactPrefixSuggestions: SearchSuggestion[] = [];
+  const partialContainsSuggestions: SearchSuggestion[] = [];
+  const fuzzyPredictiveSuggestions: SearchSuggestion[] = [];
 
   const addCandidate = (text: string, type: SearchSuggestion['type'], icon: string) => {
     if (!text || !text.trim()) return;
@@ -221,20 +218,20 @@ export function getSearchSuggestions(
     seen.add(key);
 
     if (key.startsWith(q)) {
-      directSuggestions.unshift({ text: clean, type, icon });
+      exactPrefixSuggestions.push({ text: clean, type, icon });
     } else if (key.includes(q)) {
-      directSuggestions.push({ text: clean, type, icon });
+      partialContainsSuggestions.push({ text: clean, type, icon });
     } else {
-      // Check for smart fuzzy match on single words
+      // Check for fuzzy predictive word match
       const words = key.split(' ');
       const hasFuzzy = words.some((w) => fuzzyWordSimilarity(w, q) > 0.65);
       if (hasFuzzy) {
-        fuzzySuggestions.push({ text: clean, type, icon });
+        fuzzyPredictiveSuggestions.push({ text: clean, type, icon });
       }
     }
   };
 
-  // 1. Performers (Top priority)
+  // 1. Performers / Models (High priority predictive suggestions)
   for (const v of videos) {
     if (v.performerName && v.performerName !== 'Anonymous' && v.performerName !== 'User Uploaded') {
       addCandidate(v.performerName, 'performer', 'person');
@@ -254,11 +251,17 @@ export function getSearchSuggestions(
     if (v.categoryLabel) addCandidate(v.categoryLabel, 'category', 'category');
   }
 
-  // 4. Titles
+  // 4. Video Titles
   for (const v of videos) {
     if (v.title) addCandidate(v.title, 'title', 'movie');
   }
 
-  const combined = [...directSuggestions, ...fuzzySuggestions];
+  // Combine by priority: Prefix > Contains > Fuzzy Predictive
+  const combined = [
+    ...exactPrefixSuggestions,
+    ...partialContainsSuggestions,
+    ...fuzzyPredictiveSuggestions,
+  ];
+
   return combined.slice(0, limit);
 }

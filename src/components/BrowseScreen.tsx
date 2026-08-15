@@ -246,19 +246,17 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
           <div className="flex items-center gap-3 flex-wrap">
             <span className="material-symbols-outlined text-[#ffb0cd]">search</span>
             <div>
-              <span className="text-xs text-[#a19fa6]">
-                {isRealMatch ? 'Search results for:' : 'No exact match — showing popular videos for:'}
-              </span>
+              <span className="text-xs text-[#a19fa6]">Search results for:</span>
               <h3 className="text-lg font-bold text-white italic">"{searchQuery}"</h3>
             </div>
             <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
-              isRealMatch
+              justAddedVideos.length > 0
                 ? 'bg-[#ec4899]/20 text-[#ffb0cd] border-[#ec4899]/30'
-                : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                : 'bg-rose-950/40 text-rose-300 border-rose-500/30'
             }`}>
-              {isRealMatch
+              {justAddedVideos.length > 0
                 ? `${justAddedVideos.length} ${justAddedVideos.length === 1 ? 'video' : 'videos'} found`
-                : 'Showing popular content'}
+                : '0 videos found'}
             </span>
           </div>
           {setSearchQuery && (
