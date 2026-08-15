@@ -1,5 +1,7 @@
 import { CategoryInfo, LandingBanner, Video } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
+import { db } from '../services/firebaseConfig';
+import { doc, setDoc } from 'firebase/firestore';
 
 const KEYS = {
   AGE_VERIFIED: 'indianfullxx_age_verified',
@@ -98,6 +100,17 @@ export const registerUserInteractionSync = (listener: SyncListener): (() => void
 };
 
 const notifyInteractionSync = (data: UserInteractionSyncData): void => {
+  // 1. Direct Cloud Firestore synchronization to 'user_interactions' collection
+  try {
+    const devId = localStorage.getItem('fapnxx_device_uid') || `dev_${Date.now()}`;
+    setDoc(doc(db, 'user_interactions', devId), {
+      ...data,
+      deviceId: devId,
+      lastActiveAt: new Date().toISOString(),
+    }, { merge: true }).catch(() => {});
+  } catch {}
+
+  // 2. Dispatch to local subscribers
   syncListeners.forEach((fn) => {
     try {
       fn(data);
@@ -323,6 +336,15 @@ export const setStoredReports = (reports: any[]): void => {
 
 export const addStoredReport = (report: any): any[] => {
   try {
+    // 1. Direct Cloud Firestore write to 'reports' collection
+    if (report && report.id) {
+      setDoc(doc(db, 'reports', report.id), {
+        ...report,
+        status: report.status || 'pending',
+        createdAt: report.createdAt || new Date().toISOString(),
+      }, { merge: true }).catch(() => {});
+    }
+
     const current = getStoredReports();
     const updated = [report, ...current];
     localStorage.setItem(KEYS.REPORTS, JSON.stringify(updated));
