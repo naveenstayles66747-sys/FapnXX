@@ -441,24 +441,24 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
         )}
       </div>
 
-      {/* ─── Card Info Below Thumbnail ─── */}
-      <div className="pt-2 px-0.5 space-y-1.5">
+      {/* ─── Card Info Below Thumbnail (Exact Reference Design) ─── */}
+      <div className="pt-2 px-0.5 space-y-1">
         {/* Title */}
-        <h3 className="font-bold text-sm md:text-[15px] text-white group-hover:text-rose-300 transition-colors line-clamp-2 leading-snug tracking-tight">
+        <h3 className="font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white group-hover:text-rose-500 dark:group-hover:text-rose-300 transition-colors line-clamp-2 leading-snug tracking-tight">
           {video.title}
         </h3>
 
-        {/* Stats Row: Views • Rating • Time — reference image style */}
-        <div className="flex items-center gap-3 text-[11px] text-white/55 font-medium">
-          {/* Views */}
+        {/* Stats Row: 👁️ 12k   👍 95%   🕒 08:20 */}
+        <div className="flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs text-zinc-600 dark:text-zinc-400 font-medium">
+          {/* 1. Views */}
           <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] text-white/40">visibility</span>
-            <span className="text-white/70 font-semibold">
+            <span className="material-symbols-outlined text-[13px] sm:text-sm text-zinc-500 dark:text-zinc-400">visibility</span>
+            <span className="text-zinc-800 dark:text-zinc-200 font-semibold">
               {(() => {
                 const n = video.viewsCount;
                 if (typeof n === 'number') {
-                  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
-                  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+                  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}k`;
+                  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}k`;
                   return `${n}`;
                 }
                 return (video.views || '1').replace(/[^0-9KMk.]/g, '') || '1';
@@ -466,19 +466,17 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
             </span>
           </span>
 
-          {/* Rating / Likes % */}
-          {video.rating && (
-            <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[13px] text-white/40">thumb_up</span>
-              <span className="text-white/70 font-semibold">{video.rating}</span>
-            </span>
-          )}
-
-          {/* Time Ago */}
+          {/* 2. Rating % */}
           <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] text-white/40">calendar_month</span>
-            <span className="text-white/55">
-              {formatTimeAgo(video.createdAt, video.timeAgo)}
+            <span className="material-symbols-outlined text-[13px] sm:text-sm text-zinc-500 dark:text-zinc-400">thumb_up</span>
+            <span className="text-zinc-800 dark:text-zinc-200 font-semibold">{video.rating || '100%'}</span>
+          </span>
+
+          {/* 3. Duration */}
+          <span className="flex items-center gap-1">
+            <span className="material-symbols-outlined text-[13px] sm:text-sm text-zinc-500 dark:text-zinc-400">schedule</span>
+            <span className="text-zinc-800 dark:text-zinc-200 font-semibold">
+              {video.duration || '05:00'}
             </span>
           </span>
         </div>
