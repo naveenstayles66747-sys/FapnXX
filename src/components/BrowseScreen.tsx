@@ -240,35 +240,18 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
   return (
     <main className="flex-1 overflow-y-auto bg-[#09090b] p-4 md:p-12 pb-32 lg:ml-64">
-      {/* Search Header Banner (Reference Style: 'DANI DANIELS PORN VIDEOS') */}
+      {/* Search Header Banner (Ultra Clean Minimalist Reference Header) */}
       {cleanSearch && (
-        <section className="mb-6 p-4 sm:p-5 rounded-2xl bg-zinc-100 dark:bg-[#18181b] border border-zinc-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 shadow-md">
-          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-            <h2 className="text-base sm:text-xl md:text-2xl font-black uppercase tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-              <span>{cleanSearch} PORN VIDEOS</span>
-              <span className="text-[#10b981] dark:text-[#34d399] material-symbols-outlined text-xl sm:text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-                stars
-              </span>
-            </h2>
-            <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border ${
-              justAddedVideos.length > 0
-                ? 'bg-rose-50 dark:bg-rose-950/40 text-[#e0358d] dark:text-rose-300 border-rose-200 dark:border-rose-500/30'
-                : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700'
-            }`}>
-              {justAddedVideos.length > 0
-                ? `${justAddedVideos.length} ${justAddedVideos.length === 1 ? 'video' : 'videos'} found`
-                : '0 videos found'}
-            </span>
-          </div>
-          {setSearchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="px-3.5 py-1.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-[#e0358d] hover:text-white dark:hover:bg-[#e0358d] text-xs font-bold text-zinc-700 dark:text-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+        <section className="mb-4 sm:mb-6 flex items-center justify-between">
+          <h2 className="text-lg sm:text-2xl font-black uppercase tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
+            <span>{cleanSearch} PORN VIDEOS</span>
+            <span
+              className="text-[#10b981] dark:text-[#34d399] material-symbols-outlined text-xl sm:text-2xl"
+              style={{ fontVariationSettings: "'FILL' 1" }}
             >
-              <span className="material-symbols-outlined text-sm">close</span>
-              Clear Search
-            </button>
-          )}
+              stars
+            </span>
+          </h2>
         </section>
       )}
 
@@ -473,34 +456,36 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         </section>
       )}
 
-      {/* Category Pills Filter — horizontal scroll on mobile, wrap on desktop */}
-      <section className="mb-10 w-full">
-        <div className="flex md:flex-wrap gap-2 md:gap-3 overflow-x-auto md:overflow-x-visible hide-scrollbar snap-x snap-mandatory md:snap-none pb-1 md:pb-0">
-          <button
-            onClick={() => onSelectCategory('all')}
-            className={`snap-start shrink-0 px-4 md:px-5 py-1.5 md:py-2 rounded-full font-semibold text-xs transition-all cursor-pointer active:scale-95 ${
-              selectedCategory === 'all'
-                ? 'bg-[#ec4899] text-white border border-[#ec4899] shadow-neon-pink'
-                : 'bg-[#27272a] text-white hover:bg-[#ffb0cd] hover:text-black border border-transparent'
-            }`}
-          >
-            {t.allCategories}
-          </button>
-          {categories.filter((c) => c.id !== 'trending').map((cat) => (
+      {/* Category Pills Filter — hidden during search query so results surface right at top */}
+      {!cleanSearch && (
+        <section className="mb-10 w-full">
+          <div className="flex md:flex-wrap gap-2 md:gap-3 overflow-x-auto md:overflow-x-visible hide-scrollbar snap-x snap-mandatory md:snap-none pb-1 md:pb-0">
             <button
-              key={cat.id}
-              onClick={() => onSelectCategory(cat.id)}
-              className={`snap-start shrink-0 px-4 md:px-5 py-1.5 md:py-2 rounded-full font-semibold text-xs transition-all cursor-pointer active:scale-95 capitalize ${
-                selectedCategory === cat.id
+              onClick={() => onSelectCategory('all')}
+              className={`snap-start shrink-0 px-4 md:px-5 py-1.5 md:py-2 rounded-full font-semibold text-xs transition-all cursor-pointer active:scale-95 ${
+                selectedCategory === 'all'
                   ? 'bg-[#ec4899] text-white border border-[#ec4899] shadow-neon-pink'
                   : 'bg-[#27272a] text-white hover:bg-[#ffb0cd] hover:text-black border border-transparent'
               }`}
             >
-              {cat.name}
+              {t.allCategories}
             </button>
-          ))}
-        </div>
-      </section>
+            {categories.filter((c) => c.id !== 'trending').map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => onSelectCategory(cat.id)}
+                className={`snap-start shrink-0 px-4 md:px-5 py-1.5 md:py-2 rounded-full font-semibold text-xs transition-all cursor-pointer active:scale-95 capitalize ${
+                  selectedCategory === cat.id
+                    ? 'bg-[#ec4899] text-white border border-[#ec4899] shadow-neon-pink'
+                    : 'bg-[#27272a] text-white hover:bg-[#ffb0cd] hover:text-black border border-transparent'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Video Grid Section */}
       <section className="w-full">
