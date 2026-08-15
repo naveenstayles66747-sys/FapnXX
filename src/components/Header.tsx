@@ -350,61 +350,22 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="uppercase text-[11px] tracking-wider">{t.upload}</span>
         </button>
 
-        {/* Mobile Search — Inline expandable search bar with suggestions */}
-        <div className="lg:hidden flex items-center relative">
-          {mobileSearchActive ? (
-            <div className="relative flex items-center gap-1 animate-in fade-in slide-in-from-right-4 duration-200">
-              <div className="relative">
-                <input
-                  ref={mobileSearchRef}
-                  type="text"
-                  value={mobileSearchInput}
-                  autoFocus
-                  autoComplete="off"
-                  onChange={(e) => {
-                    setMobileSearchInput(e.target.value);
-                    setSearchQuery(e.target.value);
-                    setMobileSuggestionsOpen(true);
-                    if (e.target.value.trim()) onOpenSearch();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') { onOpenSearch(); setMobileSearchActive(false); setMobileSuggestionsOpen(false); }
-                    if (e.key === 'Escape') { setMobileSearchActive(false); setMobileSearchInput(''); setSearchQuery(''); setMobileSuggestionsOpen(false); }
-                  }}
-                  placeholder="Search videos, performers..."
-                  className="w-36 sm:w-52 header-search-input rounded-full py-1.5 pl-3 pr-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#e0358d]/50 border"
-                />
-                {/* Mobile Suggestions Dropdown */}
-                <SearchSuggestionsDropdown
-                  groupedSuggestions={groupedSuggestions}
-                  query={mobileSearchInput}
-                  onSelect={(text) => { handleSuggestionSelect(text); setMobileSearchActive(false); }}
-                  onClose={() => setMobileSuggestionsOpen(false)}
-                  visible={mobileSuggestionsOpen && groupedSuggestions.totalCount > 0}
-                />
-              </div>
-              <button
-                onClick={() => { onOpenSearch(); setMobileSearchActive(false); setMobileSuggestionsOpen(false); }}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-[#e0358d] text-white shrink-0"
-              >
-                <span className="material-symbols-outlined text-base">search</span>
-              </button>
-              <button
-                onClick={() => { setMobileSearchActive(false); setMobileSearchInput(''); setSearchQuery(''); setMobileSuggestionsOpen(false); }}
-                className="text-zinc-400 hover:text-white p-1 shrink-0"
-              >
-                <span className="material-symbols-outlined text-xl">close</span>
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setMobileSearchActive(true)}
-              className="text-zinc-700 dark:text-zinc-200 hover:text-rose-500 p-1.5 rounded-full transition-colors cursor-pointer active:scale-95 shrink-0"
-              aria-label="Search"
-            >
-              <span className="material-symbols-outlined text-2xl">search</span>
-            </button>
-          )}
+        {/* Mobile Search Toggle Icon Button */}
+        <div className="lg:hidden flex items-center">
+          <button
+            onClick={() => {
+              setMobileSearchActive(!mobileSearchActive);
+              if (!mobileSearchActive) {
+                setTimeout(() => mobileSearchRef.current?.focus(), 100);
+              }
+            }}
+            className="text-zinc-700 dark:text-zinc-200 hover:text-rose-500 p-1.5 rounded-full transition-colors cursor-pointer active:scale-95 shrink-0"
+            aria-label="Search"
+          >
+            <span className="material-symbols-outlined text-2xl">
+              {mobileSearchActive ? 'close' : 'search'}
+            </span>
+          </button>
         </div>
 
         {userEmail ? (
@@ -486,6 +447,63 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
       </div>
+
+      {/* Mobile Dedicated Full-Width Sub-Header Search Row (Exact Reference UI: Input + [Search] Button) */}
+      {mobileSearchActive && (
+        <div className="lg:hidden absolute top-full left-0 right-0 w-full bg-white dark:bg-[#121113] border-b border-zinc-200 dark:border-white/10 p-2.5 shadow-xl z-50 animate-in slide-in-from-top-2 duration-200">
+          <div className="flex items-stretch gap-2 relative">
+            <input
+              ref={mobileSearchRef}
+              type="text"
+              value={mobileSearchInput}
+              autoFocus
+              autoComplete="off"
+              onChange={(e) => {
+                setMobileSearchInput(e.target.value);
+                setSearchQuery(e.target.value);
+                setMobileSuggestionsOpen(true);
+                if (e.target.value.trim()) onOpenSearch();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  onOpenSearch();
+                  setMobileSearchActive(false);
+                  setMobileSuggestionsOpen(false);
+                }
+                if (e.key === 'Escape') {
+                  setMobileSearchActive(false);
+                  setMobileSuggestionsOpen(false);
+                }
+              }}
+              placeholder="Search pornstars, tags..."
+              className="flex-1 bg-zinc-100 dark:bg-[#1c1b1f] text-zinc-900 dark:text-white px-3.5 py-2 rounded-lg text-sm border border-zinc-300 dark:border-white/15 focus:outline-none focus:border-[#e0358d]"
+            />
+            <button
+              onClick={() => {
+                onOpenSearch();
+                setMobileSearchActive(false);
+                setMobileSuggestionsOpen(false);
+              }}
+              className="px-4 py-2 bg-zinc-700 hover:bg-[#e0358d] text-white font-bold text-xs rounded-lg flex items-center gap-1.5 shrink-0 transition-colors shadow-sm"
+            >
+              <span className="material-symbols-outlined text-base">search</span>
+              <span>Search</span>
+            </button>
+          </div>
+
+          {/* Grouped Suggestions Dropdown Attached directly under input */}
+          <SearchSuggestionsDropdown
+            groupedSuggestions={groupedSuggestions}
+            query={mobileSearchInput}
+            onSelect={(text) => {
+              handleSuggestionSelect(text);
+              setMobileSearchActive(false);
+            }}
+            onClose={() => setMobileSuggestionsOpen(false)}
+            visible={mobileSuggestionsOpen && groupedSuggestions.totalCount > 0}
+          />
+        </div>
+      )}
     </header>
   );
 };
