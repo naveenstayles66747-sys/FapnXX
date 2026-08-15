@@ -130,7 +130,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     return () => { isMounted = false; };
   }, [video.id, vastAdUrlToUse]);
 
-  // ── Effect 3: Ad countdown — only when 'playing' ─────────────────────────
+  // ── Effect 3: Ad countdown — full 5 seconds required before skip ─────────────────────────
   useEffect(() => {
     if (adPhase !== 'playing') return;
 
@@ -139,7 +139,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
     const timer = setInterval(() => {
       setAdCountdown((prev) => {
-        if (prev <= 3) setCanSkipAd(true);
         if (prev <= 1) {
           clearInterval(timer);
           setCanSkipAd(true);
