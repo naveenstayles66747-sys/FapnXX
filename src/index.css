@@ -234,9 +234,22 @@ html.light .video-card h3:hover {
   color: #e0358d !important;
 }
 
+/* Card numbers and stats explicitly dark and readable */
+html.light article span,
+html.light .video-card span {
+  color: #1e293b !important;
+}
+
 html.light article .material-symbols-outlined,
 html.light .video-card .material-symbols-outlined {
-  color: #475569 !important;
+  color: #64748b !important;
+}
+
+/* Keep top-right HD and duration badge on thumbnail dark background */
+html.light article .aspect-video .absolute span,
+html.light .aspect-video .absolute span,
+html.light article .aspect-video .absolute div {
+  color: #ffffff !important;
 }
 
 html.light .aspect-video .text-\[\#debec8\],

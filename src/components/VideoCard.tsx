@@ -444,16 +444,16 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
       {/* ─── Card Info Below Thumbnail (Exact Reference Design) ─── */}
       <div className="pt-2 px-0.5 space-y-1">
         {/* Title */}
-        <h3 className="font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white group-hover:text-rose-500 dark:group-hover:text-rose-300 transition-colors line-clamp-2 leading-snug tracking-tight">
+        <h3 className="font-bold text-sm md:text-[15px] text-[#0f172a] dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-300 transition-colors line-clamp-2 leading-snug tracking-tight">
           {video.title}
         </h3>
 
         {/* Stats Row: 👁️ 12k   👍 95%   🕒 08:20 */}
-        <div className="flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+        <div className="flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
           {/* 1. Views */}
           <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] sm:text-sm text-zinc-500 dark:text-zinc-400">visibility</span>
-            <span className="text-zinc-900 dark:text-zinc-100 font-bold">
+            <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">visibility</span>
+            <span className="text-[#0f172a] dark:text-zinc-100 font-bold">
               {(() => {
                 const n = video.viewsCount;
                 if (typeof n === 'number') {
@@ -468,14 +468,14 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
 
           {/* 2. Rating % */}
           <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] sm:text-sm text-zinc-500 dark:text-zinc-400">thumb_up</span>
-            <span className="text-zinc-900 dark:text-zinc-100 font-bold">{video.rating || '100%'}</span>
+            <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">thumb_up</span>
+            <span className="text-[#0f172a] dark:text-zinc-100 font-bold">{video.rating || '100%'}</span>
           </span>
 
           {/* 3. Duration */}
           <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] sm:text-sm text-zinc-500 dark:text-zinc-400">schedule</span>
-            <span className="text-zinc-900 dark:text-zinc-100 font-bold">
+            <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">schedule</span>
+            <span className="text-[#0f172a] dark:text-zinc-100 font-bold">
               {video.duration || '05:00'}
             </span>
           </span>
