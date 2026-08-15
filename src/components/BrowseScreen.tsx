@@ -246,7 +246,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
           <h2 className="text-lg sm:text-2xl font-black uppercase tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
             <span>{cleanSearch} PORN VIDEOS</span>
             <span
-              className="text-[#10b981] dark:text-[#34d399] material-symbols-outlined text-xl sm:text-2xl"
+              className="text-[#e0358d] dark:text-[#ec4899] material-symbols-outlined text-xl sm:text-2xl"
               style={{ fontVariationSettings: "'FILL' 1" }}
             >
               stars

@@ -28,7 +28,7 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
             return (
               <span key={i}>
                 {w.slice(0, matchIdx)}
-                <span className="text-[#10b981] dark:text-[#34d399] font-bold">{w.slice(matchIdx, matchIdx + q.length)}</span>
+                <span className="text-[#e0358d] dark:text-[#ec4899] font-black">{w.slice(matchIdx, matchIdx + q.length)}</span>
                 {w.slice(matchIdx + q.length)}{' '}
               </span>
             );
@@ -42,7 +42,7 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
   return (
     <span>
       {text.slice(0, idx)}
-      <span className="text-[#10b981] dark:text-[#34d399] font-bold">{text.slice(idx, idx + query.length)}</span>
+      <span className="text-[#e0358d] dark:text-[#ec4899] font-black">{text.slice(idx, idx + query.length)}</span>
       {text.slice(idx + query.length)}
     </span>
   );
