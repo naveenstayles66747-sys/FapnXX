@@ -42,7 +42,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [likeCount, setLikeCount] = useState<number>(() =>
-    typeof video.likesCount === 'number' ? video.likesCount : 1200
+    typeof video.likesCount === 'number' ? video.likesCount : 0
   );
   const [showShareNotification, setShowShareNotification] = useState(false);
 
@@ -55,14 +55,14 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   const [watchSeconds, setWatchSeconds] = useState<number>(0);
   const hasCountedRef = useRef<boolean>(false);
 
-  // Initialize liked/saved status
+  // Initialize liked/saved status and true Firestore counts
   useEffect(() => {
     const liked = getStoredLikedVideos().includes(video.id);
     const saved = getStoredSavedVideos().includes(video.id);
     setIsLiked(liked);
     setIsSaved(saved);
     setCurrentViewsCount(video.viewsCount || 1);
-    setLikeCount(typeof video.likesCount === 'number' ? video.likesCount : 1200);
+    setLikeCount(typeof video.likesCount === 'number' ? video.likesCount : 0);
     if (!isGuest) {
       addStoredWatchHistory(video.id);
     }
@@ -128,14 +128,8 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   const [isBufferingStream, setIsBufferingStream] = useState<boolean>(true);
   useEffect(() => {
     setIsBufferingStream(true);
-    const step1 = setTimeout(() => {}, 800);
-    const step2 = setTimeout(() => {}, 1600);
-    const finish = setTimeout(() => setIsBufferingStream(false), 2400);
-    return () => {
-      clearTimeout(step1);
-      clearTimeout(step2);
-      clearTimeout(finish);
-    };
+    const finish = setTimeout(() => setIsBufferingStream(false), 1200);
+    return () => clearTimeout(finish);
   }, [video.id]);
 
   // Related videos engine
@@ -169,259 +163,210 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     : null;
 
   return (
-    <main className="flex-grow lg:pl-64 pb-16 w-full max-w-6xl mx-auto overflow-x-hidden">
+    <main className="flex-grow lg:pl-64 pb-20 w-full max-w-6xl mx-auto overflow-x-hidden">
 
       {/* ═══════════════════════════════════════════════
-          TOP AD STRIP — exactly like reference image
-          Small banner above video player
+          TOP AD STRIP
       ═══════════════════════════════════════════════ */}
-      <div className="w-full px-3 md:px-6 pt-2">
+      <div className="w-full px-2 sm:px-4 md:px-6 pt-1 sm:pt-2">
         <AdBanner position="banner_top" title="Featured Sponsor" />
-        {/* Fallback compact ad strip if no campaign configured */}
-        <div className="w-full bg-[#111114] border border-white/8 rounded-lg px-3 py-2 flex items-center justify-between text-xs mb-2"
-          style={{ display: 'none' }} id="top-ad-fallback">
-          <span className="text-white/50 font-bold">AD</span>
-          <span className="text-white font-semibold">Featured Partner – Visit Now</span>
-          <span className="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded">AD</span>
-        </div>
       </div>
 
       {/* ═══════════════════════════════════════════════
-          VIDEO PLAYER — Full width, no padding on mobile
+          VIDEO PLAYER — Responsive Container with Padding & Rounded Corners
       ═══════════════════════════════════════════════ */}
-      <section className="player-wrapper video-player-container relative flex items-center justify-center border-y border-white/10 overflow-hidden">
-        {/* Buffering spinner */}
-        {isBufferingStream ? (
-          <div className="absolute inset-0 bg-black video-loading-screen z-30 flex items-center justify-center">
-            <svg className="w-12 h-12 animate-spin text-white" viewBox="0 0 100 100" fill="currentColor">
-              <circle cx="50" cy="14" r="7.5" opacity="1.0" />
-              <circle cx="75" cy="25" r="7.5" opacity="0.9" />
-              <circle cx="86" cy="50" r="7.5" opacity="0.8" />
-              <circle cx="75" cy="75" r="7.5" opacity="0.7" />
-              <circle cx="50" cy="86" r="7.5" opacity="0.6" />
-              <circle cx="25" cy="75" r="7.5" opacity="0.5" />
-              <circle cx="14" cy="50" r="7.5" opacity="0.4" />
-              <circle cx="25" cy="25" r="7.5" opacity="0.3" />
-            </svg>
-          </div>
-        ) : null}
-        {!isBufferingStream && <FluidPlayerWrapper video={video} autoPlay={true} />}
+      <section className="w-full px-2 sm:px-4 md:px-6 py-1.5 sm:py-2">
+        <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 flex items-center justify-center">
+          {/* Buffering spinner */}
+          {isBufferingStream ? (
+            <div className="absolute inset-0 bg-black video-loading-screen z-30 flex items-center justify-center">
+              <svg className="w-10 h-10 sm:w-12 sm:h-12 animate-spin text-rose-500" viewBox="0 0 100 100" fill="currentColor">
+                <circle cx="50" cy="14" r="7.5" opacity="1.0" />
+                <circle cx="75" cy="25" r="7.5" opacity="0.9" />
+                <circle cx="86" cy="50" r="7.5" opacity="0.8" />
+                <circle cx="75" cy="75" r="7.5" opacity="0.7" />
+                <circle cx="50" cy="86" r="7.5" opacity="0.6" />
+                <circle cx="25" cy="75" r="7.5" opacity="0.5" />
+                <circle cx="14" cy="50" r="7.5" opacity="0.4" />
+                <circle cx="25" cy="25" r="7.5" opacity="0.3" />
+              </svg>
+            </div>
+          ) : null}
+          {!isBufferingStream && <FluidPlayerWrapper video={video} autoPlay={true} />}
+        </div>
       </section>
 
       {/* ═══════════════════════════════════════════════
-          VIDEO INFO SECTION — Reference layout below player
+          COMPACT VIDEO INFO & ACTIONS BAR (Single Clean Row)
       ═══════════════════════════════════════════════ */}
-      <div className="px-3 md:px-6 py-3 flex flex-col gap-0 overflow-hidden">
-
-        {/* Video Title */}
-        <h1 className="text-base md:text-xl font-extrabold text-white tracking-tight leading-snug break-words mb-2">
-          {video.title}
-        </h1>
-
-        {/* Views, Duration, Rating row */}
-        <div className="flex items-center gap-3 text-xs text-white/60 mb-3 flex-wrap">
-          <span className="font-bold text-white/80">
-            {currentViewsCount.toLocaleString()} {currentViewsCount === 1 ? 'view' : 'views'}
-          </span>
-          <span className="text-white/30">•</span>
-          <span className="font-mono font-bold text-rose-400 flex items-center gap-1">
-            <span className="material-symbols-outlined text-sm">schedule</span>
-            {video.duration || '05:00'}
-          </span>
-          {video.rating && (
-            <>
-              <span className="text-white/30">•</span>
-              <span className="text-emerald-400 font-bold">👍 {video.rating}</span>
-            </>
-          )}
-          <span className="ml-auto bg-white/10 text-white/70 text-[10px] font-black px-2 py-0.5 rounded border border-white/10">
-            {video.quality || 'HD'}
-          </span>
-        </div>
-
-        {/* ─────────────────────────────────────────────
-            REFERENCE LAYOUT INFO BLOCK
-            (White background style like reference image)
-        ───────────────────────────────────────────── */}
-        <div className="bg-[#0e0e11] border border-white/8 rounded-xl overflow-hidden mb-3">
-
-          {/* Source site — "Watch full video at [Site]" */}
-          {sourceSiteDomain && (
-            <div className="px-4 py-3 border-b border-white/8 text-sm">
-              <span className="text-white/70">Watch full video at </span>
-              {video.sourceWebsiteUrl ? (
-                <a
-                  href={video.sourceWebsiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-rose-400 font-bold hover:underline hover:text-rose-300 transition-colors"
-                >
-                  {sourceSiteDomain}
-                </a>
-              ) : (
-                <span className="text-rose-400 font-bold">{sourceSiteDomain}</span>
-              )}
-            </div>
-          )}
-
-          {/* Channel by Website */}
-          {(video.channelName || video.sourceWebsite) && (
-            <div className="px-4 py-3 border-b border-white/8 text-sm">
-              {video.channelName && (
+      <div className="px-3 sm:px-4 md:px-6 py-2 flex flex-col gap-2">
+        {/* Title & Actions Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-white/10">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-white tracking-tight leading-snug break-words">
+              {video.title}
+            </h1>
+            {/* Meta Line: Views • Duration • Rating • Quality • Pornstar */}
+            <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1 flex-wrap font-medium">
+              <span className="font-semibold text-zinc-200">
+                {currentViewsCount.toLocaleString()} {currentViewsCount === 1 ? 'view' : 'views'}
+              </span>
+              <span>•</span>
+              <span className="font-mono text-rose-400 font-bold flex items-center gap-0.5">
+                <span className="material-symbols-outlined text-[13px]">schedule</span>
+                <span>{video.duration || '05:00'}</span>
+              </span>
+              {video.rating && (
                 <>
-                  <span className="text-white/70">Channel: </span>
-                  <span className="text-rose-400 font-bold">{video.channelName}</span>
+                  <span>•</span>
+                  <span className="text-emerald-400 font-bold">👍 {video.rating}</span>
                 </>
               )}
-              {video.channelName && video.sourceWebsite && (
-                <span className="text-white/70"> by </span>
+              {performersList.length > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="text-pink-400 font-bold flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-[13px]">person</span>
+                    <span>{performersList.join(', ')}</span>
+                  </span>
+                </>
               )}
-              {video.sourceWebsite && (
-                video.sourceWebsiteUrl ? (
-                  <a
-                    href={video.sourceWebsiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-rose-400 font-bold hover:underline hover:text-rose-300 transition-colors"
-                  >
-                    {video.sourceWebsite}
-                  </a>
-                ) : (
-                  <span className="text-rose-400 font-bold">{video.sourceWebsite}</span>
-                )
-              )}
-            </div>
-          )}
-
-          {/* Performers / Stars */}
-          {performersList.length > 0 && (
-            <div className="px-4 py-3 border-b border-white/8 text-sm flex flex-wrap gap-1 items-center">
-              <span className="text-white/70 mr-1 shrink-0">
-                {performersList.length === 1 ? 'Pornstar:' : 'Pornstars:'}
+              <span className="bg-zinc-800 text-zinc-300 text-[10px] font-bold px-1.5 py-0.2 rounded border border-white/10 uppercase">
+                {video.quality || 'HD'}
               </span>
-              {performersList.map((performer, idx) => (
-                <span key={idx} className="inline-flex items-center">
-                  <span className="text-rose-400 font-bold hover:underline cursor-pointer hover:text-rose-300 transition-colors">
-                    {performer}
-                  </span>
-                  {idx < performersList.length - 1 && (
-                    <span className="text-white/40 mr-1">,</span>
-                  )}
+            </div>
+          </div>
+
+          {/* Action Buttons (Compact horizontal row) */}
+          <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-center">
+            {/* Like Button */}
+            <button
+              type="button"
+              onClick={handleLike}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm border ${
+                isLiked
+                  ? 'bg-rose-600 text-white border-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+                  : 'bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border-white/10'
+              }`}
+              title="Like this video"
+            >
+              <span
+                className="material-symbols-outlined text-sm"
+                style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
+              >
+                thumb_up
+              </span>
+              <span>{likeCount.toLocaleString()}</span>
+            </button>
+
+            {/* Share Button */}
+            <button
+              type="button"
+              onClick={handleShare}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-white/10 transition-all cursor-pointer shadow-sm"
+              title="Share video link"
+            >
+              <span className="material-symbols-outlined text-sm text-pink-400">share</span>
+              <span>Share</span>
+            </button>
+
+            {/* Save Button (Only if user logged in) */}
+            {!isGuest && (
+              <button
+                type="button"
+                onClick={handleSave}
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm border ${
+                  isSaved
+                    ? 'bg-rose-600 text-white border-rose-500'
+                    : 'bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border-white/10'
+                }`}
+                title={isSaved ? 'Saved' : 'Save'}
+              >
+                <span
+                  className="material-symbols-outlined text-sm"
+                  style={{ fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0" }}
+                >
+                  bookmark
                 </span>
-              ))}
-            </div>
-          )}
+              </button>
+            )}
 
-          {/* Tags */}
-          {video.tags && video.tags.length > 0 && (
-            <div className="px-4 py-3 flex flex-wrap gap-2 items-start">
-              <span className="text-white/70 text-sm shrink-0 mt-0.5">Tags:</span>
-              <div className="flex flex-wrap gap-1.5">
-                {video.tags.map((tag, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold bg-white/5 hover:bg-rose-500/20 border border-white/10 hover:border-rose-500/40 text-white/70 hover:text-rose-300 px-2.5 py-1 rounded-full cursor-pointer transition-all"
-                  >
-                    <span className="material-symbols-outlined text-[11px] text-white/40">label</span>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ─────────────────────────────────────────────
-            ACTION BUTTONS ROW
-        ───────────────────────────────────────────── */}
-        <div className="flex items-center gap-2 flex-wrap mb-3">
-          <button
-            onClick={handleLike}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-md border ${
-              isLiked
-                ? 'bg-rose-500 text-white border-rose-500'
-                : 'bg-[#282830] hover:bg-[#32323d] text-white border-white/10'
-            }`}
-          >
-            <span
-              className="material-symbols-outlined text-sm"
-              style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
+            {/* Report Button (Compact Flag Icon with tooltip) */}
+            <button
+              type="button"
+              onClick={() => setIsReportModalOpen(true)}
+              className="flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold bg-zinc-900/90 hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-all cursor-pointer shadow-sm"
+              title="Report content"
             >
-              thumb_up
-            </span>
-            <span>{likeCount.toLocaleString()}</span>
-          </button>
-
-          <button
-            onClick={handleSave}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-md border ${
-              isSaved
-                ? 'bg-rose-500 text-white border-rose-500'
-                : 'bg-[#282830] hover:bg-[#32323d] text-white border-white/10'
-            }`}
-          >
-            <span
-              className="material-symbols-outlined text-sm"
-              style={{ fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0" }}
-            >
-              bookmark
-            </span>
-            <span>Save</span>
-          </button>
-
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-[#282830] hover:bg-[#32323d] text-white border border-white/10 transition-all cursor-pointer shadow-md"
-          >
-            <span className="material-symbols-outlined text-sm">share</span>
-            <span>Share</span>
-          </button>
-
-          <button
-            onClick={() => setIsReportModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-all cursor-pointer shadow-md"
-          >
-            <span className="material-symbols-outlined text-sm">flag</span>
-            <span>Report</span>
-          </button>
-        </div>
-
-        {/* ═══════════════════════════════════════════════
-            BOTTOM AD STRIP — same size as top ad
-            Placed right after tags, before recommended
-        ═══════════════════════════════════════════════ */}
-        <AdBanner position="banner_bottom" title="Featured Partner Sponsor" />
-
-        {/* ─────────────────────────────────────────────
-            RECOMMENDED VIDEOS
-        ───────────────────────────────────────────── */}
-        <div className="mt-4 mb-6">
-          <h3 className="text-sm md:text-base font-extrabold text-white mb-3 flex items-center gap-2">
-            <span className="material-symbols-outlined text-rose-500 text-lg">grid_view</span>
-            <span>Recommended Videos</span>
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5">
-            {(topRelatedVideos || []).map((relatedVideo) => (
-              <div key={relatedVideo.id} className="relative group">
-                <VideoCard
-                  video={relatedVideo}
-                  onClick={() => onSelectVideo(relatedVideo)}
-                />
-              </div>
-            ))}
+              <span className="material-symbols-outlined text-sm">flag</span>
+            </button>
           </div>
         </div>
 
-        {/* ─────────────────────────────────────────────
-            COMMENTS SECTION
-        ───────────────────────────────────────────── */}
-        <div className="mt-4 pt-4 border-t border-white/10">
-          <CommentsSection
-            videoId={video.id}
-            userEmail={userEmail}
-            onOpenSoftLogin={onOpenSoftLogin}
-          />
+        {/* Compact Tags & Source chips (Only shown if custom tags or source website exist) */}
+        {((video.tags && video.tags.length > 0) || sourceSiteDomain) && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {sourceSiteDomain && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md">
+                <span className="material-symbols-outlined text-[12px]">language</span>
+                <span>{sourceSiteDomain}</span>
+              </span>
+            )}
+            {video.tags && video.tags.map((tag, idx) => (
+              <span
+                key={idx}
+                className="text-[11px] font-medium bg-zinc-900/80 hover:bg-zinc-800 border border-white/10 text-zinc-300 px-2 py-0.5 rounded-md transition-colors"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Description (If present and clean) */}
+        {video.description && video.description.trim() && (
+          <p className="text-xs text-zinc-400 leading-relaxed mt-0.5 line-clamp-2 hover:line-clamp-none transition-all">
+            {video.description}
+          </p>
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════
+          BOTTOM AD STRIP
+      ═══════════════════════════════════════════════ */}
+      <div className="w-full px-2 sm:px-4 md:px-6 my-2">
+        <AdBanner position="banner_bottom" title="Featured Partner Sponsor" />
+      </div>
+
+      {/* ─────────────────────────────────────────────
+          RECOMMENDED VIDEOS — Direct Focus Below Player
+      ───────────────────────────────────────────── */}
+      <div className="px-3 sm:px-4 md:px-6 mt-3 mb-6">
+        <h3 className="text-sm md:text-base font-extrabold text-white mb-3 flex items-center gap-2">
+          <span className="material-symbols-outlined text-rose-500 text-lg">grid_view</span>
+          <span>Recommended Videos</span>
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5">
+          {(topRelatedVideos || []).map((relatedVideo) => (
+            <div key={relatedVideo.id} className="relative group">
+              <VideoCard
+                video={relatedVideo}
+                onClick={() => onSelectVideo(relatedVideo)}
+              />
+            </div>
+          ))}
         </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────
+          COMMENTS SECTION
+      ───────────────────────────────────────────── */}
+      <div className="px-3 sm:px-4 md:px-6 mt-4 pt-4 border-t border-white/10">
+        <CommentsSection
+          videoId={video.id}
+          userEmail={userEmail}
+          onOpenSoftLogin={onOpenSoftLogin}
+        />
       </div>
 
       {/* DMCA Report Modal */}

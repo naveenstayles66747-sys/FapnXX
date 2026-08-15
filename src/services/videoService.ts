@@ -249,10 +249,10 @@ export class VideoService {
             tags: data.tags || ['HD'],
             duration: data.duration || '05:00',
             quality: data.quality || 'HD',
-            viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 1200,
-            views: data.views || `${data.viewsCount || 1200} views`,
-            likesCount: typeof data.likesCount === 'number' ? data.likesCount : 340,
-            rating: data.rating || '98%',
+            viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 1,
+            views: data.views || `${data.viewsCount || 1} views`,
+            likesCount: typeof data.likesCount === 'number' ? data.likesCount : 0,
+            rating: data.rating || '100%',
             timeAgo: data.timeAgo || 'Recent',
             createdAt: data.createdAt || new Date().toISOString(),
             performerName: data.performerName || 'User Uploaded',
@@ -329,8 +329,8 @@ export class VideoService {
               ...data,
               id: d.id,
               isEmbed: data.isEmbed !== undefined ? data.isEmbed : true,
-              viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 1200,
-              likesCount: typeof data.likesCount === 'number' ? data.likesCount : 340,
+              viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 1,
+              likesCount: typeof data.likesCount === 'number' ? data.likesCount : 0,
             });
           });
           INITIAL_VIDEOS.forEach((defaultVid) => {
@@ -556,10 +556,10 @@ export class VideoService {
       },
       () => {
         const current = getStoredVideos();
-        let newCount = 1200;
+        let newCount = 0;
         const updated = current.map((v) => {
           if (v.id === videoId) {
-            newCount = Math.max(0, (v.likesCount || 1200) + delta);
+            newCount = Math.max(0, (v.likesCount || 0) + delta);
             return { ...v, likesCount: newCount };
           }
           return v;
