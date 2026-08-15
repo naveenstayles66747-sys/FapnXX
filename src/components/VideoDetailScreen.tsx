@@ -197,138 +197,119 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
       </section>
 
       {/* ═══════════════════════════════════════════════
-          COMPACT VIDEO INFO & ACTIONS BAR (Single Clean Row)
+          EXACT REFERENCE DESIGN: VIDEO INFO & STATS BAR
       ═══════════════════════════════════════════════ */}
-      <div className="px-3 sm:px-4 md:px-6 py-2 flex flex-col gap-2">
-        {/* Title & Actions Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-white/10">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-base sm:text-lg font-bold text-white tracking-tight leading-snug break-words">
-              {video.title}
-            </h1>
-            {/* Meta Line: Views • Duration • Rating • Quality • Pornstar */}
-            <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1 flex-wrap font-medium">
-              <span className="font-semibold text-zinc-200">
-                {currentViewsCount.toLocaleString()} {currentViewsCount === 1 ? 'view' : 'views'}
-              </span>
-              <span>•</span>
-              <span className="font-mono text-rose-400 font-bold flex items-center gap-0.5">
-                <span className="material-symbols-outlined text-[13px]">schedule</span>
-                <span>{video.duration || '05:00'}</span>
-              </span>
-              {video.rating && (
-                <>
-                  <span>•</span>
-                  <span className="text-emerald-400 font-bold">👍 {video.rating}</span>
-                </>
-              )}
-              {performersList.length > 0 && (
-                <>
-                  <span>•</span>
-                  <span className="text-pink-400 font-bold flex items-center gap-0.5">
-                    <span className="material-symbols-outlined text-[13px]">person</span>
-                    <span>{performersList.join(', ')}</span>
-                  </span>
-                </>
-              )}
-              <span className="bg-zinc-800 text-zinc-300 text-[10px] font-bold px-1.5 py-0.2 rounded border border-white/10 uppercase">
-                {video.quality || 'HD'}
-              </span>
-            </div>
+      <div className="px-3 sm:px-4 md:px-6 py-2 flex flex-col gap-3">
+        {/* 1. Title */}
+        <h1 className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white tracking-tight leading-snug break-words">
+          {video.title}
+        </h1>
+
+        {/* 2. Stats & Actions Row (Duration, Rating, Views, Like, Share, Report) */}
+        <div className="flex items-center justify-between gap-2 text-xs font-semibold flex-wrap">
+          {/* Left Stats: Duration & Rating */}
+          <div className="flex items-center gap-3 sm:gap-4 text-rose-500 dark:text-rose-400">
+            <span className="flex items-center gap-1 font-medium text-xs">
+              <span className="material-symbols-outlined text-sm">schedule</span>
+              <span>{video.duration || '05:00'}</span>
+            </span>
+            <span className="flex items-center gap-1 font-medium text-xs">
+              <span className="material-symbols-outlined text-sm">thumb_up</span>
+              <span>{video.rating || '100%'}</span>
+            </span>
           </div>
 
-          {/* Action Buttons (Compact horizontal row) */}
-          <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-center">
-            {/* Like Button */}
-            <button
-              type="button"
-              onClick={handleLike}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm border ${
-                isLiked
-                  ? 'bg-rose-600 text-white border-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
-                  : 'bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border-white/10'
-              }`}
-              title="Like this video"
-            >
-              <span
-                className="material-symbols-outlined text-sm"
-                style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
-              >
-                thumb_up
-              </span>
-              <span>{likeCount.toLocaleString()}</span>
-            </button>
+          {/* Center & Right Stats: Views & Action Buttons */}
+          <div className="flex items-center gap-3 sm:gap-4 ml-auto">
+            {/* Views with eye icon */}
+            <span className="flex items-center gap-1 text-rose-500 dark:text-rose-400 font-medium text-xs">
+              <span className="material-symbols-outlined text-sm">visibility</span>
+              <span>{currentViewsCount.toLocaleString()}</span>
+            </span>
 
-            {/* Share Button */}
-            <button
-              type="button"
-              onClick={handleShare}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-white/10 transition-all cursor-pointer shadow-sm"
-              title="Share video link"
-            >
-              <span className="material-symbols-outlined text-sm text-pink-400">share</span>
-              <span>Share</span>
-            </button>
-
-            {/* Save Button (Only if user logged in) */}
-            {!isGuest && (
+            {/* Actions: Like, Share, Report icons */}
+            <div className="flex items-center gap-3 text-zinc-800 dark:text-zinc-200">
               <button
                 type="button"
-                onClick={handleSave}
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm border ${
-                  isSaved
-                    ? 'bg-rose-600 text-white border-rose-500'
-                    : 'bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border-white/10'
-                }`}
-                title={isSaved ? 'Saved' : 'Save'}
+                onClick={handleLike}
+                className="hover:text-rose-500 transition-colors cursor-pointer p-1"
+                title="Like video"
               >
                 <span
-                  className="material-symbols-outlined text-sm"
-                  style={{ fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0" }}
+                  className={`material-symbols-outlined text-lg ${isLiked ? 'text-rose-500 fill-1' : ''}`}
+                  style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
                 >
-                  bookmark
+                  thumb_up
                 </span>
               </button>
-            )}
 
-            {/* Report Button (Compact Flag Icon with tooltip) */}
-            <button
-              type="button"
-              onClick={() => setIsReportModalOpen(true)}
-              className="flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold bg-zinc-900/90 hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-all cursor-pointer shadow-sm"
-              title="Report content"
-            >
-              <span className="material-symbols-outlined text-sm">flag</span>
-            </button>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="hover:text-rose-500 transition-colors cursor-pointer p-1"
+                title="Share link"
+              >
+                <span className="material-symbols-outlined text-lg">share</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsReportModalOpen(true)}
+                className="hover:text-rose-500 transition-colors cursor-pointer p-1"
+                title="Report content"
+              >
+                <span className="material-symbols-outlined text-lg">flag</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Compact Tags & Source chips (Only shown if custom tags or source website exist) */}
-        {((video.tags && video.tags.length > 0) || sourceSiteDomain) && (
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {sourceSiteDomain && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md">
-                <span className="material-symbols-outlined text-[12px]">language</span>
-                <span>{sourceSiteDomain}</span>
+        {/* 3. Rounded Info Card (Pornstar & Tags) */}
+        <div className="rounded-2xl p-4 sm:p-5 border border-zinc-200/80 dark:border-white/10 bg-zinc-50/90 dark:bg-[#0f1523] text-zinc-800 dark:text-zinc-200 space-y-4 shadow-sm">
+          {/* Pornstar Row */}
+          {performersList.length > 0 && (
+            <div className="text-xs sm:text-sm font-medium">
+              <span className="text-zinc-600 dark:text-zinc-400">Pornstar: </span>
+              <span className="text-rose-600 dark:text-rose-400 font-bold ml-1 cursor-pointer hover:underline">
+                {performersList.join(', ')}
               </span>
-            )}
-            {video.tags && video.tags.map((tag, idx) => (
-              <span
-                key={idx}
-                className="text-[11px] font-medium bg-zinc-900/80 hover:bg-zinc-800 border border-white/10 text-zinc-300 px-2 py-0.5 rounded-md transition-colors"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* Description (If present and clean) */}
-        {video.description && video.description.trim() && (
-          <p className="text-xs text-zinc-400 leading-relaxed mt-0.5 line-clamp-2 hover:line-clamp-none transition-all">
-            {video.description}
-          </p>
-        )}
+          {/* Tags Section */}
+          <div className="space-y-2">
+            <div className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-medium">
+              Tags:
+            </div>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {/* If user-provided tags exist, show them with rounded pill styling */}
+              {video.tags && video.tags.length > 0 ? (
+                video.tags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-white/10 shadow-sm hover:border-rose-400 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-xs text-zinc-500 dark:text-zinc-400">label</span>
+                    <span>{tag}</span>
+                  </span>
+                ))
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-white/10 shadow-sm">
+                  <span className="material-symbols-outlined text-xs text-zinc-500 dark:text-zinc-400">label</span>
+                  <span>{video.quality || 'HD'}</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Source website attribution if present */}
+          {sourceSiteDomain && (
+            <div className="pt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+              <span>Source: </span>
+              <span className="text-rose-500 font-semibold">{sourceSiteDomain}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ═══════════════════════════════════════════════
