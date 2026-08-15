@@ -240,19 +240,20 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
   return (
     <main className="flex-1 overflow-y-auto bg-[#09090b] p-4 md:p-12 pb-32 lg:ml-64">
-      {/* Search Header Banner */}
+      {/* Search Header Banner (Reference Style: 'DANI DANIELS PORN VIDEOS') */}
       {cleanSearch && (
-        <section className="mb-8 p-4 rounded-xl bg-[#1e1d21] border border-[#ec4899]/40 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="material-symbols-outlined text-[#ffb0cd]">search</span>
-            <div>
-              <span className="text-xs text-[#a19fa6]">Search results for:</span>
-              <h3 className="text-lg font-bold text-white italic">"{searchQuery}"</h3>
-            </div>
-            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+        <section className="mb-6 p-4 sm:p-5 rounded-2xl bg-zinc-100 dark:bg-[#18181b] border border-zinc-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+            <h2 className="text-base sm:text-xl md:text-2xl font-black uppercase tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
+              <span>{cleanSearch} PORN VIDEOS</span>
+              <span className="text-[#10b981] dark:text-[#34d399] material-symbols-outlined text-xl sm:text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                stars
+              </span>
+            </h2>
+            <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border ${
               justAddedVideos.length > 0
-                ? 'bg-[#ec4899]/20 text-[#ffb0cd] border-[#ec4899]/30'
-                : 'bg-rose-950/40 text-rose-300 border-rose-500/30'
+                ? 'bg-rose-50 dark:bg-rose-950/40 text-[#e0358d] dark:text-rose-300 border-rose-200 dark:border-rose-500/30'
+                : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700'
             }`}>
               {justAddedVideos.length > 0
                 ? `${justAddedVideos.length} ${justAddedVideos.length === 1 ? 'video' : 'videos'} found`
@@ -262,7 +263,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
           {setSearchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="px-3 py-1.5 rounded-lg bg-[#27272a] hover:bg-[#3f3f46] text-xs font-semibold text-[#debec8] hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-[#e0358d] hover:text-white dark:hover:bg-[#e0358d] text-xs font-bold text-zinc-700 dark:text-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <span className="material-symbols-outlined text-sm">close</span>
               Clear Search
@@ -301,8 +302,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         </section>
       )}
 
-      {/* Auto-Swiping 6-Image Hero Banner Slider */}
-      {selectedCategory === 'all' && displayBanners.length > 0 && (
+      {/* Auto-Swiping 6-Image Hero Banner Slider (Hidden during active search so searched results show at very top) */}
+      {!cleanSearch && selectedCategory === 'all' && displayBanners.length > 0 && (
         <section
           className="hero-banner-container block mb-6 md:mb-10 relative w-full h-[220px] sm:h-[320px] md:h-[360px] xl:h-[420px] overflow-hidden rounded-2xl border border-[#27272a] shadow-2xl group/slider select-none bg-[#09090b]"
         >
@@ -406,8 +407,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         </section>
       )}
 
-      {/* Advanced Recommendation & Trending Carousel Section — Desktop only */}
-      {rankedTrendingVideos.length > 3 && (
+      {/* Advanced Recommendation & Trending Carousel Section — Desktop only (Hidden during active search) */}
+      {!cleanSearch && rankedTrendingVideos.length > 3 && (
         <section className="hidden md:block mb-12 relative w-full">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl md:text-3xl font-bold text-[#ffb0cd] flex items-center gap-2">
