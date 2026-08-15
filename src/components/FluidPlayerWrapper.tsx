@@ -116,12 +116,17 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         }
 
         if (isMounted) {
-          setVastMediaUrl(extractedMedia);
-          setVastClickUrl(extractedClick);
-          setAdPhase('playing');
+          if (extractedMedia) {
+            setVastMediaUrl(extractedMedia);
+            setVastClickUrl(extractedClick);
+            setAdPhase('playing');
+          } else {
+            // No direct video file in VAST XML response → bypass directly to user video
+            setAdPhase('done');
+          }
         }
       } catch {
-        // VAST failed / timed out → skip ad, go straight to video
+        // VAST failed / timed out / blocked → skip ad instantly, go straight to video
         if (isMounted) setAdPhase('done');
       }
     };
@@ -224,8 +229,8 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 )}
               </div>
 
-              {/* Ad Content */}
-              {vastMediaUrl ? (
+              {/* Ad Video Element (Only rendered when valid playable video URL is present) */}
+              {vastMediaUrl && (
                 <div className="relative w-full h-full flex items-center justify-center bg-black">
                   <video
                     ref={adVideoRef}
@@ -251,16 +256,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                       <span>Tap for Sound</span>
                     </button>
                   )}
-                </div>
-              ) : (
-                // Fallback: render VAST url in iframe if media URL not extracted
-                <div className="w-full h-full">
-                  <iframe
-                    src={vastAdUrlToUse}
-                    title="Ad"
-                    className="w-full h-full border-none block bg-black"
-                    allow="autoplay; fullscreen"
-                  />
                 </div>
               )}
             </>
