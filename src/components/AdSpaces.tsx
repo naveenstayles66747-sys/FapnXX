@@ -216,4 +216,44 @@ export const MobileInstantMessage: React.FC = () => {
   );
 };
 
+/**
+ * Mobile Fullpage Interstitial Ad (Zone ID: 6003180)
+ * Serves a full-screen interstitial ad overlay when mobile users click video links/navigate
+ */
+export const MobileFullpageInterstitial: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const adInjected = useRef(false);
+
+  useEffect(() => {
+    // Only load on mobile viewports (< 1024px)
+    if (typeof window === 'undefined' || window.innerWidth >= 1024 || adInjected.current) return;
+
+    try {
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+        const ins = document.createElement('ins');
+        ins.className = 'eas6a97888e33';
+        ins.setAttribute('data-zoneid', '6003180');
+        containerRef.current.appendChild(ins);
+
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+
+        adInjected.current = true;
+      }
+    } catch (e) {
+      console.warn('[ExoClick] Error serving mobile interstitial ad:', e);
+    }
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      id="exoclick-mobile-interstitial-container"
+      className="block lg:hidden fixed top-0 left-0 z-[999999] pointer-events-none"
+    />
+  );
+};
+
 export default AdBanner;

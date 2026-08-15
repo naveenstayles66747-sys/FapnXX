@@ -5,7 +5,7 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
 import { MobileDrawer } from './components/MobileDrawer';
-import { StickyBottomLeaderboard, DesktopFullpageInterstitial, MobileInstantMessage } from './components/AdSpaces';
+import { StickyBottomLeaderboard, DesktopFullpageInterstitial, MobileInstantMessage, MobileFullpageInterstitial } from './components/AdSpaces';
 import { AgeGateModal } from './components/AgeGateModal';
 import { BrowseScreen } from './components/BrowseScreen';
 import { CategoriesScreen } from './components/CategoriesScreen';
@@ -592,6 +592,9 @@ export default function App() {
 
           {/* ExoClick Mobile Instant Message Ad (Zone ID: 6003178) */}
           <MobileInstantMessage />
+
+          {/* ExoClick Mobile Fullpage Interstitial Ad (Zone ID: 6003180) */}
+          <MobileFullpageInterstitial />
 
           <BottomNav
             currentScreen={currentScreen}
