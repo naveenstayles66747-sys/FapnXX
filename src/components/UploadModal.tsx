@@ -52,6 +52,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
   // Video metadata form fields
   const [title, setTitle] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
   const [durationInput, setDurationInput] = useState<string>('05:00');
   const [category, setCategory] = useState<CategoryId>('trending');
   const [isRequestingCategory, setIsRequestingCategory] = useState<boolean>(false);
@@ -400,6 +401,15 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         }
       }
 
+      const parsedCustomTags = tagsInput
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      const finalTags = parsedCustomTags.length > 0
+        ? parsedCustomTags
+        : (quality ? [quality] : []);
+
       const parsedModels = modelsActorsInput
         .split(',')
         .map((m) => m.trim())
@@ -414,9 +424,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           categories.find((c) => c.id === category)?.name ||
           (isRequestingCategory ? requestedCategoryName.trim() : 'Trending'),
         categories: selectedCategoryIds.length > 0 ? selectedCategoryIds : [category],
-        tags: ['UserUpload', quality, 'Featured', ...parsedModels],
-        models_actors: parsedModels.length > 0 ? parsedModels : [performerName.trim() || 'Anonymous'],
-        modelsActors: parsedModels.length > 0 ? parsedModels : [performerName.trim() || 'Anonymous'],
+        tags: finalTags,
+        models_actors: parsedModels.length > 0 ? parsedModels : undefined,
+        modelsActors: parsedModels.length > 0 ? parsedModels : undefined,
         orientation: orientationInput,
         vttUrl: vttUrlInput.trim() || undefined,
         spriteUrl: vttUrlInput.trim() || previewWebpUrl.trim() || undefined,
@@ -462,6 +472,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
   const resetForm = () => {
     setTitle('');
+    setTagsInput('');
     setDurationInput('05:00');
     setEmbedInput('');
     setProcessedEmbedUrl('');
@@ -764,6 +775,24 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 <option value="vr">VR (360° / 180°)</option>
               </select>
             </div>
+          </div>
+
+          {/* Tags Input (Custom user tags — no unwanted automatic extra tags) */}
+          <div>
+            <label className="block text-xs font-bold opacity-80 mb-1 flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs text-rose-400">label</span>
+                <span>Video Tags (Comma separated)</span>
+              </span>
+              <span className="text-[10px] text-white/50">e.g. Desi, Romance, 4K, Bhabhi</span>
+            </label>
+            <input
+              type="text"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="Enter tags (e.g. Desi, Romance, Exclusive, 4K)..."
+              className="w-full upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500 font-mono"
+            />
           </div>
 
           {/* ─── Credit & Copyright Attribution ─── */}
