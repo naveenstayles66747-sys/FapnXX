@@ -1,9 +1,8 @@
 import { Video } from '../types';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SUPER SMART PREDICTIVE & FUZZY SEARCH ENGINE
-// Real-time Firestore sync, Levenshtein typo-tolerance, N-Gram token matching,
-// Predictive next-word auto-suggestions, and Strict 'Not Found' condition.
+// SUPER SMART GROUPED AUTO-SUGGEST & FUZZY SEARCH ENGINE
+// Groups Pornstars, Tags, Categories, and Video Titles with clear Section Headers
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface SearchResult {
@@ -13,8 +12,16 @@ export interface SearchResult {
 
 export interface SearchSuggestion {
   text: string;
-  type: 'title' | 'performer' | 'tag' | 'category';
+  type: 'performer' | 'tag' | 'category' | 'title';
   icon: string;
+}
+
+export interface GroupedSuggestions {
+  performers: SearchSuggestion[];
+  tags: SearchSuggestion[];
+  categories: SearchSuggestion[];
+  titles: SearchSuggestion[];
+  totalCount: number;
 }
 
 /**
@@ -71,7 +78,6 @@ function fuzzyWordSimilarity(target: string, query: string): number {
   if (maxLen === 0) return 1.0;
 
   const dist = levenshtein(target, query);
-  // Allow 1 typo for queries 3-5 chars, 2 typos for queries >= 6 chars
   const maxAllowedDist = query.length <= 4 ? 1 : 2;
   if (dist <= maxAllowedDist) {
     return Math.max(0, 1 - dist / maxLen);
@@ -105,7 +111,6 @@ function matchScore(field: string, query: string): number {
       } else if (ft.includes(qt) && qt.length >= 2) {
         bestTokenScore = Math.max(bestTokenScore, 30);
       } else {
-        // Smart fuzzy similarity match
         const sim = fuzzyWordSimilarity(ft, qt);
         if (sim > 0.6) {
           bestTokenScore = Math.max(bestTokenScore, Math.round(sim * 35));
@@ -128,7 +133,7 @@ export function scoreVideo(video: Video, query: string): number {
 
   let total = 0;
 
-  // 1. Performers / Models (Top priority: 3.5x weight)
+  // 1. Performers / Models (3.5x weight)
   const performers = [
     video.performerName,
     ...(video.performers || []),
@@ -166,8 +171,6 @@ export function scoreVideo(video: Video, query: string): number {
 
 /**
  * Smart Search: Returns sorted matched videos.
- * Strict Condition: If zero related or fuzzy data matches anywhere in the database, returns empty []
- * so the UI can accurately present the genuine 'No Results Found' message.
  */
 export function smartSearch(videos: Video[], query: string): Video[] {
   const q = normalizeText(query);
@@ -177,15 +180,10 @@ export function smartSearch(videos: Video[], query: string): Video[] {
     .map((v) => ({ video: v, score: scoreVideo(v, q) }))
     .filter((r) => r.score > 0);
 
-  // Sort strictly by relevance score descending
   scored.sort((a, b) => b.score - a.score);
-
   return scored.map((r) => r.video);
 }
 
-/**
- * Checks if search query has genuine or fuzzy matches in database
- */
 export function hasRealMatches(videos: Video[], query: string): boolean {
   const q = normalizeText(query);
   if (!q) return true;
@@ -193,75 +191,146 @@ export function hasRealMatches(videos: Video[], query: string): boolean {
 }
 
 /**
- * Predictive Auto-Suggest Engine:
- * Generates instant, smart, predictive recommendations as the user types (even 1 letter).
- * Leverages performers, tags, categories, and titles dynamically from Firestore.
+ * Grouped Search Suggestions:
+ * Exactly like Reference UI (Pornstars Section, Tags Section, Categories, Titles)
+ */
+export function getGroupedSearchSuggestions(
+  videos: Video[],
+  query: string
+): GroupedSuggestions {
+  const q = normalizeText(query);
+  if (!q || q.length < 1) {
+    return { performers: [], tags: [], categories: [], titles: [], totalCount: 0 };
+  }
+
+  const seen = new Set<string>();
+
+  const testMatch = (text: string): { matches: boolean; score: number } => {
+    const key = normalizeText(text);
+    if (!key) return { matches: false, score: 0 };
+    if (key === q) return { matches: true, score: 100 };
+    if (key.startsWith(q)) return { matches: true, score: 80 };
+    if (key.includes(q)) return { matches: true, score: 60 };
+    const words = key.split(' ');
+    const sim = Math.max(...words.map((w) => fuzzyWordSimilarity(w, q)));
+    if (sim > 0.65) return { matches: true, score: Math.round(sim * 50) };
+    return { matches: false, score: 0 };
+  };
+
+  // 1. Collect Performers
+  const performersList: { text: string; score: number }[] = [];
+  for (const v of videos) {
+    const pNames = [
+      v.performerName,
+      ...(v.performers || []),
+      ...(v.modelsActors || []),
+      ...(v.models_actors || []),
+    ].filter(Boolean) as string[];
+
+    for (const p of pNames) {
+      if (p === 'Anonymous' || p === 'User Uploaded') continue;
+      const clean = p.trim();
+      const norm = normalizeText(clean);
+      if (norm && !seen.has(`p:${norm}`)) {
+        const m = testMatch(clean);
+        if (m.matches) {
+          seen.add(`p:${norm}`);
+          performersList.push({ text: clean, score: m.score });
+        }
+      }
+    }
+  }
+  performersList.sort((a, b) => b.score - a.score);
+
+  // 2. Collect Tags
+  const tagsList: { text: string; score: number }[] = [];
+  for (const v of videos) {
+    for (const tag of (v.tags || [])) {
+      const clean = tag.trim();
+      const norm = normalizeText(clean);
+      if (norm && !seen.has(`t:${norm}`)) {
+        const m = testMatch(clean);
+        if (m.matches) {
+          seen.add(`t:${norm}`);
+          tagsList.push({ text: clean, score: m.score });
+        }
+      }
+    }
+  }
+  tagsList.sort((a, b) => b.score - a.score);
+
+  // 3. Collect Categories
+  const categoriesList: { text: string; score: number }[] = [];
+  for (const v of videos) {
+    const cat = v.categoryLabel || v.category || '';
+    if (cat) {
+      const clean = cat.trim();
+      const norm = normalizeText(clean);
+      if (norm && !seen.has(`c:${norm}`)) {
+        const m = testMatch(clean);
+        if (m.matches) {
+          seen.add(`c:${norm}`);
+          categoriesList.push({ text: clean, score: m.score });
+        }
+      }
+    }
+  }
+  categoriesList.sort((a, b) => b.score - a.score);
+
+  // 4. Collect Titles
+  const titlesList: { text: string; score: number }[] = [];
+  for (const v of videos) {
+    if (v.title) {
+      const clean = v.title.trim();
+      const norm = normalizeText(clean);
+      if (norm && !seen.has(`ti:${norm}`)) {
+        const m = testMatch(clean);
+        if (m.matches) {
+          seen.add(`ti:${norm}`);
+          titlesList.push({ text: clean, score: m.score });
+        }
+      }
+    }
+  }
+  titlesList.sort((a, b) => b.score - a.score);
+
+  const performers: SearchSuggestion[] = performersList.slice(0, 6).map((p) => ({
+    text: p.text,
+    type: 'performer',
+    icon: 'person',
+  }));
+
+  const tags: SearchSuggestion[] = tagsList.slice(0, 6).map((t) => ({
+    text: t.text,
+    type: 'tag',
+    icon: 'tag',
+  }));
+
+  const categories: SearchSuggestion[] = categoriesList.slice(0, 3).map((c) => ({
+    text: c.text,
+    type: 'category',
+    icon: 'category',
+  }));
+
+  const titles: SearchSuggestion[] = titlesList.slice(0, 4).map((ti) => ({
+    text: ti.text,
+    type: 'title',
+    icon: 'movie',
+  }));
+
+  const totalCount = performers.length + tags.length + categories.length + titles.length;
+
+  return { performers, tags, categories, titles, totalCount };
+}
+
+/**
+ * Backward compatibility wrapper
  */
 export function getSearchSuggestions(
   videos: Video[],
   query: string,
   limit = 8
 ): SearchSuggestion[] {
-  const q = normalizeText(query);
-  if (!q || q.length < 1) return [];
-
-  const seen = new Set<string>();
-  const exactPrefixSuggestions: SearchSuggestion[] = [];
-  const partialContainsSuggestions: SearchSuggestion[] = [];
-  const fuzzyPredictiveSuggestions: SearchSuggestion[] = [];
-
-  const addCandidate = (text: string, type: SearchSuggestion['type'], icon: string) => {
-    if (!text || !text.trim()) return;
-    const clean = text.trim();
-    const key = normalizeText(clean);
-    if (!key || seen.has(key)) return;
-    seen.add(key);
-
-    if (key.startsWith(q)) {
-      exactPrefixSuggestions.push({ text: clean, type, icon });
-    } else if (key.includes(q)) {
-      partialContainsSuggestions.push({ text: clean, type, icon });
-    } else {
-      // Check for fuzzy predictive word match
-      const words = key.split(' ');
-      const hasFuzzy = words.some((w) => fuzzyWordSimilarity(w, q) > 0.65);
-      if (hasFuzzy) {
-        fuzzyPredictiveSuggestions.push({ text: clean, type, icon });
-      }
-    }
-  };
-
-  // 1. Performers / Models (High priority predictive suggestions)
-  for (const v of videos) {
-    if (v.performerName && v.performerName !== 'Anonymous' && v.performerName !== 'User Uploaded') {
-      addCandidate(v.performerName, 'performer', 'person');
-    }
-    (v.performers || []).forEach((p) => addCandidate(p, 'performer', 'person'));
-    (v.modelsActors || []).forEach((m) => addCandidate(m, 'performer', 'person'));
-    (v.models_actors || []).forEach((m) => addCandidate(m, 'performer', 'person'));
-  }
-
-  // 2. Tags
-  for (const v of videos) {
-    (v.tags || []).forEach((tag) => addCandidate(tag, 'tag', 'tag'));
-  }
-
-  // 3. Categories
-  for (const v of videos) {
-    if (v.categoryLabel) addCandidate(v.categoryLabel, 'category', 'category');
-  }
-
-  // 4. Video Titles
-  for (const v of videos) {
-    if (v.title) addCandidate(v.title, 'title', 'movie');
-  }
-
-  // Combine by priority: Prefix > Contains > Fuzzy Predictive
-  const combined = [
-    ...exactPrefixSuggestions,
-    ...partialContainsSuggestions,
-    ...fuzzyPredictiveSuggestions,
-  ];
-
-  return combined.slice(0, limit);
+  const g = getGroupedSearchSuggestions(videos, query);
+  return [...g.performers, ...g.tags, ...g.categories, ...g.titles].slice(0, limit);
 }

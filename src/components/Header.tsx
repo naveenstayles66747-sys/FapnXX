@@ -3,7 +3,7 @@ import { ContentPreference, ScreenId, Video } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
 import { LANGUAGE_LIST } from '../i18n/translations';
 import { ThemeMode } from '../utils/storage';
-import { getSearchSuggestions, SearchSuggestion } from '../utils/searchEngine';
+import { getGroupedSearchSuggestions, GroupedSuggestions } from '../utils/searchEngine';
 import { SearchSuggestionsDropdown } from './SearchSuggestionsDropdown';
 
 interface HeaderProps {
@@ -93,22 +93,28 @@ export const Header: React.FC<HeaderProps> = ({
   // Search suggestions state
   const [desktopSuggestionsOpen, setDesktopSuggestionsOpen] = useState(false);
   const [mobileSuggestionsOpen, setMobileSuggestionsOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+  const [groupedSuggestions, setGroupedSuggestions] = useState<GroupedSuggestions>({
+    performers: [],
+    tags: [],
+    categories: [],
+    titles: [],
+    totalCount: 0,
+  });
 
   // Generate suggestions whenever query changes
   useEffect(() => {
     if (searchQuery.trim().length >= 1 && videos.length > 0) {
-      setSuggestions(getSearchSuggestions(videos, searchQuery, 8));
+      setGroupedSuggestions(getGroupedSearchSuggestions(videos, searchQuery));
     } else {
-      setSuggestions([]);
+      setGroupedSuggestions({ performers: [], tags: [], categories: [], titles: [], totalCount: 0 });
     }
   }, [searchQuery, videos]);
 
   useEffect(() => {
     if (mobileSearchInput.trim().length >= 1 && videos.length > 0) {
-      setSuggestions(getSearchSuggestions(videos, mobileSearchInput, 8));
+      setGroupedSuggestions(getGroupedSearchSuggestions(videos, mobileSearchInput));
     } else if (!mobileSearchActive) {
-      setSuggestions([]);
+      setGroupedSuggestions({ performers: [], tags: [], categories: [], titles: [], totalCount: 0 });
     }
   }, [mobileSearchInput, videos, mobileSearchActive]);
 
@@ -276,11 +282,11 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
         {/* Desktop Suggestions Dropdown */}
         <SearchSuggestionsDropdown
-          suggestions={suggestions}
+          groupedSuggestions={groupedSuggestions}
           query={searchQuery}
           onSelect={handleSuggestionSelect}
           onClose={() => setDesktopSuggestionsOpen(false)}
-          visible={desktopSuggestionsOpen && suggestions.length > 0}
+          visible={desktopSuggestionsOpen && groupedSuggestions.totalCount > 0}
         />
       </div>
 
@@ -370,11 +376,11 @@ export const Header: React.FC<HeaderProps> = ({
                 />
                 {/* Mobile Suggestions Dropdown */}
                 <SearchSuggestionsDropdown
-                  suggestions={suggestions}
+                  groupedSuggestions={groupedSuggestions}
                   query={mobileSearchInput}
                   onSelect={(text) => { handleSuggestionSelect(text); setMobileSearchActive(false); }}
                   onClose={() => setMobileSuggestionsOpen(false)}
-                  visible={mobileSuggestionsOpen && suggestions.length > 0}
+                  visible={mobileSuggestionsOpen && groupedSuggestions.totalCount > 0}
                 />
               </div>
               <button
