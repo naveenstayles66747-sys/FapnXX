@@ -430,11 +430,11 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
             className={`absolute bottom-2 right-2 z-30 p-1.5 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-xl flex items-center justify-center cursor-pointer active:scale-90 ${
               shouldPlayPreview
                 ? 'opacity-0 pointer-events-none scale-90'
-                : 'opacity-100 scale-100 bg-black/75 hover:bg-black/90 text-white border border-white/25'
+                : 'opacity-100 scale-100 bg-white/90 dark:bg-black/75 hover:bg-white dark:hover:bg-black/90 text-zinc-900 dark:text-white border border-zinc-300 dark:border-white/25 shadow-md'
             }`}
             title="Toggle Video Preview"
           >
-            <span className="material-symbols-outlined text-base">
+            <span className="material-symbols-outlined text-base text-zinc-900 dark:text-white">
               visibility
             </span>
           </button>
