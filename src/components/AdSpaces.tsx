@@ -221,21 +221,12 @@ export const PopunderTrigger: React.FC<{ popunderUrl?: string }> = ({ popunderUr
  */
 export const DesktopFullpageInterstitial: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const adInjected = useRef(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || window.innerWidth < 1024 || adInjected.current) return;
+    // Only load on desktop / laptop viewports
+    if (typeof window === 'undefined' || window.innerWidth < 1024) return;
 
     try {
-      if (!document.getElementById('pemsrv-ad-provider')) {
-        const script = document.createElement('script');
-        script.id = 'pemsrv-ad-provider';
-        script.type = 'application/javascript';
-        script.async = true;
-        script.src = 'https://a.pemsrv.com/ad-provider.js';
-        document.head.appendChild(script);
-      }
-
       if (containerRef.current) {
         containerRef.current.innerHTML = '';
         const ins = document.createElement('ins');
@@ -243,18 +234,24 @@ export const DesktopFullpageInterstitial: React.FC = () => {
         ins.setAttribute('data-zoneid', '6003174');
         containerRef.current.appendChild(ins);
 
-        const serveScript = document.createElement('script');
-        serveScript.innerHTML = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
-        containerRef.current.appendChild(serveScript);
-
-        adInjected.current = true;
+        // Queue serve command to ExoClick AdProvider
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
       }
     } catch (e) {
       console.warn('[ExoClick] Error serving interstitial ad:', e);
     }
   }, []);
 
-  return <div ref={containerRef} id="exoclick-interstitial-zone" className="hidden lg:block" />;
+  return (
+    <div
+      ref={containerRef}
+      id="exoclick-interstitial-container"
+      className="hidden lg:block"
+      style={{ position: 'fixed', top: 0, left: 0, zIndex: 999999, pointerEvents: 'none' }}
+    />
+  );
 };
 
 export default AdBanner;
