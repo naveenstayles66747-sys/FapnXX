@@ -237,7 +237,7 @@ export const DesktopFullpageInterstitial: React.FC = () => {
     }
   }, []);
 
-  return <div ref={containerRef} className="hidden lg:block w-0 h-0 overflow-hidden" />;
+  return <div ref={containerRef} id="exoclick-interstitial-zone" className="hidden lg:block" />;
 };
 
 export default AdBanner;
