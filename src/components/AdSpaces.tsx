@@ -176,4 +176,44 @@ export const DesktopFullpageInterstitial: React.FC = () => {
   );
 };
 
+/**
+ * Mobile Instant Message Ad (Zone ID: 6003178)
+ * Renders an attractive floating chat/message style ad prompt on mobile devices (screens < 1024px)
+ */
+export const MobileInstantMessage: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const adInjected = useRef(false);
+
+  useEffect(() => {
+    // Only load on mobile viewports (< 1024px)
+    if (typeof window === 'undefined' || window.innerWidth >= 1024 || adInjected.current) return;
+
+    try {
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+        const ins = document.createElement('ins');
+        ins.className = 'eas6a97888e14';
+        ins.setAttribute('data-zoneid', '6003178');
+        containerRef.current.appendChild(ins);
+
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+
+        adInjected.current = true;
+      }
+    } catch (e) {
+      console.warn('[ExoClick] Error serving mobile instant message ad:', e);
+    }
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      id="exoclick-mobile-instant-message"
+      className="block lg:hidden fixed bottom-16 right-3 z-[110] pointer-events-auto"
+    />
+  );
+};
+
 export default AdBanner;
