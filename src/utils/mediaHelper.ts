@@ -106,9 +106,26 @@ export function extractThumbnailFromEmbedUrl(url: string): string | null {
 
   // SpankBang
   if (trimmed.includes('spankbang.com')) {
-    const match = trimmed.match(/spankbang\.com\/([a-zA-Z0-9]+)/);
+    const match = trimmed.match(/spankbang\.com\/([a-zA-Z0-9]+)/i);
     if (match && match[1]) {
       return `https://spankbang.com/${match[1]}/embed/`;
+    }
+  }
+
+  // XVideos
+  if (trimmed.includes('xvideos.com')) {
+    const match = trimmed.match(/video-?([a-zA-Z0-9_]+)|\/prof-video-click\/[^\/]+\/([0-9]+)|embedframe\/([0-9]+)/i) || trimmed.match(/([0-9]{5,})/);
+    const vidId = match ? match[1] || match[2] || match[3] || match[0] : '';
+    if (vidId) {
+      return `https://img-egc.xvideos-cdn.com/videos/thumbs169poster/${vidId.slice(0, 3)}/${vidId.slice(3, 6)}/${vidId}/${vidId}.jpg`;
+    }
+  }
+
+  // PornHub
+  if (trimmed.includes('pornhub.com')) {
+    const match = trimmed.match(/viewkey=([a-zA-Z0-9]+)/i) || trimmed.match(/embed\/([a-zA-Z0-9]+)/i);
+    if (match && match[1]) {
+      return `https://ci.phncdn.com/videos/${match[1]}/original/(m=eaAaGwObaaaa)(mh=xxxx)0.jpg`;
     }
   }
 

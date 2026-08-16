@@ -261,7 +261,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         extractedUrl = `https://dood.to/e/${doodId}`;
         autoTitle = 'DoodStream Stream';
       } else if (trimmed.includes('spankbang.com')) {
-        const match = trimmed.match(/spankbang\.com\/([a-zA-Z0-9]+)/);
+        const match = trimmed.match(/spankbang\.com\/([a-zA-Z0-9]+)/i);
         if (match && match[1]) {
           extractedUrl = `https://spankbang.com/${match[1]}/embed/`;
           autoTitle = 'SpankBang Stream';
@@ -270,14 +270,23 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           autoTitle = 'SpankBang Stream';
         }
       } else if (trimmed.includes('xvideos.com')) {
-        const match = trimmed.match(/video-?([a-zA-Z0-9_]+)|\/prof-video-click\/[^\/]+\/([0-9]+)/) || trimmed.match(/([0-9]{5,})/);
-        const vidNum = match ? match[1] || match[2] || match[0] : '';
+        const match = trimmed.match(/video-?([a-zA-Z0-9_]+)|\/prof-video-click\/[^\/]+\/([0-9]+)|embedframe\/([0-9]+)/i) || trimmed.match(/([0-9]{5,})/);
+        const vidNum = match ? match[1] || match[2] || match[3] || match[0] : '';
         if (vidNum) {
           extractedUrl = `https://www.xvideos.com/embedframe/${vidNum}`;
           autoTitle = 'XVideos Stream';
         } else {
           extractedUrl = trimmed;
           autoTitle = 'XVideos Stream';
+        }
+      } else if (trimmed.includes('pornhub.com')) {
+        const match = trimmed.match(/viewkey=([a-zA-Z0-9]+)/i) || trimmed.match(/embed\/([a-zA-Z0-9]+)/i);
+        if (match && match[1]) {
+          extractedUrl = `https://www.pornhub.com/embed/${match[1]}`;
+          autoTitle = 'Pornhub Stream';
+        } else {
+          extractedUrl = trimmed;
+          autoTitle = 'Pornhub Stream';
         }
       } else if (trimmed.includes('filemoon') || trimmed.includes('filemoon.sx') || trimmed.includes('filemoon.to')) {
         let moonId = '';
