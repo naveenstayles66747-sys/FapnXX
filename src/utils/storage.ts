@@ -57,10 +57,24 @@ export const setStoredThemeMode = (theme: ThemeMode): void => {
   }
 };
 
-// Age Verification
+// Age Verification (With 18-Hour Reset Expiry Limit)
+const AGE_VERIFICATION_EXPIRY_MS = 18 * 60 * 60 * 1000; // 18 Hours
+
 export const getStoredAgeVerified = (): boolean => {
   try {
-    return localStorage.getItem(KEYS.AGE_VERIFIED) === 'true';
+    const verified = localStorage.getItem(KEYS.AGE_VERIFIED) === 'true';
+    if (!verified) return false;
+    const timestampStr = localStorage.getItem('indianfullxx_age_verified_timestamp');
+    if (!timestampStr) return false;
+    const timestamp = parseInt(timestampStr, 10);
+    if (isNaN(timestamp)) return false;
+    const isStillValid = Date.now() - timestamp < AGE_VERIFICATION_EXPIRY_MS;
+    if (!isStillValid) {
+      localStorage.removeItem(KEYS.AGE_VERIFIED);
+      localStorage.removeItem('indianfullxx_age_verified_timestamp');
+      return false;
+    }
+    return true;
   } catch {
     return false;
   }
@@ -68,7 +82,13 @@ export const getStoredAgeVerified = (): boolean => {
 
 export const setStoredAgeVerified = (verified: boolean): void => {
   try {
-    localStorage.setItem(KEYS.AGE_VERIFIED, verified ? 'true' : 'false');
+    if (verified) {
+      localStorage.setItem(KEYS.AGE_VERIFIED, 'true');
+      localStorage.setItem('indianfullxx_age_verified_timestamp', Date.now().toString());
+    } else {
+      localStorage.removeItem(KEYS.AGE_VERIFIED);
+      localStorage.removeItem('indianfullxx_age_verified_timestamp');
+    }
   } catch (e) {
     console.error('LocalStorage write failed:', e);
   }
