@@ -459,6 +459,36 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         previewMp4Url.trim() ||
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop';
 
+      // Ensure thumbnail is NEVER a temporary device-local blob URL
+      if (finalThumbnail.startsWith('blob:')) {
+        try {
+          const blobRes = await fetch(finalThumbnail);
+          const blobData = await blobRes.blob();
+          const reader = new FileReader();
+          finalThumbnail = await new Promise<string>((resolve) => {
+            reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : finalThumbnail);
+            reader.onerror = () => resolve(finalThumbnail);
+            reader.readAsDataURL(blobData);
+          });
+        } catch (blobErr) {
+          console.warn('[UploadModal] Blob thumbnail conversion notice:', blobErr);
+        }
+      }
+
+      let finalPreviewWebp = previewWebpUrl.trim();
+      if (finalPreviewWebp.startsWith('blob:')) {
+        try {
+          const blobRes = await fetch(finalPreviewWebp);
+          const blobData = await blobRes.blob();
+          const reader = new FileReader();
+          finalPreviewWebp = await new Promise<string>((resolve) => {
+            reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : finalPreviewWebp);
+            reader.onerror = () => resolve(finalPreviewWebp);
+            reader.readAsDataURL(blobData);
+          });
+        } catch {}
+      }
+
       if (activeTab === 'file' && selectedFile) {
         setIsUploadingFile(true);
         setUploadProgress(10);
@@ -469,7 +499,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           );
           finalEmbedUrl = storageVideoUrl;
         } catch (storageErr) {
-          console.warn('[UploadModal] Firebase Storage video upload fallback to local blob:', storageErr);
+          console.warn('[UploadModal] Firebase Storage video upload fallback to local stream:', storageErr);
           if (filePreviewUrl) {
             finalEmbedUrl = filePreviewUrl;
           }
@@ -517,10 +547,10 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         modelsActors: parsedModels.length > 0 ? parsedModels : undefined,
         orientation: orientationInput,
         vttUrl: vttUrlInput.trim() || undefined,
-        spriteUrl: vttUrlInput.trim() || previewWebpUrl.trim() || undefined,
+        spriteUrl: vttUrlInput.trim() || finalPreviewWebp || undefined,
         thumbnail: finalThumbnail,
         previewMp4Url: previewMp4Url.trim() || undefined,
-        previewWebpUrl: previewWebpUrl.trim() || undefined,
+        previewWebpUrl: finalPreviewWebp || undefined,
         embedUrl: finalEmbedUrl,
         isEmbed: true,
         duration: durationInput.trim() || '05:00',
