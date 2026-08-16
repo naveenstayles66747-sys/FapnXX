@@ -71,15 +71,13 @@ export const AdBanner: React.FC<AdBannerProps> = ({
   );
 };
 
-/**
- * Pure 100% Zero-Wrapper Native Sticky Bottom Leaderboard (728x90)
- */
 export const StickyBottomLeaderboard: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const adInjected = useRef(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || adInjected.current) return;
+    // Strictly Desktop only (>= 1024px) to prevent duplicate triggers on mobile
+    if (typeof window === 'undefined' || window.innerWidth < 1024 || adInjected.current) return;
 
     try {
       if (containerRef.current) {
@@ -107,7 +105,7 @@ export const StickyBottomLeaderboard: React.FC = () => {
       ref={containerRef}
       id="exoclick-sticky-leaderboard"
       aria-label="Sponsored Advertisement"
-      className="fixed bottom-0 left-0 lg:left-64 right-0 z-[120] flex justify-center items-center pointer-events-auto pb-1"
+      className="hidden lg:flex fixed bottom-0 left-64 right-0 z-[120] justify-center items-center pointer-events-auto pb-1"
     />
   );
 };
