@@ -4,7 +4,6 @@ import { VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { ReportModal } from './ReportModal';
 import { FluidPlayerWrapper } from './FluidPlayerWrapper';
-import { AdBanner } from './AdSpaces';
 import { CommentsSection } from './CommentsSection';
 import { useLanguage } from '../i18n/LanguageContext';
 import { videoService } from '../services/videoService';
@@ -166,13 +165,6 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     <main className="flex-grow lg:pl-64 pb-20 w-full max-w-6xl mx-auto overflow-x-hidden">
 
       {/* ═══════════════════════════════════════════════
-          TOP AD STRIP
-      ═══════════════════════════════════════════════ */}
-      <div className="w-full px-2 sm:px-4 md:px-6 pt-1 sm:pt-2">
-        <AdBanner position="banner_top" title="Featured Sponsor" />
-      </div>
-
-      {/* ═══════════════════════════════════════════════
           VIDEO PLAYER — Responsive Container with Padding & Rounded Corners
       ═══════════════════════════════════════════════ */}
       <section className="w-full px-2 sm:px-4 md:px-6 py-1.5 sm:py-2">
@@ -302,13 +294,6 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
             </div>
           )}
         </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════
-          BOTTOM AD STRIP
-      ═══════════════════════════════════════════════ */}
-      <div className="w-full px-2 sm:px-4 md:px-6 my-2">
-        <AdBanner position="banner_bottom" title="Featured Partner Sponsor" />
       </div>
 
       {/* ─────────────────────────────────────────────

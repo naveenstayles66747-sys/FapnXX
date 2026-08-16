@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CategoryId, CategoryInfo, LandingBanner, Video } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
-import { AdBanner, OutstreamVideoCardAd } from './AdSpaces';
+import { OutstreamVideoCardAd } from './AdSpaces';
 import { useLanguage } from '../i18n/LanguageContext';
 import { getBannerImageUrl, handleBannerImageError } from '../utils/mediaHelper';
 import { smartSearch, hasRealMatches } from '../utils/searchEngine';
@@ -488,9 +488,6 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         </section>
       )}
 
-      {/* Top Section Leaderboard Banner */}
-      <AdBanner position="banner_top" className="mb-6" />
-
       {/* Video Grid Section */}
       <section className="w-full">
         <div className="flex items-center justify-between gap-4 mb-6">
@@ -575,16 +572,9 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                   {idx === 3 && (
                     <OutstreamVideoCardAd key="outstream-ad-card" />
                   )}
-                  {/* In-Feed Native Card Ad Placement at Position 7 */}
-                  {idx === 7 && (
-                    <AdBanner key="inline-card-ad" position="card_inline" />
-                  )}
                 </React.Fragment>
               ))}
             </div>
-
-            {/* Bottom Showcase Banner */}
-            <AdBanner position="banner_bottom" className="mt-8" />
           </>
         ) : (
           <div className="p-12 text-center text-[#debec8] bg-[#1c1b1d] rounded-2xl border border-[#353437] space-y-3">
