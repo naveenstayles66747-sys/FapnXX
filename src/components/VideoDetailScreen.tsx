@@ -4,6 +4,7 @@ import { VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { ReportModal } from './ReportModal';
 import { FluidPlayerWrapper } from './FluidPlayerWrapper';
+import { OutstreamVideoCardAd } from './AdSpaces';
 import { CommentsSection } from './CommentsSection';
 import { useLanguage } from '../i18n/LanguageContext';
 import { videoService } from '../services/videoService';
@@ -305,13 +306,18 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           <span>Recommended Videos</span>
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5">
-          {(topRelatedVideos || []).map((relatedVideo) => (
-            <div key={relatedVideo.id} className="relative group">
-              <VideoCard
-                video={relatedVideo}
-                onClick={() => onSelectVideo(relatedVideo)}
-              />
-            </div>
+          {(topRelatedVideos || []).map((relatedVideo, idx) => (
+            <React.Fragment key={relatedVideo.id}>
+              <div className="relative group">
+                <VideoCard
+                  video={relatedVideo}
+                  onClick={() => onSelectVideo(relatedVideo)}
+                />
+              </div>
+              {idx === 3 && (
+                <OutstreamVideoCardAd key="detail-outstream-ad" />
+              )}
+            </React.Fragment>
           ))}
         </div>
       </div>

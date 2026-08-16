@@ -2,6 +2,7 @@ import React from 'react';
 import { CategoryId, CategoryInfo, Video } from '../types';
 import { CATEGORIES, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
+import { OutstreamVideoCardAd } from './AdSpaces';
 import { getCategoryHeroImage, handleCategoryImageError } from '../utils/mediaHelper';
 
 interface CategoryDetailScreenProps {
@@ -174,13 +175,17 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {filteredCategoryVideos.map((video) => (
-                <VideoCard
-                  key={video.id}
-                  video={video}
-                  onClick={() => onSelectVideo(video)}
-                  layout="grid"
-                />
+              {filteredCategoryVideos.map((video, idx) => (
+                <React.Fragment key={video.id}>
+                  <VideoCard
+                    video={video}
+                    onClick={() => onSelectVideo(video)}
+                    layout="grid"
+                  />
+                  {idx === 3 && (
+                    <OutstreamVideoCardAd key="category-outstream-ad" />
+                  )}
+                </React.Fragment>
               ))}
             </div>
           )

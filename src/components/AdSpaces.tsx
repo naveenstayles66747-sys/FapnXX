@@ -206,13 +206,16 @@ export const MobileInstantMessage: React.FC = () => {
 
 /**
  * Outstream Video Card Ad (Zone ID: 6003190)
+ * Exact Tag:
+ * <ins class="eas6a97888e37" data-zoneid="6003190"></ins>
+ * <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
  */
 export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ className = '' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const adInjected = useRef(false);
 
   useEffect(() => {
-    if (adInjected.current || !containerRef.current) return;
+    if (typeof window === 'undefined' || adInjected.current || !containerRef.current) return;
 
     try {
       containerRef.current.innerHTML = '';
@@ -221,12 +224,12 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       ins.setAttribute('data-zoneid', EXOCLICK_ZONES.OUTSTREAM_VIDEO);
       ins.style.display = 'block';
       ins.style.width = '100%';
+      ins.style.margin = '0 auto';
       containerRef.current.appendChild(ins);
 
-      const script = document.createElement('script');
-      script.type = 'application/javascript';
-      script.innerHTML = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
-      containerRef.current.appendChild(script);
+      const win = window as any;
+      win.AdProvider = win.AdProvider || [];
+      win.AdProvider.push({ serve: {} });
 
       adInjected.current = true;
     } catch (e) {
@@ -236,22 +239,31 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
 
   return (
     <div
-      className={`group relative flex flex-col bg-[#141416] rounded-2xl border border-white/10 overflow-hidden shadow-lg p-2.5 ${className}`}
+      className={`group relative flex flex-col bg-[#141416] rounded-2xl border border-white/10 overflow-hidden shadow-lg p-2 transition-all hover:border-[#e0358d]/50 ${className}`}
     >
+      {/* Top Card Header */}
       <div className="flex items-center justify-between px-1.5 py-1 mb-1.5">
-        <span className="bg-[#e0358d]/20 text-[#e0358d] text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-[#e0358d]/30">
-          Sponsored
+        <span className="bg-[#e0358d]/20 text-[#e0358d] text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-[#e0358d]/30 flex items-center gap-1">
+          <span className="material-symbols-outlined text-xs">campaign</span>
+          <span>Sponsored</span>
         </span>
         <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1">
           <span className="material-symbols-outlined text-xs text-[#e0358d]">play_circle</span>
-          Featured Video
+          <span>Outstream Video</span>
         </span>
       </div>
 
+      {/* Outstream Video Ad Container (Zone 6003190) */}
       <div
         ref={containerRef}
-        className="w-full aspect-[16/9] bg-black/60 rounded-xl overflow-hidden flex items-center justify-center relative min-h-[180px]"
+        className="w-full aspect-video bg-black/80 rounded-xl overflow-hidden flex items-center justify-center relative min-h-[170px]"
       />
+
+      {/* Bottom info bar */}
+      <div className="pt-2 px-1 flex items-center justify-between text-zinc-400">
+        <span className="text-xs font-bold text-white truncate">Featured Sponsor Stream</span>
+        <span className="text-[10px] text-zinc-500 font-mono">ExoClick Ad</span>
+      </div>
     </div>
   );
 };
