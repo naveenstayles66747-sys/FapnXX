@@ -9,38 +9,25 @@ interface FluidPlayerWrapperProps {
   className?: string;
 }
 
-// ExoClick Official In-Stream VAST Tag (Zone ID: 6003184)
-const EXOCLICK_VAST_TAG = 'https://s.magsrv.com/v1/vast.php?idz=6003184';
-
-// Sample fallback stream for embed transitions
-const FALLBACK_STREAM = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
-
 export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   video,
   autoPlay = true,
   onEnded,
   className = '',
 }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const fluidInstanceRef = useRef<any>(null);
 
   const [playerMode, setPlayerMode] = useState<'embed' | 'video'>('embed');
   const [currentVideoSrc, setCurrentVideoSrc] = useState<string>('');
-  const [isAdPlaying, setIsAdPlaying] = useState<boolean>(true);
+  const [isPlayingDirect, setIsPlayingDirect] = useState<boolean>(false);
   const [videoMountKey, setVideoMountKey] = useState<number>(0);
 
-  const isMobileDevice =
-    typeof window !== 'undefined' &&
-    (window.innerWidth < 1024 ||
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-
-  const vastTagUrl = video.vastAdTagUrl?.trim() || EXOCLICK_VAST_TAG;
-
-  // ── Helper: Extract clean URL ─────────────────────────────────────────────
+  // ── Helper: Extract clean URL from raw embed / iframe / video input ──────
   const extractEmbedUrl = (rawInput?: string): { cleanUrl: string; isDirectVideo: boolean } => {
     let src = (rawInput || '').trim();
     if (src.startsWith('<iframe') || src.includes('src=')) {
-      const match = src.match(/src=["']([^"']+)["']/);
+      const match = src.match(/src=["']([^"']+)["']/i);
       if (match && match[1]) src = match[1];
     }
     src = src.replace(/^["']|["']$/g, '').trim();
@@ -50,183 +37,140 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     return { cleanUrl: src, isDirectVideo };
   };
 
-  // ── Effect 1: Resolve Video Source ────────────────────────────────────────
+  // ── Effect: Resolve Player Source (Embed vs Direct MP4/Stream) ───────────
   useEffect(() => {
-    setIsAdPlaying(true);
+    setIsPlayingDirect(false);
     setVideoMountKey((k) => k + 1);
 
-    const rawEmbed = (video.embedUrl || '').trim();
-    const rawMp4 = (video.previewMp4Url || '').trim();
+    const rawEmbed = (
+      video.embedUrl ||
+      (video as any).embedCode ||
+      (video as any).videoUrl ||
+      ''
+    ).trim();
+    const rawMp4 = (
+      video.previewMp4Url ||
+      (video as any).mp4Url ||
+      ''
+    ).trim();
 
     if (rawEmbed) {
       const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawEmbed);
       setPlayerMode(d ? 'video' : 'embed');
       setCurrentVideoSrc(c);
     } else if (rawMp4) {
-      const { cleanUrl: c } = extractEmbedUrl(rawMp4);
-      setPlayerMode('video');
+      const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawMp4);
+      setPlayerMode(d ? 'video' : 'embed');
       setCurrentVideoSrc(c);
     } else {
       setPlayerMode('embed');
       setCurrentVideoSrc('');
     }
-  }, [video.id]);
+  }, [video.id, video.embedUrl, video.previewMp4Url]);
 
-  // ── Effect 2: Initialize Fluid Player with ExoClick VAST Tag (Mobile & Desktop) ──
-  useEffect(() => {
-    const videoElementId = `fluid-player-${video.id}`;
-    let isMounted = true;
-
-    const initFluid = () => {
-      const win = window as any;
-      if (!win.fluidPlayer) return false;
-
-      const el = document.getElementById(videoElementId) as HTMLVideoElement;
-      if (!el) return false;
-
-      try {
-        if (fluidInstanceRef.current && typeof fluidInstanceRef.current.destroy === 'function') {
-          try {
-            fluidInstanceRef.current.destroy();
-          } catch {}
-        }
-
-        const player = win.fluidPlayer(videoElementId, {
-          layoutControls: {
-            primaryColor: '#e0358d',
-            posterImage: video.thumbnail || '',
-            fillToContainer: true,
-            autoPlay: autoPlay,
-            mute: isMobileDevice, // Mobile autoplay policy strictly requires muted start
-            allowMutedAutoplay: true,
-            playsInline: true,
-            keyboardControl: true,
-            playbackRateControl: true,
-            allowDownload: false,
-            playPauseAnimation: true,
-            controlBar: {
-              autoHide: true,
-              autoHideTimeout: 3,
-              animated: true,
-            },
-          },
-          vastOptions: {
-            adList: [
-              {
-                roll: 'preRoll',
-                vastTag: vastTagUrl,
-                timer: 5,
-              },
-            ],
-            skipButtonCaption: 'Skip ad in [seconds]',
-            skipButtonClickCaption: 'Skip ad',
-            adText: 'Advertisement',
-            adTextPosition: 'top left',
-            vastAdvanced: {
-              vastLoadedCallback: () => {
-                if (isMounted) setIsAdPlaying(true);
-              },
-              noVastVideoCallback: () => {
-                if (isMounted) setIsAdPlaying(false);
-              },
-              vastVideoEndedCallback: () => {
-                if (isMounted) setIsAdPlaying(false);
-              },
-              vastVideoSkippedCallback: () => {
-                if (isMounted) setIsAdPlaying(false);
-              },
-            },
-          },
+  const handlePlayDirect = () => {
+    if (videoRef.current) {
+      videoRef.current
+        .play()
+        .then(() => setIsPlayingDirect(true))
+        .catch(() => {
+          if (videoRef.current) {
+            videoRef.current.muted = true;
+            videoRef.current
+              .play()
+              .then(() => setIsPlayingDirect(true))
+              .catch(() => {});
+          }
         });
-
-        fluidInstanceRef.current = player;
-        return true;
-      } catch (err) {
-        console.warn('[FluidPlayer] Mobile init error:', err);
-        return false;
-      }
-    };
-
-    // Retry initialization if Fluid Player script is still loading from CDN
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      if (initFluid() || attempts > 20) {
-        clearInterval(interval);
-      }
-    }, 150);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-      if (fluidInstanceRef.current && typeof fluidInstanceRef.current.destroy === 'function') {
-        try {
-          fluidInstanceRef.current.destroy();
-        } catch {}
-      }
-    };
-  }, [video.id, vastTagUrl, autoPlay, videoMountKey, isMobileDevice]);
+    }
+  };
 
   return (
     <div
       ref={containerRef}
       className={`relative w-full h-full bg-black overflow-hidden flex items-center justify-center select-none ${className}`}
     >
-      {/* ── Fluid Player Video Stage with ExoClick VAST Integration ── */}
-      <div
-        className={`w-full h-full ${
-          playerMode === 'embed' && !isAdPlaying ? 'hidden' : 'block'
-        }`}
-      >
-        <video
-          id={`fluid-player-${video.id}`}
-          key={`video-${videoMountKey}`}
-          src={playerMode === 'video' ? currentVideoSrc : FALLBACK_STREAM}
-          playsInline
-          muted={isMobileDevice}
-          preload="auto"
-          autoPlay={autoPlay}
-          onEnded={onEnded}
-          onLoadedMetadata={(e) => {
-            const v = e.currentTarget;
-            if (v.duration && !isNaN(v.duration) && v.duration > 0) {
-              const totalSec = Math.floor(v.duration);
-              const hrs = Math.floor(totalSec / 3600);
-              const mins = Math.floor((totalSec % 3600) / 60);
-              const secs = totalSec % 60;
-              const formatted =
-                hrs > 0
-                  ? `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-                  : `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-              if (video.duration !== formatted) {
-                videoService.updateVideo({ ...video, duration: formatted }).catch(() => {});
-              }
-            }
-          }}
-          className="w-full h-full object-contain block bg-black"
+      {playerMode === 'embed' ? (
+        // ── 1. Full Embed / Iframe Video Player (SpankBang, XVideos, Streamtape, DoodStream, etc.) ──
+        <div className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center">
+          {currentVideoSrc ? (
+            <iframe
+              key={`iframe-${videoMountKey}`}
+              src={currentVideoSrc}
+              title={video.title || 'Video Stream'}
+              allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope; clipboard-write; web-share; xr-spatial-tracking"
+              allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+              scrolling="no"
+              frameBorder={0}
+              className="w-full h-full border-none block bg-black"
+              style={{ border: 'none', width: '100%', height: '100%', display: 'block' }}
+            />
+          ) : (
+            <div className="text-zinc-400 text-sm flex flex-col items-center gap-2 p-4 text-center">
+              <span className="material-symbols-outlined text-4xl text-rose-500">videocam_off</span>
+              <p className="font-semibold text-white">No Stream Source Available</p>
+              <p className="text-xs text-zinc-500">Please provide a valid embed URL or video stream link.</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        // ── 2. Direct MP4 / HLS HTML5 Video Player ──
+        <div
+          className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden group/videostage cursor-pointer"
+          onClick={handlePlayDirect}
         >
-          <source
-            src={playerMode === 'video' ? currentVideoSrc : FALLBACK_STREAM}
-            type="video/mp4"
-          />
-        </video>
-      </div>
-
-      {/* ── Embed Iframe Stage (Mounts seamlessly once Pre-Roll Ad ends or skips) ── */}
-      {playerMode === 'embed' && !isAdPlaying && (
-        <div className="absolute inset-0 w-full h-full bg-black overflow-hidden z-20">
-          <iframe
-            key={`iframe-${videoMountKey}`}
+          <video
+            key={`direct-${videoMountKey}`}
+            ref={videoRef}
             src={currentVideoSrc}
-            title={video.title}
-            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope; clipboard-write; web-share; xr-spatial-tracking"
-            allowFullScreen
-            referrerPolicy="no-referrer-when-downgrade"
-            scrolling="no"
-            frameBorder={0}
-            className="w-full h-full border-none block bg-black"
-            style={{ border: 'none', width: '100%', height: '100%', display: 'block' }}
+            controls
+            autoPlay={autoPlay}
+            playsInline
+            poster={video.thumbnail}
+            onEnded={onEnded}
+            onPlay={() => setIsPlayingDirect(true)}
+            onPause={() => setIsPlayingDirect(false)}
+            onError={() => console.warn('[Player] Direct stream load warning.')}
+            onLoadedMetadata={(e) => {
+              const v = e.currentTarget;
+              if (v.duration && !isNaN(v.duration) && v.duration > 0) {
+                const totalSec = Math.floor(v.duration);
+                const hrs = Math.floor(totalSec / 3600);
+                const mins = Math.floor((totalSec % 3600) / 60);
+                const secs = totalSec % 60;
+                const formatted =
+                  hrs > 0
+                    ? `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+                    : `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                if (video.duration !== formatted) {
+                  videoService.updateVideo({ ...video, duration: formatted }).catch(() => {});
+                }
+              }
+            }}
+            className="w-full h-full object-contain block bg-black"
           />
+
+          {/* Direct stream play button overlay when paused */}
+          {!isPlayingDirect && (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePlayDirect();
+              }}
+              className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] cursor-pointer"
+            >
+              <button
+                className="w-16 h-16 md:w-20 md:h-20 bg-rose-600 hover:bg-rose-500 text-white rounded-full flex items-center justify-center shadow-2xl shadow-rose-600/50 transform hover:scale-110 active:scale-95 transition-all border-2 border-white/20"
+                aria-label="Play Video"
+              >
+                <span className="material-symbols-outlined text-4xl md:text-5xl ml-1">play_arrow</span>
+              </button>
+              <span className="mt-3 px-3.5 py-1 bg-black/70 rounded-full text-white text-xs font-semibold backdrop-blur-sm">
+                Tap to Play Stream
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
