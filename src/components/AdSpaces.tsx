@@ -111,59 +111,65 @@ export const StickyBottomLeaderboard: React.FC = () => {
 };
 
 /**
- * Fullscreen Interactive Interstitial Modal (Zones 6003174 Desktop & 6003180 Mobile)
+ * Desktop Fullpage Interstitial (Zone ID: 6003174)
+ * Tag:
+ * <ins class="eas6a97888e35" data-zoneid="6003174"></ins>
+ * <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
  */
-export const FullscreenInterstitialModal: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+export const DesktopFullpageInterstitial: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const adMounted = useRef<boolean>(false);
 
   useEffect(() => {
+    // Strictly Desktop only (>= 1024px)
+    if (typeof window === 'undefined' || window.innerWidth < 1024 || adMounted.current) return;
+
+    try {
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+        const ins = document.createElement('ins');
+        ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}35`;
+        ins.setAttribute('data-zoneid', EXOCLICK_ZONES.DESKTOP_INTERSTITIAL);
+        containerRef.current.appendChild(ins);
+
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+
+        adMounted.current = true;
+      }
+    } catch (e) {
+      console.warn('[ExoClick] Desktop Interstitial error:', e);
+    }
+  }, []);
+
+  // Listen for video card or category clicks to trigger the fullpage interstitial on desktop
+  useEffect(() => {
     const handleTrigger = () => {
-      setIsOpen(true);
+      if (typeof window === 'undefined' || window.innerWidth < 1024) return;
+      try {
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+      } catch (err) {
+        console.warn('[ExoClick] Interstitial trigger notice:', err);
+      }
     };
 
     window.addEventListener('exoclick-trigger-interstitial', handleTrigger);
     return () => window.removeEventListener('exoclick-trigger-interstitial', handleTrigger);
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    try {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-        const isMobile = window.innerWidth < 1024;
-        const ins = document.createElement('ins');
-        ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}${isMobile ? '33' : '35'}`;
-        ins.setAttribute('data-zoneid', isMobile ? EXOCLICK_ZONES.MOBILE_INTERSTITIAL : EXOCLICK_ZONES.DESKTOP_INTERSTITIAL);
-        ins.style.display = 'block';
-        ins.style.margin = '0 auto';
-        containerRef.current.appendChild(ins);
-
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
-      }
-    } catch (e) {
-      console.warn('[ExoClick] Interstitial error:', e);
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
   return (
     <div
       ref={containerRef}
-      id="exoclick-interstitial-container"
-      className="fixed inset-0 z-[99999] pointer-events-auto flex items-center justify-center bg-black/80"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) setIsOpen(false);
-      }}
+      id="exoclick-desktop-interstitial"
+      className="hidden lg:block fixed top-0 left-0 pointer-events-auto z-[99999]"
+      aria-hidden="true"
     />
   );
 };
 
-export const DesktopFullpageInterstitial: React.FC = () => <FullscreenInterstitialModal />;
 export const MobileFullpageInterstitial: React.FC = () => null;
 
 /**
