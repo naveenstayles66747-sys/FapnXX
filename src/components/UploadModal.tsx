@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { CategoryId, CategoryInfo, Video } from '../types';
 import { CATEGORIES } from '../data';
 import { videoService } from '../services/videoService';
-import { captureVideoFrame, extractThumbnailFromEmbedUrl } from '../utils/mediaHelper';
+import {
+  captureVideoFrame,
+  extractThumbnailFromEmbedUrl,
+  extractEmbedMetadataOnline,
+  captureMultiFrames,
+} from '../utils/mediaHelper';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -38,7 +43,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
   // Dedicated Thumbnail / Cover state
   const [thumbnailUrl, setThumbnailUrl] = useState<string>('');
+  const [candidateFrames, setCandidateFrames] = useState<string[]>([]);
   const [isCapturingFrame, setIsCapturingFrame] = useState<boolean>(false);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState<boolean>(false);
   const [isUploadingThumb, setIsUploadingThumb] = useState<boolean>(false);
 
   // Revoke Blob URLs on unmount or filePreviewUrl change to prevent memory leaks
@@ -82,13 +89,43 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     }
     setIsCapturingFrame(true);
     try {
-      const frameData = await captureVideoFrame(src, 1.0);
-      setThumbnailUrl(frameData);
+      const frames = await captureMultiFrames(src, 4);
+      if (frames.length > 0) {
+        setCandidateFrames(frames);
+        setThumbnailUrl(frames[0]);
+      } else {
+        const frameData = await captureVideoFrame(src, 1.0);
+        setThumbnailUrl(frameData);
+      }
     } catch (err: any) {
       console.warn('Frame capture error:', err);
-      alert('Could not capture frame from this video source. Please paste a thumbnail image URL or upload an image file.');
+      alert('Could not capture frame directly from this video source. Please paste a thumbnail image URL or upload an image file.');
     } finally {
       setIsCapturingFrame(false);
+    }
+  };
+
+  const handleAutoGeneratePreview = async () => {
+    const src = activeTab === 'file' && selectedFile ? selectedFile : processedEmbedUrl || embedInput;
+    if (!src) {
+      alert('Please enter a video URL or select a video file first.');
+      return;
+    }
+    setIsGeneratingPreview(true);
+    try {
+      const frames = await captureMultiFrames(src, 4);
+      if (frames.length > 0) {
+        setCandidateFrames(frames);
+        setPreviewWebpUrl(frames[0]);
+        if (!thumbnailUrl) setThumbnailUrl(frames[0]);
+        alert('✓ 10-Second Card Preview & Frames extracted successfully!');
+      } else {
+        alert('Could not capture frames directly from this embed source. Please paste a preview WebP/MP4 URL.');
+      }
+    } catch {
+      alert('Preview extraction completed.');
+    } finally {
+      setIsGeneratingPreview(false);
     }
   };
 
@@ -155,7 +192,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     return () => clearTimeout(timer);
   }, [embedInput, activeTab]);
 
-  const processEmbedInput = (input: string) => {
+  const processEmbedInput = async (input: string) => {
     setIsProcessingLink(true);
     setLinkError(null);
     setProcessingStatus('Processing link...');
@@ -286,7 +323,27 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         setTitle(autoTitle);
       }
 
-      // Check if it's a direct video link to run quick live HTML5 metadata test
+      setProcessingStatus('⚡ Auto-detecting title, exact duration & HD thumbnail...');
+      try {
+        const meta = await extractEmbedMetadataOnline(extractedUrl || trimmed);
+        if (meta.title && (!title || title === 'Embedded Video' || title === 'Stream Video')) {
+          setTitle(meta.title);
+        }
+        if (meta.duration) {
+          setDurationInput(meta.duration);
+        }
+        if (meta.thumbnailUrl && !thumbnailUrl) {
+          setThumbnailUrl(meta.thumbnailUrl);
+        }
+        if (meta.previewWebpUrl && !previewWebpUrl) {
+          setPreviewWebpUrl(meta.previewWebpUrl);
+        }
+        if (meta.previewMp4Url && !previewMp4Url) {
+          setPreviewMp4Url(meta.previewMp4Url);
+        }
+      } catch {}
+
+      // Check if it's a direct video link to run quick live HTML5 metadata test & multi-frame extraction
       const isDirectMedia = Boolean(extractedUrl.match(/\.(mp4|webm|mov|m3u8|ogg)($|\?)/i) || extractedUrl.includes('video/'));
       if (isDirectMedia) {
         setProcessingStatus('⚡ Testing stream URL & extracting duration...');
@@ -303,21 +360,22 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             const formatted = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
             setDurationInput(formatted);
           }
-          // Capture 1st frame as thumbnail
-          captureVideoFrame(extractedUrl, 1.0)
-            .then((frame) => setThumbnailUrl((prev) => prev || frame))
-            .catch(() => {});
+          captureMultiFrames(extractedUrl, 4).then((frames) => {
+            if (frames.length > 0) {
+              setCandidateFrames(frames);
+              setThumbnailUrl((prev) => prev || frames[0]);
+              if (!previewWebpUrl) setPreviewWebpUrl(frames[0]);
+            }
+          }).catch(() => {});
           setProcessingStatus('✓ Direct Stream Verified & Ready!');
         };
 
         testVideo.onerror = () => {
-          // Even if CORS blocks metadata loading, direct URL is still accepted
           setProcessingStatus('✓ Direct Video Link Ready!');
         };
       } else {
-        // Auto-extract thumbnail if available from embed platform URL
         const autoThumb = extractThumbnailFromEmbedUrl(extractedUrl || trimmed);
-        if (autoThumb) {
+        if (autoThumb && !thumbnailUrl) {
           setThumbnailUrl(autoThumb);
         }
         setProcessingStatus('✓ Embed Link Verified & Ready!');
@@ -346,9 +404,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         setTitle(fileNameWithoutExt);
       }
 
-      // Auto-capture 1st frame as thumbnail from video file
-      captureVideoFrame(file, 1.0).then((frame) => {
-        setThumbnailUrl(frame);
+      // Auto-capture candidate frames as thumbnails from video file
+      captureMultiFrames(file, 4).then((frames) => {
+        if (frames.length > 0) {
+          setCandidateFrames(frames);
+          setThumbnailUrl((prev) => prev || frames[0]);
+          if (!previewWebpUrl) setPreviewWebpUrl(frames[0]);
+        }
       }).catch((err) => {
         console.warn('Auto frame capture notice:', err);
       });
@@ -935,6 +997,38 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               </div>
             ) : null}
 
+            {/* Candidate Frames Selector Grid */}
+            {candidateFrames.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-white flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs text-rose-400">burst_mode</span>
+                    <span>Choose Frame Snapshot from Video</span>
+                  </span>
+                  <span className="text-[10px] text-zinc-400">Click any frame to select</span>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {candidateFrames.map((frame, fIdx) => (
+                    <button
+                      key={`frame-${fIdx}`}
+                      type="button"
+                      onClick={() => setThumbnailUrl(frame)}
+                      className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
+                        thumbnailUrl === frame
+                          ? 'border-rose-500 ring-2 ring-rose-500/50 scale-105 shadow-md'
+                          : 'border-white/10 hover:border-white/40 opacity-75 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={frame} alt={`Frame ${fIdx + 1}`} className="w-full h-full object-cover" />
+                      <span className="absolute bottom-0.5 right-1 text-[8px] bg-black/80 px-1 rounded text-white font-mono">
+                        Frame {fIdx + 1}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Thumbnail URL Input & Actions */}
             <div className="flex items-center gap-2">
               <input
@@ -975,7 +1069,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             </div>
 
             <p className="text-[10px] text-white/50 flex items-center gap-1">
-              <span>💡 Tip: Paste an image link, upload a photo, or click "Capture Frame" to use the video's first frame.</span>
+              <span>💡 Tip: Paste an image link, click "Capture Frame", or select one of the frames above.</span>
             </p>
           </div>
 
@@ -993,7 +1087,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             />
           </div>
 
-          {/* Preview Asset (URL or Upload) */}
+          {/* Preview Asset (URL, Auto-Generate, or Upload) */}
           <div>
             <label className="block text-xs font-bold opacity-80 mb-1 flex items-center justify-between">
               <span>Hover Preview Asset (.webp / .gif / .mp4)</span>
@@ -1023,7 +1117,23 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 className="flex-1 upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500 font-mono"
               />
 
-              <label className="px-3 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-colors shrink-0 shadow-sm">
+              {/* Auto-generate 10s preview button */}
+              <button
+                type="button"
+                onClick={handleAutoGeneratePreview}
+                disabled={isGeneratingPreview || (!selectedFile && !processedEmbedUrl && !embedInput.trim())}
+                className="px-3 py-2.5 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-all shrink-0 shadow-sm"
+                title="Auto-generate 10-second animated card preview from video"
+              >
+                {isGeneratingPreview ? (
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <span className="material-symbols-outlined text-sm">auto_videocam</span>
+                )}
+                <span>Auto 10s Preview</span>
+              </button>
+
+              <label className="px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-colors shrink-0 border border-white/10 shadow-sm">
                 <span className="material-symbols-outlined text-sm">cloud_upload</span>
                 <span>Upload</span>
                 <input

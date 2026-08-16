@@ -46,6 +46,7 @@ const toggleLikeSchema = z.object({
 });
 
 // Public / Hybrid endpoints (with optional auth so admin sees unpublished videos)
+router.get('/extract-metadata', videoController.extractMetadata);
 router.get('/', optionalAuth, videoController.listVideos);
 router.get('/:id', optionalAuth, videoController.getVideoById);
 router.post('/:id/views', videoController.incrementViews);

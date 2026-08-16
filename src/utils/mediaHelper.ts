@@ -116,13 +116,49 @@ export function extractThumbnailFromEmbedUrl(url: string): string | null {
 }
 
 /**
- * Captures a video frame (at specified second) from a direct video file or video URL using HTML5 Canvas snapshot
+ * Automatically extracts metadata (Title, exact duration, high-res thumbnail, preview WebP) from any embed / stream URL
  */
-export async function captureVideoFrame(
+export interface ExtractedEmbedMeta {
+  url?: string;
+  title?: string;
+  duration?: string;
+  durationSeconds?: number;
+  thumbnailUrl?: string;
+  previewWebpUrl?: string;
+  previewMp4Url?: string;
+}
+
+export async function extractEmbedMetadataOnline(url: string): Promise<ExtractedEmbedMeta> {
+  if (!url || typeof url !== 'string') return {};
+  const trimmed = url.trim();
+
+  try {
+    const res = await fetch(`/api/v1/videos/extract-metadata?url=${encodeURIComponent(trimmed)}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json?.data) {
+        return json.data as ExtractedEmbedMeta;
+      }
+    }
+  } catch {
+    // Backend offline or dev mode fallback
+  }
+
+  // Client-side regex fallback
+  const clientThumb = extractThumbnailFromEmbedUrl(trimmed);
+  return {
+    thumbnailUrl: clientThumb || undefined,
+  };
+}
+
+/**
+ * Captures multiple candidate frames from a video source for user thumbnail selection
+ */
+export async function captureMultiFrames(
   source: string | File,
-  seekTime: number = 1.0
-): Promise<string> {
-  return new Promise((resolve, reject) => {
+  count: number = 4
+): Promise<string[]> {
+  return new Promise((resolve) => {
     let urlToRevoke: string | null = null;
     let videoSrc = '';
 
@@ -132,7 +168,7 @@ export async function captureVideoFrame(
     } else if (typeof source === 'string') {
       videoSrc = source.trim();
     } else {
-      return reject(new Error('Invalid video source'));
+      return resolve([]);
     }
 
     const video = document.createElement('video');
@@ -141,6 +177,9 @@ export async function captureVideoFrame(
     video.playsInline = true;
     video.autoplay = false;
     video.preload = 'metadata';
+
+    const frames: string[] = [];
+    let currentIdx = 0;
 
     const cleanup = () => {
       video.pause();
@@ -153,42 +192,60 @@ export async function captureVideoFrame(
 
     const timeout = setTimeout(() => {
       cleanup();
-      reject(new Error('Thumbnail capture timed out.'));
-    }, 8000);
+      resolve(frames);
+    }, 10000);
 
     video.onloadedmetadata = () => {
-      // Seek to specified time or 1s (or middle of short clips)
-      const targetTime = Math.min(seekTime, Math.max(0.1, video.duration ? video.duration / 2 : 1.0));
-      video.currentTime = targetTime;
-    };
+      const duration = video.duration && !isNaN(video.duration) && video.duration > 0 ? video.duration : 10;
+      const seekPoints = [0.15 * duration, 0.4 * duration, 0.65 * duration, 0.85 * duration];
 
-    video.onseeked = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 360;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      const captureNext = () => {
+        if (currentIdx >= seekPoints.length) {
           clearTimeout(timeout);
           cleanup();
-          resolve(dataUrl);
+          resolve(frames);
           return;
         }
-      } catch (err) {
-        clearTimeout(timeout);
-        cleanup();
-        reject(err);
-      }
+        video.currentTime = seekPoints[currentIdx];
+      };
+
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.min(video.videoWidth || 640, 640);
+          canvas.height = Math.min(video.videoHeight || 360, 360);
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            frames.push(dataUrl);
+          }
+        } catch {}
+        currentIdx++;
+        captureNext();
+      };
+
+      captureNext();
     };
 
-    video.onerror = (e) => {
+    video.onerror = () => {
       clearTimeout(timeout);
       cleanup();
-      reject(new Error('Failed to load video stream for frame capture.'));
+      resolve(frames);
     };
 
     video.src = videoSrc;
   });
+}
+
+/**
+ * Captures a single video frame (at specified seek time) from a video file or direct URL
+ */
+export async function captureVideoFrame(
+  source: string | File,
+  seekTime: number = 1.0
+): Promise<string> {
+  const frames = await captureMultiFrames(source, 1);
+  if (frames.length > 0) return frames[0];
+  throw new Error('Failed to capture frame.');
 }
