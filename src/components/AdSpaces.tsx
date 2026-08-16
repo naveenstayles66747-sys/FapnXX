@@ -12,14 +12,9 @@ export const EXOCLICK_ZONES = {
 };
 
 // Global Interstitial Trigger Helper
-let lastInterstitialTime = 0;
-export const triggerInterstitial = (force = false) => {
-  const now = Date.now();
-  if (force || now - lastInterstitialTime > 45000) {
-    lastInterstitialTime = now;
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('exoclick-trigger-interstitial'));
-    }
+export const triggerInterstitial = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('exoclick-trigger-interstitial'));
   }
 };
 
@@ -118,42 +113,35 @@ export const StickyBottomLeaderboard: React.FC = () => {
  */
 export const DesktopFullpageInterstitial: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const adMounted = useRef<boolean>(false);
 
-  useEffect(() => {
-    // Strictly Desktop only (>= 1024px)
-    if (typeof window === 'undefined' || window.innerWidth < 1024 || adMounted.current) return;
-
+  const serveInterstitial = () => {
+    if (typeof window === 'undefined' || window.innerWidth < 1024) return;
     try {
       if (containerRef.current) {
         containerRef.current.innerHTML = '';
         const ins = document.createElement('ins');
         ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}35`;
         ins.setAttribute('data-zoneid', EXOCLICK_ZONES.DESKTOP_INTERSTITIAL);
+        ins.style.display = 'block';
         containerRef.current.appendChild(ins);
 
         const win = window as any;
         win.AdProvider = win.AdProvider || [];
         win.AdProvider.push({ serve: {} });
-
-        adMounted.current = true;
       }
     } catch (e) {
-      console.warn('[ExoClick] Desktop Interstitial error:', e);
+      console.warn('[ExoClick] Desktop Interstitial serve error:', e);
     }
+  };
+
+  useEffect(() => {
+    serveInterstitial();
   }, []);
 
   // Listen for video card or category clicks to trigger the fullpage interstitial on desktop
   useEffect(() => {
     const handleTrigger = () => {
-      if (typeof window === 'undefined' || window.innerWidth < 1024) return;
-      try {
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
-      } catch (err) {
-        console.warn('[ExoClick] Interstitial trigger notice:', err);
-      }
+      serveInterstitial();
     };
 
     window.addEventListener('exoclick-trigger-interstitial', handleTrigger);
@@ -164,8 +152,8 @@ export const DesktopFullpageInterstitial: React.FC = () => {
     <div
       ref={containerRef}
       id="exoclick-desktop-interstitial"
-      className="hidden lg:block fixed top-0 left-0 pointer-events-auto z-[99999]"
-      aria-hidden="true"
+      className="hidden lg:block z-[99999]"
+      aria-label="Sponsored Interstitial"
     />
   );
 };
