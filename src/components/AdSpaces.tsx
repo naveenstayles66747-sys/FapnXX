@@ -263,24 +263,17 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
 };
 
 /**
- * On-Stream In-Video Overlay Banner Ad ("on strem ad")
+ * On-Stream In-Video Overlay Banner Ad (Zone ID: 6003184 / 6003172 with 5-Minute Auto-Reset Cycle)
  */
 export const OnStreamVideoBanner: React.FC<{
   isVisible: boolean;
   onClose: () => void;
-  targetUrl?: string;
-  title?: string;
-}> = ({
-  isVisible,
-  onClose,
-  targetUrl = 'https://s.magsrv.com/v1/vast.php?idz=6003184',
-  title = 'Featured Sponsor Ad',
-}) => {
+  mountKey?: number;
+}> = ({ isVisible, onClose, mountKey = 0 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const adInjected = useRef(false);
 
   useEffect(() => {
-    if (!isVisible || adInjected.current || !containerRef.current) return;
+    if (!isVisible || !containerRef.current) return;
 
     try {
       containerRef.current.innerHTML = '';
@@ -294,29 +287,28 @@ export const OnStreamVideoBanner: React.FC<{
       const win = window as any;
       win.AdProvider = win.AdProvider || [];
       win.AdProvider.push({ serve: {} });
-
-      adInjected.current = true;
     } catch (e) {
       console.warn('[ExoClick] On-stream banner error:', e);
     }
-  }, [isVisible]);
+  }, [isVisible, mountKey]);
 
   if (!isVisible) return null;
 
   return (
-    <div className="absolute bottom-4 left-4 right-4 z-35 flex justify-center pointer-events-auto">
-      <div className="relative bg-black/80 backdrop-blur-md rounded-xl p-1 border border-white/10 flex items-center">
+    <div className="absolute bottom-2 sm:bottom-4 left-2 right-2 sm:left-4 sm:right-4 z-30 flex justify-center pointer-events-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="relative bg-black/85 backdrop-blur-md rounded-xl p-1.5 border border-white/20 shadow-2xl flex items-center max-w-full overflow-hidden">
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onClose();
           }}
-          className="absolute -top-2 -right-2 w-5 h-5 bg-zinc-800 hover:bg-rose-600 rounded-full flex items-center justify-center text-white text-xs border border-white/20 shadow z-50 cursor-pointer"
+          className="absolute -top-1 -right-1 w-6 h-6 bg-zinc-800 hover:bg-rose-600 rounded-full flex items-center justify-center text-white text-xs border border-white/30 shadow-lg z-50 cursor-pointer transition-colors"
+          title="Close Ad"
         >
           ✕
         </button>
-        <div ref={containerRef} className="min-h-[50px] min-w-[300px]" />
+        <div ref={containerRef} className="min-h-[50px] min-w-[280px] sm:min-w-[320px] overflow-hidden flex items-center justify-center" />
       </div>
     </div>
   );
