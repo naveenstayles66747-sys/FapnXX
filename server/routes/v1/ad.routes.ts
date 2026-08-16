@@ -21,6 +21,7 @@ const adSchema = z.object({
 
 // Public
 router.get('/', adController.listAds);
+router.get('/vast-proxy', adController.proxyVast);
 router.post('/:id/impression', adController.recordImpression);
 router.post('/:id/click', adController.recordClick);
 

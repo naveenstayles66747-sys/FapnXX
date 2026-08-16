@@ -177,22 +177,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
       ═══════════════════════════════════════════════ */}
       <section className="w-full px-2 sm:px-4 md:px-6 py-1.5 sm:py-2">
         <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 flex items-center justify-center">
-          {/* Buffering spinner */}
-          {isBufferingStream ? (
-            <div className="absolute inset-0 bg-black video-loading-screen z-30 flex items-center justify-center">
-              <svg className="w-10 h-10 sm:w-12 sm:h-12 animate-spin text-rose-500" viewBox="0 0 100 100" fill="currentColor">
-                <circle cx="50" cy="14" r="7.5" opacity="1.0" />
-                <circle cx="75" cy="25" r="7.5" opacity="0.9" />
-                <circle cx="86" cy="50" r="7.5" opacity="0.8" />
-                <circle cx="75" cy="75" r="7.5" opacity="0.7" />
-                <circle cx="50" cy="86" r="7.5" opacity="0.6" />
-                <circle cx="25" cy="75" r="7.5" opacity="0.5" />
-                <circle cx="14" cy="50" r="7.5" opacity="0.4" />
-                <circle cx="25" cy="25" r="7.5" opacity="0.3" />
-              </svg>
-            </div>
-          ) : null}
-          {!isBufferingStream && <FluidPlayerWrapper video={video} autoPlay={true} />}
+          <FluidPlayerWrapper video={video} autoPlay={true} />
         </div>
       </section>
 

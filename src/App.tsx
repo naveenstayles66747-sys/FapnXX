@@ -5,8 +5,8 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
 import { MobileDrawer } from './components/MobileDrawer';
-import { StickyBottomLeaderboard, DesktopFullpageInterstitial, MobileInstantMessage, MobileFullpageInterstitial } from './components/AdSpaces';
 import { AgeGateModal } from './components/AgeGateModal';
+import { StickyBottomLeaderboard, FullscreenInterstitialModal, MobileInstantMessage, triggerInterstitial } from './components/AdSpaces';
 import { BrowseScreen } from './components/BrowseScreen';
 import { CategoriesScreen } from './components/CategoriesScreen';
 import { CategoryDetailScreen } from './components/CategoryDetailScreen';
@@ -382,6 +382,7 @@ export default function App() {
   };
 
   const handleSelectVideo = (video: Video) => {
+    triggerInterstitial();
     setSelectedVideo(video);
     setCurrentScreen('video-detail');
     syncUrlWithState('video-detail', video.id);
@@ -584,17 +585,14 @@ export default function App() {
             )}
           </div>
 
-          {/* ExoClick 728x90 Smart Sticky Bottom Leaderboard Ad (Web View Only with dynamic spacing) */}
+          {/* ExoClick 728x90 Smart Sticky Bottom Leaderboard Ad */}
           <StickyBottomLeaderboard />
 
-          {/* ExoClick Desktop Fullpage Interstitial Ad (Zone ID: 6003174) */}
-          <DesktopFullpageInterstitial />
+          {/* ExoClick Fullpage Interstitial Ad Modal (Zone ID: 6003174 Desktop / 6003180 Mobile) */}
+          <FullscreenInterstitialModal />
 
           {/* ExoClick Mobile Instant Message Ad (Zone ID: 6003178) */}
           <MobileInstantMessage />
-
-          {/* ExoClick Mobile Fullpage Interstitial Ad (Zone ID: 6003180) */}
-          <MobileFullpageInterstitial />
 
           <BottomNav
             currentScreen={currentScreen}
