@@ -29,6 +29,11 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const [isAdPlaying, setIsAdPlaying] = useState<boolean>(true);
   const [videoMountKey, setVideoMountKey] = useState<number>(0);
 
+  const isMobileDevice =
+    typeof window !== 'undefined' &&
+    (window.innerWidth < 1024 ||
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+
   const vastTagUrl = video.vastAdTagUrl?.trim() || EXOCLICK_VAST_TAG;
 
   // ── Helper: Extract clean URL ─────────────────────────────────────────────
@@ -67,7 +72,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     }
   }, [video.id]);
 
-  // ── Effect 2: Initialize Fluid Player with ExoClick VAST Tag ──────────────
+  // ── Effect 2: Initialize Fluid Player with ExoClick VAST Tag (Mobile & Desktop) ──
   useEffect(() => {
     const videoElementId = `fluid-player-${video.id}`;
     let isMounted = true;
@@ -92,7 +97,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             posterImage: video.thumbnail || '',
             fillToContainer: true,
             autoPlay: autoPlay,
-            mute: false,
+            mute: isMobileDevice, // Mobile autoplay policy strictly requires muted start
+            allowMutedAutoplay: true,
+            playsInline: true,
             keyboardControl: true,
             playbackRateControl: true,
             allowDownload: false,
@@ -135,7 +142,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         fluidInstanceRef.current = player;
         return true;
       } catch (err) {
-        console.warn('[FluidPlayer] Initialization error:', err);
+        console.warn('[FluidPlayer] Mobile init error:', err);
         return false;
       }
     };
@@ -147,7 +154,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       if (initFluid() || attempts > 20) {
         clearInterval(interval);
       }
-    }, 200);
+    }, 150);
 
     return () => {
       isMounted = false;
@@ -158,7 +165,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         } catch {}
       }
     };
-  }, [video.id, vastTagUrl, autoPlay, videoMountKey]);
+  }, [video.id, vastTagUrl, autoPlay, videoMountKey, isMobileDevice]);
 
   return (
     <div
@@ -176,6 +183,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
           key={`video-${videoMountKey}`}
           src={playerMode === 'video' ? currentVideoSrc : FALLBACK_STREAM}
           playsInline
+          muted={isMobileDevice}
+          preload="auto"
+          autoPlay={autoPlay}
           onEnded={onEnded}
           onLoadedMetadata={(e) => {
             const v = e.currentTarget;
