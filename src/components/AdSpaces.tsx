@@ -221,7 +221,8 @@ export const MobileInstantMessage: React.FC = () => {
 };
 
 /**
- * Outstream Video Card Ad (Zone ID: 6003190)
+ * Outstream In-Feed Video Card Ad (Zone ID: 6003190)
+ * Exact dimensions and layout matching regular VideoCard (16:9 aspect ratio, non-floating, in-grid placement)
  * Exact Tag:
  * <ins class="eas6a97888e37" data-zoneid="6003190"></ins>
  * <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
@@ -233,107 +234,94 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
   useEffect(() => {
     if (typeof window === 'undefined' || adInjected.current || !containerRef.current) return;
 
-    try {
-      containerRef.current.innerHTML = '';
-      const ins = document.createElement('ins');
-      ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}37`;
-      ins.setAttribute('data-zoneid', EXOCLICK_ZONES.OUTSTREAM_VIDEO);
-      ins.style.display = 'block';
-      ins.style.width = '100%';
-      ins.style.margin = '0 auto';
-      containerRef.current.appendChild(ins);
+    const injectAd = () => {
+      try {
+        if (containerRef.current && !adInjected.current) {
+          containerRef.current.innerHTML = '';
+          const ins = document.createElement('ins');
+          ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}37`;
+          ins.setAttribute('data-zoneid', EXOCLICK_ZONES.OUTSTREAM_VIDEO);
+          ins.style.display = 'block';
+          ins.style.width = '100%';
+          ins.style.margin = '0 auto';
+          containerRef.current.appendChild(ins);
 
-      const win = window as any;
-      win.AdProvider = win.AdProvider || [];
-      win.AdProvider.push({ serve: {} });
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
 
-      adInjected.current = true;
-    } catch (e) {
-      console.warn('[ExoClick] Error serving outstream video ad:', e);
+          adInjected.current = true;
+        }
+      } catch (e) {
+        console.warn('[ExoClick] Error serving outstream video ad:', e);
+      }
+    };
+
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(injectAd, { timeout: 1500 });
+    } else {
+      setTimeout(injectAd, 300);
     }
   }, []);
 
   return (
-    <div
-      className={`group relative flex flex-col bg-[#141416] rounded-2xl border border-white/10 overflow-hidden shadow-lg p-2 transition-all hover:border-[#e0358d]/50 ${className}`}
+    <article
+      className={`group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
     >
-      {/* Top Card Header */}
-      <div className="flex items-center justify-between px-1.5 py-1 mb-1.5">
-        <span className="bg-[#e0358d]/20 text-[#e0358d] text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-[#e0358d]/30 flex items-center gap-1">
-          <span className="material-symbols-outlined text-xs">campaign</span>
-          <span>Sponsored</span>
-        </span>
-        <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1">
-          <span className="material-symbols-outlined text-xs text-[#e0358d]">play_circle</span>
-          <span>Outstream Video</span>
-        </span>
+      {/* 16:9 Full-Width Container matching regular VideoCard */}
+      <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b] flex items-center justify-center min-h-[170px] sm:min-h-[200px]">
+        {/* Top-Left: Sponsored Badge */}
+        <div className="absolute top-2 left-2 z-20 flex items-center gap-1">
+          <span className="bg-[#ec4899] text-white px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shadow-md flex items-center gap-1">
+            <span className="material-symbols-outlined text-[11px]">campaign</span>
+            <span>Sponsored</span>
+          </span>
+        </div>
+
+        {/* Top-Right: HD Badge */}
+        <div className="absolute top-2 right-2 z-20 flex items-center gap-1 pointer-events-none">
+          <span className="thumb-hd-badge bg-black/85 text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+            HD
+          </span>
+        </div>
+
+        {/* Outstream Video Ad Container (Zone 6003190) */}
+        <div
+          ref={containerRef}
+          className="w-full h-full flex items-center justify-center relative overflow-hidden"
+        />
       </div>
 
-      {/* Outstream Video Ad Container (Zone 6003190) */}
-      <div
-        ref={containerRef}
-        className="w-full aspect-video bg-black/80 rounded-xl overflow-hidden flex items-center justify-center relative min-h-[170px]"
-      />
+      {/* Card Info Below matching regular VideoCard */}
+      <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
+        <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-1 leading-snug tracking-tight">
+          Featured Stream & Partner Discovery
+        </h3>
 
-      {/* Bottom info bar */}
-      <div className="pt-2 px-1 flex items-center justify-between text-zinc-400">
-        <span className="text-xs font-bold text-white truncate">Featured Sponsor Stream</span>
-        <span className="text-[10px] text-zinc-500 font-mono">ExoClick Ad</span>
+        <div className="video-card-stats-row flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
+          <span className="flex items-center gap-1">
+            <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#e0358d]">play_circle</span>
+            <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">Outstream Video</span>
+          </span>
+          <span>•</span>
+          <span className="text-[10px] text-zinc-500 font-mono">ExoClick Partner</span>
+        </div>
       </div>
-    </div>
+    </article>
   );
 };
+
+// InFeedAdCard alias for clean modular usage
+export const InFeedAdCard = OutstreamVideoCardAd;
 
 /**
- * On-Stream In-Video Overlay Banner Ad (Zone ID: 6003184 / 6003172 with 5-Minute Auto-Reset Cycle)
+ * On-Stream In-Video Overlay Banner Ad - Disabled to keep video player 100% unobstructed
  */
 export const OnStreamVideoBanner: React.FC<{
-  isVisible: boolean;
-  onClose: () => void;
+  isVisible?: boolean;
+  onClose?: () => void;
   mountKey?: number;
-}> = ({ isVisible, onClose, mountKey = 0 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isVisible || !containerRef.current) return;
-
-    try {
-      containerRef.current.innerHTML = '';
-      const ins = document.createElement('ins');
-      ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}17`;
-      ins.setAttribute('data-zoneid', EXOCLICK_ZONES.STICKY_LEADERBOARD);
-      ins.style.display = 'block';
-      ins.style.margin = '0 auto';
-      containerRef.current.appendChild(ins);
-
-      const win = window as any;
-      win.AdProvider = win.AdProvider || [];
-      win.AdProvider.push({ serve: {} });
-    } catch (e) {
-      console.warn('[ExoClick] On-stream banner error:', e);
-    }
-  }, [isVisible, mountKey]);
-
-  if (!isVisible) return null;
-
-  return (
-    <div className="absolute bottom-2 sm:bottom-4 left-2 right-2 sm:left-4 sm:right-4 z-30 flex justify-center pointer-events-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="relative bg-black/85 backdrop-blur-md rounded-xl p-1.5 border border-white/20 shadow-2xl flex items-center max-w-full overflow-hidden">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-          className="absolute -top-1 -right-1 w-6 h-6 bg-zinc-800 hover:bg-rose-600 rounded-full flex items-center justify-center text-white text-xs border border-white/30 shadow-lg z-50 cursor-pointer transition-colors"
-          title="Close Ad"
-        >
-          ✕
-        </button>
-        <div ref={containerRef} className="min-h-[50px] min-w-[280px] sm:min-w-[320px] overflow-hidden flex items-center justify-center" />
-      </div>
-    </div>
-  );
-};
+}> = () => null;
 
 export default AdBanner;

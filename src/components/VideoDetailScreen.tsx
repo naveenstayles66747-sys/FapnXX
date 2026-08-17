@@ -4,7 +4,7 @@ import { VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { ReportModal } from './ReportModal';
 import { FluidPlayerWrapper } from './FluidPlayerWrapper';
-import { OutstreamVideoCardAd, OnStreamVideoBanner } from './AdSpaces';
+import { OutstreamVideoCardAd } from './AdSpaces';
 import { CommentsSection } from './CommentsSection';
 import { useLanguage } from '../i18n/LanguageContext';
 import { videoService } from '../services/videoService';
@@ -93,28 +93,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     return () => clearInterval(timer);
   }, [video.id]);
 
-  // ── 5-Minute Recurring In-Stream Ad Cycle (Zone ID: 6003184) ──
-  const [showInStreamAd, setShowInStreamAd] = useState<boolean>(false);
-  const [inStreamAdMountKey, setInStreamAdMountKey] = useState<number>(0);
 
-  useEffect(() => {
-    // Show in-stream ad 3 seconds after opening video
-    const initialTimer = setTimeout(() => {
-      setShowInStreamAd(true);
-      setInStreamAdMountKey((k) => k + 1);
-    }, 3000);
-
-    // 5-Minute Recurring Auto-Reset Interval (300,000 ms)
-    const resetInterval = setInterval(() => {
-      setShowInStreamAd(true);
-      setInStreamAdMountKey((k) => k + 1);
-    }, 300000);
-
-    return () => {
-      clearTimeout(initialTimer);
-      clearInterval(resetInterval);
-    };
-  }, [video.id]);
 
   const handleLike = async () => {
     const nextLikedState = !isLiked;
@@ -189,18 +168,11 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     <main className="flex-grow lg:pl-64 pb-20 w-full max-w-6xl mx-auto overflow-x-hidden">
 
       {/* ═══════════════════════════════════════════════
-          VIDEO PLAYER — Responsive Container with Padding & Rounded Corners
+          VIDEO PLAYER — Responsive Clean Container
       ═══════════════════════════════════════════════ */}
       <section className="w-full px-2 sm:px-4 md:px-6 py-1.5 sm:py-2">
         <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 flex items-center justify-center">
           <FluidPlayerWrapper video={video} autoPlay={true} />
-
-          {/* In-Stream / In-Video Overlay Ad with 5-Minute Auto-Reset Cycle */}
-          <OnStreamVideoBanner
-            isVisible={showInStreamAd}
-            mountKey={inStreamAdMountKey}
-            onClose={() => setShowInStreamAd(false)}
-          />
         </div>
       </section>
 
@@ -344,7 +316,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
                   onClick={() => onSelectVideo(relatedVideo)}
                 />
               </div>
-              {idx === 3 && (
+              {idx === 0 && (
                 <OutstreamVideoCardAd key="detail-outstream-ad" />
               )}
             </React.Fragment>
