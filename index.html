@@ -9,12 +9,16 @@
     <meta name="6a97888e-site-verification" content="0affea0c64edea4d1ea355396cc728dd" />
     <!-- ExoClick Global Ad Provider SDK (Single Source to prevent duplicate execution) -->
     <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script>
-    <!-- Fluid Player VAST 2.0/3.0/4.0 Engine -->
-    <link rel="stylesheet" href="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css" type="text/css" />
-    <script defer src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
-    <!-- Preconnect & Preload Fonts to prevent FOIT/FOUT Icon Text Glitch -->
+    <!-- Preconnect to Image & Font CDNs for Ultra-Fast Initial LCP & FCP -->
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Fluid Player VAST 2.0/3.0/4.0 Engine (Non-Render-Blocking) -->
+    <link rel="stylesheet" href="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css" type="text/css" media="print" onload="this.media='all'" />
+    <script defer src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+
+    <!-- Preload & Load Fonts -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet" />

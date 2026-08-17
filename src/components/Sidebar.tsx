@@ -15,7 +15,7 @@ interface SidebarProps {
   onOpenSoftLogin?: (featureName?: string) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
+const SidebarComponent: React.FC<SidebarProps> = ({
   currentScreen,
   selectedCategoryId,
   onSelectCategory,
@@ -146,3 +146,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </nav>
   );
 };
+
+export const Sidebar = React.memo(SidebarComponent);
+export default Sidebar;

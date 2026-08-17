@@ -112,7 +112,13 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     hoverTimerRef.current = setTimeout(() => {
       setIsHovered(true);
-    }, 150);
+      // Dispatch desktop active hover lock
+      window.dispatchEvent(
+        new CustomEvent('active-desktop-hover-change', {
+          detail: video.id,
+        })
+      );
+    }, 300); // 300ms stable debounce to avoid spamming video decoders on casual mouse moves
   };
 
   const handleMouseLeave = () => {
@@ -128,11 +134,48 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Clear hover timer and free video decoder immediately so click routing paints in <16ms
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setIsHovered(false);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+    onClick();
+  };
+
   useEffect(() => {
     return () => {
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     };
   }, []);
+
+  // Desktop active hover lock (only 1 video decodes/plays at a time across all cards)
+  useEffect(() => {
+    if (isMobile) return;
+    const handleDesktopActiveChange = (e: CustomEvent<string | null>) => {
+      if (e.detail !== video.id) {
+        if (hoverTimerRef.current) {
+          clearTimeout(hoverTimerRef.current);
+          hoverTimerRef.current = null;
+        }
+        setIsHovered(false);
+        if (videoRef.current) {
+          videoRef.current.pause();
+          videoRef.current.currentTime = 0;
+        }
+      }
+    };
+
+    window.addEventListener('active-desktop-hover-change' as any, handleDesktopActiveChange as any, { passive: true });
+    return () => {
+      window.removeEventListener('active-desktop-hover-change' as any, handleDesktopActiveChange as any);
+    };
+  }, [video.id, isMobile]);
 
   // Single active mobile preview lock across entire app (only 1 video plays at a time)
   useEffect(() => {
@@ -239,7 +282,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         playsInline
         autoPlay
         controls={false}
-        preload="auto"
+        preload="none"
         referrerPolicy="no-referrer"
         onCanPlay={(e) => {
           const v = e.currentTarget;
@@ -263,7 +306,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     return (
       <article
         ref={cardRef}
-        onClick={onClick}
+        onClick={handleCardClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className="group relative bg-[#131315] rounded-2xl overflow-hidden border border-[#353437] hover:border-[#ffb0cd]/50 transition-colors cursor-pointer flex flex-col md:flex-row"
@@ -350,7 +393,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   return (
     <article
       ref={cardRef}
-      onClick={onClick}
+      onClick={handleCardClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className="group cursor-pointer flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300"

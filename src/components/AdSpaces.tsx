@@ -82,24 +82,32 @@ export const StickyBottomLeaderboard: React.FC = () => {
     // Strictly Desktop only (>= 1024px) to prevent duplicate triggers on mobile
     if (typeof window === 'undefined' || window.innerWidth < 1024 || adInjected.current) return;
 
-    try {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-        const ins = document.createElement('ins');
-        ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}17`;
-        ins.setAttribute('data-zoneid', EXOCLICK_ZONES.STICKY_LEADERBOARD);
-        ins.style.display = 'block';
-        ins.style.margin = '0 auto';
-        containerRef.current.appendChild(ins);
+    const inject = () => {
+      try {
+        if (containerRef.current && !adInjected.current) {
+          containerRef.current.innerHTML = '';
+          const ins = document.createElement('ins');
+          ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}17`;
+          ins.setAttribute('data-zoneid', EXOCLICK_ZONES.STICKY_LEADERBOARD);
+          ins.style.display = 'block';
+          ins.style.margin = '0 auto';
+          containerRef.current.appendChild(ins);
 
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
 
-        adInjected.current = true;
+          adInjected.current = true;
+        }
+      } catch (e) {
+        console.warn('[ExoClick] Sticky leaderboard error:', e);
       }
-    } catch (e) {
-      console.warn('[ExoClick] Sticky leaderboard error:', e);
+    };
+
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(inject, { timeout: 1000 });
+    } else {
+      setTimeout(inject, 200);
     }
   }, []);
 
@@ -124,26 +132,32 @@ export const DesktopFullpageInterstitial: React.FC = () => {
 
   const serveInterstitial = () => {
     if (typeof window === 'undefined' || window.innerWidth < 1024) return;
-    try {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-        const ins = document.createElement('ins');
-        ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}35`;
-        ins.setAttribute('data-zoneid', EXOCLICK_ZONES.DESKTOP_INTERSTITIAL);
-        ins.style.display = 'block';
-        containerRef.current.appendChild(ins);
+    setTimeout(() => {
+      try {
+        if (containerRef.current) {
+          containerRef.current.innerHTML = '';
+          const ins = document.createElement('ins');
+          ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}35`;
+          ins.setAttribute('data-zoneid', EXOCLICK_ZONES.DESKTOP_INTERSTITIAL);
+          ins.style.display = 'block';
+          containerRef.current.appendChild(ins);
 
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        }
+      } catch (e) {
+        console.warn('[ExoClick] Desktop Interstitial serve error:', e);
       }
-    } catch (e) {
-      console.warn('[ExoClick] Desktop Interstitial serve error:', e);
-    }
+    }, 100);
   };
 
   useEffect(() => {
-    serveInterstitial();
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(serveInterstitial, { timeout: 2000 });
+    } else {
+      setTimeout(serveInterstitial, 500);
+    }
   }, []);
 
   // Listen for video card or category clicks to trigger the fullpage interstitial on desktop

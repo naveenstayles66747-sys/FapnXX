@@ -1,59 +1,57 @@
 import React from 'react';
 
-// Default high-quality fallbacks for categories if local file is missing
+// Default high-quality fallbacks for categories (Optimized WebP with compression)
 export const DEFAULT_CATEGORY_FALLBACKS: Record<string, string> = {
-  trending: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200&auto=format&fit=crop',
-  amateur: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1200&auto=format&fit=crop',
-  milf: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1200&auto=format&fit=crop',
-  teen: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1200&auto=format&fit=crop',
-  desi: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=1200&auto=format&fit=crop',
-  anal: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1200&auto=format&fit=crop',
-  lesbian: 'https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?q=80&w=1200&auto=format&fit=crop',
-  asian: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=1200&auto=format&fit=crop',
-  pov: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=1200&auto=format&fit=crop',
-  hentai: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=1200&auto=format&fit=crop',
-  vr: 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?q=80&w=1200&auto=format&fit=crop',
+  trending: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=75&w=800&auto=format&fit=crop',
+  amateur: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=75&w=800&auto=format&fit=crop',
+  milf: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=75&w=800&auto=format&fit=crop',
+  teen: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=75&w=800&auto=format&fit=crop',
+  desi: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=75&w=800&auto=format&fit=crop',
+  anal: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=75&w=800&auto=format&fit=crop',
+  lesbian: 'https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?q=75&w=800&auto=format&fit=crop',
+  asian: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=75&w=800&auto=format&fit=crop',
+  pov: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=75&w=800&auto=format&fit=crop',
+  hentai: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=75&w=800&auto=format&fit=crop',
+  vr: 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?q=75&w=800&auto=format&fit=crop',
 };
 
-// Default high-quality fallbacks for 6 Home Banners
+// Default high-quality fallbacks for 6 Home Banners (Optimized 1600px width with quality 75 for instant LCP)
 export const DEFAULT_BANNER_FALLBACKS: string[] = [
-  'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1920&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?q=80&w=1920&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1920&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1920&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?q=80&w=1920&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1920&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=75&w=1600&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?q=75&w=1600&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=75&w=1600&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=75&w=1600&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?q=75&w=1600&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=75&w=1600&auto=format&fit=crop',
 ];
 
 /**
  * Resolves the category hero image path:
  * 1. Checks if custom valid external URL (not placeholder) is set
- * 2. Uses local `/assets/categories/${slug}.jpg`
- * 3. Falls back to curated fallback
+ * 2. Directly uses CDN fallback to prevent 404 roundtrips
  */
 export function getCategoryHeroImage(category: { id: string; name?: string; heroImage?: string }): string {
   const slug = (category.id || category.name || 'default').toLowerCase().trim().replace(/\s+/g, '-');
   
-  if (category.heroImage && !category.heroImage.includes('lh3.googleusercontent.com') && !category.heroImage.includes('placeholder')) {
+  if (category.heroImage && !category.heroImage.includes('lh3.googleusercontent.com') && !category.heroImage.includes('placeholder') && category.heroImage.startsWith('http')) {
     return category.heroImage;
   }
 
-  // Local folder first
-  return `/assets/categories/${slug}.jpg`;
+  return DEFAULT_CATEGORY_FALLBACKS[slug] || DEFAULT_CATEGORY_FALLBACKS['trending'];
 }
 
 /**
  * Resolves banner image path for 1-6 banners:
  * 1. If bannerImage is custom external valid URL, use it
- * 2. Otherwise use `/assets/banners/banner${index + 1}.jpg`
+ * 2. Otherwise directly use fast CDN fallback
  */
 export function getBannerImageUrl(banner: { id?: string; bannerImage?: string }, index: number): string {
-  if (banner.bannerImage && !banner.bannerImage.includes('lh3.googleusercontent.com') && !banner.bannerImage.includes('placeholder')) {
+  if (banner.bannerImage && !banner.bannerImage.includes('lh3.googleusercontent.com') && !banner.bannerImage.includes('placeholder') && banner.bannerImage.startsWith('http')) {
     return banner.bannerImage;
   }
 
-  const bannerIndex = (index % 6) + 1;
-  return `/assets/banners/banner${bannerIndex}.jpg`;
+  const bannerIndex = index % DEFAULT_BANNER_FALLBACKS.length;
+  return DEFAULT_BANNER_FALLBACKS[bannerIndex];
 }
 
 /**

@@ -23,7 +23,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
     id: 'banner-1',
     title: 'Neon Midnight Fantasies',
     subtitle: 'Exclusive 4K Ultra-HD release featuring top international performers in a private penthouse setting.',
-    bannerImage: '/assets/banners/banner1.jpg',
+    bannerImage: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=75&w=1600&auto=format&fit=crop',
     tag: 'Featured 4K Release',
     targetCategory: 'trending',
     ctaText: 'Watch Now in 4K',
@@ -33,7 +33,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
     id: 'banner-2',
     title: 'Private VIP Encounters',
     subtitle: 'Unfiltered, raw, and intense scenes curated specifically for FapnXX members.',
-    bannerImage: '/assets/banners/banner2.jpg',
+    bannerImage: 'https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?q=75&w=1600&auto=format&fit=crop',
     tag: 'Exclusive VIP',
     targetCategory: 'milf',
     ctaText: 'Explore VIP Series',
@@ -43,7 +43,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
     id: 'banner-3',
     title: 'Subtle Illumination & Passion',
     subtitle: 'Experience intimate POV and aesthetic romance shot on high-resolution cinema sensors.',
-    bannerImage: '/assets/banners/banner3.jpg',
+    bannerImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=75&w=1600&auto=format&fit=crop',
     tag: 'Trending POV',
     targetCategory: 'pov',
     ctaText: 'Stream Immediately',
@@ -53,7 +53,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
     id: 'banner-4',
     title: 'Velvet Dusk Rendezvous',
     subtitle: 'Sophisticated glamour and dramatic moonlight encounters in 60FPS Ultra HD.',
-    bannerImage: '/assets/banners/banner4.jpg',
+    bannerImage: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=75&w=1600&auto=format&fit=crop',
     tag: '4K Ultra-HD',
     targetCategory: 'amateur',
     ctaText: 'Watch Amateur Cut',
@@ -63,7 +63,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
     id: 'banner-5',
     title: 'Midnight Penthouse Encounter',
     subtitle: 'Uncut cinematic releases with immersive surround audio and 60fps streaming.',
-    bannerImage: '/assets/banners/banner5.jpg',
+    bannerImage: 'https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?q=75&w=1600&auto=format&fit=crop',
     tag: '60FPS Cinema',
     targetCategory: 'lesbian',
     ctaText: 'Stream 60FPS',
@@ -73,7 +73,7 @@ const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
     id: 'banner-6',
     title: 'City Lights Encounters',
     subtitle: 'Vibrant urban aesthetic, moody neon lighting, and high-energy intimate encounters.',
-    bannerImage: '/assets/banners/banner6.jpg',
+    bannerImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=75&w=1600&auto=format&fit=crop',
     tag: 'Top Choice',
     targetCategory: 'teen',
     ctaText: 'Discover Highlights',
@@ -327,7 +327,9 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                   <img
                     src={getBannerImageUrl(banner, index)}
                     alt={banner.title}
-                    decoding="async"
+                    decoding={index === 0 ? 'sync' : 'async'}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    fetchPriority={index === 0 ? 'high' : 'auto'}
                     onError={(e) => handleBannerImageError(e, index)}
                     className="absolute inset-0 w-full h-full object-cover gpu-accelerated"
                   />
