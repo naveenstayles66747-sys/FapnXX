@@ -234,45 +234,47 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
   useEffect(() => {
     if (typeof window === 'undefined' || adInjected.current || !containerRef.current) return;
 
-    const injectAd = () => {
-      try {
-        if (containerRef.current && !adInjected.current) {
-          containerRef.current.innerHTML = '';
-          const ins = document.createElement('ins');
-          ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}37`;
-          ins.setAttribute('data-zoneid', EXOCLICK_ZONES.OUTSTREAM_VIDEO);
-          ins.style.display = 'block';
-          ins.style.width = '100%';
-          ins.style.margin = '0 auto';
-          containerRef.current.appendChild(ins);
+    try {
+      if (containerRef.current && !adInjected.current) {
+        containerRef.current.innerHTML = '';
 
-          const win = window as any;
-          win.AdProvider = win.AdProvider || [];
-          win.AdProvider.push({ serve: {} });
+        // 1. Create exact ExoClick <ins> element
+        const ins = document.createElement('ins');
+        ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}37`;
+        ins.setAttribute('data-zoneid', EXOCLICK_ZONES.OUTSTREAM_VIDEO);
+        ins.style.display = 'block';
+        ins.style.width = '100%';
+        ins.style.height = '100%';
+        ins.style.minHeight = '180px';
+        ins.style.margin = '0 auto';
+        containerRef.current.appendChild(ins);
 
-          adInjected.current = true;
-        }
-      } catch (e) {
-        console.warn('[ExoClick] Error serving outstream video ad:', e);
+        // 2. Inject script execution tag directly into container
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.text = '(AdProvider = window.AdProvider || []).push({"serve": {}});';
+        containerRef.current.appendChild(script);
+
+        // 3. Also push to window.AdProvider queue
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+
+        adInjected.current = true;
       }
-    };
-
-    if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(injectAd, { timeout: 1500 });
-    } else {
-      setTimeout(injectAd, 300);
+    } catch (e) {
+      console.warn('[ExoClick] Error serving outstream video ad:', e);
     }
   }, []);
 
   return (
     <article
       className={`group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
-      style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
     >
       {/* 16:9 Full-Width Container matching regular VideoCard */}
-      <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b] flex items-center justify-center min-h-[170px] sm:min-h-[200px]">
+      <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b] flex items-center justify-center min-h-[180px] sm:min-h-[220px]">
         {/* Top-Left: Sponsored Badge */}
-        <div className="absolute top-2 left-2 z-20 flex items-center gap-1">
+        <div className="absolute top-2 left-2 z-20 flex items-center gap-1 pointer-events-none">
           <span className="bg-[#ec4899] text-white px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shadow-md flex items-center gap-1">
             <span className="material-symbols-outlined text-[11px]">campaign</span>
             <span>Sponsored</span>
@@ -289,7 +291,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
         {/* Outstream Video Ad Container (Zone 6003190) */}
         <div
           ref={containerRef}
-          className="w-full h-full flex items-center justify-center relative overflow-hidden"
+          className="w-full h-full flex items-center justify-center relative overflow-hidden min-h-[180px]"
         />
       </div>
 
