@@ -127,6 +127,38 @@ export function extractThumbnailFromEmbedUrl(url: string): string | null {
     }
   }
 
+  // Streamtape
+  if (trimmed.includes('streamtape.com') || trimmed.includes('streamta.pe') || trimmed.includes('streamtape.to')) {
+    const match = trimmed.match(/(?:streamtape\.[a-z]+\/|streamta\.pe\/)(?:v|e)\/([a-zA-Z0-9_-]+)/i);
+    if (match && match[1]) {
+      return `https://thumb.streamtape.com/${match[1]}.jpg`;
+    }
+  }
+
+  // DoodStream
+  if (trimmed.includes('dood') || trimmed.includes('ds2play.com') || trimmed.includes('doodstream.com')) {
+    const match = trimmed.match(/(?:dood\.[a-z]+|doodstream\.[a-z]+|ds2play\.[a-z]+)\/(?:e|d|f)\/([a-zA-Z0-9_-]+)/i);
+    if (match && match[1]) {
+      return `https://img.doodcdn.co/snaps/${match[1]}.jpg`;
+    }
+  }
+
+  // RedTube
+  if (trimmed.includes('redtube.com')) {
+    const match = trimmed.match(/redtube\.com\/(?:video\/)?([0-9]+)/i);
+    if (match && match[1]) {
+      return `https://img02.redtubefiles.com/_thumbs/${match[1].padStart(7, '0')}/${match[1].padStart(7, '0')}_001m.jpg`;
+    }
+  }
+
+  // Eporner
+  if (trimmed.includes('eporner.com')) {
+    const match = trimmed.match(/eporner\.com\/(?:hd-porn|embed)\/([a-zA-Z0-9]+)/i);
+    if (match && match[1]) {
+      return `https://static-eu-cdn.eporner.com/thumbs/static4/${match[1]}/320.jpg`;
+    }
+  }
+
   return null;
 }
 

@@ -244,10 +244,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             preload="auto"
             className="w-full h-full object-contain block bg-black"
           >
-            <source
-              src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
-              type="video/mp4"
-            />
+            {playerMode === 'video' && currentVideoSrc ? (
+              <source src={currentVideoSrc} type="video/mp4" />
+            ) : null}
           </video>
         </div>
       )}

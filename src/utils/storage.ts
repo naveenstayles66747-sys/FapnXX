@@ -270,9 +270,6 @@ export const getStoredVideos = (): Video[] => {
       let embed = v.embedUrl || '';
       let preview = v.previewMp4Url || '';
       let webp = v.previewWebpUrl || '';
-      if (v.id === 'vid-test-user-1' || embed.includes('youtube.com') || embed.includes('youtu.be')) {
-        embed = 'https://hornhub.embedseek.com/#9sq8g';
-      }
       if (preview.includes('zencdn.net') || preview.includes('oceans.mp4') || preview.includes('gtv-videos-bucket') || preview.includes('commondatastorage.googleapis.com')) {
         preview = '';
       }

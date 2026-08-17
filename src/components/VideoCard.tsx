@@ -248,7 +248,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     }
   }, [shouldPlayPreview, previewType]);
 
-  const primaryThumb = (video.thumbnail || video.thumbnailUrl || video.previewWebpUrl || '').trim();
+  const primaryThumb = (video.thumbnail || video.thumbnailUrl || '').trim();
   const displayThumbnail = primaryThumb || FALLBACK_THUMBNAIL;
 
   const renderPreviewOverlay = () => {
