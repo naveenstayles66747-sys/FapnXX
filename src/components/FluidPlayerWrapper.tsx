@@ -18,13 +18,14 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const playerInstanceRef = useRef<any>(null);
 
-  const [playerMode, setPlayerMode] = useState<'embed' | 'video'>('video');
+  const [playerMode, setPlayerMode] = useState<'embed' | 'video'>('embed');
   const [currentVideoSrc, setCurrentVideoSrc] = useState<string>('');
   const [videoMountKey, setVideoMountKey] = useState<number>(0);
+  const [fluidPlayerFailed, setFluidPlayerFailed] = useState<boolean>(false);
 
   const playerId = `fluid-player-${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
-  // ── Helper: Extract clean URL from raw embed / iframe / video input ──────
+  // ── Helper: Extract clean URL & detect if it is a direct MP4 file or an embed ──────
   const extractEmbedUrl = (rawInput?: string): { cleanUrl: string; isDirectVideo: boolean } => {
     let src = (rawInput || '').trim();
     if (src.startsWith('<iframe') || src.includes('src=')) {
@@ -34,19 +35,17 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     src = src.replace(/^["']|["']$/g, '').trim();
     if (src.startsWith('//')) src = 'https:' + src;
 
-    // Check if it's an external third-party iframe embed (vs direct MP4/stream)
-    const isEmbedSite =
-      /embed|iframe|spankbang|xvideos|pornhub|redtube|youporn|eporner|tube8|chaturbate/i.test(src) &&
-      !src.includes('.mp4') &&
-      !src.includes('firebasestorage') &&
-      !src.includes('blob:');
+    // Check if it's a known embed site (Streamtape, Doodstream, Spankbang, XVideos, etc.)
+    const isKnownEmbed =
+      /streamtape|streamta\.pe|dood|filemoon|spankbang|xvideos|pornhub|redtube|youporn|eporner|tube8|chaturbate|bembed|embedseek|streamhide|upstream|mixdrop|\/e\/|\/embed\//i.test(
+        src
+      );
 
-    const isDirectVideo =
-      !isEmbedSite ||
-      Boolean(src.match(/\.(mp4|webm|m3u8|mov|ogg)(\?.*)?$/i)) ||
-      src.startsWith('blob:') ||
-      src.includes('firebasestorage') ||
-      src.includes('googleapis.com');
+    // Direct video ONLY if it has an actual video file extension or blob/storage
+    const hasVideoExtension = Boolean(src.match(/\.(mp4|webm|m3u8|mov|ogg)(\?.*)?$/i));
+    const isStorageBlob = src.startsWith('blob:') || (src.includes('firebasestorage.googleapis.com') && !src.includes('placeholder'));
+
+    const isDirectVideo = !isKnownEmbed && (hasVideoExtension || isStorageBlob);
 
     return { cleanUrl: src, isDirectVideo };
   };
@@ -54,6 +53,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   // ── Effect: Resolve Player Source (Embed vs Direct MP4/Stream) ───────────
   useEffect(() => {
     setVideoMountKey((k) => k + 1);
+    setFluidPlayerFailed(false);
 
     const rawEmbed = (
       video.embedUrl ||
@@ -76,16 +76,17 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       setPlayerMode(d ? 'video' : 'embed');
       setCurrentVideoSrc(c);
     } else {
-      setPlayerMode('video');
+      setPlayerMode('embed');
       setCurrentVideoSrc('');
     }
   }, [video.id, video.embedUrl, video.previewMp4Url]);
 
-  // ── Effect: Initialize Fluid Player with VAST In-Stream Ad ───────────
+  // ── Effect: Initialize Fluid Player with VAST In-Stream Ad for direct videos ──
   useEffect(() => {
-    if (playerMode !== 'video' || !currentVideoSrc) return;
+    if (playerMode !== 'video' || !currentVideoSrc || fluidPlayerFailed) return;
 
     let isMounted = true;
+    let fallbackTimeout: NodeJS.Timeout | null = null;
 
     const cleanupCurrentPlayer = () => {
       if (playerInstanceRef.current) {
@@ -108,14 +109,20 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       const targetElement = document.getElementById(playerId) as HTMLVideoElement;
 
       if (!targetElement) {
-        if (isMounted) {
-          setTimeout(attachFluidPlayer, 80);
-        }
+        if (isMounted) setTimeout(attachFluidPlayer, 80);
         return;
       }
 
       if (typeof win.fluidPlayer === 'function') {
         try {
+          // Safety 3-second timeout: If VAST ad network hangs or freezes, fallback to native HTML5 video
+          fallbackTimeout = setTimeout(() => {
+            if (isMounted && !playerInstanceRef.current) {
+              console.warn('[FluidPlayer] VAST loading timeout - falling back to native player.');
+              setFluidPlayerFailed(true);
+            }
+          }, 3000);
+
           const instance = win.fluidPlayer(playerId, {
             layoutControls: {
               primaryColor: '#ec4899',
@@ -157,13 +164,16 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               showProgressbarMarkers: true,
               vastAdvanced: {
                 vastLoadedCallback: () => {
-                  console.log('[FluidPlayer] In-Stream VAST Ad loaded successfully (Zone 6003184)');
+                  if (fallbackTimeout) clearTimeout(fallbackTimeout);
+                  console.log('[FluidPlayer] VAST Ad loaded successfully (Zone 6003184)');
                 },
                 noVastVideoCallback: () => {
-                  console.log('[FluidPlayer] No VAST video returned from ad server, streaming main content.');
+                  if (fallbackTimeout) clearTimeout(fallbackTimeout);
+                  console.log('[FluidPlayer] No VAST video available, playing main content.');
                 },
                 adErrorCallback: (error: any) => {
-                  console.warn('[FluidPlayer] VAST Ad playback error:', error);
+                  if (fallbackTimeout) clearTimeout(fallbackTimeout);
+                  console.warn('[FluidPlayer] VAST Ad error:', error);
                 },
               },
             },
@@ -172,9 +182,10 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
           playerInstanceRef.current = instance;
         } catch (err) {
           console.warn('[FluidPlayer] Initialization error:', err);
+          setFluidPlayerFailed(true);
         }
       } else {
-        // Ensure FluidPlayer script is loaded and retry
+        // Retry script loading
         const scriptId = 'fluidplayer-sdk-loader';
         if (!document.getElementById(scriptId)) {
           const script = document.createElement('script');
@@ -195,9 +206,10 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     return () => {
       isMounted = false;
       clearTimeout(timer);
+      if (fallbackTimeout) clearTimeout(fallbackTimeout);
       cleanupCurrentPlayer();
     };
-  }, [playerMode, currentVideoSrc, video.id, videoMountKey, autoPlay, playerId]);
+  }, [playerMode, currentVideoSrc, video.id, videoMountKey, autoPlay, playerId, fluidPlayerFailed]);
 
   return (
     <div
@@ -205,7 +217,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       className={`relative w-full h-full bg-black overflow-hidden flex items-center justify-center select-none ${className}`}
     >
       {playerMode === 'embed' ? (
-        // ── 1. Full Embed / Iframe Video Player (SpankBang, XVideos, Streamtape, DoodStream, etc.) ──
+        // ── 1. Full Embed / Iframe Video Player (Streamtape, SpankBang, XVideos, DoodStream, etc.) ──
         <div className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center">
           {currentVideoSrc ? (
             <iframe
@@ -228,8 +240,22 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             </div>
           )}
         </div>
+      ) : fluidPlayerFailed ? (
+        // ── 2. Native HTML5 Fallback Player (Instant 0-delay playback if VAST or FluidPlayer fails) ──
+        <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
+          <video
+            key={`native-v-${videoMountKey}`}
+            src={currentVideoSrc}
+            controls
+            autoPlay={autoPlay}
+            playsInline
+            poster={video.thumbnail || (video as any).thumbnailUrl || ''}
+            onEnded={onEnded}
+            className="w-full h-full object-contain block bg-black"
+          />
+        </div>
       ) : (
-        // ── 2. Fluid Player HTML5 Video Player with In-Stream VAST Ad Engine ──
+        // ── 3. Fluid Player HTML5 Video Player with In-Stream VAST Ad Engine ──
         <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
           <video
             key={`fluid-v-${videoMountKey}`}
@@ -238,7 +264,10 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             poster={video.thumbnail || (video as any).thumbnailUrl || ''}
             preload="auto"
             onEnded={onEnded}
-            onError={() => console.warn('[Player] Direct stream load warning.')}
+            onError={() => {
+              console.warn('[Player] Direct stream load warning, switching to native fallback.');
+              setFluidPlayerFailed(true);
+            }}
             onLoadedMetadata={(e) => {
               const v = e.currentTarget;
               if (v.duration && !isNaN(v.duration) && v.duration > 0) {
