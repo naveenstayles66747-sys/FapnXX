@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense, startTransition } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { CategoryId, CategoryInfo, ContentPreference, LandingBanner, ScreenId, Video } from './types';
 import { Header } from './components/Header';
@@ -13,10 +13,12 @@ import { CategoryDetailScreen } from './components/CategoryDetailScreen';
 import { PerformersScreen } from './components/PerformersScreen';
 import { VideoDetailScreen } from './components/VideoDetailScreen';
 import { SignInScreen } from './components/SignInScreen';
-import { UploadModal } from './components/UploadModal';
-import { AdManagementModal } from './components/AdManagementModal';
-import { AdminPanelModal } from './components/AdminPanelModal';
-import { SoftLoginModal } from './components/SoftLoginModal';
+
+// Code-split heavy modals to reduce initial mobile JS parsing and optimize INP
+const UploadModal = lazy(() => import('./components/UploadModal').then(m => ({ default: m.UploadModal })));
+const AdManagementModal = lazy(() => import('./components/AdManagementModal').then(m => ({ default: m.AdManagementModal })));
+const AdminPanelModal = lazy(() => import('./components/AdminPanelModal').then(m => ({ default: m.AdminPanelModal })));
+const SoftLoginModal = lazy(() => import('./components/SoftLoginModal').then(m => ({ default: m.SoftLoginModal })));
 import { VIDEOS } from './data';
 import { videoService } from './services/videoService';
 import { auth } from './services/firebaseConfig';
@@ -375,39 +377,50 @@ export default function App() {
   const handleUploadSuccess = (newVideo: Video) => {
     setVideosList((prev) => [newVideo, ...prev]);
     videoService.saveVideo(newVideo);
-    setSelectedVideo(newVideo);
-    setCurrentScreen('video-detail');
+    startTransition(() => {
+      setSelectedVideo(newVideo);
+      setCurrentScreen('video-detail');
+    });
     syncUrlWithState('video-detail', newVideo.id);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
   };
 
   const handleSelectVideo = (video: Video) => {
     triggerInterstitial();
-    setSelectedVideo(video);
-    setCurrentScreen('video-detail');
+    startTransition(() => {
+      setSelectedVideo(video);
+      setCurrentScreen('video-detail');
+    });
     syncUrlWithState('video-detail', video.id);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
   };
 
   const handleSelectCategory = (id: CategoryId) => {
     triggerInterstitial();
-    setSelectedCategoryId(id);
+    startTransition(() => {
+      setSelectedCategoryId(id);
+      if (id === 'all') {
+        setCurrentScreen('browse');
+      } else {
+        setCurrentScreen('category-detail');
+      }
+    });
     if (id === 'all') {
-      setCurrentScreen('browse');
       syncUrlWithState('browse');
     } else {
-      setCurrentScreen('category-detail');
       syncUrlWithState('category-detail', undefined, id);
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
   };
 
   const handleNavigate = (screen: ScreenId) => {
-    if (screen === 'browse') {
-      setSelectedCategoryId('all');
-      setSearchQuery('');
-    }
-    setCurrentScreen(screen);
+    startTransition(() => {
+      if (screen === 'browse') {
+        setSelectedCategoryId('all');
+        setSearchQuery('');
+      }
+      setCurrentScreen(screen);
+    });
     syncUrlWithState(screen);
     // Instant scroll to top — like a fresh page load
     window.scrollTo(0, 0);
@@ -425,53 +438,69 @@ export default function App() {
   return (
     <div className="min-h-screen w-full max-w-full bg-[#09090b] text-[#e5e1e4] flex flex-col font-['Inter',sans-serif] relative">
 
-      {/* Admin Panel Modal */}
-      <AdminPanelModal
-        isOpen={isAdminModalOpen}
-        onClose={() => setIsAdminModalOpen(false)}
-        isAdminAuthenticated={isAdminAuthenticated}
-        onAdminLogin={(email) => {
-          setIsAdminAuthenticated(true);
-          setUserEmail(email);
-        }}
-        onAdminLogout={() => setIsAdminAuthenticated(false)}
-        categories={categories}
-        onAddCategory={handleAddCategory}
-        onUpdateCategory={handleUpdateCategory}
-        onDeleteCategory={handleDeleteCategory}
-        videos={videosList}
-        onUpdateVideo={handleUpdateVideo}
-        onDeleteVideo={handleDeleteVideo}
-        onUploadVideoSuccess={handleUploadSuccess}
-        banners={banners}
-        onAddBanner={handleAddBanner}
-        onUpdateBanner={handleUpdateBanner}
-        onDeleteBanner={handleDeleteBanner}
-      />
+      {/* Admin Panel Modal (Loaded Lazily on Demand) */}
+      {isAdminModalOpen && (
+        <Suspense fallback={null}>
+          <AdminPanelModal
+            isOpen={isAdminModalOpen}
+            onClose={() => setIsAdminModalOpen(false)}
+            isAdminAuthenticated={isAdminAuthenticated}
+            onAdminLogin={(email) => {
+              setIsAdminAuthenticated(true);
+              setUserEmail(email);
+            }}
+            onAdminLogout={() => setIsAdminAuthenticated(false)}
+            categories={categories}
+            onAddCategory={handleAddCategory}
+            onUpdateCategory={handleUpdateCategory}
+            onDeleteCategory={handleDeleteCategory}
+            videos={videosList}
+            onUpdateVideo={handleUpdateVideo}
+            onDeleteVideo={handleDeleteVideo}
+            onUploadVideoSuccess={handleUploadSuccess}
+            banners={banners}
+            onAddBanner={handleAddBanner}
+            onUpdateBanner={handleUpdateBanner}
+            onDeleteBanner={handleDeleteBanner}
+          />
+        </Suspense>
+      )}
 
-      {/* Upload Modal with RBAC Protection */}
-      <UploadModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-        onUploadSuccess={handleUploadSuccess}
-        isAdminAuthenticated={isAdminAuthenticated}
-        onOpenAdminAuth={() => setIsAdminModalOpen(true)}
-        categories={categories}
-      />
+      {/* Upload Modal with RBAC Protection (Loaded Lazily on Demand) */}
+      {isUploadModalOpen && (
+        <Suspense fallback={null}>
+          <UploadModal
+            isOpen={isUploadModalOpen}
+            onClose={() => setIsUploadModalOpen(false)}
+            onUploadSuccess={handleUploadSuccess}
+            isAdminAuthenticated={isAdminAuthenticated}
+            onOpenAdminAuth={() => setIsAdminModalOpen(true)}
+            categories={categories}
+          />
+        </Suspense>
+      )}
 
-      {/* Ad Management Modal */}
-      <AdManagementModal
-        isOpen={isAdModalOpen}
-        onClose={() => setIsAdModalOpen(false)}
-      />
+      {/* Ad Management Modal (Loaded Lazily on Demand) */}
+      {isAdModalOpen && (
+        <Suspense fallback={null}>
+          <AdManagementModal
+            isOpen={isAdModalOpen}
+            onClose={() => setIsAdModalOpen(false)}
+          />
+        </Suspense>
+      )}
 
-      {/* Soft Optional Login Modal for Guest Feature Discovery */}
-      <SoftLoginModal
-        isOpen={isSoftLoginModalOpen}
-        onClose={() => setIsSoftLoginModalOpen(false)}
-        onSignIn={() => handleNavigate('signin')}
-        featureName={softLoginFeatureName}
-      />
+      {/* Soft Optional Login Modal for Guest Feature Discovery (Loaded Lazily on Demand) */}
+      {isSoftLoginModalOpen && (
+        <Suspense fallback={null}>
+          <SoftLoginModal
+            isOpen={isSoftLoginModalOpen}
+            onClose={() => setIsSoftLoginModalOpen(false)}
+            onSignIn={() => handleNavigate('signin')}
+            featureName={softLoginFeatureName}
+          />
+        </Suspense>
+      )}
 
       {/* Main App Layout - Open Access without Forced Auth */}
       {currentScreen !== 'signin' && (

@@ -101,22 +101,26 @@ export const Header: React.FC<HeaderProps> = ({
     totalCount: 0,
   });
 
-  // Generate suggestions whenever query changes
+  // Deferred search values to prevent keyboard typing lag
+  const deferredSearchQuery = React.useDeferredValue(searchQuery);
+  const deferredMobileSearchInput = React.useDeferredValue(mobileSearchInput);
+
+  // Generate suggestions whenever query changes (deferred)
   useEffect(() => {
-    if (searchQuery.trim().length >= 1 && videos.length > 0) {
-      setGroupedSuggestions(getGroupedSearchSuggestions(videos, searchQuery));
+    if (deferredSearchQuery.trim().length >= 1 && videos.length > 0) {
+      setGroupedSuggestions(getGroupedSearchSuggestions(videos, deferredSearchQuery));
     } else {
       setGroupedSuggestions({ performers: [], tags: [], categories: [], titles: [], totalCount: 0 });
     }
-  }, [searchQuery, videos]);
+  }, [deferredSearchQuery, videos]);
 
   useEffect(() => {
-    if (mobileSearchInput.trim().length >= 1 && videos.length > 0) {
-      setGroupedSuggestions(getGroupedSearchSuggestions(videos, mobileSearchInput));
+    if (deferredMobileSearchInput.trim().length >= 1 && videos.length > 0) {
+      setGroupedSuggestions(getGroupedSearchSuggestions(videos, deferredMobileSearchInput));
     } else if (!mobileSearchActive) {
       setGroupedSuggestions({ performers: [], tags: [], categories: [], titles: [], totalCount: 0 });
     }
-  }, [mobileSearchInput, videos, mobileSearchActive]);
+  }, [deferredMobileSearchInput, videos, mobileSearchActive]);
 
   const handleSuggestionSelect = useCallback((text: string) => {
     setSearchQuery(text);

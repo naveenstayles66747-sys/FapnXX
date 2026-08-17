@@ -110,40 +110,50 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   }, []);
 
   // Filter out any videos that have been taken down
-  const activeVideos = videos.filter((v) => !v.isTakenDown);
-  const activeBanners = (banners || []).filter((b) => b && b.isActive !== false);
-  const displayBanners =
-    activeBanners.length >= 6
+  const activeVideos = React.useMemo(() => (videos || []).filter((v) => !v.isTakenDown), [videos]);
+  const activeBanners = React.useMemo(() => (banners || []).filter((b) => b && b.isActive !== false), [banners]);
+  const displayBanners = React.useMemo(() => {
+    return activeBanners.length >= 6
       ? activeBanners
       : [...activeBanners, ...DEFAULT_DESKTOP_BANNERS.filter((db) => !activeBanners.some((ab) => ab.id === db.id))].slice(0, 6);
+  }, [activeBanners]);
 
-  // Preload all banner slide images into browser memory to eliminate image load flickering/glitching
+  // Preload banner slide images once when banners change
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const preloaded = new Set<string>();
     displayBanners.forEach((b) => {
-      if (b.bannerImage) {
+      if (b.bannerImage && !preloaded.has(b.bannerImage)) {
+        preloaded.add(b.bannerImage);
         const img = new Image();
         img.src = b.bannerImage;
       }
     });
   }, [displayBanners]);
 
-  // Continuous auto-swipe timer every 4.5 seconds (never pauses on hover)
+  // Continuous auto-swipe timer every 4.5 seconds (paused when interacting)
   useEffect(() => {
     if (displayBanners.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrentSlideIndex((prev) => (prev + 1) % displayBanners.length);
+      React.startTransition(() => {
+        setCurrentSlideIndex((prev) => (prev + 1) % displayBanners.length);
+      });
     }, 4500);
     return () => clearInterval(interval);
   }, [displayBanners.length]);
 
   const handleNextSlide = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentSlideIndex((prev) => (prev + 1) % displayBanners.length);
+    React.startTransition(() => {
+      setCurrentSlideIndex((prev) => (prev + 1) % displayBanners.length);
+    });
   };
 
   const handlePrevSlide = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentSlideIndex((prev) => (prev - 1 + displayBanners.length) % displayBanners.length);
+    React.startTransition(() => {
+      setCurrentSlideIndex((prev) => (prev - 1 + displayBanners.length) % displayBanners.length);
+    });
   };
 
   // Trending calculation using Cloud Firestore data / activeVideos (no 404 API calls)
@@ -165,14 +175,17 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     setRankedTrendingVideos(
       scored.slice(0, 8).map((v, i) => ({ ...v, trendingRank: i + 1 }))
     );
-  }, [videos]);
+  }, [activeVideos]);
 
-  // Smart search engine — fuzzy multi-field matching, always returns results
-  const cleanSearch = searchQuery.trim();
-  const searchedVideos = cleanSearch
-    ? smartSearch(activeVideos, cleanSearch)
-    : activeVideos;
-  const isRealMatch = cleanSearch ? hasRealMatches(activeVideos, cleanSearch) : true;
+  // Deferred search engine — keeps UI typing and clicking lightning responsive
+  const deferredSearchQuery = React.useDeferredValue(searchQuery);
+  const cleanSearch = deferredSearchQuery.trim();
+  const searchedVideos = React.useMemo(() => {
+    return cleanSearch ? smartSearch(activeVideos, cleanSearch) : activeVideos;
+  }, [activeVideos, cleanSearch]);
+  const isRealMatch = React.useMemo(() => {
+    return cleanSearch ? hasRealMatches(activeVideos, cleanSearch) : true;
+  }, [activeVideos, cleanSearch]);
 
   // Smart Language-Based Regional Recommendation Engine
   const regionalVideos = React.useMemo(() => {
@@ -516,8 +529,10 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 {/* Option 1: Latest */}
                 <button
                   onClick={() => {
-                    setSortBy('latest');
                     setIsSortDropdownOpen(false);
+                    React.startTransition(() => {
+                      setSortBy('latest');
+                    });
                   }}
                   className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
                     sortBy === 'latest' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
@@ -530,8 +545,10 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 {/* Option 2: Most Relevant */}
                 <button
                   onClick={() => {
-                    setSortBy('most_relevant');
                     setIsSortDropdownOpen(false);
+                    React.startTransition(() => {
+                      setSortBy('most_relevant');
+                    });
                   }}
                   className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
                     sortBy === 'most_relevant' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
@@ -544,8 +561,10 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 {/* Option 3: Top Rated */}
                 <button
                   onClick={() => {
-                    setSortBy('top_rated');
                     setIsSortDropdownOpen(false);
+                    React.startTransition(() => {
+                      setSortBy('top_rated');
+                    });
                   }}
                   className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
                     sortBy === 'top_rated' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'

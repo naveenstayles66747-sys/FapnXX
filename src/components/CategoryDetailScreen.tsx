@@ -22,8 +22,10 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
   userEmail,
 }) => {
   const category = categories.find((c) => c.id === categoryId) || categories[0] || CATEGORIES[0];
-  const activeVideos = videos.filter((v) => !v.isTakenDown);
-  const categoryVideos = activeVideos.filter((v) => v.category === categoryId || categoryId === 'trending');
+  const activeVideos = React.useMemo(() => (videos || []).filter((v) => !v.isTakenDown), [videos]);
+  const categoryVideos = React.useMemo(() => {
+    return activeVideos.filter((v) => v.category === categoryId || categoryId === 'trending');
+  }, [activeVideos, categoryId]);
 
   const [selectedSubtag, setSelectedSubtag] = React.useState<string>('All');
   const [sortBy, setSortBy] = React.useState<'newest' | 'views'>('newest');
@@ -34,6 +36,18 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
     setIsSavedCategory(!isSavedCategory);
     setToastMsg(!isSavedCategory ? `Saved ${category.name} to My List` : `Removed ${category.name} from My List`);
     setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  const handleSelectSubtag = (tag: string) => {
+    React.startTransition(() => {
+      setSelectedSubtag(tag);
+    });
+  };
+
+  const handleToggleSort = () => {
+    React.startTransition(() => {
+      setSortBy((prev) => (prev === 'newest' ? 'views' : 'newest'));
+    });
   };
 
   // Subtags filter & sorting logic
@@ -128,7 +142,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
           {subtags.map((tag) => (
             <button
               key={tag}
-              onClick={() => setSelectedSubtag(tag)}
+              onClick={() => handleSelectSubtag(tag)}
               className={`whitespace-nowrap px-4 py-2 rounded-full font-semibold text-xs transition-colors cursor-pointer active:scale-95 ${
                 selectedSubtag === tag
                   ? 'bg-[#ec4899] text-[#fafafa] shadow-neon-pink'
@@ -149,7 +163,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
           </h2>
           <div className="flex gap-4">
             <button
-              onClick={() => setSortBy((prev) => (prev === 'newest' ? 'views' : 'newest'))}
+              onClick={handleToggleSort}
               className="px-4 py-2 bg-[#201f22] hover:bg-[#ec4899] border border-[#353437] hover:border-[#ec4899] rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-95 shadow-sm group/sort"
             >
               <span className="material-symbols-outlined text-sm text-[#ffb0cd] group-hover/sort:text-white transition-colors">swap_vert</span>

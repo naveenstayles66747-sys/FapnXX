@@ -11,10 +11,18 @@ export const EXOCLICK_ZONES = {
   SITE_HASH: '6a97888e',
 };
 
-// Global Interstitial Trigger Helper
+// Global Interstitial Trigger Helper - non-blocking to protect INP performance
 export const triggerInterstitial = () => {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('exoclick-trigger-interstitial'));
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(() => {
+        window.dispatchEvent(new CustomEvent('exoclick-trigger-interstitial'));
+      }, { timeout: 300 });
+    } else {
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('exoclick-trigger-interstitial'));
+      }, 0);
+    }
   }
 };
 

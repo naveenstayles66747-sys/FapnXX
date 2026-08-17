@@ -71,11 +71,20 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
+button, a, input, select, textarea, [role="button"], article {
+  touch-action: manipulation;
+}
+
 /* GPU Acceleration & Performance for Low-End Devices */
 .gpu-accelerated {
   transform: translateZ(0);
   backface-visibility: hidden;
   perspective: 1000px;
+}
+
+/* Optimize Video Card Rendering */
+.video-card-container {
+  contain: layout paint;
 }
 
 /* Mobile Performance Tweaks */

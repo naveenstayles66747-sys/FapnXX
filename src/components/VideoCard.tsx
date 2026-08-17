@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo, useMemo } from 'react';
 import { Video } from '../types';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface VideoCardProps {
   video: Video;
@@ -19,6 +20,24 @@ const formatViews = (count?: number, fallbackStr?: string): string => {
     return `${num} ${num === 1 ? 'view' : 'views'}`;
   }
   return fallbackStr || '1 view';
+};
+
+const formatCardViews = (video: Video): string => {
+  const n = video.viewsCount;
+  if (typeof n === 'number' && !isNaN(n)) {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}k`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}k`;
+    return `${n}`;
+  }
+  return (video.views || '1').replace(/[^0-9KMk.]/g, '') || '1';
+};
+
+const formatCardRating = (video: Video): string => {
+  const likes = typeof video.likesCount === 'number' ? video.likesCount : 0;
+  if (likes === 0) return '0%';
+  const views = typeof video.viewsCount === 'number' && video.viewsCount > 0 ? video.viewsCount : 1;
+  const percent = Math.min(100, Math.round((likes / views) * 100));
+  return `${Math.max(1, percent)}%`;
 };
 
 const formatTimeAgo = (createdAt?: string, fallbackStr?: string): string => {
@@ -54,10 +73,7 @@ const formatTimeAgo = (createdAt?: string, fallbackStr?: string): string => {
 const FALLBACK_THUMBNAIL = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=800&auto=format&fit=crop';
 
 // ─── Extract ONLY dedicated preview media (WebP animated / MP4 clip) ───────────
-// IMPORTANT: embedUrl is STRICTLY for the video player page — it is NEVER used
-// as a hover preview on video cards, to avoid thumbnail/embed mismatch confusion.
 const extractPreviewDetails = (video: Video) => {
-  // Priority 1: Animated WebP / GIF thumbnail preview (best for cards)
   const webpSrc = (video.previewWebpUrl || '').trim();
   if (webpSrc) {
     const urlPath = webpSrc.split('?')[0].split('#')[0].toLowerCase();
@@ -67,7 +83,6 @@ const extractPreviewDetails = (video: Video) => {
     if (isVideo) return { previewSrc: webpSrc, previewType: 'video' as const };
   }
 
-  // Priority 2: Dedicated MP4/WebM preview clip (short 10-30s clip separate from embed)
   const mp4Src = (video.previewMp4Url || '').trim();
   if (mp4Src) {
     const urlPath = mp4Src.split('?')[0].split('#')[0].toLowerCase();
@@ -75,40 +90,33 @@ const extractPreviewDetails = (video: Video) => {
     const isImage = /\.(webp|gif|png|jpe?g|avif|svg)$/i.test(urlPath);
     if (isVideo) return { previewSrc: mp4Src, previewType: 'video' as const };
     if (isImage) return { previewSrc: mp4Src, previewType: 'image' as const };
-    // If mp4Url is actually an embed link (wrongly stored) — skip it, don't show
-    // embedseek / hornhub / external embed links are NOT preview media
     const isExternalEmbed = /embedseek|hornhub|iframe|embed\./.test(urlPath);
     if (!isExternalEmbed && mp4Src.startsWith('http')) {
-      // Could be a direct CDN stream
       return { previewSrc: mp4Src, previewType: 'video' as const };
     }
   }
 
-  // embedUrl is intentionally NOT used here — it belongs only to VideoDetailScreen player
   return { previewSrc: '', previewType: 'none' as const };
 };
 
-// Check if a video has an embed source (for badge display)
-const hasEmbedSource = (video: Video): boolean => {
-  return Boolean(video.embedUrl?.trim() || video.isEmbed);
-};
-
-export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = 'grid' }) => {
+const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout = 'grid' }) => {
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [isMobilePreviewing, setIsMobilePreviewing] = useState<boolean>(false);
-  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const isMobile = useIsMobile();
   const cardRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMouseEnter = () => {
+    if (isMobile) return;
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     hoverTimerRef.current = setTimeout(() => {
       setIsHovered(true);
-    }, 150); // Fast 150ms responsive hover trigger on desktop
+    }, 150);
   };
 
   const handleMouseLeave = () => {
+    if (isMobile) return;
     if (hoverTimerRef.current) {
       clearTimeout(hoverTimerRef.current);
       hoverTimerRef.current = null;
@@ -126,33 +134,22 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
     };
   }, []);
 
-  // Detect mobile device strictly by screen width and coarse pointer
-  useEffect(() => {
-    const checkMobile = () => {
-      const isSmallScreen = window.innerWidth <= 768;
-      const isCoarseTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches && window.innerWidth <= 1024;
-      setIsMobile(isSmallScreen || isCoarseTouch);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
   // Single active mobile preview lock across entire app (only 1 video plays at a time)
   useEffect(() => {
+    if (!isMobile) return;
     const handleActiveChange = (e: CustomEvent<string | null>) => {
       if (e.detail !== video.id) {
         setIsMobilePreviewing(false);
       }
     };
 
-    window.addEventListener('active-mobile-preview-change' as any, handleActiveChange as any);
+    window.addEventListener('active-mobile-preview-change' as any, handleActiveChange as any, { passive: true });
     return () => {
       window.removeEventListener('active-mobile-preview-change' as any, handleActiveChange as any);
     };
-  }, [video.id]);
+  }, [video.id, isMobile]);
 
-  // Mobile Intersection Observer: Auto-stop preview when card scrolls out of view (less than 40% visible)
+  // Mobile Intersection Observer: Auto-stop preview when card scrolls out of view
   useEffect(() => {
     if (!isMobile || !isMobilePreviewing || !cardRef.current) return;
 
@@ -167,7 +164,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
           );
         }
       },
-      { threshold: [0, 0.4, 0.8] }
+      { threshold: [0, 0.4] }
     );
 
     observer.observe(cardRef.current);
@@ -181,7 +178,6 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
     const nextState = !isMobilePreviewing;
     setIsMobilePreviewing(nextState);
 
-    // Notify all other VideoCard instances to stop playing so only 1 plays at a time!
     window.dispatchEvent(
       new CustomEvent('active-mobile-preview-change', {
         detail: nextState ? video.id : null,
@@ -189,8 +185,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
     );
   };
 
-  const { previewSrc, previewType } = extractPreviewDetails(video);
-
+  const { previewSrc, previewType } = useMemo(() => extractPreviewDetails(video), [video]);
   const shouldPlayPreview = isMobile ? isMobilePreviewing : isHovered;
 
   // Force autoplay for MP4 video previews when active
@@ -210,7 +205,6 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
     }
   }, [shouldPlayPreview, previewType]);
 
-  // Video's own thumbnail — with priority: custom thumbnail -> animated webp -> fallback
   const primaryThumb = (video.thumbnail || video.thumbnailUrl || video.previewWebpUrl || '').trim();
   const displayThumbnail = primaryThumb || FALLBACK_THUMBNAIL;
 
@@ -273,9 +267,9 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className="group relative bg-[#131315] rounded-2xl overflow-hidden border border-[#353437] hover:border-[#ffb0cd]/50 transition-colors cursor-pointer flex flex-col md:flex-row"
+        style={{ contentVisibility: 'auto', containIntrinsicSize: '300px' }}
       >
         <div className="relative w-full md:w-2/5 aspect-video md:aspect-auto overflow-hidden bg-black">
-          {/* Default Static Thumbnail */}
           <img
             src={displayThumbnail}
             alt={video.title}
@@ -291,11 +285,9 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
             className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
           />
 
-          {/* Active Preview Overlay */}
           {renderPreviewOverlay()}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
 
-          {/* Active Preview Badge */}
           {isHovered && (
             <div className="absolute top-2 right-2 bg-[#ec4899] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1 animate-pulse z-20">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
@@ -303,14 +295,12 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
             </div>
           )}
 
-          {/* Compact Duration Badge at Bottom Right Corner */}
           {!shouldPlayPreview && (
             <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-white border border-white/10 z-20">
               {video.duration || '05:00'}
             </div>
           )}
 
-          {/* Top-Left Quality Badge */}
           {!shouldPlayPreview && video.quality && (
             <div className="absolute top-2 left-2 z-20">
               <span className="bg-[#ec4899] text-white px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shadow-md">
@@ -355,9 +345,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
     );
   }
 
-  // Dedicated animated preview (WebP/GIF) — only from previewWebpUrl field
   const webpPreviewUrl = (video.previewWebpUrl || '').trim() || (previewType === 'image' ? previewSrc : '');
-  // Embed badge intentionally hidden — removed from card UI
 
   return (
     <article
@@ -366,6 +354,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className="group cursor-pointer flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300"
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
     >
       {/* 16:9 Full-Width Thumbnail Container matching requested spec */}
       <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b]">
@@ -400,8 +389,6 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
         {/* Dynamic Video Fallback Preview (for MP4 previews if no WebP) */}
         {shouldPlayPreview && !webpPreviewUrl && renderPreviewOverlay()}
 
-      {/* ─── Thumbnail badges: HD top-right, Duration bottom-right (no mobile preview btn overlap) ─── */}
-
         {/* Top-Right: Quality Badge only */}
         {!shouldPlayPreview && (
           <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
@@ -422,7 +409,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
           </div>
         )}
 
-        {/* Mobile Touch Eye Preview Button — Exact Translucent Dark Glass with Bright White Eye Icon */}
+        {/* Mobile Touch Eye Preview Button */}
         {isMobile && (
           <button
             type="button"
@@ -444,46 +431,28 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
         )}
       </div>
 
-      {/* ─── Card Info Below Thumbnail (Exact Reference Design) ─── */}
+      {/* Card Info Below Thumbnail */}
       <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
-        {/* Title */}
         <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight">
           {video.title}
         </h3>
 
-        {/* Stats Row: 👁️ 12k   👍 95%   🕒 08:20 */}
+        {/* Stats Row: Views, Rating, Duration */}
         <div className="video-card-stats-row flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
-          {/* 1. Views */}
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">visibility</span>
             <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">
-              {(() => {
-                const n = video.viewsCount;
-                if (typeof n === 'number') {
-                  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}k`;
-                  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}k`;
-                  return `${n}`;
-                }
-                return (video.views || '1').replace(/[^0-9KMk.]/g, '') || '1';
-              })()}
+              {formatCardViews(video)}
             </span>
           </span>
 
-          {/* 2. Rating % */}
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">thumb_up</span>
             <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">
-              {(() => {
-                const likes = typeof video.likesCount === 'number' ? video.likesCount : 0;
-                if (likes === 0) return '0%';
-                const views = typeof video.viewsCount === 'number' && video.viewsCount > 0 ? video.viewsCount : 1;
-                const percent = Math.min(100, Math.round((likes / views) * 100));
-                return `${Math.max(1, percent)}%`;
-              })()}
+              {formatCardRating(video)}
             </span>
           </span>
 
-          {/* 3. Duration */}
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">schedule</span>
             <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">
@@ -495,3 +464,6 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, layout = '
     </article>
   );
 };
+
+export const VideoCard = memo(VideoCardComponent);
+export default VideoCard;

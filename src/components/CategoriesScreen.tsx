@@ -31,6 +31,7 @@ export const CategoriesScreen: React.FC<CategoriesScreenProps> = ({
               onSelectCategory(cat.id);
             }}
             className="group relative h-64 rounded-2xl overflow-hidden border border-[#27272a] hover:border-[#ffb0cd] transition-all duration-300 cursor-pointer shadow-lg"
+            style={{ contentVisibility: 'auto', containIntrinsicSize: '256px' }}
           >
             <img
               src={getCategoryHeroImage(cat)}

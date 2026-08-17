@@ -13,14 +13,15 @@ export const PerformersScreen: React.FC = () => {
     );
   };
 
-  const filteredPerformers =
-    filterTag === 'All'
+  const filteredPerformers = React.useMemo(() => {
+    return filterTag === 'All'
       ? performers
       : performers.filter((p) =>
           p.tags?.some((t) => t.toLowerCase() === filterTag.toLowerCase()) ||
           p.name.toLowerCase().includes(filterTag.toLowerCase()) ||
           p.bio?.toLowerCase().includes(filterTag.toLowerCase())
         );
+  }, [performers, filterTag]);
 
   const visiblePerformers = filteredPerformers.slice(0, visibleCount);
 
@@ -42,8 +43,10 @@ export const PerformersScreen: React.FC = () => {
           <button
             key={tag}
             onClick={() => {
-              setFilterTag(tag);
-              setVisibleCount(5);
+              React.startTransition(() => {
+                setFilterTag(tag);
+                setVisibleCount(5);
+              });
             }}
             className={`px-5 py-2 rounded-full font-semibold text-xs whitespace-nowrap cursor-pointer transition-all active:scale-95 ${
               filterTag === tag
