@@ -228,71 +228,42 @@ export const MobileInstantMessage: React.FC = () => {
  * <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
  */
 export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ className = '' }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const adInjected = useRef(false);
+
+  useEffect(() => {
+    if (!containerRef.current || adInjected.current) return;
+
+    try {
+      containerRef.current.innerHTML = '';
+      const ins = document.createElement('ins');
+      ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}37`;
+      ins.setAttribute('data-zoneid', EXOCLICK_ZONES.OUTSTREAM_VIDEO);
+      ins.style.display = 'block';
+      ins.style.width = '100%';
+      ins.style.margin = '0 auto';
+      containerRef.current.appendChild(ins);
+
+      const win = window as any;
+      win.AdProvider = win.AdProvider || [];
+      win.AdProvider.push({ serve: {} });
+
+      adInjected.current = true;
+    } catch (e) {
+      console.warn('[ExoClick] Outstream ad render error:', e);
+    }
+  }, []);
+
   return (
-    <article
-      className={`group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
+    <div
+      className={`w-full flex items-center justify-center overflow-hidden my-1 ${className}`}
     >
-      {/* 16:9 Full-Width Container matching regular VideoCard */}
-      <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-black flex items-center justify-center min-h-[180px] sm:min-h-[220px]">
-        {/* Top-Left: Sponsored Badge */}
-        <div className="absolute top-2 left-2 z-20 flex items-center gap-1 pointer-events-none">
-          <span className="bg-[#ec4899] text-white px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shadow-md flex items-center gap-1">
-            <span className="material-symbols-outlined text-[11px]">campaign</span>
-            <span>Sponsored</span>
-          </span>
-        </div>
-
-        {/* Top-Right: HD Badge */}
-        <div className="absolute top-2 right-2 z-20 flex items-center gap-1 pointer-events-none">
-          <span className="thumb-hd-badge bg-black/85 text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
-            HD
-          </span>
-        </div>
-
-        {/* 100% Native ExoClick Outstream Video Engine (Zone ID: 6003190) */}
-        <iframe
-          srcDoc={`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <style>
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-    ins { display: block !important; width: 100% !important; height: 100% !important; margin: 0 auto !important; }
-    video, iframe { width: 100% !important; height: 100% !important; object-fit: cover !important; }
-  </style>
-  <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script>
-</head>
-<body>
-  <ins class="eas6a97888e37" data-zoneid="6003190"></ins>
-  <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
-</body>
-</html>`}
-          title="Sponsored Video Stream"
-          scrolling="no"
-          frameBorder={0}
-          className="w-full h-full border-none block bg-black"
-          style={{ width: '100%', height: '100%', border: 'none' }}
-        />
-      </div>
-
-      {/* Card Info Below matching regular VideoCard */}
-      <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
-        <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-1 leading-snug tracking-tight">
-          Featured Stream & Partner Discovery
-        </h3>
-
-        <div className="video-card-stats-row flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#e0358d]">play_circle</span>
-            <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">Outstream Video</span>
-          </span>
-          <span>•</span>
-          <span className="text-[10px] text-zinc-500 font-mono">ExoClick Partner</span>
-        </div>
-      </div>
-    </article>
+      <div
+        ref={containerRef}
+        id="exoclick-outstream-zone-6003190"
+        className="w-full flex items-center justify-center overflow-hidden min-h-[180px]"
+      />
+    </div>
   );
 };
 
