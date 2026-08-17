@@ -38,6 +38,7 @@ import {
   getStoredContentPreference,
   setStoredContentPreference,
   registerUserInteractionSync,
+  mergeUserInteractions,
 } from './utils/storage';
 import { usePrivacyStorage } from './hooks/usePrivacyStorage';
 
@@ -181,20 +182,12 @@ export default function App() {
       if (b && b.length > 0) setBanners(b);
     });
 
-    // Fetch user cloud interactions (saved videos, liked videos, watch history) from Firestore
+    // Fetch user cloud interactions and merge with local state (union without data loss)
     videoService.fetchUserInteractionsFromFirestore().then((interactions) => {
       if (interactions) {
-        if (interactions.savedVideos && Array.isArray(interactions.savedVideos)) {
-          localStorage.setItem('indianfullxx_saved_videos', JSON.stringify(interactions.savedVideos));
-        }
-        if (interactions.likedVideos && Array.isArray(interactions.likedVideos)) {
-          localStorage.setItem('indianfullxx_liked_videos', JSON.stringify(interactions.likedVideos));
-        }
-        if (interactions.watchHistory && Array.isArray(interactions.watchHistory)) {
-          localStorage.setItem('indianfullxx_watch_history', JSON.stringify(interactions.watchHistory));
-        }
-        if (interactions.contentPreference) {
-          setContentPreference(interactions.contentPreference as ContentPreference);
+        const merged = mergeUserInteractions(interactions);
+        if (merged.contentPreference) {
+          setContentPreference(merged.contentPreference as ContentPreference);
         }
       }
     });

@@ -18,6 +18,7 @@ import {
   setStoredCategories,
   setStoredReports,
   setStoredVideos,
+  getOrCreateDeviceId,
 } from '../utils/storage';
 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -274,21 +275,11 @@ export class VideoService {
         });
 
         if (firestoreVideos.length > 0) {
-          const combined = [...firestoreVideos];
-          const firestoreIds = new Set(firestoreVideos.map((v) => v.id));
-          INITIAL_VIDEOS.forEach((defaultVid) => {
-            if (!firestoreIds.has(defaultVid.id)) {
-              combined.push(defaultVid);
-            }
-          });
           // Sort newest first
-          combined.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-          setStoredVideos(combined);
-          return combined;
+          firestoreVideos.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          setStoredVideos(firestoreVideos);
+          return firestoreVideos;
         }
-      } else {
-        // Firestore is empty — auto-seed initial videos into Firestore
-        this.seedInitialVideosToFirestore();
       }
     } catch (firestoreErr: any) {
       console.warn('⚠️ [Firestore Client] fetchVideos fallback to API:', firestoreErr.message);
@@ -323,10 +314,8 @@ export class VideoService {
       const unsubscribe = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
           const list: Video[] = [];
-          const firestoreIds = new Set<string>();
           snapshot.forEach((d) => {
             const data = d.data() as any;
-            firestoreIds.add(d.id);
             list.push({
               ...data,
               id: d.id,
@@ -334,11 +323,6 @@ export class VideoService {
               viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 1,
               likesCount: typeof data.likesCount === 'number' ? data.likesCount : 0,
             });
-          });
-          INITIAL_VIDEOS.forEach((defaultVid) => {
-            if (!firestoreIds.has(defaultVid.id)) {
-              list.push(defaultVid);
-            }
           });
           if (list.length > 0) {
             list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
@@ -1176,19 +1160,7 @@ export class VideoService {
    * Get or initialize unique device/client identifier for cloud sync
    */
   getDeviceId(): string {
-    const DEVICE_ID_KEY = 'fapnxx_device_uid';
-    let devId = '';
-    try {
-      devId = localStorage.getItem(DEVICE_ID_KEY) || '';
-    } catch {}
-
-    if (!devId) {
-      devId = `dev_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-      try {
-        localStorage.setItem(DEVICE_ID_KEY, devId);
-      } catch {}
-    }
-    return devId;
+    return getOrCreateDeviceId();
   }
 
   /**
