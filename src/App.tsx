@@ -6,7 +6,8 @@ import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
 import { MobileDrawer } from './components/MobileDrawer';
 import { AgeGateModal } from './components/AgeGateModal';
-import { StickyBottomLeaderboard, MobileInstantMessage, DesktopFullpageInterstitial, triggerInterstitial } from './components/AdSpaces';
+import { StickyBottomLeaderboard, MobileInstantMessage, DesktopFullpageInterstitial, MobileFullpageInterstitial } from './components/AdSpaces';
+import { adManager } from './utils/adManager';
 import { BrowseScreen } from './components/BrowseScreen';
 import { CategoriesScreen } from './components/CategoriesScreen';
 import { CategoryDetailScreen } from './components/CategoryDetailScreen';
@@ -386,7 +387,11 @@ export default function App() {
   };
 
   const handleSelectVideo = (video: Video) => {
-    triggerInterstitial();
+    // Increment transition ONLY if target is distinct from current video
+    adManager.recordEligibleTransition(video.id, selectedVideo?.id);
+    // Request interstitial (checks eligibility & dispatches event if ready)
+    adManager.requestInterstitial('video_select');
+
     startTransition(() => {
       setSelectedVideo(video);
       setCurrentScreen('video-detail');
@@ -396,7 +401,9 @@ export default function App() {
   };
 
   const handleSelectCategory = (id: CategoryId) => {
-    triggerInterstitial();
+    adManager.recordEligibleTransition(id, selectedCategoryId);
+    adManager.requestInterstitial('category_select');
+
     startTransition(() => {
       setSelectedCategoryId(id);
       if (id === 'all') {
@@ -620,6 +627,9 @@ export default function App() {
 
           {/* ExoClick Desktop Fullpage Interstitial Ad (Zone ID: 6003174) */}
           <DesktopFullpageInterstitial />
+
+          {/* ExoClick Mobile Fullpage Interstitial Ad (Zone ID: 6003180) */}
+          <MobileFullpageInterstitial />
 
           {/* ExoClick Mobile Instant Message Ad (Zone ID: 6003178) */}
           <MobileInstantMessage />

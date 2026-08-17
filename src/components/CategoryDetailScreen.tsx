@@ -3,6 +3,7 @@ import { CategoryId, CategoryInfo, Video } from '../types';
 import { CATEGORIES, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { OutstreamVideoCardAd } from './AdSpaces';
+import { AD_CONFIG } from '../config/adConfig';
 import { getCategoryHeroImage, handleCategoryImageError } from '../utils/mediaHelper';
 
 interface CategoryDetailScreenProps {
@@ -196,8 +197,8 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
                     onClick={() => onSelectVideo(video)}
                     layout="grid"
                   />
-                  {idx === 3 && (
-                    <OutstreamVideoCardAd key="category-outstream-ad" />
+                  {(idx + 1) % AD_CONFIG.OUTSTREAM_FEED_FREQUENCY === 0 && (
+                    <OutstreamVideoCardAd key={`category-outstream-ad-${idx}`} />
                   )}
                 </React.Fragment>
               ))}

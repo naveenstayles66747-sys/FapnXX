@@ -9,4 +9,6 @@ coverage/
 .vercel
 serviceAccountKey*.json
 *serviceAccountKey*.json
+server/serviceAccountKey*.json
+server/*.json
 credentials/

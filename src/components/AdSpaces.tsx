@@ -1,46 +1,36 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AD_ZONES } from '../config/adConfig';
+import { adManager, triggerInterstitial } from '../utils/adManager';
 
-// ExoClick Zone IDs Reference
-export const EXOCLICK_ZONES = {
-  STICKY_LEADERBOARD: '6003172',   // 728x90 Desktop / 300x50 Mobile
-  DESKTOP_INTERSTITIAL: '6003174', // Fullpage Desktop Interstitial
-  MOBILE_INTERSTITIAL: '6003180',  // Fullpage Mobile Interstitial
-  MOBILE_INSTANT_MSG: '6003178',   // Mobile Instant Chat Message
-  IN_STREAM_VAST: '6003184',       // VAST 2.0/3.0 In-Stream Video
-  OUTSTREAM_VIDEO: '6003190',      // Outstream Feed Video Card
-  SITE_HASH: '6a97888e',
-};
-
-// Global Interstitial Trigger Helper
-export const triggerInterstitial = () => {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('exoclick-trigger-interstitial'));
-  }
-};
+export { triggerInterstitial };
 
 /**
- * Standard Native ExoClick Banner Ad
+ * Standard Native ExoClick Banner Slot
  */
 export const AdBanner: React.FC<{ zoneId?: string; className?: string }> = ({
-  zoneId = EXOCLICK_ZONES.STICKY_LEADERBOARD,
+  zoneId = AD_ZONES.IN_PAGE_BANNER,
   className = '',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const el = containerRef.current;
+    if (!el || el.dataset.adInitialized === 'true') return;
+
     try {
-      containerRef.current.innerHTML = '';
+      el.innerHTML = '';
       const ins = document.createElement('ins');
-      ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}17`;
-      ins.setAttribute('data-zoneid', zoneId || EXOCLICK_ZONES.STICKY_LEADERBOARD);
+      ins.className = `eas${AD_ZONES.SITE_HASH}17`;
+      ins.setAttribute('data-zoneid', zoneId || AD_ZONES.IN_PAGE_BANNER);
       ins.style.display = 'block';
       ins.style.margin = '0 auto';
-      containerRef.current.appendChild(ins);
+      el.appendChild(ins);
 
       const win = window as any;
       win.AdProvider = win.AdProvider || [];
       win.AdProvider.push({ serve: {} });
+
+      el.dataset.adInitialized = 'true';
     } catch (e) {
       console.warn('[ExoClick] AdBanner mount error:', e);
     }
@@ -49,62 +39,118 @@ export const AdBanner: React.FC<{ zoneId?: string; className?: string }> = ({
   return (
     <div
       ref={containerRef}
-      className={`w-full flex items-center justify-center overflow-hidden my-2 ${className}`}
+      className={`w-full flex items-center justify-center overflow-hidden my-2 min-h-[50px] ${className}`}
     />
   );
 };
 
+/**
+ * Sticky Bottom Banner Ad (Desktop 728x90, Mobile 300x50 / 320x50 with Safe-Area)
+ */
 export const StickyBottomLeaderboard: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isDismissed, setIsDismissed] = useState<boolean>(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || window.innerWidth < 1024 || !containerRef.current) return;
+    if (isDismissed) return;
+    const el = containerRef.current;
+    if (!el || el.dataset.adInitialized === 'true') return;
 
     try {
-      containerRef.current.innerHTML = '';
+      el.innerHTML = '';
+      const isMobile = window.innerWidth < 1024;
+      const zoneId = isMobile ? AD_ZONES.MOBILE_STICKY_BANNER : AD_ZONES.DESKTOP_STICKY_LEADERBOARD;
+
       const ins = document.createElement('ins');
-      ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}17`;
-      ins.setAttribute('data-zoneid', EXOCLICK_ZONES.STICKY_LEADERBOARD);
+      ins.className = `eas${AD_ZONES.SITE_HASH}17`;
+      ins.setAttribute('data-zoneid', zoneId);
       ins.style.display = 'block';
       ins.style.margin = '0 auto';
-      containerRef.current.appendChild(ins);
+      el.appendChild(ins);
 
       const win = window as any;
       win.AdProvider = win.AdProvider || [];
       win.AdProvider.push({ serve: {} });
+
+      el.dataset.adInitialized = 'true';
     } catch (e) {
       console.warn('[ExoClick] Sticky leaderboard error:', e);
     }
-  }, []);
+  }, [isDismissed]);
+
+  if (isDismissed) return null;
 
   return (
     <aside
-      ref={containerRef}
       id="exoclick-sticky-leaderboard"
       aria-label="Sponsored Advertisement"
-      className="hidden lg:flex fixed bottom-0 left-64 right-0 z-[120] justify-center items-center pointer-events-auto pb-1"
-    />
+      className="fixed bottom-0 left-0 right-0 lg:left-64 z-[120] flex flex-col items-center justify-center pointer-events-auto bg-[#09090b]/90 backdrop-blur-sm border-t border-white/5 pb-[env(safe-area-inset-bottom,0px)]"
+    >
+      <div className="relative w-full max-w-4xl flex items-center justify-center py-1">
+        <button
+          type="button"
+          onClick={() => setIsDismissed(true)}
+          className="absolute -top-3 right-2 bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 text-[10px] rounded-full w-5 h-5 flex items-center justify-center cursor-pointer border border-white/10 shadow"
+          title="Close advertisement"
+        >
+          ✕
+        </button>
+        <div
+          ref={containerRef}
+          className="w-full flex items-center justify-center overflow-hidden min-h-[50px]"
+        />
+      </div>
+    </aside>
   );
 };
 
-export const DesktopFullpageInterstitial: React.FC = () => {
+/**
+ * Desktop Fullpage Interstitial Ad (Zone ID: 6003174)
+ * Official Native ExoClick Interstitial (Controlled by adManager)
+ */
+export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = ({ onDismiss }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isActive, setIsActive] = useState<boolean>(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || window.innerWidth < 1024 || !containerRef.current) return;
+    const handleRequest = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && detail.target === 'desktop' && window.innerWidth >= 1024) {
+        setIsActive(true);
+      }
+    };
+
+    window.addEventListener('exoclick-interstitial-request', handleRequest);
+    return () => window.removeEventListener('exoclick-interstitial-request', handleRequest);
+  }, []);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const el = containerRef.current;
+    if (!el) return;
+
     try {
-      containerRef.current.innerHTML = '';
+      el.innerHTML = '';
       const ins = document.createElement('ins');
-      ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}35`;
-      ins.setAttribute('data-zoneid', EXOCLICK_ZONES.DESKTOP_INTERSTITIAL);
+      ins.className = `eas${AD_ZONES.SITE_HASH}35`;
+      ins.setAttribute('data-zoneid', AD_ZONES.DESKTOP_INTERSTITIAL);
       ins.style.display = 'block';
-      containerRef.current.appendChild(ins);
+      el.appendChild(ins);
 
       const win = window as any;
       win.AdProvider = win.AdProvider || [];
       win.AdProvider.push({ serve: {} });
-    } catch (e) {}
-  }, []);
+
+      // Acknowledge successful initialization to adManager
+      adManager.commitInterstitialSuccess();
+    } catch (e) {
+      console.warn('[ExoClick] Desktop Interstitial mount error:', e);
+      setIsActive(false);
+      if (onDismiss) onDismiss();
+    }
+  }, [isActive, onDismiss]);
+
+  if (!isActive) return null;
 
   return (
     <div
@@ -116,67 +162,228 @@ export const DesktopFullpageInterstitial: React.FC = () => {
   );
 };
 
-export const MobileFullpageInterstitial: React.FC = () => null;
+/**
+ * Mobile Fullpage Interstitial Ad (Zone ID: 6003180)
+ * Official Native ExoClick Interstitial (Controlled by adManager)
+ */
+export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = ({ onDismiss }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isActive, setIsActive] = useState<boolean>(false);
 
+  useEffect(() => {
+    const handleRequest = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && detail.target === 'mobile' && window.innerWidth < 1024) {
+        setIsActive(true);
+      }
+    };
+
+    window.addEventListener('exoclick-interstitial-request', handleRequest);
+    return () => window.removeEventListener('exoclick-interstitial-request', handleRequest);
+  }, []);
+
+  // Lock body scroll cleanly and restore exact previous overflow on cleanup
+  useEffect(() => {
+    if (!isActive) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const el = containerRef.current;
+    if (el) {
+      try {
+        el.innerHTML = '';
+        const ins = document.createElement('ins');
+        ins.className = `eas${AD_ZONES.SITE_HASH}35`;
+        ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INTERSTITIAL);
+        ins.style.display = 'block';
+        el.appendChild(ins);
+
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+
+        // Acknowledge successful initialization
+        adManager.commitInterstitialSuccess();
+      } catch (e) {
+        console.warn('[ExoClick] Mobile Interstitial mount error:', e);
+        setIsActive(false);
+        if (onDismiss) onDismiss();
+      }
+    }
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isActive, onDismiss]);
+
+  if (!isActive) return null;
+
+  return (
+    <div
+      ref={containerRef}
+      id="exoclick-mobile-interstitial"
+      className="block lg:hidden fixed inset-0 z-[99999] pointer-events-auto"
+      aria-label="Sponsored Mobile Interstitial"
+    />
+  );
+};
+
+/**
+ * Mobile Instant Message Ad (Zone ID: 6003178)
+ */
 export const MobileInstantMessage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || window.innerWidth >= 1024 || !containerRef.current) return;
+    if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
+    const el = containerRef.current;
+    if (!el || el.dataset.adInitialized === 'true') return;
+
     try {
-      containerRef.current.innerHTML = '';
+      el.innerHTML = '';
       const ins = document.createElement('ins');
-      ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}14`;
-      ins.setAttribute('data-zoneid', EXOCLICK_ZONES.MOBILE_INSTANT_MSG);
-      containerRef.current.appendChild(ins);
+      ins.className = `eas${AD_ZONES.SITE_HASH}14`;
+      ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INSTANT_MESSAGE);
+      el.appendChild(ins);
 
       const win = window as any;
       win.AdProvider = win.AdProvider || [];
       win.AdProvider.push({ serve: {} });
-    } catch (e) {}
+
+      el.dataset.adInitialized = 'true';
+    } catch (e) {
+      console.warn('[ExoClick] Mobile instant message error:', e);
+    }
   }, []);
 
   return (
     <div
       ref={containerRef}
       id="exoclick-mobile-instant-message"
-      className="block lg:hidden fixed bottom-16 right-3 z-[110] pointer-events-auto"
+      className="block lg:hidden fixed bottom-16 right-3 z-[110] pointer-events-auto pb-[env(safe-area-inset-bottom,0px)]"
     />
   );
 };
 
 /**
- * Pure In-Feed Outstream Video Card Ad (Zone ID: 6003190)
+ * In-Feed Outstream Video Card Ad (Zone ID: 6003190)
+ * Lazy loaded with IntersectionObserver when near viewport
  */
 export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ className = '' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        },
+        { rootMargin: '200px' }
+      );
+      observer.observe(el);
+      return () => observer.disconnect();
+    } else {
+      setIsVisible(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    const el = containerRef.current;
+    if (!el || el.dataset.adInitialized === 'true') return;
+
     try {
-      containerRef.current.innerHTML = '';
+      el.innerHTML = '';
       const ins = document.createElement('ins');
-      ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}37`;
-      ins.setAttribute('data-zoneid', EXOCLICK_ZONES.OUTSTREAM_VIDEO);
+      ins.className = `eas${AD_ZONES.SITE_HASH}37`;
+      ins.setAttribute('data-zoneid', AD_ZONES.OUTSTREAM_VIDEO);
       ins.style.display = 'block';
       ins.style.width = '100%';
       ins.style.margin = '0 auto';
-      containerRef.current.appendChild(ins);
+      el.appendChild(ins);
 
       const win = window as any;
       win.AdProvider = win.AdProvider || [];
       win.AdProvider.push({ serve: {} });
-    } catch (e) {}
-  }, []);
+
+      el.dataset.adInitialized = 'true';
+    } catch (e) {
+      console.warn('[ExoClick] Outstream ad mount error:', e);
+    }
+  }, [isVisible]);
 
   return (
     <div
       ref={containerRef}
-      className={`w-full flex items-center justify-center overflow-hidden my-1 min-h-[180px] ${className}`}
+      className={`w-full flex items-center justify-center overflow-hidden my-1 min-h-[180px] rounded-xl bg-black/40 ${className}`}
     />
   );
 };
 
 export const InFeedAdCard = OutstreamVideoCardAd;
-export const OnStreamVideoBanner: React.FC<any> = () => null;
+
+/**
+ * On-Stream In-Video Player Overlay Banner (Zone ID: 6003172)
+ * Positioned cleanly at bottom of player container, dismissible, non-intrusive.
+ */
+export const OnStreamVideoBanner: React.FC<{
+  isVisible?: boolean;
+  onClose?: () => void;
+}> = ({ isVisible = false, onClose }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dismissed, setDismissed] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isVisible || dismissed) return;
+    const el = containerRef.current;
+    if (!el || el.dataset.adInitialized === 'true') return;
+
+    try {
+      el.innerHTML = '';
+      const ins = document.createElement('ins');
+      ins.className = `eas${AD_ZONES.SITE_HASH}17`;
+      ins.setAttribute('data-zoneid', AD_ZONES.ON_STREAM_VIDEO_BANNER);
+      ins.style.display = 'block';
+      ins.style.margin = '0 auto';
+      el.appendChild(ins);
+
+      const win = window as any;
+      win.AdProvider = win.AdProvider || [];
+      win.AdProvider.push({ serve: {} });
+
+      el.dataset.adInitialized = 'true';
+    } catch (e) {
+      console.warn('[ExoClick] On-stream banner mount error:', e);
+    }
+  }, [isVisible, dismissed]);
+
+  if (!isVisible || dismissed) return null;
+
+  return (
+    <div className="absolute bottom-12 left-0 right-0 z-20 flex items-center justify-center pointer-events-auto px-2">
+      <div className="relative bg-black/80 backdrop-blur-sm p-1 rounded-lg border border-white/10 shadow-lg max-w-full overflow-hidden">
+        <button
+          type="button"
+          onClick={() => {
+            setDismissed(true);
+            if (onClose) onClose();
+          }}
+          className="absolute -top-2 -right-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] border border-white/20 shadow cursor-pointer"
+          title="Close overlay"
+        >
+          ✕
+        </button>
+        <div ref={containerRef} className="min-w-[300px] min-h-[50px] flex items-center justify-center" />
+      </div>
+    </div>
+  );
+};
+
 export default AdBanner;

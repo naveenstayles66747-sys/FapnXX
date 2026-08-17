@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Video } from '../types';
 import { videoService } from '../services/videoService';
+import { AD_CONFIG } from '../config/adConfig';
 
 interface FluidPlayerWrapperProps {
   video: Video;
@@ -8,6 +9,8 @@ interface FluidPlayerWrapperProps {
   onEnded?: () => void;
   className?: string;
 }
+
+type VASTState = 'idle' | 'requesting' | 'adLoaded' | 'adPlaying' | 'adCompleted' | 'contentPlaying';
 
 export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   video,
@@ -18,12 +21,16 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const playerInstanceRef = useRef<any>(null);
 
+  // Content start idempotency guard (Prevents duplicate video starts across overlapping callbacks)
+  const contentStartedRef = useRef<boolean>(false);
+
   const [playerMode, setPlayerMode] = useState<'embed' | 'video'>('embed');
   const [currentVideoSrc, setCurrentVideoSrc] = useState<string>('');
   const [videoMountKey, setVideoMountKey] = useState<number>(0);
 
-  // PreRoll Ad Stage State (Allows VAST Ads before both Streamtape and Direct Videos)
-  const [isPrerollDone, setIsPrerollDone] = useState<boolean>(false);
+  // VAST PreRoll State Machine
+  const [vastState, setVastState] = useState<VASTState>('idle');
+
   const prerollPlayerId = `preroll-vast-${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
   const directPlayerId = `fluid-player-${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
@@ -43,7 +50,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         src
       );
 
-    // Direct video ONLY if it has an actual video file extension or blob/storage
     const hasVideoExtension = Boolean(src.match(/\.(mp4|webm|m3u8|mov|ogg)(\?.*)?$/i));
     const isStorageBlob =
       src.startsWith('blob:') ||
@@ -57,7 +63,8 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   // ── Effect: Resolve Player Source (Embed vs Direct MP4/Stream) ───────────
   useEffect(() => {
     setVideoMountKey((k) => k + 1);
-    setIsPrerollDone(false);
+    contentStartedRef.current = false;
+    setVastState('requesting');
 
     const rawEmbed = (
       video.embedUrl ||
@@ -85,12 +92,28 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     }
   }, [video.id, video.embedUrl, video.previewMp4Url]);
 
-  // ── Effect: Initialize PreRoll VAST Ad Stage (Runs for ALL videos including Streamtape) ──
+  // ── Transition Helper: Start Main Video Stream Idempotently ─────────────
+  const startMainContent = (reason: string) => {
+    if (contentStartedRef.current) return;
+    contentStartedRef.current = true;
+
+    if (playerInstanceRef.current) {
+      try {
+        if (typeof playerInstanceRef.current.destroy === 'function') {
+          playerInstanceRef.current.destroy();
+        }
+      } catch {}
+      playerInstanceRef.current = null;
+    }
+
+    setVastState('contentPlaying');
+  };
+
+  // ── Effect: Initialize Fluid Player VAST 3.0 PreRoll Engine ───────────────
   useEffect(() => {
-    if (isPrerollDone || !currentVideoSrc) return;
+    if (vastState !== 'requesting' || !currentVideoSrc) return;
 
     let isMounted = true;
-    let fallbackTimer: NodeJS.Timeout | null = null;
 
     const cleanupPreroll = () => {
       if (playerInstanceRef.current) {
@@ -98,13 +121,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
           if (typeof playerInstanceRef.current.destroy === 'function') {
             playerInstanceRef.current.destroy();
           }
-        } catch (e) {}
+        } catch {}
         playerInstanceRef.current = null;
       }
     };
 
     const attachPrerollVast = () => {
-      if (!isMounted) return;
+      if (!isMounted || contentStartedRef.current) return;
       cleanupPreroll();
 
       const win = window as any;
@@ -117,15 +140,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
       if (typeof win.fluidPlayer === 'function') {
         try {
-          // If VAST network takes > 2.5s or frequency cap is reached, finish preroll immediately
-          fallbackTimer = setTimeout(() => {
-            if (isMounted && !isPrerollDone) {
-              console.log('[FluidPlayer] VAST PreRoll finished / timeout - loading main content.');
-              cleanupPreroll();
-              setIsPrerollDone(true);
-            }
-          }, 2500);
-
           const instance = win.fluidPlayer(prerollPlayerId, {
             layoutControls: {
               primaryColor: '#ec4899',
@@ -148,32 +162,39 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               adList: [
                 {
                   roll: 'preRoll',
-                  vastTag: 'https://s.magsrv.com/v1/vast.php?idz=6003184',
+                  vastTag: AD_CONFIG.VAST_TAG_URL,
                   adText: 'Advertisement',
                   adClickable: true,
                 },
               ],
               skipButtonCaption: 'Skip in [seconds]s',
-              skipButtonClickCaption: 'Skip Ad <span class="skip_button_icon"></span>',
+              skipButtonClickCaption: 'Skip Ad',
               adText: 'Advertisement',
               adTextPosition: 'top left',
               allowVPAID: true,
               vastAdvanced: {
                 vastLoadedCallback: () => {
-                  if (fallbackTimer) clearTimeout(fallbackTimer);
-                  console.log('[FluidPlayer] VAST Ad loaded and playing (Zone 6003184)');
+                  if (isMounted && !contentStartedRef.current) {
+                    setVastState('adPlaying');
+                  }
                 },
                 noVastVideoCallback: () => {
-                  if (fallbackTimer) clearTimeout(fallbackTimer);
-                  console.log('[FluidPlayer] No VAST ad returned (Frequency Capped / No Fill).');
-                  cleanupPreroll();
-                  setIsPrerollDone(true);
+                  // Official FluidPlayer v3 callback on no ad / error -> seamless transition to main content
+                  if (isMounted) {
+                    startMainContent('no_vast_video_or_error');
+                  }
                 },
-                adErrorCallback: (error: any) => {
-                  if (fallbackTimer) clearTimeout(fallbackTimer);
-                  console.warn('[FluidPlayer] VAST error:', error);
-                  cleanupPreroll();
-                  setIsPrerollDone(true);
+                vastVideoSkippedCallback: () => {
+                  // User skipped the ad via native player button
+                  if (isMounted) {
+                    startMainContent('vast_skipped');
+                  }
+                },
+                vastVideoEndedCallback: () => {
+                  // Ad completed naturally
+                  if (isMounted) {
+                    startMainContent('vast_completed');
+                  }
                 },
               },
             },
@@ -181,42 +202,39 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
           playerInstanceRef.current = instance;
 
-          // When video in preroll ends, advance to main player
+          // Backup onended on dummy video element
           if (targetEl) {
             targetEl.onended = () => {
-              if (fallbackTimer) clearTimeout(fallbackTimer);
-              cleanupPreroll();
-              setIsPrerollDone(true);
+              if (isMounted) startMainContent('target_ended');
             };
           }
         } catch (err) {
-          console.warn('[FluidPlayer] Preroll init error:', err);
-          if (fallbackTimer) clearTimeout(fallbackTimer);
-          cleanupPreroll();
-          setIsPrerollDone(true);
+          console.warn('[FluidPlayer] VAST engine init warning:', err);
+          if (isMounted) startMainContent('init_exception');
         }
       } else {
         setTimeout(attachPrerollVast, 100);
       }
     };
 
-    const initTimer = setTimeout(attachPrerollVast, 60);
+    const initTimer = setTimeout(attachPrerollVast, 50);
 
     return () => {
       isMounted = false;
       clearTimeout(initTimer);
-      if (fallbackTimer) clearTimeout(fallbackTimer);
       cleanupPreroll();
     };
-  }, [isPrerollDone, currentVideoSrc, video.id, videoMountKey, prerollPlayerId]);
+  }, [vastState, currentVideoSrc, video.id, videoMountKey, prerollPlayerId]);
+
+  const isPrerollActive = vastState === 'requesting' || vastState === 'adPlaying' || vastState === 'adLoaded';
 
   return (
     <div
       ref={containerRef}
       className={`relative w-full h-full bg-black overflow-hidden flex items-center justify-center select-none ${className}`}
     >
-      {/* ── STAGE 1: PreRoll VAST In-Stream Ad Layer (Attempts ad for ALL videos) ── */}
-      {!isPrerollDone && (
+      {/* ── STAGE 1: PreRoll VAST In-Stream Ad Layer (Native FluidPlayer) ── */}
+      {isPrerollActive && (
         <div className="absolute inset-0 z-30 w-full h-full bg-black flex items-center justify-center">
           <video
             key={`preroll-${videoMountKey}`}
@@ -226,28 +244,16 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             preload="auto"
             className="w-full h-full object-contain block bg-black"
           >
-            {/* Minimal dummy base clip for FluidPlayer to attach VAST PreRoll */}
             <source
               src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
               type="video/mp4"
             />
           </video>
-
-          {/* Quick Skip button in case user wants to jump directly to Streamtape */}
-          <button
-            type="button"
-            onClick={() => setIsPrerollDone(true)}
-            className="absolute top-3 right-3 z-40 bg-black/80 hover:bg-rose-600 text-white text-[11px] font-bold px-3 py-1 rounded-full border border-white/20 shadow-lg cursor-pointer transition-colors flex items-center gap-1"
-          >
-            <span>Skip to Video</span>
-            <span className="material-symbols-outlined text-xs">fast_forward</span>
-          </button>
         </div>
       )}
 
-      {/* ── STAGE 2: Main Video Player (Loads after PreRoll or immediately if ad is skipped/empty) ── */}
+      {/* ── STAGE 2: Main Video Player (Streamtape Embed or Direct Video) ── */}
       {playerMode === 'embed' ? (
-        // ── Full Embed / Iframe Video Player (Streamtape, SpankBang, XVideos, DoodStream, etc.) ──
         <div className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center">
           {currentVideoSrc ? (
             <iframe
@@ -271,7 +277,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
           )}
         </div>
       ) : (
-        // ── Direct MP4 / HLS HTML5 Video Player ──
         <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
           <video
             key={`direct-${videoMountKey}`}

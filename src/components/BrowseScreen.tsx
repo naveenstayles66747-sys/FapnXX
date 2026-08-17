@@ -3,6 +3,7 @@ import { CategoryId, CategoryInfo, LandingBanner, Video } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { OutstreamVideoCardAd } from './AdSpaces';
+import { AD_CONFIG } from '../config/adConfig';
 import { useLanguage } from '../i18n/LanguageContext';
 import { getBannerImageUrl, handleBannerImageError } from '../utils/mediaHelper';
 import { smartSearch, hasRealMatches } from '../utils/searchEngine';
@@ -589,9 +590,9 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     video={video}
                     onClick={() => onSelectVideo(video)}
                   />
-                  {/* Organic In-Feed Outstream Video Ad Placement at Position 4 */}
-                  {idx === 3 && (
-                    <OutstreamVideoCardAd key="outstream-ad-card" />
+                  {/* In-Feed Outstream Video Ad Placement every AD_CONFIG.OUTSTREAM_FEED_FREQUENCY cards */}
+                  {(idx + 1) % AD_CONFIG.OUTSTREAM_FEED_FREQUENCY === 0 && (
+                    <OutstreamVideoCardAd key={`outstream-ad-card-${idx}`} />
                   )}
                 </React.Fragment>
               ))}
