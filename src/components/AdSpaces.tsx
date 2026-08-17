@@ -228,40 +228,35 @@ export const MobileInstantMessage: React.FC = () => {
  * <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
  */
 export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ className = '' }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const adInjected = useRef(false);
-
-  useEffect(() => {
-    if (!containerRef.current || adInjected.current) return;
-
-    try {
-      containerRef.current.innerHTML = '';
-      const ins = document.createElement('ins');
-      ins.className = `eas${EXOCLICK_ZONES.SITE_HASH}37`;
-      ins.setAttribute('data-zoneid', EXOCLICK_ZONES.OUTSTREAM_VIDEO);
-      ins.style.display = 'block';
-      ins.style.width = '100%';
-      ins.style.margin = '0 auto';
-      containerRef.current.appendChild(ins);
-
-      const win = window as any;
-      win.AdProvider = win.AdProvider || [];
-      win.AdProvider.push({ serve: {} });
-
-      adInjected.current = true;
-    } catch (e) {
-      console.warn('[ExoClick] Outstream ad render error:', e);
-    }
-  }, []);
-
   return (
     <div
-      className={`w-full flex items-center justify-center overflow-hidden my-1 ${className}`}
+      className={`w-full flex items-center justify-center overflow-hidden my-1 rounded-xl bg-black border border-white/5 ${className}`}
+      style={{ aspectRatio: '16/9', minHeight: '180px' }}
     >
-      <div
-        ref={containerRef}
-        id="exoclick-outstream-zone-6003190"
-        className="w-full flex items-center justify-center overflow-hidden min-h-[180px]"
+      <iframe
+        srcDoc={`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #000000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    ins { display: block !important; width: 100% !important; height: 100% !important; margin: 0 auto !important; }
+    video, iframe { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+  </style>
+  <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script>
+</head>
+<body>
+  <ins class="eas6a97888e37" data-zoneid="6003190"></ins>
+  <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
+</body>
+</html>`}
+        title="Advertisement"
+        scrolling="no"
+        frameBorder={0}
+        className="w-full h-full border-none block bg-black"
+        style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
       />
     </div>
   );
