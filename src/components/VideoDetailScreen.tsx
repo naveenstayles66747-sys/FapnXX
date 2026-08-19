@@ -165,7 +165,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     : null;
 
   return (
-    <main className="flex-grow lg:pl-64 pb-20 w-full max-w-6xl mx-auto overflow-x-hidden">
+    <main className="flex-grow lg:pl-64 pb-32 w-full max-w-6xl mx-auto overflow-x-hidden">
 
       {/* ═══════════════════════════════════════════════
           VIDEO PLAYER — Responsive Clean Container

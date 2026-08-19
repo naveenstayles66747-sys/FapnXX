@@ -84,13 +84,13 @@ export const StickyBottomLeaderboard: React.FC = () => {
     <aside
       id="exoclick-sticky-leaderboard"
       aria-label="Sponsored Advertisement"
-      className="fixed bottom-0 left-0 right-0 lg:left-64 z-[120] flex flex-col items-center justify-center pointer-events-auto bg-[#09090b]/90 backdrop-blur-sm border-t border-white/5 pb-[env(safe-area-inset-bottom,0px)]"
+      className="fixed bottom-[56px] lg:bottom-0 left-0 right-0 lg:left-64 z-[40] lg:z-[120] flex flex-col items-center justify-center pointer-events-auto bg-[#09090b]/95 backdrop-blur-md border-t border-white/10 pb-[env(safe-area-inset-bottom,0px)]"
     >
       <div className="relative w-full max-w-4xl flex items-center justify-center py-1">
         <button
           type="button"
           onClick={() => setIsDismissed(true)}
-          className="absolute -top-3 right-2 bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 text-[10px] rounded-full w-5 h-5 flex items-center justify-center cursor-pointer border border-white/10 shadow"
+          className="absolute -top-3 right-2 bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 text-[10px] rounded-full w-5 h-5 flex items-center justify-center cursor-pointer border border-white/10 shadow z-10"
           title="Close advertisement"
         >
           ✕
@@ -260,14 +260,14 @@ export const MobileInstantMessage: React.FC = () => {
     <div
       ref={containerRef}
       id="exoclick-mobile-instant-message"
-      className="block lg:hidden fixed bottom-16 right-3 z-[110] pointer-events-auto pb-[env(safe-area-inset-bottom,0px)]"
+      className="block lg:hidden fixed bottom-[116px] right-3 z-[45] pointer-events-auto pb-[env(safe-area-inset-bottom,0px)]"
     />
   );
 };
 
 /**
  * In-Feed Outstream Video Card Ad (Zone ID: 6003190)
- * Lazy loaded with IntersectionObserver when near viewport
+ * Styled identically as a VideoCard with 16:9 media player container and metadata
  */
 export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ className = '' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -285,7 +285,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
             observer.disconnect();
           }
         },
-        { rootMargin: '200px' }
+        { rootMargin: '300px' }
       );
       observer.observe(el);
       return () => observer.disconnect();
@@ -306,6 +306,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       ins.setAttribute('data-zoneid', AD_ZONES.OUTSTREAM_VIDEO);
       ins.style.display = 'block';
       ins.style.width = '100%';
+      ins.style.height = '100%';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
@@ -320,10 +321,52 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
   }, [isVisible]);
 
   return (
-    <div
-      ref={containerRef}
-      className={`w-full flex items-center justify-center overflow-hidden my-1 min-h-[180px] rounded-xl bg-black/40 ${className}`}
-    />
+    <article
+      className={`group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
+      aria-label="Sponsored Advertisement"
+    >
+      {/* 16:9 Full-Width Thumbnail / Player Container matching VideoCard */}
+      <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b] flex items-center justify-center">
+        {/* Outstream Ad Mount Point */}
+        <div
+          ref={containerRef}
+          id="exoclick-outstream-zone-6003190"
+          className="w-full h-full flex items-center justify-center overflow-hidden"
+        />
+
+        {/* Top-Right Badge: SPONSORED / AD */}
+        <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
+          <span className="thumb-hd-badge bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+            AD
+          </span>
+        </div>
+
+        {/* Bottom-Left Badge: SPONSORED */}
+        <div className="thumb-duration-badge absolute bottom-2 left-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400 z-20 shadow-md pointer-events-none">
+          SPONSORED
+        </div>
+      </div>
+
+      {/* Card Info Below Thumbnail matching VideoCard meta box */}
+      <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
+        <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight">
+          Featured Partner Video
+        </h3>
+
+        {/* Stats Row */}
+        <div className="video-card-stats-row flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
+          <span className="flex items-center gap-1">
+            <span className="material-symbols-outlined text-[13px] sm:text-sm text-rose-500">verified</span>
+            <span className="video-card-stat-value text-rose-500 font-bold">Promoted</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">hd</span>
+            <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">1080p HD</span>
+          </span>
+        </div>
+      </div>
+    </article>
   );
 };
 
