@@ -29,10 +29,10 @@ const SidebarComponent: React.FC<SidebarProps> = ({
   const { t } = useLanguage();
 
   return (
-    <nav className="hidden lg:flex flex-col justify-between w-64 bg-[#1c1b1d] border-r border-white/5 shrink-0 overflow-y-auto py-6 fixed left-0 top-20 h-[calc(100vh-5rem)] z-40">
+    <nav className="hidden lg:flex flex-col justify-between w-64 bg-zinc-50 dark:bg-[#1c1b1d] border-r border-zinc-200 dark:border-white/5 shrink-0 overflow-y-auto py-6 fixed left-0 top-20 h-[calc(100vh-5rem)] z-40 transition-colors">
       <div className="space-y-2">
         <div className="px-6 mb-2">
-          <h2 className="text-xs font-semibold text-[#debec8] uppercase tracking-widest">
+          <h2 className="text-xs font-semibold text-zinc-500 dark:text-[#debec8] uppercase tracking-widest">
             {t.categories}
           </h2>
         </div>
@@ -43,10 +43,10 @@ const SidebarComponent: React.FC<SidebarProps> = ({
               onClick={() => {
                 onNavigate('browse');
               }}
-              className={`sidebar-link-interactive w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide cursor-pointer ${
+              className={`sidebar-link-interactive w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide cursor-pointer transition-all ${
                 currentScreen === 'browse' && selectedCategoryId === 'all'
-                  ? 'bg-[#f751a1]/20 text-[#ffb0cd] border-l-4 border-[#ffb0cd]'
-                  : 'text-[#debec8] hover:bg-white/5 hover:text-white'
+                  ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
+                  : 'text-zinc-600 dark:text-[#debec8] hover:bg-zinc-200/60 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white'
               }`}
             >
               <span
@@ -72,8 +72,8 @@ const SidebarComponent: React.FC<SidebarProps> = ({
                   }}
                   className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-[#f751a1]/20 text-[#ffb0cd] border-l-4 border-[#ffb0cd]'
-                      : 'text-[#debec8] hover:bg-white/5 hover:text-white'
+                      ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
+                      : 'text-zinc-600 dark:text-[#debec8] hover:bg-zinc-200/60 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white'
                   }`}
                 >
                   <span
@@ -88,13 +88,13 @@ const SidebarComponent: React.FC<SidebarProps> = ({
             );
           })}
 
-          <li className="pt-4 border-t border-white/5 mt-4 space-y-1">
+          <li className="pt-4 border-t border-zinc-200 dark:border-white/5 mt-4 space-y-1">
             <button
               onClick={() => onNavigate('performers')}
               className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
                 currentScreen === 'performers'
-                  ? 'bg-[#f751a1]/20 text-[#ffb0cd] border-l-4 border-[#ffb0cd]'
-                  : 'text-[#debec8] hover:bg-white/5 hover:text-white'
+                  ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
+                  : 'text-zinc-600 dark:text-[#debec8] hover:bg-zinc-200/60 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-xl">
@@ -111,14 +111,14 @@ const SidebarComponent: React.FC<SidebarProps> = ({
                   onNavigate('browse');
                 }
               }}
-              className="w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide text-[#debec8] hover:bg-white/5 hover:text-white transition-all cursor-pointer"
+              className="w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide text-zinc-600 dark:text-[#debec8] hover:bg-zinc-200/60 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white transition-all cursor-pointer"
             >
               <span className="material-symbols-outlined text-xl text-[#ec4899]">
                 bookmark_add
               </span>
               <span>{t.saved}</span>
               {!userEmail && (
-                <span className="ml-auto text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-white/10 text-[#a19fa6]">
+                <span className="ml-auto text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-[#a19fa6]">
                   Sync
                 </span>
               )}
@@ -129,13 +129,13 @@ const SidebarComponent: React.FC<SidebarProps> = ({
 
       {/* Admin Quick Entry in Sidebar */}
       {onOpenAdminPanel && (
-        <div className="px-3 pt-4 border-t border-white/5 mt-auto">
+        <div className="px-3 pt-4 border-t border-zinc-200 dark:border-white/5 mt-auto">
           <button
             onClick={onOpenAdminPanel}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all cursor-pointer ${
               isAdminAuthenticated
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
-                : 'bg-[#27272a] text-[#ffb0cd] hover:bg-[#3f3f46]'
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
+                : 'bg-zinc-200 dark:bg-[#27272a] text-zinc-800 dark:text-[#ffb0cd] hover:bg-zinc-300 dark:hover:bg-[#3f3f46]'
             }`}
           >
             <span className="material-symbols-outlined text-lg">admin_panel_settings</span>

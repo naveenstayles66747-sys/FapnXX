@@ -8,11 +8,11 @@ interface BottomNavProps {
 
 export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 w-full z-50 bg-[#09090b] border-t border-white/10 shadow-2xl flex justify-around items-center py-3 px-4 pb-safe">
+    <nav className="lg:hidden fixed bottom-0 left-0 w-full z-50 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border-t border-zinc-200 dark:border-white/10 shadow-2xl flex justify-around items-center py-2.5 px-4 pb-safe transition-colors">
       <button
         onClick={() => onNavigate('browse')}
         className={`flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
-          currentScreen === 'browse' ? 'text-[#ffb0cd]' : 'text-[#debec8] hover:text-[#ffb0cd]'
+          currentScreen === 'browse' ? 'text-[#ec4899] dark:text-[#ffb0cd]' : 'text-zinc-500 dark:text-[#debec8] hover:text-[#ec4899] dark:hover:text-[#ffb0cd]'
         }`}
       >
         <span
@@ -28,8 +28,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
         onClick={() => onNavigate('categories')}
         className={`flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
           currentScreen === 'categories' || currentScreen === 'category-detail'
-            ? 'text-[#ffb0cd]'
-            : 'text-[#debec8] hover:text-[#ffb0cd]'
+            ? 'text-[#ec4899] dark:text-[#ffb0cd]'
+            : 'text-zinc-500 dark:text-[#debec8] hover:text-[#ec4899] dark:hover:text-[#ffb0cd]'
         }`}
       >
         <span
@@ -44,7 +44,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
       <button
         onClick={() => onNavigate('performers')}
         className={`flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
-          currentScreen === 'performers' ? 'text-[#ffb0cd]' : 'text-[#debec8] hover:text-[#ffb0cd]'
+          currentScreen === 'performers' ? 'text-[#ec4899] dark:text-[#ffb0cd]' : 'text-zinc-500 dark:text-[#debec8] hover:text-[#ec4899] dark:hover:text-[#ffb0cd]'
         }`}
       >
         <span
@@ -59,7 +59,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
       <button
         onClick={() => onNavigate('signin')}
         className={`flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
-          currentScreen === 'signin' ? 'text-[#ffb0cd]' : 'text-[#debec8] hover:text-[#ffb0cd]'
+          currentScreen === 'signin' ? 'text-[#ec4899] dark:text-[#ffb0cd]' : 'text-zinc-500 dark:text-[#debec8] hover:text-[#ec4899] dark:hover:text-[#ffb0cd]'
         }`}
       >
         <span
