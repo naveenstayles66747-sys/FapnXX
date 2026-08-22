@@ -1063,10 +1063,19 @@ html.light .player-wrapper * {
    ZERO-FOOTPRINT COLLAPSE FOR EMPTY AD CONTAINERS (No Fake Empty Space)
    ===================================================================== */
 #exoclick-mobile-instant-message:empty,
-.eas6a97888e14:empty,
-ins[data-zoneid="6003178"]:empty,
+#exoclick-desktop-interstitial:empty,
+#exoclick-mobile-interstitial:empty,
 #exoclick-sticky-leaderboard:empty,
-ins[data-zoneid="6003172"]:empty {
+.eas6a97888e14:empty,
+.eas6a97888e17:empty,
+.eas6a97888e33:empty,
+.eas6a97888e35:empty,
+.eas6a97888e37:empty,
+ins[data-zoneid="6003178"]:empty,
+ins[data-zoneid="6003172"]:empty,
+ins[data-zoneid="6003174"]:empty,
+ins[data-zoneid="6003180"]:empty,
+ins[data-zoneid="6003190"]:empty {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
@@ -1074,6 +1083,8 @@ ins[data-zoneid="6003172"]:empty {
   padding: 0 !important;
   margin: 0 !important;
   border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 
