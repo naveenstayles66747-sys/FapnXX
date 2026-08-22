@@ -83,6 +83,27 @@ export class VideoService {
   }
 
   /**
+   * Upload a base64 / data URL frame directly to Firebase Storage with fallback
+   */
+  async uploadDataUrlToStorage(dataUrl: string, customId?: string): Promise<string> {
+    try {
+      if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+        return dataUrl;
+      }
+      const id = customId || `thumb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const storageRef = ref(storage, `thumbnails/${id}.jpg`);
+      const snapshot = await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+      const downloadUrl = await getDownloadURL(snapshot.ref);
+      return downloadUrl;
+    } catch (err: any) {
+      console.warn('[VideoService] Data URL storage upload fallback to data URL:', err?.message);
+      return dataUrl;
+    }
+  }
+
+  /**
    * Upload full video file to Firebase Storage with progress tracking
    */
   async uploadVideoFileToStorage(file: File, onProgress?: (percent: number) => void): Promise<string> {

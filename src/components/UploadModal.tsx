@@ -547,6 +547,15 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         }
       }
 
+      // Upload captured frame Data URLs directly to Firebase Cloud Storage for permanent public URL
+      if (finalThumbnail.startsWith('data:image/')) {
+        try {
+          finalThumbnail = await videoService.uploadDataUrlToStorage(finalThumbnail);
+        } catch (uploadErr) {
+          console.warn('[UploadModal] Storage frame upload notice:', uploadErr);
+        }
+      }
+
       let finalPreviewWebp = previewWebpUrl.trim();
       if (finalPreviewWebp.startsWith('blob:')) {
         try {
@@ -558,6 +567,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             reader.onerror = () => resolve(finalPreviewWebp);
             reader.readAsDataURL(blobData);
           });
+        } catch {}
+      }
+
+      if (finalPreviewWebp.startsWith('data:image/')) {
+        try {
+          finalPreviewWebp = await videoService.uploadDataUrlToStorage(finalPreviewWebp);
         } catch {}
       }
 
