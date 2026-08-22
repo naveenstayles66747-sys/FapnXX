@@ -191,7 +191,7 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
       try {
         el.innerHTML = '';
         const ins = document.createElement('ins');
-        ins.className = `eas${AD_ZONES.SITE_HASH}35`;
+        ins.className = `eas${AD_ZONES.SITE_HASH}33`;
         ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INTERSTITIAL);
         ins.style.display = 'block';
         el.appendChild(ins);
