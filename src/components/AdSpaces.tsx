@@ -228,6 +228,7 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
 
 /**
  * Mobile Instant Message Ad (Zone ID: 6003178)
+ * Clean zero-footprint popup mount: collapses completely when empty with no fake space
  */
 export const MobileInstantMessage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -242,6 +243,7 @@ export const MobileInstantMessage: React.FC = () => {
       const ins = document.createElement('ins');
       ins.className = `eas${AD_ZONES.SITE_HASH}14`;
       ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INSTANT_MESSAGE);
+      ins.style.display = 'block';
       el.appendChild(ins);
 
       const win = window as any;
@@ -258,7 +260,7 @@ export const MobileInstantMessage: React.FC = () => {
     <div
       ref={containerRef}
       id="exoclick-mobile-instant-message"
-      className="block lg:hidden fixed bottom-[72px] right-3 z-[60] pointer-events-auto pb-[env(safe-area-inset-bottom,0px)]"
+      className="block lg:hidden fixed bottom-[72px] right-3 z-[60] pointer-events-auto"
     />
   );
 };
