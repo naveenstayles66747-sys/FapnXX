@@ -1049,34 +1049,6 @@ html.light .player-wrapper * {
 }
 
 /* =====================================================================
-   EXOCLICK MOBILE POPUP / INSTANT MESSAGE ELEVATION (Above BottomNav)
-   ===================================================================== */
-@media (max-width: 1023px) {
-  #exoclick-mobile-instant-message,
-  #exoclick-mobile-instant-message *,
-  .eas6a97888e14,
-  .eas6a97888e14 *,
-  ins[data-zoneid="6003178"],
-  ins[data-zoneid="6003178"] *,
-  div[class*="eas6a97888e14"],
-  div[id*="exoclick-mobile-instant-message"] {
-    bottom: 72px !important;
-    z-index: 60 !important;
-  }
-
-  /* Automatically push any dynamically injected fixed bottom popups above the bottom navigation bar */
-  body > div[style*="fixed"][style*="bottom:"],
-  body > div[style*="fixed"][style*="bottom: 0"],
-  body > div[style*="fixed"][style*="bottom:0"],
-  body > ins[style*="fixed"][style*="bottom:"],
-  body > ins[style*="fixed"][style*="bottom: 0"],
-  body > ins[style*="fixed"][style*="bottom:0"] {
-    bottom: 72px !important;
-    z-index: 60 !important;
-  }
-}
-
-/* =====================================================================
    ZERO-FOOTPRINT COLLAPSE FOR EMPTY AD CONTAINERS (No Fake Empty Space)
    ===================================================================== */
 #exoclick-mobile-instant-message:empty,
