@@ -163,9 +163,9 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                   onNavigate('browse');
                   onClose();
                 }}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-[#e5e1e4] hover:bg-white/5 transition-colors font-semibold text-sm"
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-zinc-900 dark:text-[#e5e1e4] hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-bold text-sm cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[#ffb0cd]">home</span>
+                <span className="material-symbols-outlined text-[#e0358d] dark:text-[#ffb0cd]">home</span>
                 <span>Home</span>
               </button>
             </li>
@@ -177,9 +177,9 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                     onSelectCategory(cat.id);
                     onClose();
                   }}
-                  className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-[#e5e1e4] hover:bg-white/5 transition-colors font-semibold text-sm"
+                  className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-zinc-900 dark:text-[#e5e1e4] hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-bold text-sm cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[#ffb0cd]">
+                  <span className="material-symbols-outlined text-[#e0358d] dark:text-[#ffb0cd]">
                     {cat.icon}
                   </span>
                   <span>{cat.name}</span>
@@ -187,15 +187,15 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               </li>
             ))}
 
-            <li className="pt-2 border-t border-white/5 mt-2">
+            <li className="pt-2 border-t border-zinc-200 dark:border-white/5 mt-2">
               <button
                 onClick={() => {
                   onNavigate('performers');
                   onClose();
                 }}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-[#e5e1e4] hover:bg-white/5 transition-colors font-semibold text-sm"
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-zinc-900 dark:text-[#e5e1e4] hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-bold text-sm cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[#ffb0cd]">groups</span>
+                <span className="material-symbols-outlined text-[#e0358d] dark:text-[#ffb0cd]">groups</span>
                 <span>Pornstars</span>
               </button>
             </li>
@@ -211,12 +211,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                     onClose();
                   }
                 }}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-[#e5e1e4] hover:bg-white/5 transition-colors font-semibold text-sm"
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-zinc-900 dark:text-[#e5e1e4] hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-bold text-sm cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[#ec4899]">bookmark_add</span>
                 <span>Saved Videos</span>
                 {!userEmail && (
-                  <span className="ml-auto text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-white/10 text-[#a19fa6]">
+                  <span className="ml-auto text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-zinc-200 dark:bg-white/10 text-zinc-700 dark:text-[#a19fa6]">
                     Sync
                   </span>
                 )}

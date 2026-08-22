@@ -905,6 +905,17 @@ html.light .mobile-drawer-text-sub {
   color: #475569 !important;
 }
 
+html.light .mobile-drawer-aside button,
+html.light .mobile-drawer-aside button span,
+html.light .mobile-drawer-aside li button,
+html.light .mobile-drawer-aside li button span:not(.material-symbols-outlined) {
+  color: #0f172a !important;
+}
+
+html.light .mobile-drawer-aside li button:hover {
+  background-color: #f1f5f9 !important;
+}
+
 /* ==========================================================================
    UI/UX DIRECTIVE: Responsive Iframe Video Player Container (.player-wrapper)
    ========================================================================== */

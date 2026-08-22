@@ -9,9 +9,10 @@ import { SearchSuggestionsDropdown } from './SearchSuggestionsDropdown';
 interface HeaderProps {
   currentScreen: ScreenId;
   onNavigate: (screen: ScreenId) => void;
+  isMobileDrawerOpen?: boolean;
   onToggleMobileDrawer: () => void;
   onOpenSearch: () => void;
-  onOpenUpload: () => void;
+  onOpenUpload?: () => void;
   onOpenAds?: () => void;
   onOpenAdminPanel?: () => void;
   isAdminAuthenticated?: boolean;
@@ -206,9 +207,12 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onToggleMobileDrawer}
           className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700/80 text-zinc-800 dark:text-zinc-100 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0"
-          aria-label="Open menu"
+          aria-label={isMobileDrawerOpen ? "Close menu" : "Open menu"}
+          title={isMobileDrawerOpen ? "Close menu" : "Open menu"}
         >
-          <span className="material-symbols-outlined text-xl">menu</span>
+          <span className={`material-symbols-outlined text-xl ${isMobileDrawerOpen ? 'text-[#e0358d]' : ''}`}>
+            {isMobileDrawerOpen ? 'close' : 'menu'}
+          </span>
         </button>
 
         {/* Brand Logo (Visible on Left in Desktop Web View) */}

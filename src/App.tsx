@@ -508,7 +508,8 @@ export default function App() {
           <Header
             currentScreen={currentScreen}
             onNavigate={handleNavigate}
-            onToggleMobileDrawer={() => setIsMobileDrawerOpen(true)}
+            isMobileDrawerOpen={isMobileDrawerOpen}
+            onToggleMobileDrawer={() => setIsMobileDrawerOpen((prev) => !prev)}
             onOpenSearch={() => {
               if (currentScreen !== 'browse') {
                 setCurrentScreen('browse');
