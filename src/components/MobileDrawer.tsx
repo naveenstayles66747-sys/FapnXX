@@ -49,24 +49,29 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
       {/* Drawer Content with natural spring physics slide */}
       <aside className="mobile-drawer-aside mobile-drawer-anim absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-[#131315] border-r border-white/10 flex flex-col z-10 shadow-[20px_0_50px_rgba(0,0,0,0.8)]">
-        <div className="p-6 flex justify-between items-center border-b border-white/5">
+        {/* Drawer Header matching Header height (h-16) and exact top-left hamburger button position */}
+        <div className="h-16 px-3 flex items-center gap-3 border-b border-zinc-200/80 dark:border-white/10 shrink-0">
+          {/* Close Button placed at the EXACT same position as the 3-line hamburger button */}
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700/80 text-zinc-800 dark:text-zinc-100 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0"
+            aria-label="Close menu"
+            title="Close menu"
+          >
+            <span className="material-symbols-outlined text-xl text-[#e0358d]">close</span>
+          </button>
+
           <div
             onClick={() => {
               onNavigate('browse');
               onClose();
             }}
-            className="text-2xl font-black italic cursor-pointer tracking-tight"
+            className="text-xl font-black italic cursor-pointer tracking-tight select-none"
           >
             <span className="text-[#e0358d] drop-shadow-[0_0_10px_rgba(224,53,141,0.5)] font-black">Fap</span>
             <span className="brand-letter-n font-black">n</span>
             <span className="mobile-drawer-text font-black">XX</span>
           </div>
-          <button
-            onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 text-[#debec8] hover:text-white transition-colors"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4">
