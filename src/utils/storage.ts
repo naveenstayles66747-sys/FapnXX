@@ -66,9 +66,8 @@ export const getInitialThemeMode = (): ThemeMode => {
     console.warn('[Storage] Failed to read theme preference:', err);
   }
 
-  // Auto Time-based Default: 6:00 AM to 6:00 PM -> light, else dark
-  const currentHour = new Date().getHours();
-  return currentHour >= 6 && currentHour < 18 ? 'light' : 'dark';
+  // Default theme is sleek signature Dark mode
+  return 'dark';
 };
 
 export const setStoredThemeMode = (theme: ThemeMode): void => {

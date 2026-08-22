@@ -8,7 +8,7 @@ interface BottomNavProps {
 
 export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 w-full z-50 bg-[#131315]/90 backdrop-blur-2xl border-t border-white/10 shadow-2xl flex justify-around items-center py-3 px-4 pb-safe">
+    <nav className="lg:hidden fixed bottom-0 left-0 w-full z-50 bg-[#09090b] border-t border-white/10 shadow-2xl flex justify-around items-center py-3 px-4 pb-safe">
       <button
         onClick={() => onNavigate('browse')}
         className={`flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
