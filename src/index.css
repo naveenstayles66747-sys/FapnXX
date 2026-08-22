@@ -183,7 +183,7 @@ body, main, header, nav, aside {
 }
 
 /* =====================================================================
-   LIGHT MODE DESIGN SYSTEM (Clean White Backgrounds & High Contrast)
+   LIGHT MODE DESIGN SYSTEM (Clean Day Theme & High Contrast)
    ===================================================================== */
 html.light body,
 html.light #root,
@@ -214,7 +214,23 @@ html.light aside {
   border-right: 1px solid #e2e8f0 !important;
 }
 
-/* 2. Main Page Backgrounds & Containers */
+/* BottomNav in Light Mode */
+html.light nav.fixed.bottom-0 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-top: 1px solid #e2e8f0 !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light nav.fixed.bottom-0 button {
+  color: #64748b !important;
+}
+
+html.light nav.fixed.bottom-0 button.text-\[\#ffb0cd\],
+html.light nav.fixed.bottom-0 button .text-\[\#ffb0cd\] {
+  color: #e0358d !important;
+}
+
+/* 2. Main Page Backgrounds on White Pages */
 html.light .bg-\[\#09090b\],
 html.light .bg-\[\#0d0c0e\],
 html.light .bg-\[\#131315\],
@@ -252,23 +268,34 @@ html.light .bg-\[\#27272a\]:hover * {
   color: #ffffff !important;
 }
 
-/* Active Selected Category Pill */
-html.light .bg-\[\#ec4899\] {
+/* Active Selected Pink Pill / Button in Both Day & Night */
+.bg-\[\#ec4899\],
+.bg-\[\#e0358d\],
+.bg-\[\#f751a1\],
+html.light .bg-\[\#ec4899\],
+html.light .bg-\[\#e0358d\],
+html.light .bg-\[\#f751a1\] {
   background-color: #ec4899 !important;
   color: #ffffff !important;
 }
 
-/* 4. Text Colors on White Page Backgrounds */
-html.light h1:not(.banner-title),
-html.light h2,
-html.light h3:not(.media-title),
-html.light .text-\[\#e5e1e4\] {
+.bg-\[\#ec4899\] *,
+.bg-\[\#e0358d\] *,
+.bg-\[\#f751a1\] *,
+html.light .bg-\[\#ec4899\] *,
+html.light .bg-\[\#e0358d\] *,
+html.light .bg-\[\#f751a1\] * {
+  color: #ffffff !important;
+}
+
+/* 4. Page Text Colors on White Page Backgrounds */
+html.light h1:not(.hero-text):not(.banner-title),
+html.light h2:not(.hero-text),
+html.light .page-title {
   color: #0f172a !important;
 }
 
-html.light p:not(.media-desc),
-html.light .text-\[\#debec8\],
-html.light .text-\[\#a19fa6\] {
+html.light p.page-subtitle {
   color: #475569 !important;
 }
 
@@ -277,13 +304,50 @@ html.light .text-\[\#ffb0cd\] {
   color: #db2777 !important;
 }
 
-/* 5. PRESERVE WHITE TEXT OVER HERO BANNERS & MEDIA THUMBNAIL OVERLAYS ONLY */
-html.light .aspect-video .absolute .text-white,
-html.light .aspect-video .absolute span,
+/* 5. PROTECT WHITE TEXT OVER HERO CAROUSEL, CATEGORY CARDS, AND THUMBNAIL OVERLAYS */
+.hero-banner-container,
+.hero-banner-container *,
+.hero-banner-overlay,
+.hero-banner-overlay *,
+.aspect-video .absolute,
+.aspect-video .absolute *,
+.group.relative.h-64,
+.group.relative.h-64 *,
+html.light .hero-banner-container,
+html.light .hero-banner-container *,
+html.light .hero-banner-overlay,
 html.light .hero-banner-overlay *,
-html.light .bg-gradient-to-t .text-white,
-html.light .bg-gradient-to-t h3,
-html.light .bg-gradient-to-t p {
+html.light .aspect-video .absolute,
+html.light .aspect-video .absolute *,
+html.light .group.relative.h-64,
+html.light .group.relative.h-64 *,
+html.light [class*="bg-gradient-to-t"] h1,
+html.light [class*="bg-gradient-to-t"] h2,
+html.light [class*="bg-gradient-to-t"] h3,
+html.light [class*="bg-gradient-to-t"] p,
+html.light [class*="bg-gradient-to-t"] span {
+  color: #ffffff !important;
+}
+
+html.light .group.relative.h-64 p,
+html.light .hero-banner-container p {
+  color: #e2e8f0 !important;
+}
+
+/* "WATCH NOW IN 4K" & Hero CTA Buttons */
+html.light a[class*="bg-black"],
+html.light button[class*="bg-black"],
+html.light [class*="bg-black/60"],
+html.light [class*="bg-black/80"],
+html.light [class*="bg-black/50"] {
+  color: #ffffff !important;
+}
+
+html.light a[class*="bg-black"] *,
+html.light button[class*="bg-black"] *,
+html.light [class*="bg-black/60"] *,
+html.light [class*="bg-black/80"] *,
+html.light [class*="bg-black/50"] * {
   color: #ffffff !important;
 }
 
@@ -298,7 +362,7 @@ html.light .video-card-container .thumb-duration-badge {
   background-color: rgba(0, 0, 0, 0.85) !important;
 }
 
-/* Eye Preview Button: Sleek Translucent Dark Glass with Pure White Eye Icon (Matching Reference Image) */
+/* Eye Preview Button */
 .thumb-eye-btn,
 html.light .thumb-eye-btn,
 html.light .video-card-container .thumb-eye-btn {
@@ -318,7 +382,7 @@ html.light .video-card-container .thumb-eye-btn .material-symbols-outlined {
   color: #ffffff !important;
 }
 
-/* Card titles and stats below thumbnails in Dark Mode (Pure Bright White & High-Contrast) */
+/* Card titles and stats below thumbnails in Dark Mode */
 html.dark .video-card-meta-box,
 html.dark .video-card-meta-title,
 html.dark article h3,
@@ -339,17 +403,14 @@ html.dark .video-card-stats-row .material-symbols-outlined {
   color: #94a3b8 !important;
 }
 
-/* Card titles and stats below thumbnails in Light Mode (Sharp Solid Dark) */
+/* Card titles and stats below thumbnails in Light Mode */
 html.light .video-card-meta-box,
 html.light .video-card-meta-title,
-html.light article h3,
-html.light .video-card h3 {
+html.light article .video-card-meta-title {
   color: #0f172a !important;
 }
 
-html.light .video-card-meta-title:hover,
-html.light article h3:hover,
-html.light .video-card h3:hover {
+html.light .video-card-meta-title:hover {
   color: #e0358d !important;
 }
 
@@ -362,11 +423,6 @@ html.light .video-card-stat-value {
 
 html.light .video-card-stats-row .material-symbols-outlined {
   color: #475569 !important;
-}
-
-html.light .aspect-video .text-\[\#debec8\],
-html.light .aspect-video .text-\[\#a19fa6\] {
-  color: #e2e8f0 !important;
 }
 
 /* 6. Form Inputs in Light Mode */
