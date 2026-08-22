@@ -138,7 +138,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
       </section>
 
       {/* Subtags / Filter Navigation Chips */}
-      <section className="px-6 md:px-12 py-5 border-b border-[#353437] bg-[#1c1b1d]/50">
+      <section className="px-6 md:px-12 py-5 border-b border-zinc-200 dark:border-[#353437] bg-zinc-100/80 dark:bg-[#1c1b1d]/50 transition-colors">
         <div className="flex overflow-x-auto hide-scrollbar space-x-3 pb-1">
           {subtags.map((tag) => (
             <button
@@ -147,7 +147,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
               className={`whitespace-nowrap px-4 py-2 rounded-full font-semibold text-xs transition-colors cursor-pointer active:scale-95 ${
                 selectedSubtag === tag
                   ? 'bg-[#ec4899] text-[#fafafa] shadow-neon-pink'
-                  : 'bg-[#2a2a2c] text-[#e5e1e4] hover:bg-[#353437]'
+                  : 'bg-white dark:bg-[#2a2a2c] text-zinc-800 dark:text-[#e5e1e4] border border-zinc-200 dark:border-transparent hover:bg-zinc-200 dark:hover:bg-[#353437]'
               }`}
             >
               {tag === 'All' ? `All ${category.name}` : tag}
@@ -159,16 +159,16 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
       {/* Content Collection Header */}
       <section className="max-w-7xl mx-auto p-6 md:p-12">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold text-[#e5e1e4]">
+          <h2 className="text-2xl font-bold text-zinc-900 dark:text-[#e5e1e4]">
             {selectedSubtag === 'All' ? 'Latest Uploads' : `${selectedSubtag} Selection`}
           </h2>
           <div className="flex gap-4">
             <button
               onClick={handleToggleSort}
-              className="px-4 py-2 bg-[#201f22] hover:bg-[#ec4899] border border-[#353437] hover:border-[#ec4899] rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-95 shadow-sm group/sort"
+              className="px-4 py-2 bg-white dark:bg-[#201f22] hover:bg-[#ec4899] border border-zinc-200 dark:border-[#353437] hover:border-[#ec4899] rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-95 shadow-sm group/sort"
             >
-              <span className="material-symbols-outlined text-sm text-[#ffb0cd] group-hover/sort:text-white transition-colors">swap_vert</span>
-              <span className="text-[#e5e1e4] group-hover/sort:text-white transition-colors">
+              <span className="material-symbols-outlined text-sm text-[#ec4899] dark:text-[#ffb0cd] group-hover/sort:text-white transition-colors">swap_vert</span>
+              <span className="text-zinc-800 dark:text-[#e5e1e4] group-hover/sort:text-white transition-colors">
                 Sorted by: <span className="font-extrabold">{sortBy === 'newest' ? 'Newest' : 'Most Viewed'}</span>
               </span>
             </button>
@@ -205,8 +205,8 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
             </div>
           )
         ) : (
-          <div className="p-12 text-center text-[#debec8] bg-[#1c1b1d] rounded-2xl border border-[#353437]">
-            <span className="material-symbols-outlined text-4xl mb-2 text-[#ffb0cd]">video_library</span>
+          <div className="p-12 text-center text-zinc-600 dark:text-[#debec8] bg-zinc-100 dark:bg-[#1c1b1d] rounded-2xl border border-zinc-200 dark:border-[#353437]">
+            <span className="material-symbols-outlined text-4xl mb-2 text-[#ec4899] dark:text-[#ffb0cd]">video_library</span>
             <p className="text-lg font-medium">No videos match filter "{selectedSubtag}".</p>
           </div>
         )}

@@ -259,7 +259,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setProcessingStatus('Processing link...');
 
     try {
-      const trimmed = input.trim();
+      let trimmed = input.trim();
       let extractedUrl = '';
       let autoTitle = '';
 
@@ -271,122 +271,129 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         } else {
           throw new Error('Invalid <iframe> tag.');
         }
-      } else if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
-        let videoId = '';
-        if (trimmed.includes('youtu.be/')) videoId = trimmed.split('youtu.be/')[1]?.split('?')[0] || '';
-        else if (trimmed.includes('watch?v=')) videoId = trimmed.split('watch?v=')[1]?.split('&')[0] || '';
-        else if (trimmed.includes('embed/')) videoId = trimmed.split('embed/')[1]?.split('?')[0] || '';
-
-        if (videoId) {
-          extractedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-          autoTitle = 'YouTube Stream';
-        } else {
-          throw new Error('Invalid YouTube URL.');
-        }
-      } else if (trimmed.includes('vimeo.com')) {
-        const vimeoId = trimmed.split('vimeo.com/')[1]?.split('?')[0] || '';
-        if (vimeoId) {
-          extractedUrl = `https://player.vimeo.com/video/${vimeoId}`;
-          autoTitle = 'Vimeo Stream';
-        } else {
-          throw new Error('Invalid Vimeo URL.');
-        }
-      } else if (
-        trimmed.includes('streamtape') ||
-        trimmed.includes('streamta.pe') ||
-        trimmed.includes('streamhide') ||
-        trimmed.includes('shvip') ||
-        trimmed.includes('streamhub')
-      ) {
-        let tapeId = '';
-        const match = trimmed.match(/(?:streamtape|streamta\.pe|streamhide|shvip|streamhub)[^/]*\/(?:v|e|d)\/([a-zA-Z0-9_-]+)/i)
-          || trimmed.match(/\/(?:v|e)\/([a-zA-Z0-9_-]+)/i);
-        if (match && match[1]) {
-          tapeId = match[1];
-        } else {
-          const parts = trimmed.split('/').filter(Boolean);
-          tapeId = parts[parts.length - 1]?.split('?')[0] || '';
-        }
-        extractedUrl = `https://streamtape.com/e/${tapeId}/`;
-        autoTitle = 'Streamtape Stream';
-        if (tapeId) {
-          setThumbnailUrl(`https://thumb.streamtape.com/${tapeId}.jpg`);
-        }
-      } else if (trimmed.includes('dood') || trimmed.includes('doodstream') || trimmed.includes('ds2play') || trimmed.includes('doods.pro')) {
-        let doodId = '';
-        const match = trimmed.match(/\/(?:e|d)\/([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-          doodId = match[1];
-        } else {
-          doodId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
-        }
-        extractedUrl = `https://dood.to/e/${doodId}`;
-        autoTitle = 'DoodStream Stream';
-      } else if (trimmed.includes('spankbang.com')) {
-        const match = trimmed.match(/spankbang\.com\/([a-zA-Z0-9]+)/i);
-        if (match && match[1]) {
-          extractedUrl = `https://spankbang.com/${match[1]}/embed/`;
-          autoTitle = 'SpankBang Stream';
-        } else {
-          extractedUrl = trimmed;
-          autoTitle = 'SpankBang Stream';
-        }
-      } else if (trimmed.includes('xvideos.com')) {
-        const match = trimmed.match(/video-?([a-zA-Z0-9_]+)|\/prof-video-click\/[^\/]+\/([0-9]+)|embedframe\/([0-9]+)/i) || trimmed.match(/([0-9]{5,})/);
-        const vidNum = match ? match[1] || match[2] || match[3] || match[0] : '';
-        if (vidNum) {
-          extractedUrl = `https://www.xvideos.com/embedframe/${vidNum}`;
-          autoTitle = 'XVideos Stream';
-        } else {
-          extractedUrl = trimmed;
-          autoTitle = 'XVideos Stream';
-        }
-      } else if (trimmed.includes('pornhub.com')) {
-        const match = trimmed.match(/viewkey=([a-zA-Z0-9]+)/i) || trimmed.match(/embed\/([a-zA-Z0-9]+)/i);
-        if (match && match[1]) {
-          extractedUrl = `https://www.pornhub.com/embed/${match[1]}`;
-          autoTitle = 'Pornhub Stream';
-        } else {
-          extractedUrl = trimmed;
-          autoTitle = 'Pornhub Stream';
-        }
-      } else if (trimmed.includes('filemoon') || trimmed.includes('filemoon.sx') || trimmed.includes('filemoon.to')) {
-        let moonId = '';
-        const match = trimmed.match(/\/(?:e|d)\/([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-          moonId = match[1];
-        } else {
-          moonId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
-        }
-        extractedUrl = `https://filemoon.sx/e/${moonId}`;
-        autoTitle = 'Filemoon Stream';
-      } else if (trimmed.includes('mixdrop.co') || trimmed.includes('mixdrop.to') || trimmed.includes('mixdrop.sx')) {
-        let mixId = '';
-        const match = trimmed.match(/\/(?:e|f)\/([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-          mixId = match[1];
-        } else {
-          mixId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
-        }
-        extractedUrl = `https://mixdrop.co/e/${mixId}`;
-        autoTitle = 'MixDrop Stream';
-      } else if (trimmed.includes('hornhub') || trimmed.includes('embedseek')) {
-        extractedUrl = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
-        autoTitle = 'Exclusive Embed Stream';
-      } else if (trimmed.match(/\.(webp)($|\?)/i)) {
-        extractedUrl = trimmed;
-        autoTitle = 'WebP Animated Preview';
-        if (!previewWebpUrl) {
-          setPreviewWebpUrl(trimmed);
-        }
-      } else if (trimmed.match(/\.(mp4|webm|m3u8|mov|ogg)($|\?)/i) || trimmed.startsWith('blob:')) {
-        extractedUrl = trimmed;
-        autoTitle = 'Direct MP4 Stream';
-      } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-        extractedUrl = trimmed;
-        autoTitle = 'Stream Video';
       } else {
-        throw new Error('Please enter a valid URL, direct MP4 link, or iframe embed code.');
+        // Auto-prefix https:// if protocol is missing
+        if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('blob:')) {
+          trimmed = `https://${trimmed}`;
+        }
+
+        if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
+          let videoId = '';
+          if (trimmed.includes('youtu.be/')) videoId = trimmed.split('youtu.be/')[1]?.split('?')[0] || '';
+          else if (trimmed.includes('watch?v=')) videoId = trimmed.split('watch?v=')[1]?.split('&')[0] || '';
+          else if (trimmed.includes('embed/')) videoId = trimmed.split('embed/')[1]?.split('?')[0] || '';
+
+          if (videoId) {
+            extractedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+            autoTitle = 'YouTube Stream';
+          } else {
+            extractedUrl = trimmed;
+            autoTitle = 'YouTube Stream';
+          }
+        } else if (trimmed.includes('vimeo.com')) {
+          const vimeoId = trimmed.split('vimeo.com/')[1]?.split('?')[0] || '';
+          if (vimeoId) {
+            extractedUrl = `https://player.vimeo.com/video/${vimeoId}`;
+            autoTitle = 'Vimeo Stream';
+          } else {
+            extractedUrl = trimmed;
+            autoTitle = 'Vimeo Stream';
+          }
+        } else if (
+          trimmed.includes('streamtape') ||
+          trimmed.includes('streamta.pe') ||
+          trimmed.includes('streamhide') ||
+          trimmed.includes('shvip') ||
+          trimmed.includes('streamhub')
+        ) {
+          let tapeId = '';
+          const match = trimmed.match(/(?:streamtape|streamta\.pe|streamhide|shvip|streamhub)[^/]*\/(?:v|e|d)\/([a-zA-Z0-9_-]+)/i)
+            || trimmed.match(/\/(?:v|e)\/([a-zA-Z0-9_-]+)/i);
+          if (match && match[1]) {
+            tapeId = match[1];
+          } else {
+            const parts = trimmed.split('/').filter(Boolean);
+            tapeId = parts[parts.length - 1]?.split('?')[0] || '';
+          }
+          extractedUrl = tapeId ? `https://streamtape.com/e/${tapeId}/` : trimmed;
+          autoTitle = 'Streamtape Stream';
+          if (tapeId && !thumbnailUrl) {
+            setThumbnailUrl(`https://thumb.streamtape.com/${tapeId}.jpg`);
+          }
+        } else if (trimmed.includes('dood') || trimmed.includes('doodstream') || trimmed.includes('ds2play') || trimmed.includes('doods.pro')) {
+          let doodId = '';
+          const match = trimmed.match(/\/(?:e|d)\/([a-zA-Z0-9_-]+)/);
+          if (match && match[1]) {
+            doodId = match[1];
+          } else {
+            doodId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
+          }
+          extractedUrl = doodId ? `https://dood.to/e/${doodId}` : trimmed;
+          autoTitle = 'DoodStream Stream';
+        } else if (trimmed.includes('spankbang.com')) {
+          const match = trimmed.match(/spankbang\.com\/([a-zA-Z0-9]+)/i);
+          if (match && match[1]) {
+            extractedUrl = `https://spankbang.com/${match[1]}/embed/`;
+          } else {
+            extractedUrl = trimmed;
+          }
+          autoTitle = 'SpankBang Stream';
+        } else if (trimmed.includes('xvideos.com')) {
+          const match = trimmed.match(/video-?([a-zA-Z0-9_]+)|\/prof-video-click\/[^\/]+\/([0-9]+)|embedframe\/([0-9]+)/i) || trimmed.match(/([0-9]{5,})/);
+          const vidNum = match ? match[1] || match[2] || match[3] || match[0] : '';
+          if (vidNum) {
+            extractedUrl = `https://www.xvideos.com/embedframe/${vidNum}`;
+          } else {
+            extractedUrl = trimmed;
+          }
+          autoTitle = 'XVideos Stream';
+        } else if (trimmed.includes('pornhub.com')) {
+          const match = trimmed.match(/viewkey=([a-zA-Z0-9]+)/i) || trimmed.match(/embed\/([a-zA-Z0-9]+)/i);
+          if (match && match[1]) {
+            extractedUrl = `https://www.pornhub.com/embed/${match[1]}`;
+          } else {
+            extractedUrl = trimmed;
+          }
+          autoTitle = 'Pornhub Stream';
+        } else if (trimmed.includes('filemoon') || trimmed.includes('filemoon.sx') || trimmed.includes('filemoon.to')) {
+          let moonId = '';
+          const match = trimmed.match(/\/(?:e|d)\/([a-zA-Z0-9_-]+)/);
+          if (match && match[1]) {
+            moonId = match[1];
+          } else {
+            moonId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
+          }
+          extractedUrl = moonId ? `https://filemoon.sx/e/${moonId}` : trimmed;
+          autoTitle = 'Filemoon Stream';
+        } else if (trimmed.includes('mixdrop.co') || trimmed.includes('mixdrop.to') || trimmed.includes('mixdrop.sx')) {
+          let mixId = '';
+          const match = trimmed.match(/\/(?:e|f)\/([a-zA-Z0-9_-]+)/);
+          if (match && match[1]) {
+            mixId = match[1];
+          } else {
+            mixId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
+          }
+          extractedUrl = mixId ? `https://mixdrop.co/e/${mixId}` : trimmed;
+          autoTitle = 'MixDrop Stream';
+        } else if (trimmed.includes('hornhub') || trimmed.includes('embedseek')) {
+          extractedUrl = trimmed;
+          autoTitle = 'Exclusive Embed Stream';
+        } else if (trimmed.match(/\.(webp)($|\?|#)/i)) {
+          extractedUrl = trimmed;
+          autoTitle = 'WebP Animated Preview';
+          if (!previewWebpUrl) {
+            setPreviewWebpUrl(trimmed);
+          }
+        } else if (trimmed.match(/\.(mp4|webm|m3u8|mov|ogg)($|\?|#)/i) || trimmed.startsWith('blob:')) {
+          extractedUrl = trimmed;
+          autoTitle = 'Direct MP4 Stream';
+        } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+          extractedUrl = trimmed;
+          autoTitle = 'Stream Video';
+        } else {
+          extractedUrl = trimmed;
+          autoTitle = 'Stream Video';
+        }
       }
 
       setProcessedEmbedUrl(extractedUrl);
@@ -415,7 +422,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       } catch {}
 
       // Check if it's a direct video link to run quick live HTML5 metadata test & multi-frame extraction
-      const isDirectMedia = Boolean(extractedUrl.match(/\.(mp4|webm|mov|m3u8|ogg)($|\?)/i) || extractedUrl.includes('video/'));
+      const isDirectMedia = Boolean(extractedUrl.match(/\.(mp4|webm|mov|m3u8|ogg)($|\?|#)/i) || extractedUrl.includes('video/'));
       if (isDirectMedia) {
         setProcessingStatus('⚡ Testing stream URL & extracting duration...');
         const testVideo = document.createElement('video');
@@ -437,7 +444,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               setThumbnailUrl((prev) => prev || frames[0]);
             }
           }).catch(() => {});
-          if (!previewMp4Url && extractedUrl.match(/\.(mp4|webm|mov|m3u8|ogg)($|\?)/i)) {
+          if (!previewMp4Url && extractedUrl.match(/\.(mp4|webm|mov|m3u8|ogg)($|\?|#)/i)) {
             setPreviewMp4Url(extractedUrl);
           }
           setProcessingStatus('✓ Direct Stream Verified & Ready!');
@@ -984,12 +991,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
           {/* Tags Input (Custom user tags — no unwanted automatic extra tags) */}
           <div>
-            <label className="block text-xs font-bold opacity-80 mb-1 flex items-center justify-between">
+            <label className="block text-xs font-bold text-zinc-900 dark:text-white mb-1 flex items-center justify-between">
               <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs text-rose-400">label</span>
+                <span className="material-symbols-outlined text-xs text-rose-500">label</span>
                 <span>Video Tags (Comma separated)</span>
               </span>
-              <span className="text-[10px] text-white/50">e.g. Desi, Romance, 4K, Bhabhi</span>
+              <span className="text-[10px] text-zinc-500 dark:text-zinc-400">e.g. Desi, Romance, 4K, Bhabhi</span>
             </label>
             <input
               type="text"
@@ -1001,17 +1008,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           </div>
 
           {/* ─── Credit & Copyright Attribution ─── */}
-          <div className="border border-rose-500/20 rounded-xl p-3 space-y-3 bg-rose-500/5">
+          <div className="border border-rose-500/30 rounded-xl p-3 space-y-3 bg-rose-500/5">
             <div className="flex items-center gap-2 mb-1">
-              <span className="material-symbols-outlined text-rose-400 text-base">verified_user</span>
-              <span className="text-xs font-black text-rose-400 uppercase tracking-wider">Credit & Copyright Attribution</span>
+              <span className="material-symbols-outlined text-rose-500 text-base">verified_user</span>
+              <span className="text-xs font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider">Credit & Copyright Attribution</span>
             </div>
-            <p className="text-[10px] text-white/50">Fill these to give proper credit and reduce copyright claims.</p>
+            <p className="text-[10px] text-zinc-600 dark:text-zinc-400">Fill these to give proper credit and reduce copyright claims.</p>
 
             {/* Performers / Stars */}
             <div>
-              <label className="block text-xs font-bold opacity-80 mb-1 flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs text-rose-400">star</span>
+              <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1 flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs text-rose-500">star</span>
                 Pornstar(s) — Comma separated
               </label>
               <input
@@ -1026,8 +1033,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             {/* Channel Name & Source Website */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold opacity-80 mb-1 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs text-rose-400">subscriptions</span>
+                <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs text-rose-500">subscriptions</span>
                   Channel Name
                 </label>
                 <input
@@ -1040,8 +1047,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold opacity-80 mb-1 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs text-rose-400">language</span>
+                <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs text-rose-500">language</span>
                   Source Website
                 </label>
                 <input
@@ -1056,8 +1063,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
             {/* Source Website URL */}
             <div>
-              <label className="block text-xs font-bold opacity-80 mb-1 flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs text-rose-400">link</span>
+              <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1 flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs text-rose-500">link</span>
                 Source Website URL (Optional)
               </label>
               <input
@@ -1071,14 +1078,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           </div>
 
           {/* ─── Dedicated Video Thumbnail / Cover Image Section ─── */}
-          <div className="border border-rose-500/30 rounded-xl p-3 space-y-2.5 bg-zinc-900/60 shadow-inner">
+          <div className="border border-rose-500/30 rounded-xl p-3 space-y-2.5 bg-zinc-100 dark:bg-zinc-900/60 shadow-inner">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-white flex items-center gap-1.5">
+              <label className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-rose-500 text-sm">photo_library</span>
                 <span>Video Thumbnail / Card Cover *</span>
               </label>
               {thumbnailUrl && (
-                <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-0.5">
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5">
                   <span className="material-symbols-outlined text-xs">check_circle</span>
                   <span>Ready</span>
                 </span>
@@ -1118,11 +1125,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             {candidateFrames.length > 0 && (
               <div className="space-y-1.5 pt-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-white flex items-center gap-1">
-                    <span className="material-symbols-outlined text-xs text-rose-400">burst_mode</span>
+                  <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs text-rose-500">burst_mode</span>
                     <span>Choose Frame Snapshot from Video</span>
                   </span>
-                  <span className="text-[10px] text-zinc-400">Click any frame to select</span>
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Click any frame to select</span>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
                   {candidateFrames.map((frame, fIdx) => (
@@ -1133,7 +1140,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                       className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
                         thumbnailUrl === frame
                           ? 'border-rose-500 ring-2 ring-rose-500/50 scale-105 shadow-md'
-                          : 'border-white/10 hover:border-white/40 opacity-75 hover:opacity-100'
+                          : 'border-zinc-300 dark:border-white/10 hover:border-rose-400 opacity-80 hover:opacity-100'
                       }`}
                     >
                       <img src={frame} alt={`Frame ${fIdx + 1}`} className="w-full h-full object-cover" />
@@ -1157,8 +1164,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               />
 
               {/* Upload Image Button */}
-              <label className="px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-colors shrink-0 border border-white/10 shadow-sm">
-                <span className="material-symbols-outlined text-sm text-rose-400">image</span>
+              <label className="px-3 py-2.5 bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-colors shrink-0 border border-zinc-300 dark:border-white/10 shadow-sm">
+                <span className="material-symbols-outlined text-sm text-rose-500">image</span>
                 <span>Upload</span>
                 <input
                   type="file"
@@ -1185,14 +1192,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               </button>
             </div>
 
-            <p className="text-[10px] text-white/50 flex items-center gap-1">
+            <p className="text-[10px] text-zinc-600 dark:text-zinc-400 flex items-center gap-1">
               <span>💡 Tip: Paste an image link, click "Capture Frame", or select one of the frames above.</span>
             </p>
           </div>
 
           {/* VTT Sprite Sheet URL for Seekbar Hover Scrubbing */}
           <div>
-            <label className="block text-xs font-bold opacity-80 mb-1">
+            <label className="block text-xs font-bold text-zinc-900 dark:text-white mb-1">
               Player Seekbar VTT / Sprite Sheet URL (Optional)
             </label>
             <input
@@ -1205,9 +1212,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           </div>
 
           {/* Preview Asset (URL, Auto-Generate, Upload & Live MP4 Frame Capture Player) */}
-          <div className="space-y-3 border border-rose-500/30 rounded-xl p-3 bg-zinc-900/60 shadow-inner">
-            <label className="block text-xs font-bold opacity-80 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-white">
+          <div className="space-y-3 border border-rose-500/30 rounded-xl p-3 bg-zinc-100 dark:bg-zinc-900/60 shadow-inner">
+            <label className="block text-xs font-bold text-zinc-900 dark:text-white flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-rose-500 text-sm">movie_filter</span>
                 <span>MP4 Video Preview & Hover Clip (.mp4 / .webp)</span>
               </span>
@@ -1253,8 +1260,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 <span>Auto 10s Preview</span>
               </button>
 
-              <label className="px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-colors shrink-0 border border-white/10 shadow-sm">
-                <span className="material-symbols-outlined text-sm">cloud_upload</span>
+              <label className="px-3 py-2.5 bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer transition-colors shrink-0 border border-zinc-300 dark:border-white/10 shadow-sm">
+                <span className="material-symbols-outlined text-sm text-rose-500">cloud_upload</span>
                 <span>Upload</span>
                 <input
                   type="file"
@@ -1274,7 +1281,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
             {/* ─── LIVE MP4 VIDEO PREVIEW PLAYER & INTERACTIVE FRAME EXTRACTOR CARD ─── */}
             {(previewMp4Url || (processedEmbedUrl && Boolean(processedEmbedUrl.match(/\.(mp4|webm|mov|m3u8)($|\?|#)/i)))) && (
-              <div className="border border-rose-500/50 rounded-xl p-3 bg-black/95 space-y-2.5 shadow-2xl mt-2 animate-in fade-in duration-300">
+              <div className="border border-rose-500/50 rounded-xl p-3 bg-black space-y-2.5 shadow-2xl mt-2 animate-in fade-in duration-300">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-white flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-rose-500 text-base">smart_display</span>

@@ -580,7 +580,7 @@ html.light .hero-banner-container p,
   background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-/* Light Mode Overrides for Upload Modal */
+/* Light Mode Overrides for Upload Modal & Sub-cards */
 html.light .upload-modal-card {
   background-color: #ffffff !important;
   color: #0f172a !important;
@@ -602,6 +602,10 @@ html.light .upload-modal-input {
 
 html.light .upload-modal-tab-unselected {
   color: #475569 !important;
+}
+html.light .upload-modal-tab-unselected:hover {
+  color: #0f172a !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
 }
 
 /* =====================================================================
