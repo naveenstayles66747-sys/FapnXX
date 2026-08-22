@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CategoryId, CategoryInfo, Video } from '../types';
 import { CATEGORIES } from '../data';
 import { videoService } from '../services/videoService';
@@ -47,6 +47,67 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [isCapturingFrame, setIsCapturingFrame] = useState<boolean>(false);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState<boolean>(false);
   const [isUploadingThumb, setIsUploadingThumb] = useState<boolean>(false);
+
+  // Interactive MP4 Preview Player & Live Frame Capture State
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
+  const [previewCurrentTime, setPreviewCurrentTime] = useState<number>(0);
+  const [previewDuration, setPreviewDuration] = useState<number>(0);
+  const [isPlayingPreview, setIsPlayingPreview] = useState<boolean>(false);
+  const [captureSuccessMsg, setCaptureSuccessMsg] = useState<string | null>(null);
+
+  const formatTime = (timeInSec: number) => {
+    if (isNaN(timeInSec) || timeInSec < 0) return '00:00';
+    const totalSec = Math.floor(timeInSec);
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const togglePlayPreviewVideo = () => {
+    if (!previewVideoRef.current) return;
+    if (isPlayingPreview) {
+      previewVideoRef.current.pause();
+      setIsPlayingPreview(false);
+    } else {
+      previewVideoRef.current.play().catch(() => {});
+      setIsPlayingPreview(true);
+    }
+  };
+
+  const seekPreviewRelative = (seconds: number) => {
+    if (!previewVideoRef.current) return;
+    const nextTime = Math.max(0, Math.min(previewDuration || 9999, previewVideoRef.current.currentTime + seconds));
+    previewVideoRef.current.currentTime = nextTime;
+    setPreviewCurrentTime(nextTime);
+  };
+
+  const handleCaptureCurrentSceneAsThumbnail = () => {
+    const video = previewVideoRef.current;
+    if (!video) {
+      alert('Please load an MP4 preview video first.');
+      return;
+    }
+
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        setThumbnailUrl(dataUrl);
+        setCandidateFrames((prev) => [dataUrl, ...prev.filter((f) => f !== dataUrl)].slice(0, 8));
+
+        const timeStr = formatTime(video.currentTime);
+        setCaptureSuccessMsg(`✓ Frame captured at ${timeStr} as Thumbnail!`);
+        setTimeout(() => setCaptureSuccessMsg(null), 4000);
+      }
+    } catch (err: any) {
+      console.warn('Canvas frame capture error:', err);
+      alert('Note: If this video is hosted on an external server with strict CORS, you can also paste an image URL or upload an image file directly.');
+    }
+  };
 
   // Revoke Blob URLs on unmount or filePreviewUrl change to prevent memory leaks
   useEffect(() => {
@@ -1128,10 +1189,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             />
           </div>
 
-          {/* Preview Asset (URL, Auto-Generate, or Upload) */}
-          <div>
-            <label className="block text-xs font-bold opacity-80 mb-1 flex items-center justify-between">
-              <span>Hover Preview Asset (.webp / .gif / .mp4)</span>
+          {/* Preview Asset (URL, Auto-Generate, Upload & Live MP4 Frame Capture Player) */}
+          <div className="space-y-3 border border-rose-500/30 rounded-xl p-3 bg-zinc-900/60 shadow-inner">
+            <label className="block text-xs font-bold opacity-80 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-white">
+                <span className="material-symbols-outlined text-rose-500 text-sm">movie_filter</span>
+                <span>MP4 Video Preview & Hover Clip (.mp4 / .webp)</span>
+              </span>
               {isUploadingPreview && (
                 <span className="text-[10px] text-rose-500 font-semibold flex items-center gap-1">
                   <span className="w-2.5 h-2.5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
@@ -1154,7 +1218,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     setPreviewWebpUrl('');
                   }
                 }}
-                placeholder="Paste preview link (e.g. https://domain.com/preview.webp or .mp4) ->"
+                placeholder="Paste MP4 preview link (e.g. https://.../video.mp4 or .webp) ->"
                 className="flex-1 upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500 font-mono"
               />
 
@@ -1187,10 +1251,141 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             </div>
 
             {previewUploadStatus && (
-              <p className="text-[11px] text-rose-500 mt-1 flex items-center gap-1">
+              <p className="text-[11px] text-rose-500 flex items-center gap-1">
                 <span className="material-symbols-outlined text-xs">info</span>
                 <span>{previewUploadStatus === 'Preview uploaded successfully!' ? '✓ Uploaded' : previewUploadStatus === 'Upload failed. Try again.' ? 'Upload failed. Try again.' : 'Uploading...'}</span>
               </p>
+            )}
+
+            {/* ─── LIVE MP4 VIDEO PREVIEW PLAYER & INTERACTIVE FRAME EXTRACTOR CARD ─── */}
+            {(previewMp4Url || (processedEmbedUrl && Boolean(processedEmbedUrl.match(/\.(mp4|webm|mov|m3u8)($|\?|#)/i)))) && (
+              <div className="border border-rose-500/50 rounded-xl p-3 bg-black/95 space-y-2.5 shadow-2xl mt-2 animate-in fade-in duration-300">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-white flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-rose-500 text-base">smart_display</span>
+                    <span>Interactive Frame Extractor</span>
+                  </span>
+                  <span className="text-[10px] text-rose-400 font-mono font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                    {formatTime(previewCurrentTime)} / {formatTime(previewDuration)}
+                  </span>
+                </div>
+
+                {/* Video Player Display */}
+                <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-black border border-white/10 flex items-center justify-center group">
+                  <video
+                    ref={previewVideoRef}
+                    src={previewMp4Url || processedEmbedUrl}
+                    crossOrigin="anonymous"
+                    playsInline
+                    preload="metadata"
+                    onLoadedMetadata={() => {
+                      if (previewVideoRef.current) {
+                        const dur = previewVideoRef.current.duration;
+                        if (dur && !isNaN(dur) && dur > 0) {
+                          setPreviewDuration(dur);
+                          const min = Math.floor(dur / 60);
+                          const sec = Math.floor(dur % 60);
+                          const formatted = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+                          if (!durationInput || durationInput === '05:00') {
+                            setDurationInput(formatted);
+                          }
+                        }
+                      }
+                    }}
+                    onTimeUpdate={() => {
+                      if (previewVideoRef.current) {
+                        setPreviewCurrentTime(previewVideoRef.current.currentTime);
+                      }
+                    }}
+                    onPlay={() => setIsPlayingPreview(true)}
+                    onPause={() => setIsPlayingPreview(false)}
+                    className="w-full h-full object-contain cursor-pointer"
+                    onClick={togglePlayPreviewVideo}
+                  />
+
+                  {/* Floating Center Play Button when paused */}
+                  {!isPlayingPreview && (
+                    <button
+                      type="button"
+                      onClick={togglePlayPreviewVideo}
+                      className="absolute w-12 h-12 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-2xl ml-0.5">play_arrow</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Timeline Scrub Slider */}
+                <div className="space-y-1">
+                  <input
+                    type="range"
+                    min={0}
+                    max={previewDuration || 100}
+                    step={0.1}
+                    value={previewCurrentTime}
+                    onChange={(e) => {
+                      const newTime = parseFloat(e.target.value);
+                      setPreviewCurrentTime(newTime);
+                      if (previewVideoRef.current) {
+                        previewVideoRef.current.currentTime = newTime;
+                      }
+                    }}
+                    className="w-full accent-rose-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                  />
+                </div>
+
+                {/* Controls & Frame Capture Action */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={togglePlayPreviewVideo}
+                      className="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        {isPlayingPreview ? 'pause' : 'play_arrow'}
+                      </span>
+                      <span>{isPlayingPreview ? 'Pause' : 'Play'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => seekPreviewRelative(-5)}
+                      className="px-2 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-lg cursor-pointer"
+                      title="Rewind 5 seconds"
+                    >
+                      -5s
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => seekPreviewRelative(5)}
+                      className="px-2 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-lg cursor-pointer"
+                      title="Forward 5 seconds"
+                    >
+                      +5s
+                    </button>
+                  </div>
+
+                  {/* Capture Current Scene Button */}
+                  <button
+                    type="button"
+                    onClick={handleCaptureCurrentSceneAsThumbnail}
+                    className="px-3.5 py-1.5 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-black text-xs rounded-lg flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95 transition-all"
+                    title="Capture current video scene as card thumbnail"
+                  >
+                    <span className="material-symbols-outlined text-sm">camera_alt</span>
+                    <span>📸 Capture Frame as Thumbnail</span>
+                  </button>
+                </div>
+
+                {captureSuccessMsg && (
+                  <p className="text-[11px] text-emerald-400 font-bold flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg">
+                    <span className="material-symbols-outlined text-xs">check_circle</span>
+                    <span>{captureSuccessMsg}</span>
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
