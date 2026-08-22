@@ -413,6 +413,16 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
+  const handleNavigateToSearch = (query: string) => {
+    startTransition(() => {
+      setSelectedCategoryId('all');
+      setSearchQuery(query);
+      setCurrentScreen('browse');
+    });
+    syncUrlWithState('browse');
+    window.scrollTo(0, 0);
+  };
+
   const handleNavigate = (screen: ScreenId) => {
     startTransition(() => {
       if (screen === 'browse') {
@@ -603,6 +613,7 @@ export default function App() {
                 video={selectedVideo}
                 onBack={() => handleNavigate('browse')}
                 onSelectVideo={handleSelectVideo}
+                onNavigateToSearch={handleNavigateToSearch}
                 userEmail={userEmail}
                 onOpenSoftLogin={handleOpenSoftLogin}
                 videos={filteredVideosList}

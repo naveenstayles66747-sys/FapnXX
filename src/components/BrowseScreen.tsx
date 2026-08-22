@@ -98,17 +98,31 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const [isHoveredSlider, setIsHoveredSlider] = useState<boolean>(false);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const [sortBy, setSortBy] = useState<'latest' | 'most_relevant' | 'top_rated'>('latest');
+  const [isDurationDropdownOpen, setIsDurationDropdownOpen] = useState(false);
+  const [durationFilter, setDurationFilter] = useState<'all' | 'short' | 'medium' | 'long'>('all');
+  const [visibleCount, setVisibleCount] = useState<number>(16);
+
   const sortDropdownRef = React.useRef<HTMLDivElement>(null);
+  const durationDropdownRef = React.useRef<HTMLDivElement>(null);
+  const loadMoreTriggerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target as Node)) {
         setIsSortDropdownOpen(false);
       }
+      if (durationDropdownRef.current && !durationDropdownRef.current.contains(e.target as Node)) {
+        setIsDurationDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Reset pagination on filter or search changes
+  useEffect(() => {
+    setVisibleCount(16);
+  }, [selectedCategory, searchQuery, sortBy, durationFilter]);
 
   // Filter out any videos that have been taken down
   const activeVideos = React.useMemo(() => (videos || []).filter((v) => !v.isTakenDown), [videos]);
@@ -218,8 +232,33 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       ? regionalVideos
       : regionalVideos.filter((v) => v.category === selectedCategory);
 
+  // Helper to parse duration into seconds for precision filtering
+  const parseDurationInSeconds = (durationStr?: string): number => {
+    if (!durationStr) return 300;
+    const parts = durationStr.trim().split(':').map((p) => parseInt(p, 10));
+    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+      return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    }
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      return parts[0] * 60 + parts[1];
+    }
+    const num = parseFloat(durationStr);
+    return isNaN(num) ? 300 : Math.round(num * 60);
+  };
+
+  const durationFilteredVideos = React.useMemo(() => {
+    if (durationFilter === 'all') return justAddedVideos;
+    return justAddedVideos.filter((v) => {
+      const sec = parseDurationInSeconds(v.duration);
+      if (durationFilter === 'short') return sec < 600; // < 10 mins
+      if (durationFilter === 'medium') return sec >= 600 && sec <= 1200; // 10 - 20 mins
+      if (durationFilter === 'long') return sec > 1200; // > 20 mins
+      return true;
+    });
+  }, [justAddedVideos, durationFilter]);
+
   const sortedVideos = React.useMemo(() => {
-    const list = [...justAddedVideos];
+    const list = [...durationFilteredVideos];
     const parseViews = (v: Video): number => {
       if (typeof v.viewsCount === 'number' && v.viewsCount > 0) return v.viewsCount;
       const str = v.views || '';
@@ -235,13 +274,10 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     };
 
     if (sortBy === 'latest') {
-      // Sort by newest upload date timestamp
       list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     } else if (sortBy === 'most_relevant') {
-      // Sort strictly by views count descending (highest views first)
       list.sort((a, b) => parseViews(b) - parseViews(a));
     } else if (sortBy === 'top_rated') {
-      // Sort by user interest engine (rating percentage + likes + view engagement)
       list.sort((a, b) => {
         const interestA = parseRating(a) * 100 + (a.likesCount || 0) * 10 + parseViews(a);
         const interestB = parseRating(b) * 100 + (b.likesCount || 0) * 10 + parseViews(b);
@@ -249,7 +285,29 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       });
     }
     return list;
-  }, [justAddedVideos, sortBy]);
+  }, [durationFilteredVideos, sortBy]);
+
+  // Infinite Scroll IntersectionObserver trigger
+  useEffect(() => {
+    const trigger = loadMoreTriggerRef.current;
+    if (!trigger) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && sortedVideos.length > visibleCount) {
+          setVisibleCount((prev) => Math.min(prev + 12, sortedVideos.length));
+        }
+      },
+      { rootMargin: '400px' }
+    );
+
+    observer.observe(trigger);
+    return () => observer.disconnect();
+  }, [sortedVideos.length, visibleCount]);
+
+  const displayedVideos = React.useMemo(() => {
+    return sortedVideos.slice(0, visibleCount);
+  }, [sortedVideos, visibleCount]);
 
   const selectedCategoryObj = categories.find((c) => c.id === selectedCategory);
 
@@ -506,85 +564,189 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
       {/* Video Grid Section */}
       <section className="w-full">
-        <div className="flex items-center justify-between gap-4 mb-6">
-          {/* Interactive Sort Dropdown Header (Replaces static Latest text) */}
-          <div className="relative" ref={sortDropdownRef}>
-            <button
-              onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-              className="sort-filter-btn flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-[#1c1b1f] hover:bg-[#27272a] text-white border border-white/10 hover:border-[#e0358d] transition-all shadow-none cursor-pointer active:scale-95"
-              title="Click to change video sorting filter"
-            >
-              <span className="font-bold text-sm sm:text-base flex items-center gap-1.5">
-                {selectedCategory === 'all'
-                  ? (sortBy === 'latest' ? 'Latest' : sortBy === 'most_relevant' ? 'Most Relevant' : 'Top Rated')
-                  : `${selectedCategoryObj?.name || selectedCategory.toUpperCase()} (${sortBy === 'latest' ? 'Latest' : sortBy === 'most_relevant' ? 'Most Relevant' : 'Top Rated'})`}
-              </span>
-              <span className="material-symbols-outlined text-sm sm:text-base opacity-80">expand_more</span>
-            </button>
+        <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Interactive Sort Dropdown Header */}
+            <div className="relative" ref={sortDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+                className="sort-filter-btn flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-[#1c1b1f] hover:bg-[#27272a] text-white border border-white/10 hover:border-[#e0358d] transition-all shadow-none cursor-pointer active:scale-95"
+                title="Click to change video sorting filter"
+              >
+                <span className="font-bold text-xs sm:text-sm flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-sm text-[#e0358d]">sort</span>
+                  <span>
+                    {sortBy === 'latest' ? 'Latest' : sortBy === 'most_relevant' ? 'Most Relevant' : 'Top Rated'}
+                  </span>
+                </span>
+                <span className="material-symbols-outlined text-sm sm:text-base opacity-80">expand_more</span>
+              </button>
 
-            {isSortDropdownOpen && (
-              <div className="dropdown-modal-menu absolute left-0 mt-2 w-48 rounded-2xl shadow-2xl py-1.5 z-50 text-xs border border-white/10 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
-                  <span>Sort Videos</span>
-                  <span className="text-[#e0358d] text-[9px] font-mono">FILTER</span>
+              {isSortDropdownOpen && (
+                <div className="dropdown-modal-menu absolute left-0 mt-2 w-48 rounded-2xl shadow-2xl py-1.5 z-50 text-xs border border-white/10 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
+                    <span>Sort Videos</span>
+                    <span className="text-[#e0358d] text-[9px] font-mono">FILTER</span>
+                  </div>
+
+                  {/* Option 1: Latest */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSortDropdownOpen(false);
+                      React.startTransition(() => {
+                        setSortBy('latest');
+                      });
+                    }}
+                    className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      sortBy === 'latest' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                    }`}
+                  >
+                    <span className="font-bold text-xs">Latest</span>
+                    {sortBy === 'latest' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                  </button>
+
+                  {/* Option 2: Most Relevant */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSortDropdownOpen(false);
+                      React.startTransition(() => {
+                        setSortBy('most_relevant');
+                      });
+                    }}
+                    className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      sortBy === 'most_relevant' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                    }`}
+                  >
+                    <span className="font-bold text-xs">Most Relevant</span>
+                    {sortBy === 'most_relevant' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                  </button>
+
+                  {/* Option 3: Top Rated */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSortDropdownOpen(false);
+                      React.startTransition(() => {
+                        setSortBy('top_rated');
+                      });
+                    }}
+                    className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      sortBy === 'top_rated' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                    }`}
+                  >
+                    <span className="font-bold text-xs">Top Rated</span>
+                    {sortBy === 'top_rated' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                  </button>
                 </div>
+              )}
+            </div>
 
-                {/* Option 1: Latest */}
-                <button
-                  onClick={() => {
-                    setIsSortDropdownOpen(false);
-                    React.startTransition(() => {
-                      setSortBy('latest');
-                    });
-                  }}
-                  className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                    sortBy === 'latest' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
-                  }`}
-                >
-                  <span className="font-bold text-xs">Latest</span>
-                  {sortBy === 'latest' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
-                </button>
+            {/* Duration Filter Dropdown Header (Pornhat Style Duration Filters) */}
+            <div className="relative" ref={durationDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsDurationDropdownOpen(!isDurationDropdownOpen)}
+                className={`sort-filter-btn flex items-center gap-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer active:scale-95 ${
+                  durationFilter !== 'all'
+                    ? 'bg-[#e0358d]/20 border-[#e0358d] text-white shadow-[0_0_15px_rgba(224,53,141,0.2)]'
+                    : 'bg-[#1c1b1f] hover:bg-[#27272a] text-white border-white/10 hover:border-[#e0358d]'
+                }`}
+                title="Filter videos by length / duration"
+              >
+                <span className="font-bold text-xs sm:text-sm flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-sm text-[#e0358d]">schedule</span>
+                  <span>
+                    {durationFilter === 'all'
+                      ? 'All Lengths'
+                      : durationFilter === 'short'
+                      ? '< 10 Mins'
+                      : durationFilter === 'medium'
+                      ? '10 - 20 Mins'
+                      : '20+ Mins'}
+                  </span>
+                </span>
+                <span className="material-symbols-outlined text-sm sm:text-base opacity-80">expand_more</span>
+              </button>
 
-                {/* Option 2: Most Relevant */}
-                <button
-                  onClick={() => {
-                    setIsSortDropdownOpen(false);
-                    React.startTransition(() => {
-                      setSortBy('most_relevant');
-                    });
-                  }}
-                  className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                    sortBy === 'most_relevant' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
-                  }`}
-                >
-                  <span className="font-bold text-xs">Most Relevant</span>
-                  {sortBy === 'most_relevant' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
-                </button>
+              {isDurationDropdownOpen && (
+                <div className="dropdown-modal-menu absolute left-0 mt-2 w-48 rounded-2xl shadow-2xl py-1.5 z-50 text-xs border border-white/10 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
+                    <span>Duration Filter</span>
+                    <span className="text-[#e0358d] text-[9px] font-mono">LENGTH</span>
+                  </div>
 
-                {/* Option 3: Top Rated */}
-                <button
-                  onClick={() => {
-                    setIsSortDropdownOpen(false);
-                    React.startTransition(() => {
-                      setSortBy('top_rated');
-                    });
-                  }}
-                  className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                    sortBy === 'top_rated' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
-                  }`}
-                >
-                  <span className="font-bold text-xs">Top Rated</span>
-                  {sortBy === 'top_rated' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
-                </button>
-              </div>
-            )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDurationDropdownOpen(false);
+                      React.startTransition(() => setDurationFilter('all'));
+                    }}
+                    className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      durationFilter === 'all' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                    }`}
+                  >
+                    <span className="font-bold text-xs">All Lengths</span>
+                    {durationFilter === 'all' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDurationDropdownOpen(false);
+                      React.startTransition(() => setDurationFilter('short'));
+                    }}
+                    className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      durationFilter === 'short' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                    }`}
+                  >
+                    <span className="font-bold text-xs">Short (&lt; 10 mins)</span>
+                    {durationFilter === 'short' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDurationDropdownOpen(false);
+                      React.startTransition(() => setDurationFilter('medium'));
+                    }}
+                    className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      durationFilter === 'medium' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                    }`}
+                  >
+                    <span className="font-bold text-xs">Medium (10 - 20 mins)</span>
+                    {durationFilter === 'medium' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDurationDropdownOpen(false);
+                      React.startTransition(() => setDurationFilter('long'));
+                    }}
+                    className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      durationFilter === 'long' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                    }`}
+                  >
+                    <span className="font-bold text-xs">Long (20+ mins)</span>
+                    {durationFilter === 'long' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="text-xs text-zinc-400 font-mono font-semibold">
+            <span>Showing {displayedVideos.length} of {sortedVideos.length} Videos</span>
           </div>
         </div>
 
-        {sortedVideos.length > 0 ? (
+        {displayedVideos.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-y-5 gap-x-4 sm:gap-6">
-              {sortedVideos.map((video, idx) => (
+              {displayedVideos.map((video, idx) => (
                 <React.Fragment key={video.id}>
                   <VideoCard
                     video={video}
@@ -597,13 +759,30 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 </React.Fragment>
               ))}
             </div>
+
+            {/* Sentinel element for automatic Infinite Scroll */}
+            <div ref={loadMoreTriggerRef} className="h-6 w-full my-4" />
+
+            {/* Load More Button fallback */}
+            {visibleCount < sortedVideos.length && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => Math.min(prev + 16, sortedVideos.length))}
+                  className="px-6 py-3 rounded-2xl bg-[#1c1b1f] hover:bg-[#27272a] text-white font-extrabold text-xs uppercase tracking-wider border border-white/10 hover:border-[#e0358d] transition-all cursor-pointer active:scale-95 shadow-lg flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm text-[#e0358d]">expand_more</span>
+                  <span>Load More Videos ({sortedVideos.length - visibleCount} Remaining)</span>
+                </button>
+              </div>
+            )}
           </>
         ) : (
           <div className="p-12 text-center text-[#debec8] bg-[#1c1b1d] rounded-2xl border border-[#353437] space-y-3">
             <span className="material-symbols-outlined text-5xl text-[#ffb0cd]">cloud_off</span>
             <h3 className="text-xl font-bold text-zinc-900 dark:text-white">No Videos Found</h3>
             <p className="text-sm text-[#debec8] max-w-md mx-auto">
-              We couldn't find any content matching your current selection. Please try a different category or search query.
+              We couldn't find any content matching your current selection. Please try a different category, duration, or search query.
             </p>
           </div>
         )}

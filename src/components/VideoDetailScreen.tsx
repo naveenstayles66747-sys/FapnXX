@@ -21,6 +21,7 @@ interface VideoDetailScreenProps {
   video: Video;
   onBack: () => void;
   onSelectVideo: (video: Video) => void;
+  onNavigateToSearch?: (query: string) => void;
   userEmail?: string | null;
   onOpenSoftLogin?: (featureName?: string) => void;
   onVideoUpdated?: (videoId: string, updates: Partial<Video>) => void;
@@ -31,6 +32,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   video,
   onBack,
   onSelectVideo,
+  onNavigateToSearch,
   userEmail,
   onOpenSoftLogin,
   onVideoUpdated,
@@ -92,8 +94,6 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     }, 1000);
     return () => clearInterval(timer);
   }, [video.id]);
-
-
 
   const handleLike = async () => {
     const nextLikedState = !isLiked;
@@ -255,11 +255,20 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
         <div className="rounded-2xl p-4 sm:p-5 border border-zinc-200 dark:border-white/10 bg-[#f8fafc] dark:bg-[#0f1523] text-zinc-900 dark:text-zinc-100 space-y-4 shadow-sm">
           {/* Pornstar Row */}
           {performersList.length > 0 && (
-            <div className="text-xs sm:text-sm font-medium">
+            <div className="text-xs sm:text-sm font-medium flex items-center gap-2 flex-wrap">
               <span className="text-zinc-700 dark:text-zinc-400">Pornstar: </span>
-              <span className="text-rose-600 dark:text-rose-400 font-bold ml-1 cursor-pointer hover:underline">
-                {performersList.join(', ')}
-              </span>
+              {performersList.map((p, pIdx) => (
+                <button
+                  key={pIdx}
+                  type="button"
+                  onClick={() => onNavigateToSearch && onNavigateToSearch(p)}
+                  className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold hover:underline hover:text-rose-500 transition-colors cursor-pointer bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20 active:scale-95"
+                  title={`View all videos of ${p}`}
+                >
+                  <span className="material-symbols-outlined text-xs">star</span>
+                  <span>{p}</span>
+                </button>
+              ))}
             </div>
           )}
 
@@ -272,19 +281,26 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
               {/* If user-provided tags exist, show them with rounded pill styling */}
               {video.tags && video.tags.length > 0 ? (
                 video.tags.map((tag, idx) => (
-                  <span
+                  <button
                     key={idx}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-white/10 shadow-sm hover:border-rose-400 transition-colors"
+                    type="button"
+                    onClick={() => onNavigateToSearch && onNavigateToSearch(tag)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] hover:bg-rose-500 hover:text-white dark:hover:bg-rose-600 dark:hover:text-white text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-white/10 shadow-sm hover:border-rose-400 transition-all cursor-pointer active:scale-95 group"
+                    title={`Search videos with tag #${tag}`}
                   >
-                    <span className="material-symbols-outlined text-xs text-zinc-600 dark:text-zinc-400">label</span>
+                    <span className="material-symbols-outlined text-xs text-zinc-600 dark:text-zinc-400 group-hover:text-white transition-colors">tag</span>
                     <span>{tag}</span>
-                  </span>
+                  </button>
                 ))
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-white/10 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => onNavigateToSearch && onNavigateToSearch(video.quality || 'HD')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] hover:bg-rose-500 hover:text-white text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-white/10 shadow-sm cursor-pointer transition-colors"
+                >
                   <span className="material-symbols-outlined text-xs text-zinc-600 dark:text-zinc-400">label</span>
                   <span>{video.quality || 'HD'}</span>
-                </span>
+                </button>
               )}
             </div>
           </div>
