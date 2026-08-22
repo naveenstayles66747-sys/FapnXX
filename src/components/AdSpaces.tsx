@@ -258,7 +258,7 @@ export const MobileInstantMessage: React.FC = () => {
     <div
       ref={containerRef}
       id="exoclick-mobile-instant-message"
-      className="block lg:hidden fixed bottom-[116px] right-3 z-[45] pointer-events-auto pb-[env(safe-area-inset-bottom,0px)]"
+      className="block lg:hidden fixed bottom-[72px] right-3 z-[60] pointer-events-auto pb-[env(safe-area-inset-bottom,0px)]"
     />
   );
 };
