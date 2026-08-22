@@ -29,8 +29,12 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const [currentVideoSrc, setCurrentVideoSrc] = useState<string>('');
   const [videoMountKey, setVideoMountKey] = useState<number>(0);
 
-  // VAST PreRoll State Machine
+  // VAST PreRoll State Machine & Smart Retry Engine
   const [vastState, setVastState] = useState<VASTState>('idle');
+  const [adStatusMessage, setAdStatusMessage] = useState<string>('Connecting to Sponsor Ad...');
+  const retryCountRef = useRef<number>(0);
+  const adStartTimeRef = useRef<number>(0);
+  const maxRetries = 2; // Up to 2 retries on temporary network drops/blips
 
   const prerollPlayerId = `preroll-vast-${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
   const directPlayerId = `fluid-player-${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
@@ -65,6 +69,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   useEffect(() => {
     setVideoMountKey((k) => k + 1);
     contentStartedRef.current = false;
+    retryCountRef.current = 0;
+    adStartTimeRef.current = Date.now();
+    setAdStatusMessage('Connecting to Sponsor Ad...');
     setVastState('requesting');
 
     const rawEmbed = (
@@ -110,11 +117,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     setVastState('contentPlaying');
   };
 
-  // ── Effect: Initialize Fluid Player VAST 3.0 PreRoll Engine ───────────────
+  // ── Effect: Initialize Fluid Player VAST 3.0 PreRoll Engine with Smart Retry ───────
   useEffect(() => {
     if (vastState !== 'requesting' || !currentVideoSrc) return;
 
     let isMounted = true;
+    let retryTimer: NodeJS.Timeout | null = null;
+    let safetyFallbackTimer: NodeJS.Timeout | null = null;
 
     const cleanupPreroll = () => {
       if (playerInstanceRef.current) {
@@ -141,6 +150,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
       if (typeof win.fluidPlayer === 'function') {
         try {
+          // Dynamic Cache-Buster & Attempt Tag to avoid stale zero-fill cache
+          const currentVastTag = `${AD_CONFIG.VAST_TAG_URL}&cb=${Date.now()}&attempt=${retryCountRef.current}`;
+
           const instance = win.fluidPlayer(prerollPlayerId, {
             layoutControls: {
               primaryColor: '#ec4899',
@@ -150,7 +162,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               fillToContainer: true,
               autoPlay: true,
               allowMutedAutoplay: true,
-              mute: false,
+              mute: true, // Muted initially guarantees 100% autoplay compliance on Chrome & mobile
               playbackRateEnabled: false,
               allowTheatre: false,
               controlBar: {
@@ -163,9 +175,10 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               adList: [
                 {
                   roll: 'preRoll',
-                  vastTag: AD_CONFIG.VAST_TAG_URL,
+                  vastTag: currentVastTag,
                   adText: 'Advertisement',
                   adClickable: true,
+                  vpaidMode: 'insecure',
                 },
               ],
               skipButtonCaption: 'Skip in [seconds]s',
@@ -176,23 +189,33 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               vastAdvanced: {
                 vastLoadedCallback: () => {
                   if (isMounted && !contentStartedRef.current) {
+                    if (safetyFallbackTimer) clearTimeout(safetyFallbackTimer);
                     setVastState('adPlaying');
                   }
                 },
                 noVastVideoCallback: () => {
-                  // Official FluidPlayer v3 callback on no ad / error -> seamless transition to main content
-                  if (isMounted) {
-                    startMainContent('no_vast_video_or_error');
+                  if (!isMounted || contentStartedRef.current) return;
+                  const elapsed = Date.now() - adStartTimeRef.current;
+                  // Smart Retry Check: if under max retries and total budget < 5500ms
+                  if (retryCountRef.current < maxRetries && elapsed < 5500) {
+                    retryCountRef.current += 1;
+                    setAdStatusMessage(`Connecting to Sponsor Network (Attempt ${retryCountRef.current + 1})...`);
+                    cleanupPreroll();
+                    retryTimer = setTimeout(() => {
+                      if (isMounted && !contentStartedRef.current) {
+                        attachPrerollVast();
+                      }
+                    }, 400);
+                  } else {
+                    startMainContent('no_vast_after_smart_retries');
                   }
                 },
                 vastVideoSkippedCallback: () => {
-                  // User skipped the ad via native player button
                   if (isMounted) {
                     startMainContent('vast_skipped');
                   }
                 },
                 vastVideoEndedCallback: () => {
-                  // Ad completed naturally
                   if (isMounted) {
                     startMainContent('vast_completed');
                   }
@@ -220,17 +243,18 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
     const initTimer = setTimeout(attachPrerollVast, 50);
 
-    // Safeguard: Fallback to main content if VAST hangs or gets blocked by adblock
-    const safetyFallbackTimer = setTimeout(() => {
+    // Smart Safeguard: 6.5s total window to allow aggressive retries & slow cellular network responses
+    safetyFallbackTimer = setTimeout(() => {
       if (isMounted && !contentStartedRef.current) {
         startMainContent('vast_safety_timeout');
       }
-    }, 4500);
+    }, 6500);
 
     return () => {
       isMounted = false;
       clearTimeout(initTimer);
-      clearTimeout(safetyFallbackTimer);
+      if (retryTimer) clearTimeout(retryTimer);
+      if (safetyFallbackTimer) clearTimeout(safetyFallbackTimer);
       cleanupPreroll();
     };
   }, [vastState, currentVideoSrc, video.id, videoMountKey, prerollPlayerId]);
@@ -257,6 +281,23 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               <source src={currentVideoSrc} type="video/mp4" />
             ) : null}
           </video>
+
+          {/* Sleek Visual "Connecting to Sponsor Ad..." Loader Overlay */}
+          {vastState === 'requesting' && (
+            <div className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-4 pointer-events-none animate-in fade-in duration-200">
+              <div className="relative flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full border-3 border-rose-500/20 border-t-rose-500 animate-spin" />
+                <span className="material-symbols-outlined text-rose-500 text-lg absolute">play_circle</span>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <span className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                  <span>{adStatusMessage}</span>
+                </span>
+                <span className="text-[10px] text-zinc-400 mt-0.5">Please wait, your video will begin shortly</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
