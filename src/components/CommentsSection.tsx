@@ -181,7 +181,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleLikeComment(comment.id)}
-                  className="flex items-center gap-1 text-[11px] text-white/60 hover:text-rose-400 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+                  className="flex items-center gap-1 text-[11px] text-zinc-600 dark:text-white/60 hover:text-rose-600 dark:hover:text-rose-400 transition-colors px-2 py-1 rounded-lg hover:bg-zinc-200/50 dark:hover:bg-white/5 cursor-pointer"
                   title="Like comment"
                 >
                   <span className="material-symbols-outlined text-xs">thumb_up</span>
@@ -191,7 +191,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                 {userEmail && (
                   <button
                     onClick={() => handleDeleteComment(comment.id)}
-                    className="opacity-0 group-hover:opacity-100 text-white/40 hover:text-rose-500 transition-all p-1 rounded hover:bg-rose-500/10"
+                    className="opacity-0 group-hover:opacity-100 text-zinc-400 dark:text-white/40 hover:text-rose-500 transition-all p-1 rounded hover:bg-rose-500/10 cursor-pointer"
                     title="Delete comment"
                   >
                     <span className="material-symbols-outlined text-xs">delete</span>

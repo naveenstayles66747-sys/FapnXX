@@ -601,7 +601,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         ) : (
           <div className="p-12 text-center text-[#debec8] bg-[#1c1b1d] rounded-2xl border border-[#353437] space-y-3">
             <span className="material-symbols-outlined text-5xl text-[#ffb0cd]">cloud_off</span>
-            <h3 className="text-xl font-bold text-white">No Videos Found</h3>
+            <h3 className="text-xl font-bold text-zinc-900 dark:text-white">No Videos Found</h3>
             <p className="text-sm text-[#debec8] max-w-md mx-auto">
               We couldn't find any content matching your current selection. Please try a different category or search query.
             </p>

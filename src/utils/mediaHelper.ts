@@ -127,19 +127,43 @@ export function extractThumbnailFromEmbedUrl(url: string): string | null {
     }
   }
 
-  // Streamtape
-  if (trimmed.includes('streamtape.com') || trimmed.includes('streamta.pe') || trimmed.includes('streamtape.to')) {
-    const match = trimmed.match(/(?:streamtape\.[a-z]+\/|streamta\.pe\/)(?:v|e)\/([a-zA-Z0-9_-]+)/i);
+  // Streamtape & Streamtape Mirrors (streamtape.com, streamtape.to, streamta.pe, streamtape.net, streamhide, etc.)
+  if (
+    trimmed.includes('streamtape') ||
+    trimmed.includes('streamta.pe') ||
+    trimmed.includes('streamhide') ||
+    trimmed.includes('shvip') ||
+    trimmed.includes('streamhub')
+  ) {
+    const match = trimmed.match(/(?:streamtape|streamta\.pe|streamhide|shvip|streamhub)[^/]*\/(?:v|e|d)\/([a-zA-Z0-9_-]+)/i)
+      || trimmed.match(/\/(?:v|e)\/([a-zA-Z0-9_-]+)/i);
     if (match && match[1]) {
       return `https://thumb.streamtape.com/${match[1]}.jpg`;
     }
   }
 
-  // DoodStream
-  if (trimmed.includes('dood') || trimmed.includes('ds2play.com') || trimmed.includes('doodstream.com')) {
-    const match = trimmed.match(/(?:dood\.[a-z]+|doodstream\.[a-z]+|ds2play\.[a-z]+)\/(?:e|d|f)\/([a-zA-Z0-9_-]+)/i);
+  // DoodStream / Doods
+  if (trimmed.includes('dood') || trimmed.includes('ds2play') || trimmed.includes('doodstream') || trimmed.includes('doods.pro')) {
+    const match = trimmed.match(/(?:dood\.[a-z]+|doodstream\.[a-z]+|ds2play\.[a-z]+|doods\.[a-z]+)\/(?:e|d|f)\/([a-zA-Z0-9_-]+)/i)
+      || trimmed.match(/\/(?:e|d|f)\/([a-zA-Z0-9_-]+)/i);
     if (match && match[1]) {
       return `https://img.doodcdn.co/snaps/${match[1]}.jpg`;
+    }
+  }
+
+  // FileMoon
+  if (trimmed.includes('filemoon')) {
+    const match = trimmed.match(/filemoon\.[a-z]+\/(?:e|d)\/([a-zA-Z0-9_-]+)/i);
+    if (match && match[1]) {
+      return `https://filemoon.sx/thumb/${match[1]}.jpg`;
+    }
+  }
+
+  // MixDrop
+  if (trimmed.includes('mixdrop')) {
+    const match = trimmed.match(/mixdrop\.[a-z]+\/(?:e|f)\/([a-zA-Z0-9_-]+)/i);
+    if (match && match[1]) {
+      return `https://mixdrop.co/thumb/${match[1]}.jpg`;
     }
   }
 
@@ -218,70 +242,109 @@ export async function captureMultiFrames(
       return resolve([]);
     }
 
-    const video = document.createElement('video');
-    video.crossOrigin = 'anonymous';
-    video.muted = true;
-    video.playsInline = true;
-    video.autoplay = false;
-    video.preload = 'metadata';
+    if (!videoSrc) return resolve([]);
+
+    // Check if we can get a static thumbnail from the URL directly first
+    const autoEmbedThumb = typeof source === 'string' ? extractThumbnailFromEmbedUrl(source) : null;
 
     const frames: string[] = [];
-    let currentIdx = 0;
+    let isCleanedUp = false;
 
-    const cleanup = () => {
-      video.pause();
-      video.removeAttribute('src');
-      video.load();
-      if (urlToRevoke) {
-        URL.revokeObjectURL(urlToRevoke);
+    const runCapture = (useCors: boolean) => {
+      const video = document.createElement('video');
+      if (useCors && !videoSrc.startsWith('blob:')) {
+        video.crossOrigin = 'anonymous';
       }
-    };
+      video.muted = true;
+      video.playsInline = true;
+      video.autoplay = false;
+      video.preload = 'metadata';
 
-    const timeout = setTimeout(() => {
-      cleanup();
-      resolve(frames);
-    }, 10000);
+      let currentIdx = 0;
 
-    video.onloadedmetadata = () => {
-      const duration = video.duration && !isNaN(video.duration) && video.duration > 0 ? video.duration : 10;
-      const seekPoints = [0.15 * duration, 0.4 * duration, 0.65 * duration, 0.85 * duration];
-
-      const captureNext = () => {
-        if (currentIdx >= seekPoints.length) {
-          clearTimeout(timeout);
-          cleanup();
-          resolve(frames);
-          return;
+      const cleanup = () => {
+        if (isCleanedUp) return;
+        isCleanedUp = true;
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+        if (urlToRevoke) {
+          URL.revokeObjectURL(urlToRevoke);
         }
-        video.currentTime = seekPoints[currentIdx];
       };
 
-      video.onseeked = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.min(video.videoWidth || 640, 640);
-          canvas.height = Math.min(video.videoHeight || 360, 360);
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-            frames.push(dataUrl);
+      const timeout = setTimeout(() => {
+        cleanup();
+        if (frames.length === 0 && autoEmbedThumb) {
+          resolve([autoEmbedThumb]);
+        } else {
+          resolve(frames);
+        }
+      }, 7000);
+
+      video.onloadedmetadata = () => {
+        const duration = video.duration && !isNaN(video.duration) && video.duration > 0 ? video.duration : 10;
+        const seekPoints = [0.15 * duration, 0.4 * duration, 0.65 * duration, 0.85 * duration];
+
+        const captureNext = () => {
+          if (currentIdx >= seekPoints.length) {
+            clearTimeout(timeout);
+            cleanup();
+            if (frames.length === 0 && autoEmbedThumb) {
+              resolve([autoEmbedThumb]);
+            } else {
+              resolve(frames);
+            }
+            return;
           }
-        } catch {}
-        currentIdx++;
+          video.currentTime = seekPoints[currentIdx];
+        };
+
+        video.onseeked = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.min(video.videoWidth || 640, 640);
+            canvas.height = Math.min(video.videoHeight || 360, 360);
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+              if (dataUrl && dataUrl.startsWith('data:image/')) {
+                frames.push(dataUrl);
+              }
+            }
+          } catch (canvasErr) {
+            // Tainted canvas due to cross-origin media
+            console.warn('[mediaHelper] Canvas export notice:', canvasErr);
+          }
+          currentIdx++;
+          captureNext();
+        };
+
         captureNext();
       };
 
-      captureNext();
+      video.onerror = () => {
+        clearTimeout(timeout);
+        video.pause();
+        video.removeAttribute('src');
+        // If CORS failed on remote URL, retry without CORS attribute
+        if (useCors && typeof source === 'string' && !source.startsWith('blob:')) {
+          runCapture(false);
+        } else {
+          cleanup();
+          if (autoEmbedThumb) {
+            resolve([autoEmbedThumb]);
+          } else {
+            resolve(frames);
+          }
+        }
+      };
+
+      video.src = videoSrc;
     };
 
-    video.onerror = () => {
-      clearTimeout(timeout);
-      cleanup();
-      resolve(frames);
-    };
-
-    video.src = videoSrc;
+    runCapture(true);
   });
 }
 

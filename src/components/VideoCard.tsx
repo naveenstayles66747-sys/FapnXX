@@ -74,26 +74,24 @@ const FALLBACK_THUMBNAIL = 'https://images.unsplash.com/photo-1536440136628-849c
 
 // ─── Extract ONLY dedicated preview media (WebP animated / MP4 clip) ───────────
 const extractPreviewDetails = (video: Video) => {
+  const mp4Src = (video.previewMp4Url || (video as any).mp4Url || '').trim();
+  if (mp4Src) {
+    const urlPath = mp4Src.split('?')[0].split('#')[0].toLowerCase();
+    const isVideo = /\.(mp4|webm|m3u8|mov|ogg)$/i.test(urlPath) || !/\.(jpe?g|png|webp|gif|avif)$/i.test(urlPath);
+    if (isVideo) return { previewSrc: mp4Src, previewType: 'video' as const };
+  }
+
   const webpSrc = (video.previewWebpUrl || '').trim();
   if (webpSrc) {
     const urlPath = webpSrc.split('?')[0].split('#')[0].toLowerCase();
-    const isImage = /\.(webp|gif|png|jpe?g|avif|svg)$/i.test(urlPath);
     const isVideo = /\.(mp4|webm|m3u8|mov|ogg)$/i.test(urlPath);
-    if (isImage) return { previewSrc: webpSrc, previewType: 'image' as const };
+    const isImage = /\.(webp|gif)$/i.test(urlPath);
     if (isVideo) return { previewSrc: webpSrc, previewType: 'video' as const };
+    if (isImage) return { previewSrc: webpSrc, previewType: 'image' as const };
   }
 
-  const mp4Src = (video.previewMp4Url || '').trim();
-  if (mp4Src) {
-    const urlPath = mp4Src.split('?')[0].split('#')[0].toLowerCase();
-    const isVideo = /\.(mp4|webm|m3u8|mov|ogg)$/i.test(urlPath);
-    const isImage = /\.(webp|gif|png|jpe?g|avif|svg)$/i.test(urlPath);
-    if (isVideo) return { previewSrc: mp4Src, previewType: 'video' as const };
-    if (isImage) return { previewSrc: mp4Src, previewType: 'image' as const };
-    const isExternalEmbed = /embedseek|hornhub|iframe|embed\./.test(urlPath);
-    if (!isExternalEmbed && mp4Src.startsWith('http')) {
-      return { previewSrc: mp4Src, previewType: 'video' as const };
-    }
+  if (mp4Src && mp4Src.startsWith('http')) {
+    return { previewSrc: mp4Src, previewType: 'video' as const };
   }
 
   return { previewSrc: '', previewType: 'none' as const };
@@ -417,20 +415,8 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
         />
 
-        {/* Hover Animated WebP Preview */}
-        {shouldPlayPreview && webpPreviewUrl && (
-          <img
-            src={webpPreviewUrl}
-            alt={`${video.title} Animated Preview`}
-            loading="eager"
-            decoding="async"
-            referrerPolicy="no-referrer"
-            className="hover-webp absolute inset-0 w-full h-full object-cover transition-opacity duration-400 opacity-100 pointer-events-none z-10 scale-105"
-          />
-        )}
-
-        {/* Dynamic Video Fallback Preview (for MP4 previews if no WebP) */}
-        {shouldPlayPreview && !webpPreviewUrl && renderPreviewOverlay()}
+        {/* Dedicated Hover / Mobile Touch Preview Overlay */}
+        {shouldPlayPreview && renderPreviewOverlay()}
 
         {/* Top-Right: Quality Badge only */}
         {!shouldPlayPreview && (

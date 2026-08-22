@@ -231,17 +231,15 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           throw new Error('Invalid Vimeo URL.');
         }
       } else if (
-        trimmed.includes('streamtape.com') ||
-        trimmed.includes('streamtape.to') ||
-        trimmed.includes('streamtape.net') ||
+        trimmed.includes('streamtape') ||
         trimmed.includes('streamta.pe') ||
-        trimmed.includes('streamtape.xyz') ||
-        trimmed.includes('streamtape.cc') ||
-        trimmed.includes('streamhide.to') ||
-        trimmed.includes('streamhide.com')
+        trimmed.includes('streamhide') ||
+        trimmed.includes('shvip') ||
+        trimmed.includes('streamhub')
       ) {
         let tapeId = '';
-        const match = trimmed.match(/\/(?:v|e)\/([a-zA-Z0-9_-]+)/);
+        const match = trimmed.match(/(?:streamtape|streamta\.pe|streamhide|shvip|streamhub)[^/]*\/(?:v|e|d)\/([a-zA-Z0-9_-]+)/i)
+          || trimmed.match(/\/(?:v|e)\/([a-zA-Z0-9_-]+)/i);
         if (match && match[1]) {
           tapeId = match[1];
         } else {
@@ -250,6 +248,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         }
         extractedUrl = `https://streamtape.com/e/${tapeId}/`;
         autoTitle = 'Streamtape Stream';
+        if (tapeId) {
+          setThumbnailUrl(`https://thumb.streamtape.com/${tapeId}.jpg`);
+        }
       } else if (trimmed.includes('dood') || trimmed.includes('doodstream') || trimmed.includes('ds2play') || trimmed.includes('doods.pro')) {
         let doodId = '';
         const match = trimmed.match(/\/(?:e|d)\/([a-zA-Z0-9_-]+)/);
@@ -373,9 +374,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             if (frames.length > 0) {
               setCandidateFrames(frames);
               setThumbnailUrl((prev) => prev || frames[0]);
-              if (!previewWebpUrl) setPreviewWebpUrl(frames[0]);
             }
           }).catch(() => {});
+          if (!previewMp4Url && extractedUrl.match(/\.(mp4|webm|mov|m3u8|ogg)($|\?)/i)) {
+            setPreviewMp4Url(extractedUrl);
+          }
           setProcessingStatus('✓ Direct Stream Verified & Ready!');
         };
 
@@ -418,7 +421,6 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         if (frames.length > 0) {
           setCandidateFrames(frames);
           setThumbnailUrl((prev) => prev || frames[0]);
-          if (!previewWebpUrl) setPreviewWebpUrl(frames[0]);
         }
       }).catch((err) => {
         console.warn('Auto frame capture notice:', err);

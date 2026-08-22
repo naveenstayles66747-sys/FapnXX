@@ -306,7 +306,8 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       ins.setAttribute('data-zoneid', AD_ZONES.OUTSTREAM_VIDEO);
       ins.style.display = 'block';
       ins.style.width = '100%';
-      ins.style.height = '100%';
+      ins.style.height = 'auto';
+      ins.style.minHeight = '180px';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
@@ -322,50 +323,26 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
 
   return (
     <article
-      className={`group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
-      style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
+      className={`group flex flex-col w-full max-w-full rounded-2xl overflow-hidden bg-[#131315] border border-white/10 hover:border-rose-500/50 transition-all p-2.5 shadow-lg ${className}`}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '260px' }}
       aria-label="Sponsored Advertisement"
     >
-      {/* 16:9 Full-Width Thumbnail / Player Container matching VideoCard */}
-      <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b] flex items-center justify-center">
-        {/* Outstream Ad Mount Point */}
-        <div
-          ref={containerRef}
-          id="exoclick-outstream-zone-6003190"
-          className="w-full h-full flex items-center justify-center overflow-hidden"
-        />
-
-        {/* Top-Right Badge: SPONSORED / AD */}
-        <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
-          <span className="thumb-hd-badge bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
-            AD
-          </span>
-        </div>
-
-        {/* Bottom-Left Badge: SPONSORED */}
-        <div className="thumb-duration-badge absolute bottom-2 left-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400 z-20 shadow-md pointer-events-none">
-          SPONSORED
-        </div>
+      <div className="flex items-center justify-between px-1 pb-1.5 border-b border-white/5 mb-1.5">
+        <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#ffb0cd] flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+          Sponsored
+        </span>
+        <span className="text-[9px] font-mono font-bold bg-white/10 text-zinc-300 px-1.5 py-0.5 rounded">
+          AD
+        </span>
       </div>
 
-      {/* Card Info Below Thumbnail matching VideoCard meta box */}
-      <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
-        <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight">
-          Featured Partner Video
-        </h3>
-
-        {/* Stats Row */}
-        <div className="video-card-stats-row flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] sm:text-sm text-rose-500">verified</span>
-            <span className="video-card-stat-value text-rose-500 font-bold">Promoted</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">hd</span>
-            <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">1080p HD</span>
-          </span>
-        </div>
-      </div>
+      {/* Outstream / Native In-Feed Ad Mount Container */}
+      <div
+        ref={containerRef}
+        id="exoclick-outstream-zone-6003190"
+        className="w-full min-h-[180px] flex items-center justify-center overflow-hidden rounded-xl bg-black/40 text-center"
+      />
     </article>
   );
 };

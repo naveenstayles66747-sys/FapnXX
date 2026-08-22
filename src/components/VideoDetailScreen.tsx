@@ -303,7 +303,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           RECOMMENDED VIDEOS — Direct Focus Below Player
       ───────────────────────────────────────────── */}
       <div className="px-3 sm:px-4 md:px-6 mt-3 mb-6">
-        <h3 className="text-sm md:text-base font-extrabold text-white mb-3 flex items-center gap-2">
+        <h3 className="text-sm md:text-base font-extrabold text-zinc-900 dark:text-white mb-3 flex items-center gap-2">
           <span className="material-symbols-outlined text-rose-500 text-lg">grid_view</span>
           <span>Recommended Videos</span>
         </h3>

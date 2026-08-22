@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Video } from '../types';
 import { videoService } from '../services/videoService';
 import { AD_CONFIG } from '../config/adConfig';
+import { OnStreamVideoBanner } from './AdSpaces';
 
 interface FluidPlayerWrapperProps {
   video: Video;
@@ -219,9 +220,17 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
     const initTimer = setTimeout(attachPrerollVast, 50);
 
+    // Safeguard: Fallback to main content if VAST hangs or gets blocked by adblock
+    const safetyFallbackTimer = setTimeout(() => {
+      if (isMounted && !contentStartedRef.current) {
+        startMainContent('vast_safety_timeout');
+      }
+    }, 4500);
+
     return () => {
       isMounted = false;
       clearTimeout(initTimer);
+      clearTimeout(safetyFallbackTimer);
       cleanupPreroll();
     };
   }, [vastState, currentVideoSrc, video.id, videoMountKey, prerollPlayerId]);
@@ -306,6 +315,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
           />
         </div>
       )}
+
+      {/* ── STAGE 3: Dismissible On-Stream Player Overlay Banner (Zone ID: 6003172) ── */}
+      <OnStreamVideoBanner isVisible={!isPrerollActive} />
     </div>
   );
 };
