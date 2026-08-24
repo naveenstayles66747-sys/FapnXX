@@ -6,7 +6,7 @@ export const commentController = {
   listByVideo: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { videoId } = req.params;
-      const list = commentService.listByVideo(videoId);
+      const list = await commentService.listByVideo(videoId);
       return responseUtil.success(res, list, 'Comments retrieved.');
     } catch (err: any) {
       next(err);
@@ -32,7 +32,7 @@ export const commentController = {
   likeComment: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const likesCount = commentService.like(id);
+      const likesCount = await commentService.like(id);
       return responseUtil.success(res, { likesCount }, 'Comment liked.');
     } catch (err: any) {
       next(err);

@@ -40,7 +40,26 @@ async function initFirestoreReportsSync() {
 initFirestoreReportsSync();
 
 export const reportService = {
-  listReports: (options?: { status?: ReportStatus }): DMCAReportRecord[] => {
+  listReports: async (options?: { status?: ReportStatus }): Promise<DMCAReportRecord[]> => {
+    try {
+      const snap = await adminDb.collection('reports').get();
+      if (!snap.empty) {
+        let list: DMCAReportRecord[] = [];
+        snap.forEach((doc) => {
+          const data = doc.data() as DMCAReportRecord;
+          const r = { ...data, id: doc.id };
+          list.push(r);
+          reports.set(doc.id, r);
+        });
+        if (options?.status) {
+          list = list.filter((r) => r.status === options.status);
+        }
+        return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore ReportService] listReports notice:', err.message);
+    }
+
     let list = Array.from(reports.values());
     if (options?.status) {
       list = list.filter((r) => r.status === options.status);
@@ -48,7 +67,18 @@ export const reportService = {
     return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   },
 
-  findById: (id: string): DMCAReportRecord | undefined => {
+  findById: async (id: string): Promise<DMCAReportRecord | undefined> => {
+    try {
+      const docSnap = await adminDb.collection('reports').doc(id).get();
+      if (docSnap.exists) {
+        const data = docSnap.data() as DMCAReportRecord;
+        const r = { ...data, id: docSnap.id };
+        reports.set(id, r);
+        return r;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore ReportService] findById notice:', err.message);
+    }
     return reports.get(id);
   },
 
@@ -80,7 +110,7 @@ export const reportService = {
     actorEmail: string,
     actorRole: string
   ): Promise<DMCAReportRecord> => {
-    const report = reports.get(id);
+    const report = await reportService.findById(id);
     if (!report) {
       throw new Error(`Report with ID ${id} not found.`);
     }

@@ -14,7 +14,7 @@ export const authService = {
     userAgent?: string;
   }): Promise<{ user: Omit<User, 'passwordHash'>; accessToken: string; refreshToken: string; firebaseCustomToken?: string }> => {
     const cleanEmail = params.email.trim().toLowerCase();
-    const user = userService.findByEmail(cleanEmail);
+    const user = await userService.findByEmail(cleanEmail);
 
     if (!user) {
       await auditService.log({
@@ -152,7 +152,7 @@ export const authService = {
       throw new Error('Invalid or expired refresh token.');
     }
 
-    const user = userService.findById(decoded.userId);
+    const user = await userService.findById(decoded.userId);
     if (!user || user.status === 'suspended') {
       throw new Error('User inactive or suspended.');
     }

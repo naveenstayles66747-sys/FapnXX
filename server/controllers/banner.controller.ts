@@ -6,7 +6,7 @@ export const bannerController = {
   listBanners: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const activeOnly = req.query.activeOnly !== 'false';
-      const list = bannerService.listBanners(activeOnly);
+      const list = await bannerService.listBanners(activeOnly);
       return responseUtil.success(res, list, 'Banners retrieved.');
     } catch (err: any) {
       next(err);

@@ -9,11 +9,11 @@ import { responseUtil } from '../utils/response';
 export const adminController = {
   getOverview: async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const videos = videoServiceBackend.listVideos({ includeUnpublished: true });
-      const users = userService.listUsers();
-      const reports = reportService.listReports();
-      const categories = categoryService.listCategories();
-      const audit = auditService.getLogs({ limit: 1 });
+      const videos = await videoServiceBackend.listVideos({ includeUnpublished: true });
+      const users = await userService.listUsers();
+      const reports = await reportService.listReports();
+      const categories = await categoryService.listCategories();
+      const audit = await auditService.getLogs({ limit: 1 });
 
       const totalViews = videos.videos.reduce((acc, v) => acc + (v.viewsCount || 0), 0);
       const pendingReports = reports.filter((r) => r.status === 'pending').length;
@@ -52,7 +52,7 @@ export const adminController = {
       const actorEmail = req.query.actorEmail as string;
       const targetType = req.query.targetType as string;
 
-      const result = auditService.getLogs({ page, limit, action, actorEmail, targetType });
+      const result = await auditService.getLogs({ page, limit, action, actorEmail, targetType });
       return responseUtil.success(res, result, 'Audit logs retrieved.');
     } catch (err: any) {
       next(err);

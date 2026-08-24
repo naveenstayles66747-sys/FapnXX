@@ -64,7 +64,26 @@ async function initFirestoreBannersSync() {
 initFirestoreBannersSync();
 
 export const bannerService = {
-  listBanners: (activeOnly = false): LandingBannerRecord[] => {
+  listBanners: async (activeOnly = false): Promise<LandingBannerRecord[]> => {
+    try {
+      const snap = await adminDb.collection('banners').get();
+      if (!snap.empty) {
+        let list: LandingBannerRecord[] = [];
+        snap.forEach((doc) => {
+          const data = doc.data() as LandingBannerRecord;
+          const b = { ...data, id: doc.id };
+          list.push(b);
+          banners.set(doc.id, b);
+        });
+        if (activeOnly) {
+          list = list.filter((b) => b.isActive);
+        }
+        return list;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore BannerService] listBanners notice:', err.message);
+    }
+
     let list = Array.from(banners.values());
     if (activeOnly) {
       list = list.filter((b) => b.isActive);
@@ -72,7 +91,18 @@ export const bannerService = {
     return list;
   },
 
-  findById: (id: string): LandingBannerRecord | undefined => {
+  findById: async (id: string): Promise<LandingBannerRecord | undefined> => {
+    try {
+      const docSnap = await adminDb.collection('banners').doc(id).get();
+      if (docSnap.exists) {
+        const data = docSnap.data() as LandingBannerRecord;
+        const b = { ...data, id: docSnap.id };
+        banners.set(id, b);
+        return b;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore BannerService] findById notice:', err.message);
+    }
     return banners.get(id);
   },
 
@@ -109,7 +139,7 @@ export const bannerService = {
   },
 
   update: async (id: string, updates: Partial<LandingBannerRecord>, actorId: string, actorEmail: string, actorRole: string): Promise<LandingBannerRecord> => {
-    const existing = banners.get(id);
+    const existing = await bannerService.findById(id);
     if (!existing) {
       throw new Error(`Banner with ID ${id} not found.`);
     }
@@ -144,7 +174,7 @@ export const bannerService = {
   },
 
   delete: async (id: string, actorId: string, actorEmail: string, actorRole: string): Promise<boolean> => {
-    const existing = banners.get(id);
+    const existing = await bannerService.findById(id);
     if (!existing) return false;
 
     banners.delete(id);

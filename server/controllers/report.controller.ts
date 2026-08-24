@@ -7,7 +7,7 @@ export const reportController = {
   listReports: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const status = req.query.status as ReportStatus;
-      const list = reportService.listReports({ status });
+      const list = await reportService.listReports({ status });
       return responseUtil.success(res, list, 'Reports retrieved.');
     } catch (err: any) {
       next(err);

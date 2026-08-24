@@ -36,7 +36,23 @@ async function initFirestoreCommentsSync() {
 initFirestoreCommentsSync();
 
 export const commentService = {
-  listByVideo: (videoId: string): CommentRecord[] => {
+  listByVideo: async (videoId: string): Promise<CommentRecord[]> => {
+    try {
+      const snap = await adminDb.collection('comments').where('videoId', '==', videoId).limit(100).get();
+      if (!snap.empty) {
+        const list: CommentRecord[] = [];
+        snap.forEach((doc) => {
+          const data = doc.data() as CommentRecord;
+          const c = { ...data, id: doc.id };
+          list.push(c);
+          comments.set(doc.id, c);
+        });
+        return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore CommentService] listByVideo notice:', err.message);
+    }
+
     const list: CommentRecord[] = [];
     for (const c of comments.values()) {
       if (c.videoId === videoId) {
@@ -45,6 +61,21 @@ export const commentService = {
     }
     // Newest first
     return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  },
+
+  findById: async (id: string): Promise<CommentRecord | undefined> => {
+    try {
+      const docSnap = await adminDb.collection('comments').doc(id).get();
+      if (docSnap.exists) {
+        const data = docSnap.data() as CommentRecord;
+        const c = { ...data, id: docSnap.id };
+        comments.set(id, c);
+        return c;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore CommentService] findById notice:', err.message);
+    }
+    return comments.get(id);
   },
 
   create: async (params: {
@@ -79,18 +110,22 @@ export const commentService = {
     return newComment;
   },
 
-  like: (id: string): number => {
-    const comment = comments.get(id);
+  like: async (id: string): Promise<number> => {
+    let comment = await commentService.findById(id);
     if (!comment) {
       throw new Error('Comment not found.');
     }
-    comment.likesCount += 1;
+    comment.likesCount = (comment.likesCount || 0) + 1;
     comments.set(id, comment);
 
-    // Async persist like in Firestore
-    adminDb.collection('comments').doc(id).set({
-      likesCount: comment.likesCount,
-    }, { merge: true }).catch(() => null);
+    // Persist directly to Firestore DB
+    try {
+      await adminDb.collection('comments').doc(id).set({
+        likesCount: comment.likesCount,
+      }, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore Comment] Like error for doc ${id}:`, err.message);
+    }
 
     return comment.likesCount;
   },
@@ -101,7 +136,7 @@ export const commentService = {
     actorRole: string,
     actorEmail: string
   ): Promise<boolean> => {
-    const comment = comments.get(id);
+    const comment = await commentService.findById(id);
     if (!comment) {
       return false;
     }

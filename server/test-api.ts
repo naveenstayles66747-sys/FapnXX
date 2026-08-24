@@ -84,22 +84,23 @@ async function runTests() {
 
     // 3. User Authentication
     console.log('\n--- 3. User Authentication & Security ---');
+    const testEmail = `new_test_user_${Date.now()}@example.com`;
     const registerRes = await request('/api/v1/auth/register', {
       method: 'POST',
-      body: { email: 'new_test_user@example.com', password: 'Password123!' },
+      body: { email: testEmail, password: 'Password123!' },
     });
     assert(registerRes.status === 201 && registerRes.data.success, 'POST /api/v1/auth/register creates user account');
 
     const userLoginRes = await request('/api/v1/auth/login', {
       method: 'POST',
-      body: { email: 'new_test_user@example.com', password: 'Password123!' },
+      body: { email: testEmail, password: 'Password123!' },
     });
     assert(userLoginRes.status === 200 && userLoginRes.data.data.accessToken, 'POST /api/v1/auth/login logs in user');
     userToken = userLoginRes.data?.data?.accessToken;
 
     const invalidLoginRes = await request('/api/v1/auth/login', {
       method: 'POST',
-      body: { email: 'new_test_user@example.com', password: 'WrongPassword!' },
+      body: { email: testEmail, password: 'WrongPassword!' },
     });
     assert(invalidLoginRes.status === 400 || invalidLoginRes.status === 500, 'POST /api/v1/auth/login rejects wrong password');
 
@@ -115,7 +116,7 @@ async function runTests() {
     // Normal user attempting admin login
     const normalUserAdminLoginRes = await request('/api/v1/auth/admin-login', {
       method: 'POST',
-      body: { email: 'new_test_user@example.com', password: 'Password123!' },
+      body: { email: testEmail, password: 'Password123!' },
     });
     assert(normalUserAdminLoginRes.status === 500 || normalUserAdminLoginRes.status === 400 || normalUserAdminLoginRes.status === 403, 'Normal user blocked from admin login');
 

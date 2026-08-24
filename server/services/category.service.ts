@@ -107,11 +107,37 @@ async function initFirestoreCategoriesSync() {
 initFirestoreCategoriesSync();
 
 export const categoryService = {
-  listCategories: (): CategoryRecord[] => {
+  listCategories: async (): Promise<CategoryRecord[]> => {
+    try {
+      const snap = await adminDb.collection('categories').get();
+      if (!snap.empty) {
+        const list: CategoryRecord[] = [];
+        snap.forEach((doc) => {
+          const data = doc.data() as CategoryRecord;
+          const c = { ...data, id: doc.id };
+          list.push(c);
+          categories.set(doc.id, c);
+        });
+        return list;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore CategoryService] listCategories notice:', err.message);
+    }
     return Array.from(categories.values());
   },
 
-  findById: (id: string): CategoryRecord | undefined => {
+  findById: async (id: string): Promise<CategoryRecord | undefined> => {
+    try {
+      const docSnap = await adminDb.collection('categories').doc(id).get();
+      if (docSnap.exists) {
+        const data = docSnap.data() as CategoryRecord;
+        const c = { ...data, id: docSnap.id };
+        categories.set(id, c);
+        return c;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore CategoryService] findById notice:', err.message);
+    }
     return categories.get(id);
   },
 
@@ -149,7 +175,7 @@ export const categoryService = {
 
 
   update: async (id: string, updates: Partial<CategoryRecord>, actorId: string, actorEmail: string, actorRole: string): Promise<CategoryRecord> => {
-    const existing = categories.get(id);
+    const existing = await categoryService.findById(id);
     if (!existing) {
       throw new Error(`Category with ID ${id} not found.`);
     }
@@ -184,7 +210,7 @@ export const categoryService = {
   },
 
   delete: async (id: string, actorId: string, actorEmail: string, actorRole: string): Promise<boolean> => {
-    const existing = categories.get(id);
+    const existing = await categoryService.findById(id);
     if (!existing) {
       return false;
     }
@@ -234,7 +260,22 @@ export const categoryService = {
     return newReq;
   },
 
-  listCategoryRequests: (): CategoryRequestRecord[] => {
+  listCategoryRequests: async (): Promise<CategoryRequestRecord[]> => {
+    try {
+      const snap = await adminDb.collection('category_requests').get();
+      if (!snap.empty) {
+        const list: CategoryRequestRecord[] = [];
+        snap.forEach((doc) => {
+          const data = doc.data() as CategoryRequestRecord;
+          const req = { ...data, id: doc.id };
+          list.push(req);
+          categoryRequests.set(doc.id, req);
+        });
+        return list;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore CategoryService] listCategoryRequests notice:', err.message);
+    }
     return Array.from(categoryRequests.values());
   },
 

@@ -18,7 +18,7 @@ export const videoController = {
       const isStaff = req.user && (req.user.role === Role.ADMIN || req.user.role === Role.SUPER_ADMIN || req.user.role === Role.EDITOR);
       const includeUnpublished = isStaff && req.query.includeUnpublished === 'true';
 
-      const result = videoServiceBackend.listVideos({
+      const result = await videoServiceBackend.listVideos({
         page,
         limit,
         category,
@@ -38,7 +38,7 @@ export const videoController = {
   getVideoById: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const video = videoServiceBackend.findById(id);
+      const video = await videoServiceBackend.findById(id);
 
       if (!video) {
         return responseUtil.error(res, 'NOT_FOUND', 'Video not found.', 404);
@@ -107,7 +107,7 @@ export const videoController = {
     try {
       const { id } = req.params;
       const clientIdentifier = (req.headers['x-client-device-id'] as string) || req.ip || (req.headers['user-agent'] as string) || 'anonymous';
-      const result = videoServiceBackend.incrementViewCount(id, clientIdentifier);
+      const result = await videoServiceBackend.incrementViewCount(id, clientIdentifier);
       return responseUtil.success(res, result, 'View recorded.');
     } catch (err: any) {
       next(err);
@@ -118,7 +118,7 @@ export const videoController = {
     try {
       const { id } = req.params;
       const { isLike } = req.body;
-      const result = videoServiceBackend.incrementLikes(id, isLike !== false);
+      const result = await videoServiceBackend.incrementLikes(id, isLike !== false);
       return responseUtil.success(res, result, 'Likes and rating updated.');
     } catch (err: any) {
       next(err);

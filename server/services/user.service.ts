@@ -69,11 +69,35 @@ async function initFirestoreUsersSync() {
 initFirestoreUsersSync();
 
 export const userService = {
-  findByEmail: (email: string): User | undefined => {
-    return users.get(email.trim().toLowerCase());
+  findByEmail: async (email: string): Promise<User | undefined> => {
+    const cleanEmail = email.trim().toLowerCase();
+    try {
+      const snap = await adminDb.collection('users').where('email', '==', cleanEmail).limit(1).get();
+      if (!snap.empty) {
+        const doc = snap.docs[0];
+        const data = doc.data() as User;
+        const user = { ...data, id: doc.id };
+        users.set(cleanEmail, user);
+        return user;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore UserService] findByEmail query notice:', err.message);
+    }
+    return users.get(cleanEmail);
   },
 
-  findById: (id: string): User | undefined => {
+  findById: async (id: string): Promise<User | undefined> => {
+    try {
+      const docSnap = await adminDb.collection('users').doc(id).get();
+      if (docSnap.exists) {
+        const data = docSnap.data() as User;
+        const user = { ...data, id: docSnap.id };
+        users.set(user.email.toLowerCase(), user);
+        return user;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore UserService] findById query notice:', err.message);
+    }
     for (const u of users.values()) {
       if (u.id === id) return u;
     }
@@ -82,7 +106,8 @@ export const userService = {
 
   create: async (data: { email: string; password: string; role?: Role }): Promise<User> => {
     const cleanEmail = data.email.trim().toLowerCase();
-    if (users.has(cleanEmail)) {
+    const existing = await userService.findByEmail(cleanEmail);
+    if (existing) {
       throw new Error('User with this email already exists.');
     }
 
@@ -103,7 +128,7 @@ export const userService = {
 
     users.set(cleanEmail, newUser);
 
-    // Save to Firestore DB
+    // Save permanently to Firestore DB
     try {
       await adminDb.collection('users').doc(newUser.id).set(newUser);
     } catch (err: any) {
@@ -113,8 +138,8 @@ export const userService = {
     return newUser;
   },
 
-  update: (id: string, updates: Partial<User>): User => {
-    const user = userService.findById(id);
+  update: async (id: string, updates: Partial<User>): Promise<User> => {
+    const user = await userService.findById(id);
     if (!user) {
       throw new Error('User not found.');
     }
@@ -125,23 +150,62 @@ export const userService = {
       updatedAt: new Date().toISOString(),
     };
 
-    users.set(user.email, updatedUser);
+    users.set(user.email.toLowerCase(), updatedUser);
 
     // Update in Firestore DB
-    adminDb.collection('users').doc(id).set(updatedUser, { merge: true }).catch(() => null);
+    try {
+      await adminDb.collection('users').doc(id).set(updatedUser, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore User] Update error for doc ${id}:`, err.message);
+    }
 
     return updatedUser;
   },
 
-  listUsers: (options?: { page?: number; limit?: number; search?: string; role?: Role }): {
+  listUsers: async (options?: { page?: number; limit?: number; search?: string; role?: Role }): Promise<{
     users: Array<Omit<User, 'passwordHash'>>;
     total: number;
     page: number;
     totalPages: number;
-  } => {
+  }> => {
     const page = Math.max(1, options?.page || 1);
     const limit = Math.min(100, Math.max(1, options?.limit || 20));
 
+    try {
+      const snap = await adminDb.collection('users').get();
+      if (!snap.empty) {
+        let list: User[] = [];
+        snap.forEach((doc) => {
+          const data = doc.data() as User;
+          const u = { ...data, id: doc.id };
+          list.push(u);
+          users.set(u.email.toLowerCase(), u);
+        });
+
+        if (options?.search) {
+          const q = options.search.toLowerCase();
+          list = list.filter((u) => u.email.toLowerCase().includes(q));
+        }
+        if (options?.role) {
+          list = list.filter((u) => u.role === options.role);
+        }
+
+        const total = list.length;
+        const startIndex = (page - 1) * limit;
+        const paginated = list.slice(startIndex, startIndex + limit).map(sanitizeUser);
+
+        return {
+          users: paginated,
+          total,
+          page,
+          totalPages: Math.ceil(total / limit) || 1,
+        };
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore UserService] listUsers query notice:', err.message);
+    }
+
+    // Memory cache fallback
     let list = Array.from(users.values());
 
     if (options?.search) {
@@ -169,7 +233,7 @@ export const userService = {
       throw new Error('Only a SUPER_ADMIN can assign the SUPER_ADMIN role.');
     }
 
-    const targetUser = userService.findById(targetUserId);
+    const targetUser = await userService.findById(targetUserId);
     if (!targetUser) {
       throw new Error('Target user not found.');
     }
@@ -180,7 +244,7 @@ export const userService = {
 
     targetUser.role = newRole;
     targetUser.updatedAt = new Date().toISOString();
-    users.set(targetUser.email, targetUser);
+    users.set(targetUser.email.toLowerCase(), targetUser);
 
     // Save in Firestore DB
     try {
@@ -207,7 +271,7 @@ export const userService = {
   },
 
   setUserStatus: async (targetUserId: string, status: 'active' | 'suspended', actorRole: Role): Promise<User> => {
-    const targetUser = userService.findById(targetUserId);
+    const targetUser = await userService.findById(targetUserId);
     if (!targetUser) {
       throw new Error('Target user not found.');
     }
@@ -222,7 +286,7 @@ export const userService = {
 
     targetUser.status = status;
     targetUser.updatedAt = new Date().toISOString();
-    users.set(targetUser.email, targetUser);
+    users.set(targetUser.email.toLowerCase(), targetUser);
 
     // Save in Firestore DB
     try {

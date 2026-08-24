@@ -125,7 +125,7 @@ initFirestoreVideosSync();
 
 
 export const videoServiceBackend = {
-  listVideos: (options?: {
+  listVideos: async (options?: {
     page?: number;
     limit?: number;
     category?: string;
@@ -134,15 +134,84 @@ export const videoServiceBackend = {
     status?: VideoStatus;
     includeUnpublished?: boolean;
     sort?: 'newest' | 'trending' | 'views' | 'likes';
-  }): { videos: VideoRecord[]; total: number; page: number; totalPages: number } => {
+  }): Promise<{ videos: VideoRecord[]; total: number; page: number; totalPages: number }> => {
     const page = Math.max(1, options?.page || 1);
     const limit = Math.min(100, Math.max(1, options?.limit || 24));
 
+    // 1. Direct Firestore query as authoritative single source of truth
+    try {
+      const snap = await adminDb.collection('videos').get();
+      if (!snap.empty) {
+        let list: VideoRecord[] = [];
+        snap.forEach((doc) => {
+          const data = doc.data() as VideoRecord;
+          const record = { ...data, id: doc.id };
+          list.push(record);
+          videos.set(doc.id, record);
+        });
+
+        // By default, public listing only returns PUBLISHED videos unless requested by admin
+        if (!options?.includeUnpublished) {
+          list = list.filter((v) => v.status === VideoStatus.PUBLISHED || !v.status);
+        } else if (options?.status) {
+          list = list.filter((v) => v.status === options.status);
+        }
+
+        if (options?.category && options.category !== 'all') {
+          const cat = options.category.toLowerCase();
+          list = list.filter(
+            (v) =>
+              v.category?.toLowerCase() === cat ||
+              v.categories?.some((c) => c.toLowerCase() === cat)
+          );
+        }
+
+        if (options?.orientation && options.orientation !== 'all') {
+          const ori = options.orientation.toLowerCase();
+          list = list.filter((v) => !v.orientation || v.orientation.toLowerCase() === ori);
+        }
+
+        if (options?.search) {
+          const q = options.search.toLowerCase();
+          list = list.filter(
+            (v) =>
+              v.title?.toLowerCase().includes(q) ||
+              v.description?.toLowerCase().includes(q) ||
+              v.tags?.some((t) => t.toLowerCase().includes(q)) ||
+              v.models_actors?.some((m) => m.toLowerCase().includes(q)) ||
+              v.performerName?.toLowerCase().includes(q)
+          );
+        }
+
+        // Sort order
+        if (options?.sort === 'views') {
+          list.sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0));
+        } else if (options?.sort === 'likes') {
+          list.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
+        } else {
+          list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        }
+
+        const total = list.length;
+        const startIndex = (page - 1) * limit;
+        const paginated = list.slice(startIndex, startIndex + limit);
+
+        return {
+          videos: paginated,
+          total,
+          page,
+          totalPages: Math.ceil(total / limit) || 1,
+        };
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore VideoService] Query notice:', err.message);
+    }
+
+    // 2. Memory cache fallback
     let list = Array.from(videos.values());
 
-    // By default, public listing only returns PUBLISHED videos unless requested by admin
     if (!options?.includeUnpublished) {
-      list = list.filter((v) => v.status === VideoStatus.PUBLISHED);
+      list = list.filter((v) => v.status === VideoStatus.PUBLISHED || !v.status);
     } else if (options?.status) {
       list = list.filter((v) => v.status === options.status);
     }
@@ -179,8 +248,7 @@ export const videoServiceBackend = {
     } else if (options?.sort === 'likes') {
       list.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
     } else {
-      // Default: newest first
-      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     }
 
     const total = list.length;
@@ -195,7 +263,18 @@ export const videoServiceBackend = {
     };
   },
 
-  findById: (id: string): VideoRecord | undefined => {
+  findById: async (id: string): Promise<VideoRecord | undefined> => {
+    try {
+      const docSnap = await adminDb.collection('videos').doc(id).get();
+      if (docSnap.exists) {
+        const data = docSnap.data() as VideoRecord;
+        const record = { ...data, id: docSnap.id };
+        videos.set(id, record);
+        return record;
+      }
+    } catch (err: any) {
+      console.warn(`[Firestore VideoService] findById notice:`, err.message);
+    }
     return videos.get(id);
   },
 
@@ -345,8 +424,15 @@ export const videoServiceBackend = {
     return true;
   },
 
-  incrementViewCount: (videoId: string, clientIdentifier: string): { newViewsCount: number; counted: boolean } => {
-    const video = videos.get(videoId);
+  incrementViewCount: async (videoId: string, clientIdentifier: string): Promise<{ newViewsCount: number; counted: boolean }> => {
+    let video = videos.get(videoId);
+    if (!video) {
+      const snap = await adminDb.collection('videos').doc(videoId).get();
+      if (snap.exists) {
+        video = { ...(snap.data() as VideoRecord), id: snap.id };
+        videos.set(videoId, video);
+      }
+    }
     if (!video) {
       throw new Error('Video not found.');
     }
@@ -357,7 +443,7 @@ export const videoServiceBackend = {
 
     // Anti-spam debounce: if viewed within last 10 minutes from this client, return current count without incrementing
     if (lastCounted && now - lastCounted < VIEW_COOLDOWN_MS) {
-      return { newViewsCount: video.viewsCount, counted: false };
+      return { newViewsCount: video.viewsCount || 1, counted: false };
     }
 
     viewCooldowns.set(cooldownKey, now);
@@ -365,18 +451,29 @@ export const videoServiceBackend = {
     video.views = `${video.viewsCount} ${video.viewsCount === 1 ? 'view' : 'views'}`;
     videos.set(videoId, video);
 
-    // Async persist view count in Firestore
-    adminDb.collection('videos').doc(videoId).set({
-      viewsCount: video.viewsCount,
-      views: video.views,
-      updatedAt: new Date().toISOString(),
-    }, { merge: true }).catch(() => null);
+    // Persist view count directly to Firestore
+    try {
+      await adminDb.collection('videos').doc(videoId).set({
+        viewsCount: video.viewsCount,
+        views: video.views,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore Video] View update error for doc ${videoId}:`, err.message);
+    }
 
     return { newViewsCount: video.viewsCount, counted: true };
   },
 
-  incrementLikes: (videoId: string, isLike: boolean): { likesCount: number; rating: string } => {
-    const video = videos.get(videoId);
+  incrementLikes: async (videoId: string, isLike: boolean): Promise<{ likesCount: number; rating: string }> => {
+    let video = videos.get(videoId);
+    if (!video) {
+      const snap = await adminDb.collection('videos').doc(videoId).get();
+      if (snap.exists) {
+        video = { ...(snap.data() as VideoRecord), id: snap.id };
+        videos.set(videoId, video);
+      }
+    }
     if (!video) {
       throw new Error('Video not found.');
     }
@@ -392,12 +489,16 @@ export const videoServiceBackend = {
 
     videos.set(videoId, video);
 
-    // Async persist likes and calculated rating in Firestore
-    adminDb.collection('videos').doc(videoId).set({
-      likesCount: video.likesCount,
-      rating: video.rating,
-      updatedAt: new Date().toISOString(),
-    }, { merge: true }).catch(() => null);
+    // Persist likes and calculated rating directly to Firestore
+    try {
+      await adminDb.collection('videos').doc(videoId).set({
+        likesCount: video.likesCount,
+        rating: video.rating,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore Video] Likes update error for doc ${videoId}:`, err.message);
+    }
 
     return { likesCount: video.likesCount, rating: video.rating };
   },

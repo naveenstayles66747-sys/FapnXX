@@ -6,7 +6,7 @@ export const adController = {
   listAds: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const activeOnly = req.query.activeOnly !== 'false';
-      const list = adService.listAds(activeOnly);
+      const list = await adService.listAds(activeOnly);
       return responseUtil.success(res, list, 'Ad campaigns retrieved.');
     } catch (err: any) {
       next(err);

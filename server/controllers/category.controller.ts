@@ -5,7 +5,7 @@ import { responseUtil } from '../utils/response';
 export const categoryController = {
   listCategories: async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const list = categoryService.listCategories();
+      const list = await categoryService.listCategories();
       return responseUtil.success(res, list, 'Categories retrieved.');
     } catch (err: any) {
       next(err);
@@ -69,7 +69,7 @@ export const categoryController = {
 
   listCategoryRequests: async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const list = categoryService.listCategoryRequests();
+      const list = await categoryService.listCategoryRequests();
       return responseUtil.success(res, list, 'Category requests retrieved.');
     } catch (err: any) {
       next(err);

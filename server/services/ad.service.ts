@@ -69,7 +69,26 @@ async function initFirestoreAdsSync() {
 initFirestoreAdsSync();
 
 export const adService = {
-  listAds: (activeOnly = false): AdCampaignRecord[] => {
+  listAds: async (activeOnly = false): Promise<AdCampaignRecord[]> => {
+    try {
+      const snap = await adminDb.collection('ad_campaigns').get();
+      if (!snap.empty) {
+        let list: AdCampaignRecord[] = [];
+        snap.forEach((doc) => {
+          const data = doc.data() as AdCampaignRecord;
+          const a = { ...data, id: doc.id };
+          list.push(a);
+          adCampaigns.set(doc.id, a);
+        });
+        if (activeOnly) {
+          list = list.filter((a) => a.isActive);
+        }
+        return list;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore AdService] listAds notice:', err.message);
+    }
+
     let list = Array.from(adCampaigns.values());
     if (activeOnly) {
       list = list.filter((a) => a.isActive);
@@ -77,7 +96,18 @@ export const adService = {
     return list;
   },
 
-  findById: (id: string): AdCampaignRecord | undefined => {
+  findById: async (id: string): Promise<AdCampaignRecord | undefined> => {
+    try {
+      const docSnap = await adminDb.collection('ad_campaigns').doc(id).get();
+      if (docSnap.exists) {
+        const data = docSnap.data() as AdCampaignRecord;
+        const a = { ...data, id: docSnap.id };
+        adCampaigns.set(id, a);
+        return a;
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore AdService] findById notice:', err.message);
+    }
     return adCampaigns.get(id);
   },
 
@@ -116,7 +146,7 @@ export const adService = {
   },
 
   update: async (id: string, updates: Partial<AdCampaignRecord>, actorId: string, actorEmail: string, actorRole: string): Promise<AdCampaignRecord> => {
-    const existing = adCampaigns.get(id);
+    const existing = await adService.findById(id);
     if (!existing) {
       throw new Error(`Ad Campaign with ID ${id} not found.`);
     }
@@ -151,7 +181,7 @@ export const adService = {
   },
 
   delete: async (id: string, actorId: string, actorEmail: string, actorRole: string): Promise<boolean> => {
-    const existing = adCampaigns.get(id);
+    const existing = await adService.findById(id);
     if (!existing) return false;
 
     adCampaigns.delete(id);
