@@ -473,52 +473,29 @@ export class VideoService {
     ).then(() => true);
   }
 
-
   /**
-   * Secure Server-Side View Counter via Backend Anti-Spam API & Transaction
+   * Secure Server-Side Views Counter via Backend Validated API
    * Direct arbitrary client tampering is disabled.
    */
   async incrementVideoViews(videoId: string): Promise<number> {
     const deviceId = getOrCreateDeviceId();
-    return this.apiFetch<{ newViewsCount: number; counted: boolean }>(
-      `/videos/${videoId}/views`,
-      {
-        method: 'POST',
-        headers: {
-          'x-client-device-id': deviceId,
-        },
-      },
-      () => {
-        const current = getStoredVideos();
-        let newCount = 1;
-        const updated = current.map((v) => {
-          if (v.id === videoId) {
-            newCount = (v.viewsCount || 1) + 1;
-            return {
-              ...v,
-              viewsCount: newCount,
-              views: `${newCount} ${newCount === 1 ? 'view' : 'views'}`,
-            };
-          }
-          return v;
-        });
-        setStoredVideos(updated);
-        return { newViewsCount: newCount, counted: true };
-      }
-    ).then((res) => {
-      // Synchronize local cache with verified server count
+    try {
+      const res = await this.apiFetch<{ newViewsCount: number; counted: boolean }>(
+        `/videos/${videoId}/views`,
+        {
+          method: 'POST',
+          headers: {
+            'x-client-device-id': deviceId,
+          },
+        }
+      );
       if (res && typeof res.newViewsCount === 'number') {
-        const current = getStoredVideos();
-        const updated = current.map((v) =>
-          v.id === videoId
-            ? { ...v, viewsCount: res.newViewsCount, views: `${res.newViewsCount} ${res.newViewsCount === 1 ? 'view' : 'views'}` }
-            : v
-        );
-        setStoredVideos(updated);
         return res.newViewsCount;
       }
       return 1;
-    });
+    } catch {
+      return 1;
+    }
   }
 
   /**
@@ -526,40 +503,21 @@ export class VideoService {
    * Direct arbitrary client tampering is disabled.
    */
   async incrementVideoLikes(videoId: string, isLike: boolean): Promise<number> {
-    const delta = isLike ? 1 : -1;
-    return this.apiFetch<{ likesCount: number; rating?: string }>(
-      `/videos/${videoId}/likes`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ isLike }),
-      },
-      () => {
-        const current = getStoredVideos();
-        let newCount = 0;
-        const updated = current.map((v) => {
-          if (v.id === videoId) {
-            newCount = Math.max(0, (v.likesCount || 0) + delta);
-            return { ...v, likesCount: newCount };
-          }
-          return v;
-        });
-        setStoredVideos(updated);
-        return { likesCount: newCount };
-      }
-    ).then((res) => {
-      // Synchronize local cache with verified server count & rating
+    try {
+      const res = await this.apiFetch<{ likesCount: number; rating?: string }>(
+        `/videos/${videoId}/likes`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ isLike }),
+        }
+      );
       if (res && typeof res.likesCount === 'number') {
-        const current = getStoredVideos();
-        const updated = current.map((v) =>
-          v.id === videoId
-            ? { ...v, likesCount: res.likesCount, ...(res.rating ? { rating: res.rating } : {}) }
-            : v
-        );
-        setStoredVideos(updated);
         return res.likesCount;
       }
       return 0;
-    });
+    } catch {
+      return 0;
+    }
   }
 
   /**

@@ -3,6 +3,7 @@ import { CategoryId, CategoryInfo, LandingBanner, Video } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { OutstreamVideoCardAd, NativeRecommendationAd } from './AdSpaces';
+import { AD_CONFIG } from '../config/adConfig';
 import { useLanguage } from '../i18n/LanguageContext';
 import {
   getBannerImageUrl,
