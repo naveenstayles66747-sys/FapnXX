@@ -349,10 +349,13 @@ export class VideoService {
         });
 
         if (firestoreVideos.length > 0) {
-          // Sort newest first
-          firestoreVideos.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-          this.smartCache.set(cacheKey, firestoreVideos);
-          return firestoreVideos;
+          // Sort newest first, filter out taken-down or embed-less videos
+          const cleanVideos = firestoreVideos.filter(
+            (v) => !(v as any).isTakenDown && (v.embedUrl || v.previewMp4Url)
+          );
+          cleanVideos.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          this.smartCache.set(cacheKey, cleanVideos);
+          return cleanVideos;
         }
       }
     } catch (firestoreErr: any) {
