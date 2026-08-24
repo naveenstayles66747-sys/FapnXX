@@ -11,6 +11,8 @@ export const AD_ZONES = {
   OUTSTREAM_VIDEO: import.meta.env.VITE_EXO_OUTSTREAM || '6003190',                 // In-Feed Outstream (eas6a97888e37)
   ON_STREAM_VIDEO_BANNER: import.meta.env.VITE_EXO_ON_STREAM || '6003172',          // In-Video Player Banner (eas6a97888e17)
   IN_PAGE_BANNER: import.meta.env.VITE_EXO_BANNER || '6003172',                     // Standard In-Page Banner (eas6a97888e17)
+  DESKTOP_UNDER_PLAYER: import.meta.env.VITE_EXO_DESKTOP_UNDER_PLAYER || '6010076', // Desktop Under-Player (eas6a97888e2)
+  MOBILE_UNDER_PLAYER: import.meta.env.VITE_EXO_MOBILE_UNDER_PLAYER || '6010078',   // Mobile Under-Player (eas6a97888e10)
 } as const;
 
 export const AD_CONFIG = {

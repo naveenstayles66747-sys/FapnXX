@@ -4,7 +4,7 @@ import { VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { ReportModal } from './ReportModal';
 import { FluidPlayerWrapper } from './FluidPlayerWrapper';
-import { OutstreamVideoCardAd } from './AdSpaces';
+import { OutstreamVideoCardAd, UnderPlayerBanner } from './AdSpaces';
 import { CommentsSection } from './CommentsSection';
 import { useLanguage } from '../i18n/LanguageContext';
 import { videoService } from '../services/videoService';
@@ -313,6 +313,9 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
             </div>
           )}
         </div>
+
+        {/* Under-Player Responsive Ad Banner (Desktop 728x90: Zone 6010076 | Mobile 300x250: Zone 6010078) */}
+        <UnderPlayerBanner />
       </div>
 
       {/* ─────────────────────────────────────────────

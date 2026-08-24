@@ -428,4 +428,63 @@ export const OnStreamVideoBanner: React.FC<{
   );
 };
 
+/**
+ * Under-Player Banner Ad (Responsive: Desktop Zone 6010076 & Mobile Zone 6010078)
+ * Positioned cleanly under the video player & action buttons.
+ */
+export const UnderPlayerBanner: React.FC<{ className?: string }> = ({ className = '' }) => {
+  const desktopContainerRef = useRef<HTMLDivElement>(null);
+  const mobileContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const isMobile = window.innerWidth < 1024;
+    const targetRef = isMobile ? mobileContainerRef : desktopContainerRef;
+    const el = targetRef.current;
+    if (!el || el.dataset.adInitialized === 'true') return;
+
+    try {
+      el.innerHTML = '';
+      const ins = document.createElement('ins');
+      if (isMobile) {
+        ins.className = `eas${AD_ZONES.SITE_HASH}10`;
+        ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_UNDER_PLAYER);
+      } else {
+        ins.className = `eas${AD_ZONES.SITE_HASH}2`;
+        ins.setAttribute('data-zoneid', AD_ZONES.DESKTOP_UNDER_PLAYER);
+      }
+      ins.style.display = 'block';
+      ins.style.margin = '0 auto';
+      el.appendChild(ins);
+
+      const win = window as any;
+      win.AdProvider = win.AdProvider || [];
+      win.AdProvider.push({ serve: {} });
+
+      el.dataset.adInitialized = 'true';
+    } catch (e) {
+      console.warn('[ExoClick] Under-Player banner error:', e);
+    }
+  }, []);
+
+  return (
+    <div className={`w-full my-4 flex flex-col items-center justify-center ${className}`}>
+      {/* Desktop Under-Player Banner (Zone 6010076) */}
+      <div
+        ref={desktopContainerRef}
+        id="exoclick-desktop-under-player"
+        className="hidden lg:flex w-full items-center justify-center overflow-hidden min-h-[90px] rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-2 shadow-sm"
+      />
+
+      {/* Mobile Under-Player Banner (Zone 6010078) */}
+      <div
+        ref={mobileContainerRef}
+        id="exoclick-mobile-under-player"
+        className="flex lg:hidden w-full items-center justify-center overflow-hidden min-h-[250px] rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-2 shadow-sm"
+      />
+    </div>
+  );
+};
+
 export default AdBanner;
