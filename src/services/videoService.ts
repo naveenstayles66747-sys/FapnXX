@@ -35,7 +35,6 @@ import {
   where,
   orderBy,
   limit,
-  increment,
 } from 'firebase/firestore';
 import { signInWithCustomToken } from 'firebase/auth';
 import { storage, db, auth, cleanForFirestore } from './firebaseConfig';
@@ -474,38 +473,19 @@ export class VideoService {
 
 
   /**
-   * Worldwide Real-time View Counter with Direct Atomic Firestore Increment
+   * Secure Server-Side View Counter via Backend Anti-Spam API & Transaction
+   * Direct arbitrary client tampering is disabled.
    */
   async incrementVideoViews(videoId: string): Promise<number> {
-    try {
-      const vRef = doc(db, 'videos', videoId);
-      const vSnap = await getDoc(vRef);
-      if (vSnap.exists()) {
-        const cur = vSnap.data().viewsCount || 0;
-        const newCount = cur + 1;
-        await updateDoc(vRef, {
-          viewsCount: increment(1),
-          views: `${newCount} ${newCount === 1 ? 'view' : 'views'}`,
-          lastViewedAt: new Date().toISOString(),
-        });
-        return newCount;
-      } else {
-        // Document not in Firestore yet — create it with initial view count
-        const existingVideo = getStoredVideos().find((v) => v.id === videoId);
-        const newCount = (existingVideo?.viewsCount || 0) + 1;
-        const videoData = existingVideo
-          ? { ...existingVideo, viewsCount: newCount, views: `${newCount} views` }
-          : { id: videoId, viewsCount: newCount, views: `${newCount} views`, createdAt: new Date().toISOString() };
-        await setDoc(vRef, cleanForFirestore(videoData), { merge: true });
-        return newCount;
-      }
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] incrementVideoViews sync notice:', err?.message);
-    }
-
+    const deviceId = getOrCreateDeviceId();
     return this.apiFetch<{ newViewsCount: number; counted: boolean }>(
       `/videos/${videoId}/views`,
-      { method: 'POST' },
+      {
+        method: 'POST',
+        headers: {
+          'x-client-device-id': deviceId,
+        },
+      },
       () => {
         const current = getStoredVideos();
         let newCount = 1;
@@ -523,38 +503,28 @@ export class VideoService {
         setStoredVideos(updated);
         return { newViewsCount: newCount, counted: true };
       }
-    ).then((res) => res.newViewsCount);
+    ).then((res) => {
+      // Synchronize local cache with verified server count
+      if (res && typeof res.newViewsCount === 'number') {
+        const current = getStoredVideos();
+        const updated = current.map((v) =>
+          v.id === videoId
+            ? { ...v, viewsCount: res.newViewsCount, views: `${res.newViewsCount} ${res.newViewsCount === 1 ? 'view' : 'views'}` }
+            : v
+        );
+        setStoredVideos(updated);
+        return res.newViewsCount;
+      }
+      return 1;
+    });
   }
 
   /**
-   * Worldwide Real-time Likes Counter with Direct Atomic Firestore Increment
+   * Secure Server-Side Likes Counter via Backend Validated API & Transaction
+   * Direct arbitrary client tampering is disabled.
    */
   async incrementVideoLikes(videoId: string, isLike: boolean): Promise<number> {
     const delta = isLike ? 1 : -1;
-    try {
-      const vRef = doc(db, 'videos', videoId);
-      const vSnap = await getDoc(vRef);
-      if (vSnap.exists()) {
-        const cur = vSnap.data().likesCount || 0;
-        const newCount = Math.max(0, cur + delta);
-        await updateDoc(vRef, {
-          likesCount: increment(delta),
-          lastLikedAt: new Date().toISOString(),
-        });
-        return newCount;
-      } else {
-        const existingVideo = getStoredVideos().find((v) => v.id === videoId);
-        const newLikes = Math.max(0, (existingVideo?.likesCount || 0) + delta);
-        const videoData = existingVideo
-          ? { ...existingVideo, likesCount: newLikes }
-          : { id: videoId, likesCount: newLikes, createdAt: new Date().toISOString() };
-        await setDoc(vRef, cleanForFirestore(videoData), { merge: true });
-        return newLikes;
-      }
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] incrementVideoLikes sync notice:', err?.message);
-    }
-
     return this.apiFetch<{ likesCount: number }>(
       `/videos/${videoId}/likes`,
       {
@@ -574,7 +544,18 @@ export class VideoService {
         setStoredVideos(updated);
         return { likesCount: newCount };
       }
-    ).then((res) => res.likesCount);
+    ).then((res) => {
+      // Synchronize local cache with verified server count
+      if (res && typeof res.likesCount === 'number') {
+        const current = getStoredVideos();
+        const updated = current.map((v) =>
+          v.id === videoId ? { ...v, likesCount: res.likesCount } : v
+        );
+        setStoredVideos(updated);
+        return res.likesCount;
+      }
+      return 0;
+    });
   }
 
   /**

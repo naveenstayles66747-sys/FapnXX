@@ -106,7 +106,7 @@ export const videoController = {
   incrementViews: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const clientIdentifier = req.ip || req.headers['user-agent'] || 'anonymous';
+      const clientIdentifier = (req.headers['x-client-device-id'] as string) || req.ip || (req.headers['user-agent'] as string) || 'anonymous';
       const result = videoServiceBackend.incrementViewCount(id, clientIdentifier);
       return responseUtil.success(res, result, 'View recorded.');
     } catch (err: any) {

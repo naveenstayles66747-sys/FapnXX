@@ -35,15 +35,10 @@ service cloud.firestore {
     match /videos/{videoId} {
       allow read: if resource.data.status == 'published' || resource.data.status == null || isModerator();
       
-      // Create: Strictly restricted to authenticated Staff / Admin / Moderator
+      // Create, Update, Delete: Strictly restricted to authenticated Staff / Admin / Server SDK
+      // Prevents client-side counter tampering (views/likes/rating)
       allow create: if isModerator();
-
-      // Update: Admin/Staff can update everything; Public/Users can only update atomic counters (likes, views)
-      allow update: if isModerator() || (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewsCount', 'views', 'likesCount', 'rating'])
-      );
-
-      // Delete: Strictly restricted to staff/admin
+      allow update: if isModerator();
       allow delete: if isModerator();
     }
 
