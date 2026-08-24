@@ -3,9 +3,13 @@ import { CategoryId, CategoryInfo, LandingBanner, Video } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { OutstreamVideoCardAd, NativeRecommendationAd } from './AdSpaces';
-import { AD_CONFIG } from '../config/adConfig';
 import { useLanguage } from '../i18n/LanguageContext';
-import { getBannerImageUrl, handleBannerImageError } from '../utils/mediaHelper';
+import {
+  getBannerImageUrl,
+  handleBannerImageError,
+  getOptimizedImageUrl,
+  getResponsiveImageSrcSet,
+} from '../utils/mediaHelper';
 import { smartSearch, hasRealMatches } from '../utils/searchEngine';
 
 interface BrowseScreenProps {
@@ -139,18 +143,19 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       : [...activeBanners, ...DEFAULT_DESKTOP_BANNERS.filter((db) => !activeBanners.some((ab) => ab.id === db.id))].slice(0, 6);
   }, [activeBanners]);
 
-  // Preload banner slide images once when banners change
+  // Progressive on-demand prefetch: Only preload the NEXT slide image when slide changes
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const preloaded = new Set<string>();
-    displayBanners.forEach((b) => {
-      if (b && b.bannerImage && !preloaded.has(b.bannerImage)) {
-        preloaded.add(b.bannerImage);
+    if (typeof window === 'undefined' || displayBanners.length <= 1) return;
+    const nextIndex = (currentSlideIndex + 1) % displayBanners.length;
+    const nextBanner = displayBanners[nextIndex];
+    if (nextBanner) {
+      const nextUrl = getBannerImageUrl(nextBanner, nextIndex);
+      if (nextUrl) {
         const img = new Image();
-        img.src = b.bannerImage;
+        img.src = getOptimizedImageUrl(nextUrl, 1200, 75);
       }
-    });
-  }, [displayBanners]);
+    }
+  }, [currentSlideIndex, displayBanners]);
 
   // Continuous auto-swipe timer every 4.5 seconds (resets cleanly when user swipes or clicks)
   const autoSwipeTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -466,15 +471,24 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                   }}
                   className="w-full h-full flex-shrink-0 relative flex items-end p-4 pb-10 sm:p-8 xl:p-12 cursor-pointer"
                 >
-                  <img
-                    src={getBannerImageUrl(banner, index)}
-                    alt={banner.title}
-                    decoding={index === 0 ? 'sync' : 'async'}
-                    loading={index === 0 ? 'eager' : 'lazy'}
-                    fetchPriority={index === 0 ? 'high' : 'auto'}
-                    onError={(e) => handleBannerImageError(e, index)}
-                    className="absolute inset-0 w-full h-full object-cover gpu-accelerated"
-                  />
+                  {(() => {
+                    const rawUrl = getBannerImageUrl(banner, index);
+                    const optimizedUrl = getOptimizedImageUrl(rawUrl, index === 0 ? 1600 : 1200, 75);
+                    const srcSet = getResponsiveImageSrcSet(rawUrl, [640, 1080, 1600], 75);
+                    return (
+                      <img
+                        src={optimizedUrl}
+                        srcSet={srcSet || undefined}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1600px"
+                        alt={banner.title}
+                        decoding="async"
+                        loading={index === 0 ? 'eager' : 'lazy'}
+                        fetchPriority={index === 0 ? 'high' : 'low'}
+                        onError={(e) => handleBannerImageError(e, index)}
+                        className="absolute inset-0 w-full h-full object-cover gpu-accelerated"
+                      />
+                    );
+                  })()}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/95 via-[#09090b]/40 to-transparent pointer-events-none" />
                   <div className="absolute inset-0 bg-gradient-to-r from-[#09090b]/80 via-transparent to-transparent pointer-events-none" />
 

@@ -55,6 +55,46 @@ export function getBannerImageUrl(banner: { id?: string; bannerImage?: string },
 }
 
 /**
+ * Optimizes an image URL for modern delivery (WebP/AVIF format auto-negotiation, custom width, and quality)
+ */
+export function getOptimizedImageUrl(url?: string, width: number = 1200, quality: number = 75): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+
+  // Handle Unsplash images with dynamic format & size negotiation
+  if (trimmed.includes('images.unsplash.com')) {
+    try {
+      const urlObj = new URL(trimmed);
+      urlObj.searchParams.set('auto', 'format');
+      urlObj.searchParams.set('fit', 'crop');
+      urlObj.searchParams.set('w', width.toString());
+      urlObj.searchParams.set('q', quality.toString());
+      return urlObj.toString();
+    } catch {
+      return trimmed;
+    }
+  }
+
+  return trimmed;
+}
+
+/**
+ * Generates a responsive srcset string for multi-resolution devices (mobile, tablet, desktop)
+ */
+export function getResponsiveImageSrcSet(url?: string, widths: number[] = [640, 1080, 1600], quality: number = 75): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+
+  if (trimmed.includes('images.unsplash.com')) {
+    return widths
+      .map((w) => `${getOptimizedImageUrl(trimmed, w, quality)} ${w}w`)
+      .join(', ');
+  }
+
+  return '';
+}
+
+/**
  * Handle category image loading error by trying fallback image
  */
 export function handleCategoryImageError(e: React.SyntheticEvent<HTMLImageElement, Event>, categoryId: string) {

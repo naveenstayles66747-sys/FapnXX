@@ -4,7 +4,12 @@ import { CATEGORIES, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { OutstreamVideoCardAd, NativeRecommendationAd } from './AdSpaces';
 import { AD_CONFIG } from '../config/adConfig';
-import { getCategoryHeroImage, handleCategoryImageError } from '../utils/mediaHelper';
+import {
+  getCategoryHeroImage,
+  handleCategoryImageError,
+  getOptimizedImageUrl,
+  getResponsiveImageSrcSet,
+} from '../utils/mediaHelper';
 
 interface CategoryDetailScreenProps {
   categoryId: CategoryId;
@@ -105,14 +110,24 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
       <section className="hero-banner-container relative h-[360px] md:h-[450px] w-full flex items-end p-6 md:p-12 overflow-hidden border-b border-[#353437]">
         <div className="absolute inset-0 bg-gradient-to-t from-[#131315] via-[#131315]/70 to-transparent z-10" />
         <div className="absolute inset-0 z-0">
-          <img
-            src={getCategoryHeroImage(category)}
-            alt={category.name}
-            loading="lazy"
-            decoding="async"
-            onError={(e) => handleCategoryImageError(e, category.id)}
-            className="w-full h-full object-cover"
-          />
+          {(() => {
+            const rawHero = getCategoryHeroImage(category);
+            const optimizedHero = getOptimizedImageUrl(rawHero, 1200, 75);
+            const srcSet = getResponsiveImageSrcSet(rawHero, [640, 1080, 1600], 75);
+            return (
+              <img
+                src={optimizedHero}
+                srcSet={srcSet || undefined}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1600px"
+                alt={category.name}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                onError={(e) => handleCategoryImageError(e, category.id)}
+                className="w-full h-full object-cover"
+              />
+            );
+          })()}
         </div>
 
         <div className="relative z-20 max-w-7xl w-full">
