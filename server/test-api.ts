@@ -7,7 +7,7 @@ let server: http.Server;
 let superAdminToken = '';
 let userToken = '';
 
-function request(path: string, options: { method?: string; body?: any; headers?: Record<string, string> } = {}): Promise<{ status: number; data: any }> {
+function request(path: string, options: { method?: string; body?: any; headers?: Record<string, string> } = {}): Promise<{ status: number; data: any; headers: http.IncomingHttpHeaders }> {
   return new Promise((resolve, reject) => {
     const postData = options.body ? JSON.stringify(options.body) : undefined;
     const req = http.request(
@@ -26,9 +26,9 @@ function request(path: string, options: { method?: string; body?: any; headers?:
         res.on('end', () => {
           try {
             const json = JSON.parse(raw);
-            resolve({ status: res.statusCode || 500, data: json });
+            resolve({ status: res.statusCode || 500, data: json, headers: res.headers });
           } catch {
-            resolve({ status: res.statusCode || 500, data: raw });
+            resolve({ status: res.statusCode || 500, data: raw, headers: res.headers });
           }
         });
       }
@@ -67,6 +67,23 @@ async function runTests() {
 
     const readyRes = await request('/ready');
     assert(readyRes.status === 200 && readyRes.data.status === 'ready', 'GET /ready returns 200 OK');
+
+    // 1b. CORS Origin Security Validation
+    console.log('\n--- 1b. Strict CORS Origin Gate ---');
+    const allowedCorsRes = await request('/api/v1/categories', {
+      headers: { Origin: 'https://indianfullxx.com' },
+    });
+    assert(allowedCorsRes.status === 200 && allowedCorsRes.headers['access-control-allow-origin'] === 'https://indianfullxx.com', 'Actual domain https://indianfullxx.com permitted by CORS');
+
+    const vercelCorsRes = await request('/api/v1/categories', {
+      headers: { Origin: 'https://fapnxx.vercel.app' },
+    });
+    assert(vercelCorsRes.status === 200 && vercelCorsRes.headers['access-control-allow-origin'] === 'https://fapnxx.vercel.app', 'Vercel domain https://fapnxx.vercel.app permitted by CORS');
+
+    const blockedCorsRes = await request('/api/v1/categories', {
+      headers: { Origin: 'https://unauthorized-attacker.xyz' },
+    });
+    assert(blockedCorsRes.status === 403 && blockedCorsRes.data?.error?.code === 'CORS_FORBIDDEN', 'Unknown origin https://unauthorized-attacker.xyz blocked with 403 CORS_FORBIDDEN');
 
     // 2. Public Content APIs
     console.log('\n--- 2. Public Content APIs ---');

@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import { corsOptions } from './config/cors';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import { logger } from './utils/logger';
@@ -19,21 +20,7 @@ app.use(
 );
 
 // 2. CORS Setup
-const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim());
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or same-origin)
-      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-        return callback(null, true);
-      }
-      return callback(null, true); // Permissive in dev/proxy setup
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  })
-);
+app.use(cors(corsOptions));
 
 // 3. Body & Cookie Parsing
 app.use(express.json({ limit: '10mb' }));
