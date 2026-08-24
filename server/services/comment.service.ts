@@ -137,8 +137,11 @@ export const commentService = {
   },
 
   findById: async (id: string): Promise<CommentRecord | undefined> => {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return undefined;
+    }
     try {
-      const docSnap = await adminDb.collection('comments').doc(id).get();
+      const docSnap = await adminDb.collection('comments').doc(id.trim()).get();
       if (docSnap.exists) {
         const data = docSnap.data() as CommentRecord;
         const c = { ...data, id: docSnap.id, status: data.status || 'approved' };

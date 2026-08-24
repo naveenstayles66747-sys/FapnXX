@@ -88,8 +88,11 @@ export const userService = {
   },
 
   findById: async (id: string): Promise<User | undefined> => {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return undefined;
+    }
     try {
-      const docSnap = await adminDb.collection('users').doc(id).get();
+      const docSnap = await adminDb.collection('users').doc(id.trim()).get();
       if (docSnap.exists) {
         const data = docSnap.data() as User;
         const user = { ...data, id: docSnap.id };

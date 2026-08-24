@@ -69,8 +69,11 @@ export const reportService = {
   },
 
   findById: async (id: string): Promise<DMCAReportRecord | undefined> => {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return undefined;
+    }
     try {
-      const docSnap = await adminDb.collection('reports').doc(id).get();
+      const docSnap = await adminDb.collection('reports').doc(id.trim()).get();
       if (docSnap.exists) {
         const data = docSnap.data() as DMCAReportRecord;
         const r = { ...data, id: docSnap.id };
