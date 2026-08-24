@@ -164,6 +164,18 @@ async function runTests() {
     });
     assert(invalidVideoRes.status === 422, 'Super Admin POST /api/v1/videos with invalid payload returns 422 Unprocessable Entity');
 
+    const blobVideoRes = await request('/api/v1/videos', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+      body: {
+        title: 'Blob Stream Test Video',
+        thumbnail: 'https://images.unsplash.com/photo-1534447677768-be436bb09401',
+        embedUrl: 'blob:http://localhost:5173/3829-4829-fake-blob-id',
+        category: 'amateur',
+      },
+    });
+    assert(blobVideoRes.status === 400 || blobVideoRes.status === 500, 'Video creation with temporary blob: URL rejected with error');
+
     const validVideoRes = await request('/api/v1/videos', {
       method: 'POST',
       headers: { Authorization: `Bearer ${superAdminToken}` },

@@ -235,6 +235,16 @@ export const videoServiceBackend = {
   },
 
   create: async (data: Partial<VideoRecord>, actorId: string, actorEmail: string, actorRole: string): Promise<VideoRecord> => {
+    if (data.embedUrl && data.embedUrl.startsWith('blob:')) {
+      throw new Error('Temporary blob: URLs cannot be saved. Video file must be uploaded to Firebase Storage or use an embed URL.');
+    }
+    if (data.thumbnail && data.thumbnail.startsWith('blob:')) {
+      throw new Error('Temporary blob: URLs cannot be saved as thumbnail.');
+    }
+    if (data.previewMp4Url && data.previewMp4Url.startsWith('blob:')) {
+      throw new Error('Temporary blob: URLs cannot be saved as preview video.');
+    }
+
     const id = data.id || `vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const now = new Date().toISOString();
 
@@ -314,6 +324,16 @@ export const videoServiceBackend = {
     const existing = videos.get(id);
     if (!existing) {
       throw new Error(`Video with ID ${id} not found.`);
+    }
+
+    if (updates.embedUrl && updates.embedUrl.startsWith('blob:')) {
+      throw new Error('Temporary blob: URLs cannot be saved. Video file must be uploaded to Firebase Storage or use an embed URL.');
+    }
+    if (updates.thumbnail && updates.thumbnail.startsWith('blob:')) {
+      throw new Error('Temporary blob: URLs cannot be saved as thumbnail.');
+    }
+    if (updates.previewMp4Url && updates.previewMp4Url.startsWith('blob:')) {
+      throw new Error('Temporary blob: URLs cannot be saved as preview video.');
     }
 
     const now = new Date().toISOString();

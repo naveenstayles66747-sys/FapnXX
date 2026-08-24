@@ -94,22 +94,23 @@ export class VideoService {
 
   /**
    * Upload full video file to Firebase Storage with progress tracking
+   * Throws error on failure so caller can display error message instead of saving temporary blob URLs
    */
   async uploadVideoFileToStorage(file: File, onProgress?: (percent: number) => void): Promise<string> {
     try {
-      if (onProgress) onProgress(20);
+      if (onProgress) onProgress(15);
       const fileId = `vid_file_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const fileExt = file.name.split('.').pop() || 'mp4';
       const storageRef = ref(storage, `videos/${fileId}.${fileExt}`);
-      if (onProgress) onProgress(50);
+      if (onProgress) onProgress(45);
       const snapshot = await uploadBytes(storageRef, file);
       if (onProgress) onProgress(85);
       const downloadUrl = await getDownloadURL(snapshot.ref);
       if (onProgress) onProgress(100);
       return downloadUrl;
     } catch (err: any) {
-      console.warn('[VideoService] Storage video upload error, fallback to local stream:', err?.message);
-      return URL.createObjectURL(file);
+      console.error('[VideoService] Firebase Storage video upload failed:', err?.message || err);
+      throw new Error(`Video file upload to Firebase Cloud Storage failed: ${err?.message || 'Storage network error'}`);
     }
   }
 

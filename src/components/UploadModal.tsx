@@ -592,11 +592,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             (percent) => setUploadProgress(percent)
           );
           finalEmbedUrl = storageVideoUrl;
-        } catch (storageErr) {
-          console.warn('[UploadModal] Firebase Storage video upload fallback to local stream:', storageErr);
-          if (filePreviewUrl) {
-            finalEmbedUrl = filePreviewUrl;
-          }
+        } catch (storageErr: any) {
+          console.error('[UploadModal] Firebase Storage video upload failed:', storageErr);
+          setIsPublishing(false);
+          setIsUploadingFile(false);
+          alert(storageErr?.message || 'Video file upload to Firebase Cloud Storage failed. Please verify your connection and try again.');
+          return;
         }
       }
 
@@ -626,6 +627,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         .split(',')
         .map((m) => m.trim())
         .filter(Boolean);
+
+      if (finalEmbedUrl && finalEmbedUrl.startsWith('blob:')) {
+        alert('Invalid video URL. Temporary blob streams cannot be saved as video URLs. Please ensure file is uploaded to Firebase Cloud Storage or provide a valid embed URL.');
+        setIsPublishing(false);
+        setIsUploadingFile(false);
+        return;
+      }
 
       const generatedId = `vid-user-${Date.now()}`;
       const newVideo: Video = {
