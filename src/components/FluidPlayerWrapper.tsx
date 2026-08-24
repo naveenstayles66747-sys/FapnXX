@@ -136,6 +136,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       }
     };
 
+    let fluidLoadAttempts = 0;
     const attachPrerollVast = () => {
       if (!isMounted || contentStartedRef.current) return;
       cleanupPreroll();
@@ -237,7 +238,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
           if (isMounted) startMainContent('init_exception');
         }
       } else {
-        setTimeout(attachPrerollVast, 100);
+        fluidLoadAttempts += 1;
+        if (fluidLoadAttempts > 8) {
+          // If fluidPlayer library is not loaded after 800ms (e.g. adblocker active), proceed directly to video
+          if (isMounted) startMainContent('fluidplayer_not_available');
+        } else {
+          setTimeout(attachPrerollVast, 100);
+        }
       }
     };
 

@@ -125,8 +125,14 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   }, [selectedCategory, searchQuery, sortBy, durationFilter]);
 
   // Filter out any videos that have been taken down
-  const activeVideos = React.useMemo(() => (videos || []).filter((v) => !v.isTakenDown), [videos]);
-  const activeBanners = React.useMemo(() => (banners || []).filter((b) => b && b.isActive !== false), [banners]);
+  const activeVideos = React.useMemo(
+    () => (videos || []).filter((v) => v && typeof v === 'object' && !v.isTakenDown),
+    [videos]
+  );
+  const activeBanners = React.useMemo(
+    () => (banners || []).filter((b) => b && typeof b === 'object' && b.isActive !== false),
+    [banners]
+  );
   const displayBanners = React.useMemo(() => {
     return activeBanners.length >= 6
       ? activeBanners
@@ -138,7 +144,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     if (typeof window === 'undefined') return;
     const preloaded = new Set<string>();
     displayBanners.forEach((b) => {
-      if (b.bannerImage && !preloaded.has(b.bannerImage)) {
+      if (b && b.bannerImage && !preloaded.has(b.bannerImage)) {
         preloaded.add(b.bannerImage);
         const img = new Image();
         img.src = b.bannerImage;
@@ -173,7 +179,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
   // Trending calculation using Cloud Firestore data / activeVideos (no 404 API calls)
   useEffect(() => {
-    const scored = (activeVideos || []).map((v) => {
+    const scored = (activeVideos || []).filter((v) => v && typeof v === 'object').map((v) => {
       let viewsNum = typeof v.viewsCount === 'number' && !isNaN(v.viewsCount) ? v.viewsCount : 500;
       if (typeof v.views === 'string') {
         const uppercaseV = v.views.toUpperCase();
@@ -194,7 +200,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
   // Deferred search engine — keeps UI typing and clicking lightning responsive
   const deferredSearchQuery = React.useDeferredValue(searchQuery);
-  const cleanSearch = deferredSearchQuery.trim();
+  const cleanSearch = (deferredSearchQuery || '').trim();
   const searchedVideos = React.useMemo(() => {
     return cleanSearch ? smartSearch(activeVideos, cleanSearch) : activeVideos;
   }, [activeVideos, cleanSearch]);
@@ -208,16 +214,18 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       return searchedVideos;
     }
     const keywords = currentLanguageMeta.keywords.map((k) => k.toLowerCase());
-    const scored = searchedVideos.map((video) => {
+    const scored = searchedVideos.filter((v) => v && typeof v === 'object').map((video) => {
       let matchCount = 0;
-      const titleLower = video.title.toLowerCase();
-      const descLower = video.description.toLowerCase();
-      const tagsLower = video.tags.map((t) => t.toLowerCase());
+      const titleLower = (video.title || '').toLowerCase();
+      const descLower = (video.description || '').toLowerCase();
+      const tagsLower = Array.isArray(video.tags)
+        ? video.tags.map((t) => (typeof t === 'string' ? t.toLowerCase() : ''))
+        : [];
 
       keywords.forEach((kw) => {
         if (titleLower.includes(kw)) matchCount += 3;
         if (descLower.includes(kw)) matchCount += 1;
-        if (tagsLower.some((t) => t.includes(kw))) matchCount += 2;
+        if (tagsLower.some((t) => t && t.includes(kw))) matchCount += 2;
       });
 
       return { video, score: matchCount };
@@ -230,7 +238,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const justAddedVideos =
     selectedCategory === 'all'
       ? regionalVideos
-      : regionalVideos.filter((v) => v.category === selectedCategory);
+      : regionalVideos.filter((v) => v && v.category === selectedCategory);
 
   // Helper to parse duration into seconds for precision filtering
   const parseDurationInSeconds = (durationStr?: string): number => {
@@ -249,6 +257,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const durationFilteredVideos = React.useMemo(() => {
     if (durationFilter === 'all') return justAddedVideos;
     return justAddedVideos.filter((v) => {
+      if (!v) return false;
       const sec = parseDurationInSeconds(v.duration);
       if (durationFilter === 'short') return sec < 600; // < 10 mins
       if (durationFilter === 'medium') return sec >= 600 && sec <= 1200; // 10 - 20 mins
@@ -260,8 +269,9 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const sortedVideos = React.useMemo(() => {
     const list = [...durationFilteredVideos];
     const parseViews = (v: Video): number => {
+      if (!v) return 0;
       if (typeof v.viewsCount === 'number' && v.viewsCount > 0) return v.viewsCount;
-      const str = v.views || '';
+      const str = typeof v.views === 'string' ? v.views : typeof v.views === 'number' ? `${v.views}` : '';
       const num = parseFloat(str.replace(/[^0-9.]/g, ''));
       if (isNaN(num)) return 0;
       if (/k/i.test(str)) return num * 1000;
@@ -270,17 +280,19 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     };
 
     const parseRating = (v: Video): number => {
-      return parseInt((v.rating || '0').replace('%', ''), 10) || 0;
+      if (!v) return 0;
+      const r = typeof v.rating === 'string' ? v.rating : typeof v.rating === 'number' ? `${v.rating}` : '0';
+      return parseInt(r.replace('%', ''), 10) || 0;
     };
 
     if (sortBy === 'latest') {
-      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      list.sort((a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime());
     } else if (sortBy === 'most_relevant') {
       list.sort((a, b) => parseViews(b) - parseViews(a));
     } else if (sortBy === 'top_rated') {
       list.sort((a, b) => {
-        const interestA = parseRating(a) * 100 + (a.likesCount || 0) * 10 + parseViews(a);
-        const interestB = parseRating(b) * 100 + (b.likesCount || 0) * 10 + parseViews(b);
+        const interestA = parseRating(a) * 100 + (a?.likesCount || 0) * 10 + parseViews(a);
+        const interestB = parseRating(b) * 100 + (b?.likesCount || 0) * 10 + parseViews(b);
         return interestB - interestA;
       });
     }
@@ -746,7 +758,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         {displayedVideos.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-y-5 gap-x-4 sm:gap-6">
-              {displayedVideos.map((video, idx) => (
+              {displayedVideos.filter((v) => v && v.id).map((video, idx) => (
                 <React.Fragment key={video.id}>
                   <VideoCard
                     video={video}

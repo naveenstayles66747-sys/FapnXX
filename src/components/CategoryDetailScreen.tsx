@@ -22,10 +22,13 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
   categories = CATEGORIES,
   userEmail,
 }) => {
-  const category = categories.find((c) => c.id === categoryId) || categories[0] || CATEGORIES[0];
-  const activeVideos = React.useMemo(() => (videos || []).filter((v) => !v.isTakenDown), [videos]);
+  const category = (categories || []).find((c) => c && c.id === categoryId) || (categories && categories[0]) || CATEGORIES[0];
+  const activeVideos = React.useMemo(
+    () => (videos || []).filter((v) => v && typeof v === 'object' && !v.isTakenDown),
+    [videos]
+  );
   const categoryVideos = React.useMemo(() => {
-    return activeVideos.filter((v) => v.category === categoryId || categoryId === 'trending');
+    return activeVideos.filter((v) => v && (v.category === categoryId || categoryId === 'trending'));
   }, [activeVideos, categoryId]);
 
   const [selectedSubtag, setSelectedSubtag] = React.useState<string>('All');
@@ -54,26 +57,31 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
   // Subtags filter & sorting logic
   const filteredCategoryVideos = React.useMemo(() => {
     const list = categoryVideos.filter((v) => {
+      if (!v) return false;
       if (selectedSubtag === 'All') return true;
-      const lowerSubtag = selectedSubtag.toLowerCase();
+      const lowerSubtag = (selectedSubtag || '').toLowerCase();
+      const tags = Array.isArray(v.tags) ? v.tags : [];
+      const title = (v.title || '').toLowerCase();
+      const desc = (v.description || '').toLowerCase();
       return (
-        v.tags.some((t) => t.toLowerCase().includes(lowerSubtag)) ||
-        v.title.toLowerCase().includes(lowerSubtag) ||
-        v.description.toLowerCase().includes(lowerSubtag)
+        tags.some((t) => typeof t === 'string' && t.toLowerCase().includes(lowerSubtag)) ||
+        title.includes(lowerSubtag) ||
+        desc.includes(lowerSubtag)
       );
     });
 
     if (sortBy === 'views') {
       const getNum = (v: Video) => {
+        if (!v) return 0;
         if (typeof v.viewsCount === 'number' && !isNaN(v.viewsCount)) return v.viewsCount;
-        const str = (v.views || '').toUpperCase();
+        const str = typeof v.views === 'string' ? v.views.toUpperCase() : typeof v.views === 'number' ? `${v.views}` : '';
         if (str.includes('M')) return parseFloat(str) * 1_000_000;
         if (str.includes('K')) return parseFloat(str) * 1_000;
         return parseInt(str.replace(/[^0-9]/g, ''), 10) || 0;
       };
       list.sort((a, b) => getNum(b) - getNum(a));
     } else {
-      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      list.sort((a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime());
     }
 
     return list;

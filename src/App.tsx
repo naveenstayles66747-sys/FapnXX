@@ -88,22 +88,23 @@ export default function App() {
   const [banners, setBanners] = useState<LandingBanner[]>(() => getStoredBanners());
 
   // Filtered videos based on content preference (straight/gay/lesbian) without breaking standard horizontal/vertical videos
-  const preferredVideos = videosList.filter((v) => {
-    if (!v) return false;
+  const preferredVideos = (videosList || []).filter((v) => {
+    if (!v || typeof v !== 'object') return false;
     const ori = (v.orientation || '').toLowerCase();
     const cat = (v.category || '').toLowerCase();
+    const tags = Array.isArray(v.tags) ? v.tags : [];
     if (contentPreference === 'straight') {
       return ori !== 'gay' && ori !== 'lesbian' && cat !== 'gay' && cat !== 'lesbian';
     }
     if (contentPreference === 'gay') {
-      return ori === 'gay' || cat === 'gay' || v.tags?.some((t) => t.toLowerCase() === 'gay');
+      return ori === 'gay' || cat === 'gay' || tags.some((t) => typeof t === 'string' && t.toLowerCase() === 'gay');
     }
     if (contentPreference === 'lesbian') {
-      return ori === 'lesbian' || cat === 'lesbian' || v.tags?.some((t) => t.toLowerCase() === 'lesbian');
+      return ori === 'lesbian' || cat === 'lesbian' || tags.some((t) => typeof t === 'string' && t.toLowerCase() === 'lesbian');
     }
     return true;
   });
-  const filteredVideosList = preferredVideos.length > 0 ? preferredVideos : videosList;
+  const filteredVideosList = preferredVideos.length > 0 ? preferredVideos : (videosList || []);
 
   // Real Firebase Auth & Custom Claims Observer
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
@@ -608,22 +609,35 @@ export default function App() {
 
             {currentScreen === 'performers' && <PerformersScreen />}
 
-            {currentScreen === 'video-detail' && selectedVideo && (
-              <VideoDetailScreen
-                video={selectedVideo}
-                onBack={() => handleNavigate('browse')}
-                onSelectVideo={handleSelectVideo}
-                onNavigateToSearch={handleNavigateToSearch}
-                userEmail={userEmail}
-                onOpenSoftLogin={handleOpenSoftLogin}
-                videos={filteredVideosList}
-                onVideoUpdated={(vId, updates) => {
-                  setVideosList((prev) =>
-                    prev.map((v) => (v.id === vId ? { ...v, ...updates } : v))
-                  );
-                  setSelectedVideo((prev) => (prev && prev.id === vId ? { ...prev, ...updates } : prev));
-                }}
-              />
+            {currentScreen === 'video-detail' && (
+              selectedVideo ? (
+                <VideoDetailScreen
+                  video={selectedVideo}
+                  onBack={() => handleNavigate('browse')}
+                  onSelectVideo={handleSelectVideo}
+                  onNavigateToSearch={handleNavigateToSearch}
+                  userEmail={userEmail}
+                  onOpenSoftLogin={handleOpenSoftLogin}
+                  videos={filteredVideosList}
+                  onVideoUpdated={(vId, updates) => {
+                    setVideosList((prev) =>
+                      prev.map((v) => (v.id === vId ? { ...v, ...updates } : v))
+                    );
+                    setSelectedVideo((prev) => (prev && prev.id === vId ? { ...prev, ...updates } : prev));
+                  }}
+                />
+              ) : (
+                <BrowseScreen
+                  onSelectVideo={handleSelectVideo}
+                  onSelectCategory={handleSelectCategory}
+                  selectedCategory={selectedCategoryId}
+                  videos={filteredVideosList}
+                  categories={categories}
+                  banners={banners}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                />
+              )
             )}
           </div>
 
