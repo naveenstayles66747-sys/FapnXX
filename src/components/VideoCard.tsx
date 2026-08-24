@@ -281,7 +281,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         autoPlay
         controls={false}
         preload="none"
-        referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
         onCanPlay={(e) => {
           const v = e.currentTarget;
           v.muted = true;

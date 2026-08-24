@@ -9,6 +9,7 @@ import { getCategoryHeroImage, handleCategoryImageError } from '../utils/mediaHe
 interface CategoryDetailScreenProps {
   categoryId: CategoryId;
   onSelectVideo: (video: Video) => void;
+  onSelectCategory?: (id: CategoryId) => void;
   onSelectSubtag?: (tag: string) => void;
   videos?: Video[];
   categories?: CategoryInfo[];
@@ -18,6 +19,7 @@ interface CategoryDetailScreenProps {
 export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
   categoryId,
   onSelectVideo,
+  onSelectCategory,
   videos = VIDEOS,
   categories = CATEGORIES,
   userEmail,
