@@ -284,10 +284,10 @@ export const Header: React.FC<HeaderProps> = ({
         />
         <button
           onClick={() => { onOpenSearch(); setDesktopSuggestionsOpen(false); }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#e0358d]/20 transition-colors cursor-pointer"
+          className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-[#e0358d] hover:bg-[#e0358d]/20 transition-colors cursor-pointer"
           aria-label="Search"
         >
-          <span className="material-symbols-outlined header-search-icon transition-colors text-lg">
+          <span className="material-symbols-outlined header-search-icon transition-colors text-lg text-[#e0358d]">
             search
           </span>
         </button>
@@ -370,10 +370,11 @@ export const Header: React.FC<HeaderProps> = ({
                 setTimeout(() => mobileSearchRef.current?.focus(), 100);
               }
             }}
-            className="text-zinc-700 dark:text-zinc-200 hover:text-rose-500 p-1.5 rounded-full transition-colors cursor-pointer active:scale-95 shrink-0"
+            className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center text-[#e0358d] hover:bg-[#e0358d] hover:text-white dark:text-[#f472b6] dark:hover:text-white transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
             aria-label="Search"
+            title="Search"
           >
-            <span className="material-symbols-outlined text-2xl">
+            <span className="material-symbols-outlined text-[20px] text-[#e0358d] dark:text-[#f472b6]">
               {mobileSearchActive ? 'close' : 'search'}
             </span>
           </button>
@@ -495,7 +496,7 @@ export const Header: React.FC<HeaderProps> = ({
                 setMobileSearchActive(false);
                 setMobileSuggestionsOpen(false);
               }}
-              className="px-4 py-2 bg-zinc-700 hover:bg-[#e0358d] text-white font-bold text-xs rounded-lg flex items-center gap-1.5 shrink-0 transition-colors shadow-sm"
+              className="px-4 py-2 bg-[#e0358d] hover:bg-[#c9287a] text-white font-bold text-xs rounded-lg flex items-center gap-1.5 shrink-0 transition-colors shadow-sm cursor-pointer"
             >
               <span className="material-symbols-outlined text-base">search</span>
               <span>Search</span>

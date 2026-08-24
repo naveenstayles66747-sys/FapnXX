@@ -570,6 +570,14 @@ html.light .sort-filter-btn * {
   color: #e0358d !important;
 }
 
+/* Light Mode Search Magnifying Glass Icon (Day Theme Pink Accent) */
+.header-search-icon,
+html.light .header-search-icon,
+html.light button[aria-label="Search"] .material-symbols-outlined,
+html.light .search-icon-pink {
+  color: #e0358d !important;
+}
+
 /* 10. Hero Banner Overlay Text Protection (Always Pure White over dark hero image & gradients) */
 .hero-banner-container,
 .hero-banner-container *,
