@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { CategoryInfo, DMCAReport, LandingBanner, ReportStatus, Video } from '../types';
-import { getStoredReports, setStoredReports } from '../utils/storage';
 import { videoService } from '../services/videoService';
 import { auth } from '../services/firebaseConfig';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -60,7 +59,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   
   // DMCA / Content Moderation Reports state
-  const [reportsList, setReportsList] = useState<DMCAReport[]>(() => getStoredReports());
+  const [reportsList, setReportsList] = useState<DMCAReport[]>([]);
   const [categoryRequests, setCategoryRequests] = useState<import('../types').CategoryRequest[]>([]);
 
   // Sync reports & category requests with Firestore on modal open
@@ -1792,7 +1791,6 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     const updateReportStatus = (newStatus: ReportStatus) => {
                       const updated = reportsList.map((r) => (r.id === report.id ? { ...r, status: newStatus } : r));
                       setReportsList(updated);
-                      setStoredReports(updated);
                       
                       // Also sync Firestore status
                       videoService.updateReportStatus(report.id, newStatus);

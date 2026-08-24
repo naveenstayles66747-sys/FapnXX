@@ -20,18 +20,12 @@ const UploadModal = lazy(() => import('./components/UploadModal').then(m => ({ d
 const AdManagementModal = lazy(() => import('./components/AdManagementModal').then(m => ({ default: m.AdManagementModal })));
 const AdminPanelModal = lazy(() => import('./components/AdminPanelModal').then(m => ({ default: m.AdminPanelModal })));
 const SoftLoginModal = lazy(() => import('./components/SoftLoginModal').then(m => ({ default: m.SoftLoginModal })));
-import { VIDEOS } from './data';
+import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from './data';
 import { videoService } from './services/videoService';
 import { auth } from './services/firebaseConfig';
 import { onAuthStateChanged, onIdTokenChanged } from 'firebase/auth';
 import {
   getStoredAgeVerified,
-  getStoredBanners,
-  getStoredCategories,
-  getStoredVideos,
-  setStoredBanners,
-  setStoredCategories,
-  setStoredVideos,
   ThemeMode,
   getInitialThemeMode,
   setStoredThemeMode,
@@ -83,9 +77,9 @@ export default function App() {
   const [softLoginFeatureName, setSoftLoginFeatureName] = useState<string>('Personal Account Sync');
 
   // System Core Dynamic Data State (Loaded from Service Layer / Firestore DB)
-  const [categories, setCategories] = useState<CategoryInfo[]>(() => getStoredCategories());
-  const [videosList, setVideosList] = useState<Video[]>(() => getStoredVideos());
-  const [banners, setBanners] = useState<LandingBanner[]>(() => getStoredBanners());
+  const [categories, setCategories] = useState<CategoryInfo[]>(CATEGORIES);
+  const [videosList, setVideosList] = useState<Video[]>(VIDEOS);
+  const [banners, setBanners] = useState<LandingBanner[]>(INITIAL_LANDING_BANNERS);
 
   // Filtered videos based on content preference (straight/gay/lesbian) without breaking standard horizontal/vertical videos
   const preferredVideos = (videosList || []).filter((v) => {
@@ -203,19 +197,6 @@ export default function App() {
       unregisterSync();
     };
   }, [isAgeVerified]);
-
-  // Synchronize localStorage when state changes
-  useEffect(() => {
-    setStoredCategories(categories);
-  }, [categories]);
-
-  useEffect(() => {
-    setStoredVideos(videosList);
-  }, [videosList]);
-
-  useEffect(() => {
-    setStoredBanners(banners);
-  }, [banners]);
 
   // URL Helper to keep history push state synchronized for direct sharing & back/forward buttons
   const syncUrlWithState = useCallback((screen: ScreenId, videoId?: string, catId?: CategoryId) => {

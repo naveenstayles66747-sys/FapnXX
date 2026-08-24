@@ -14,7 +14,6 @@ import {
   getStoredSavedVideos,
   toggleStoredLikedVideo,
   toggleStoredSavedVideo,
-  addStoredReport,
 } from '../utils/storage';
 
 interface VideoDetailScreenProps {
@@ -120,8 +119,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     setTimeout(() => setShowShareNotification(false), 3000);
   };
 
-  const handleReportSubmitted = (report: DMCAReport) => {
-    addStoredReport(report);
+  const handleReportSubmitted = (_report: DMCAReport) => {
     setReportSuccessToast(true);
     setTimeout(() => setReportSuccessToast(false), 4000);
   };

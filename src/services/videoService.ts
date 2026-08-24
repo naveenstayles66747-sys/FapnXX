@@ -10,14 +10,6 @@ import {
 } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, INITIAL_VIDEOS } from '../data';
 import {
-  getStoredBanners,
-  getStoredCategories,
-  getStoredReports,
-  getStoredVideos,
-  setStoredBanners,
-  setStoredCategories,
-  setStoredReports,
-  setStoredVideos,
   getOrCreateDeviceId,
 } from '../utils/storage';
 
@@ -295,7 +287,6 @@ export class VideoService {
         if (firestoreVideos.length > 0) {
           // Sort newest first
           firestoreVideos.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-          setStoredVideos(firestoreVideos);
           return firestoreVideos;
         }
       }
@@ -310,15 +301,10 @@ export class VideoService {
       { method: 'GET' },
       async () => {
         const staticCatalog = await this.fetchStaticCatalog();
-        const stored = getStoredVideos();
-        if (stored && stored.length > 0) return { videos: stored, total: stored.length };
         return { videos: staticCatalog.length > 0 ? staticCatalog : INITIAL_VIDEOS, total: INITIAL_VIDEOS.length };
       }
     ).then((res) => {
       const list = res.videos || [];
-      if (list.length > 0) {
-        setStoredVideos(list);
-      }
       return list;
     });
   }
@@ -344,7 +330,6 @@ export class VideoService {
           });
           if (list.length > 0) {
             list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-            setStoredVideos(list);
             callback(list);
           }
         }
@@ -386,18 +371,8 @@ export class VideoService {
         method: 'POST',
         body: JSON.stringify(fullVideo),
       },
-      () => {
-        const current = getStoredVideos();
-        const updated = [fullVideo, ...current.filter((v) => v.id !== fullVideo.id)];
-        setStoredVideos(updated);
-        return fullVideo;
-      }
-    ).then((saved) => {
-      const current = getStoredVideos();
-      const updated = [saved, ...current.filter((v) => v.id !== saved.id)];
-      setStoredVideos(updated);
-      return saved;
-    });
+      () => fullVideo
+    );
   }
 
   /**
@@ -411,18 +386,8 @@ export class VideoService {
         method: 'PUT',
         body: JSON.stringify(video),
       },
-      () => {
-        const current = getStoredVideos();
-        const updated = current.map((v) => (v.id === video.id ? video : v));
-        setStoredVideos(updated);
-        return video;
-      }
-    ).then((updated) => {
-      const current = getStoredVideos();
-      const updatedList = current.map((v) => (v.id === updated.id ? updated : v));
-      setStoredVideos(updatedList);
-      return updated;
-    });
+      () => video
+    );
   }
 
   /**
@@ -433,18 +398,8 @@ export class VideoService {
     return this.apiFetch<{ id: string }>(
       `/videos/${videoId}`,
       { method: 'DELETE' },
-      () => {
-        const current = getStoredVideos();
-        const updated = current.filter((v) => v.id !== videoId);
-        setStoredVideos(updated);
-        return { id: videoId };
-      }
-    ).then(() => {
-      const current = getStoredVideos();
-      const updated = current.filter((v) => v.id !== videoId);
-      setStoredVideos(updated);
-      return true;
-    });
+      () => ({ id: videoId })
+    ).then(() => true);
   }
 
 
@@ -548,7 +503,6 @@ export class VideoService {
           firestoreCats.push({ ...(d.data() as CategoryInfo), id: d.id });
         });
         if (firestoreCats.length > 0) {
-          setStoredCategories(firestoreCats);
           return firestoreCats;
         }
       }
@@ -559,11 +513,8 @@ export class VideoService {
     return this.apiFetch<CategoryInfo[]>(
       '/categories',
       { method: 'GET' },
-      () => getStoredCategories() || CATEGORIES
-    ).then((cats) => {
-      setStoredCategories(cats);
-      return cats;
-    });
+      () => CATEGORIES
+    ).then((cats) => cats || CATEGORIES);
   }
 
   /**
@@ -580,18 +531,8 @@ export class VideoService {
         method: 'POST',
         body: JSON.stringify(fullCategory),
       },
-      () => {
-        const current = getStoredCategories();
-        const updated = [...current.filter((c) => c.id !== fullCategory.id), fullCategory];
-        setStoredCategories(updated);
-        return fullCategory;
-      }
-    ).then((saved) => {
-      const current = getStoredCategories();
-      const updated = [...current.filter((c) => c.id !== saved.id), saved];
-      setStoredCategories(updated);
-      return saved;
-    });
+      () => fullCategory
+    );
   }
 
   /**
@@ -606,12 +547,7 @@ export class VideoService {
         body: JSON.stringify(category),
       },
       () => category
-    ).then((saved) => {
-      const current = getStoredCategories();
-      const updated = current.map((c) => (c.id === saved.id ? saved : c));
-      setStoredCategories(updated);
-      return saved;
-    });
+    );
   }
 
   /**
@@ -623,12 +559,7 @@ export class VideoService {
       `/categories/${categoryId}`,
       { method: 'DELETE' },
       () => ({ id: categoryId })
-    ).then(() => {
-      const current = getStoredCategories();
-      const updated = current.filter((c) => c.id !== categoryId);
-      setStoredCategories(updated);
-      return true;
-    });
+    ).then(() => true);
   }
 
   /**
@@ -697,7 +628,6 @@ export class VideoService {
           firestoreBanners.push({ ...(d.data() as LandingBanner), id: d.id });
         });
         if (firestoreBanners.length > 0) {
-          setStoredBanners(firestoreBanners);
           return firestoreBanners;
         }
       }
@@ -708,11 +638,8 @@ export class VideoService {
     return this.apiFetch<LandingBanner[]>(
       '/banners',
       { method: 'GET' },
-      () => getStoredBanners() || INITIAL_LANDING_BANNERS
-    ).then((banners) => {
-      setStoredBanners(banners);
-      return banners;
-    });
+      () => INITIAL_LANDING_BANNERS
+    ).then((banners) => banners || INITIAL_LANDING_BANNERS);
   }
 
   /**
@@ -729,18 +656,8 @@ export class VideoService {
         method: 'POST',
         body: JSON.stringify(fullBanner),
       },
-      () => {
-        const current = getStoredBanners();
-        const updated = [fullBanner, ...current.filter((b) => b.id !== fullBanner.id)];
-        setStoredBanners(updated);
-        return fullBanner;
-      }
-    ).then((saved) => {
-      const current = getStoredBanners();
-      const updated = [saved, ...current.filter((b) => b.id !== saved.id)];
-      setStoredBanners(updated);
-      return saved;
-    });
+      () => fullBanner
+    );
   }
 
   /**
@@ -755,12 +672,7 @@ export class VideoService {
         body: JSON.stringify(banner),
       },
       () => banner
-    ).then((saved) => {
-      const current = getStoredBanners();
-      const updated = current.map((b) => (b.id === saved.id ? saved : b));
-      setStoredBanners(updated);
-      return saved;
-    });
+    );
   }
 
   /**
@@ -772,12 +684,7 @@ export class VideoService {
       `/banners/${bannerId}`,
       { method: 'DELETE' },
       () => ({ id: bannerId })
-    ).then(() => {
-      const current = getStoredBanners();
-      const updated = current.filter((b) => b.id !== bannerId);
-      setStoredBanners(updated);
-      return true;
-    });
+    ).then(() => true);
   }
 
   /**
@@ -903,18 +810,8 @@ export class VideoService {
         method: 'POST',
         body: JSON.stringify(fullReport),
       },
-      () => {
-        const current = getStoredReports();
-        const updated = [fullReport, ...current.filter((r) => r.id !== fullReport.id)];
-        setStoredReports(updated);
-        return fullReport;
-      }
-    ).then((saved) => {
-      const current = getStoredReports();
-      const updated = [saved, ...current.filter((r) => r.id !== saved.id)];
-      setStoredReports(updated);
-      return saved;
-    });
+      () => fullReport
+    );
   }
 
   /**
@@ -935,7 +832,7 @@ export class VideoService {
     return this.apiFetch<DMCAReport[]>(
       '/reports',
       { method: 'GET' },
-      () => getStoredReports()
+      () => []
     );
   }
 

@@ -1,19 +1,30 @@
-import { CategoryInfo, LandingBanner, Video } from '../types';
-import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { db } from '../services/firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
+import { ContentPreference } from '../types';
 
 const KEYS = {
   AGE_VERIFIED: 'indianfullxx_age_verified',
+  AGE_VERIFIED_TIMESTAMP: 'indianfullxx_age_verified_timestamp',
   SAVED_VIDEOS: 'indianfullxx_saved_videos',
   LIKED_VIDEOS: 'indianfullxx_liked_videos',
   WATCH_HISTORY: 'indianfullxx_watch_history',
-  CUSTOM_VIDEOS: 'indianfullxx_custom_videos',
-  CUSTOM_CATEGORIES: 'indianfullxx_custom_categories',
-  CUSTOM_BANNERS: 'indianfullxx_custom_banners',
-  REPORTS: 'indianfullxx_dmca_reports',
+  THEME: 'indianfullxx_theme',
+  CONTENT_PREFERENCE: 'indianfullxx_content_preference',
   DEVICE_UID: 'fapnxx_device_uid',
+  // Legacy keys to purge
+  LEGACY_CUSTOM_VIDEOS: 'indianfullxx_custom_videos',
+  LEGACY_CUSTOM_CATEGORIES: 'indianfullxx_custom_categories',
+  LEGACY_CUSTOM_BANNERS: 'indianfullxx_custom_banners',
+  LEGACY_REPORTS: 'indianfullxx_dmca_reports',
 };
+
+// Proactively purge any legacy database content from localStorage so LocalStorage is strictly for theme/preferences/UI cache
+try {
+  localStorage.removeItem(KEYS.LEGACY_CUSTOM_VIDEOS);
+  localStorage.removeItem(KEYS.LEGACY_CUSTOM_CATEGORIES);
+  localStorage.removeItem(KEYS.LEGACY_CUSTOM_BANNERS);
+  localStorage.removeItem(KEYS.LEGACY_REPORTS);
+} catch {}
 
 /**
  * Single canonical Device UID generator & persistent reader
@@ -33,9 +44,9 @@ export const getOrCreateDeviceId = (): string => {
 };
 
 // Content Preference Persistence (Straight / Gay / Lesbian)
-export const getStoredContentPreference = (): import('../types').ContentPreference => {
+export const getStoredContentPreference = (): ContentPreference => {
   try {
-    const saved = localStorage.getItem('indianfullxx_content_preference');
+    const saved = localStorage.getItem(KEYS.CONTENT_PREFERENCE);
     if (saved === 'straight' || saved === 'gay' || saved === 'lesbian') {
       return saved;
     }
@@ -45,34 +56,32 @@ export const getStoredContentPreference = (): import('../types').ContentPreferen
   return 'straight';
 };
 
-export const setStoredContentPreference = (pref: import('../types').ContentPreference): void => {
+export const setStoredContentPreference = (pref: ContentPreference): void => {
   try {
-    localStorage.setItem('indianfullxx_content_preference', pref);
+    localStorage.setItem(KEYS.CONTENT_PREFERENCE, pref);
   } catch (e) {
     console.warn('[Storage] Failed to persist content preference:', e);
   }
 };
 
-// Theme Persistence & Time-Based Auto Detection (6 AM - 6 PM Light, 6 PM - 6 AM Dark)
+// Theme Persistence & Time-Based Auto Detection
 export type ThemeMode = 'light' | 'dark';
 
 export const getInitialThemeMode = (): ThemeMode => {
   try {
-    const saved = localStorage.getItem('indianfullxx_theme');
+    const saved = localStorage.getItem(KEYS.THEME);
     if (saved === 'light' || saved === 'dark') {
       return saved;
     }
   } catch (err) {
     console.warn('[Storage] Failed to read theme preference:', err);
   }
-
-  // Default theme is sleek signature Dark mode
   return 'dark';
 };
 
 export const setStoredThemeMode = (theme: ThemeMode): void => {
   try {
-    localStorage.setItem('indianfullxx_theme', theme);
+    localStorage.setItem(KEYS.THEME, theme);
   } catch (e) {
     console.warn('[Storage] Failed to persist theme mode:', e);
   }
@@ -85,14 +94,14 @@ export const getStoredAgeVerified = (): boolean => {
   try {
     const verified = localStorage.getItem(KEYS.AGE_VERIFIED) === 'true';
     if (!verified) return false;
-    const timestampStr = localStorage.getItem('indianfullxx_age_verified_timestamp');
+    const timestampStr = localStorage.getItem(KEYS.AGE_VERIFIED_TIMESTAMP);
     if (!timestampStr) return false;
     const timestamp = parseInt(timestampStr, 10);
     if (isNaN(timestamp)) return false;
     const isStillValid = Date.now() - timestamp < AGE_VERIFICATION_EXPIRY_MS;
     if (!isStillValid) {
       localStorage.removeItem(KEYS.AGE_VERIFIED);
-      localStorage.removeItem('indianfullxx_age_verified_timestamp');
+      localStorage.removeItem(KEYS.AGE_VERIFIED_TIMESTAMP);
       return false;
     }
     return true;
@@ -105,10 +114,10 @@ export const setStoredAgeVerified = (verified: boolean): void => {
   try {
     if (verified) {
       localStorage.setItem(KEYS.AGE_VERIFIED, 'true');
-      localStorage.setItem('indianfullxx_age_verified_timestamp', Date.now().toString());
+      localStorage.setItem(KEYS.AGE_VERIFIED_TIMESTAMP, Date.now().toString());
     } else {
       localStorage.removeItem(KEYS.AGE_VERIFIED);
-      localStorage.removeItem('indianfullxx_age_verified_timestamp');
+      localStorage.removeItem(KEYS.AGE_VERIFIED_TIMESTAMP);
     }
   } catch (e) {
     console.warn('[Storage] Failed to set age gate status:', e);
@@ -224,7 +233,7 @@ export const mergeUserInteractions = (cloudData: {
     localStorage.setItem(KEYS.WATCH_HISTORY, JSON.stringify(mergedHistory));
   } catch {}
 
-  const finalPref = cloudData.contentPreference || localPref || 'straight';
+  const finalPref = (cloudData.contentPreference as ContentPreference) || localPref || 'straight';
 
   return {
     savedVideos: mergedSaved,
@@ -336,97 +345,5 @@ export const clearStoredWatchHistory = (): void => {
     notifyInteractionSync({ watchHistory: [] });
   } catch (e) {
     console.warn('[Storage] Failed to clear watch history:', e);
-  }
-};
-
-// Videos Cache (Client-side offline cache only)
-export const getStoredVideos = (): Video[] => {
-  try {
-    const data = localStorage.getItem(KEYS.CUSTOM_VIDEOS);
-    if (!data) return VIDEOS;
-    const parsed: Video[] = JSON.parse(data);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : VIDEOS;
-  } catch (err) {
-    console.warn('[Storage] Failed to parse cached videos, fallback to defaults:', err);
-    return VIDEOS;
-  }
-};
-
-export const setStoredVideos = (videos: Video[]): void => {
-  try {
-    localStorage.setItem(KEYS.CUSTOM_VIDEOS, JSON.stringify(videos));
-  } catch (e) {
-    console.warn('[Storage] LocalStorage video cache write notice:', e);
-  }
-};
-
-// Categories Cache
-export const getStoredCategories = (): CategoryInfo[] => {
-  try {
-    const data = localStorage.getItem(KEYS.CUSTOM_CATEGORIES);
-    if (!data) return CATEGORIES;
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : CATEGORIES;
-  } catch (err) {
-    console.warn('[Storage] Failed to parse cached categories:', err);
-    return CATEGORIES;
-  }
-};
-
-export const setStoredCategories = (categories: CategoryInfo[]): void => {
-  try {
-    localStorage.setItem(KEYS.CUSTOM_CATEGORIES, JSON.stringify(categories));
-  } catch (e) {
-    console.warn('[Storage] LocalStorage categories cache write notice:', e);
-  }
-};
-
-// Banners Cache
-export const getStoredBanners = (): LandingBanner[] => {
-  try {
-    const data = localStorage.getItem(KEYS.CUSTOM_BANNERS);
-    if (!data) return INITIAL_LANDING_BANNERS;
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_LANDING_BANNERS;
-  } catch (err) {
-    console.warn('[Storage] Failed to parse cached banners:', err);
-    return INITIAL_LANDING_BANNERS;
-  }
-};
-
-export const setStoredBanners = (banners: LandingBanner[]): void => {
-  try {
-    localStorage.setItem(KEYS.CUSTOM_BANNERS, JSON.stringify(banners));
-  } catch (e) {
-    console.warn('[Storage] LocalStorage banners cache write notice:', e);
-  }
-};
-
-// DMCA Reports Cache
-export const getStoredReports = (): any[] => {
-  try {
-    const data = localStorage.getItem(KEYS.REPORTS);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-};
-
-export const setStoredReports = (reports: any[]): void => {
-  try {
-    localStorage.setItem(KEYS.REPORTS, JSON.stringify(reports));
-  } catch (e) {
-    console.warn('[Storage] LocalStorage reports cache write notice:', e);
-  }
-};
-
-export const addStoredReport = (report: any): any[] => {
-  try {
-    const current = getStoredReports();
-    const updated = [report, ...current];
-    setStoredReports(updated);
-    return updated;
-  } catch {
-    return [];
   }
 };
