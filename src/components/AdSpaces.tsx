@@ -523,9 +523,20 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
   useEffect(() => {
     if (!isVisible) return;
     const el = containerRef.current;
-    if (!el || el.dataset.adInitialized === 'true') return;
+    if (!el) return;
 
     try {
+      // Ensure global ad-provider script is present in DOM
+      const scriptId = 'exoclick-ad-provider-script';
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.type = 'application/javascript';
+        script.async = true;
+        script.src = 'https://a.magsrv.com/ad-provider.js';
+        document.head.appendChild(script);
+      }
+
       el.innerHTML = '';
       const ins = document.createElement('ins');
       ins.className = `eas${AD_ZONES.SITE_HASH}20`;
@@ -535,11 +546,14 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
-      const win = window as any;
-      win.AdProvider = win.AdProvider || [];
-      win.AdProvider.push({ serve: {} });
-
-      el.dataset.adInitialized = 'true';
+      // Trigger ExoClick AdProvider serve with microtask delay to ensure DOM attachment
+      setTimeout(() => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      }, 60);
     } catch (e) {
       console.warn('[ExoClick] Native recommendation ad error:', e);
     }
@@ -564,7 +578,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       <div
         ref={containerRef}
         id="exoclick-native-recommended-zone-6010176"
-        className="w-full overflow-hidden min-h-[160px] flex items-center justify-center"
+        className="w-full overflow-hidden min-h-[120px] flex items-center justify-center"
       />
     </div>
   );
