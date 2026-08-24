@@ -139,28 +139,73 @@ export const userService = {
     return newUser;
   },
 
-  update: async (id: string, updates: Partial<User>): Promise<User> => {
-    const user = await userService.findById(id);
+  updateProfile: async (
+    userId: string,
+    updates: Partial<User> & Record<string, any>,
+    actorId: string,
+    actorRole: Role
+  ): Promise<Omit<User, 'passwordHash'>> => {
+    const isSelf = userId === actorId;
+    const isAdmin = actorRole === Role.ADMIN || actorRole === Role.SUPER_ADMIN;
+
+    if (!isSelf && !isAdmin) {
+      throw new Error('Access denied. You can only modify your own profile.');
+    }
+
+    const user = await userService.findById(userId);
     if (!user) {
       throw new Error('User not found.');
     }
 
+    // Protected fields that normal users CANNOT modify
+    const protectedFields = [
+      'role',
+      'permissions',
+      'status',
+      'banStatus',
+      'bannedAt',
+      'isBanned',
+      'isAdmin',
+      'admin',
+      'isModerator',
+      'moderator',
+      'passwordHash',
+      'id',
+      'email',
+      'createdAt',
+    ];
+
+    if (!isAdmin) {
+      for (const field of protectedFields) {
+        if (field in updates && updates[field] !== undefined) {
+          throw new Error(`Security Violation: Normal users cannot modify protected profile field '${field}'.`);
+        }
+      }
+    }
+
+    const sanitizedUpdates = { ...updates };
+    delete sanitizedUpdates.passwordHash;
+    delete sanitizedUpdates.id;
+    if (!isAdmin) {
+      delete sanitizedUpdates.role;
+      delete sanitizedUpdates.status;
+    }
+
     const updatedUser: User = {
       ...user,
-      ...updates,
+      ...sanitizedUpdates,
       updatedAt: new Date().toISOString(),
     };
 
     users.set(user.email.toLowerCase(), updatedUser);
 
-    // Update in Firestore DB
     try {
-      await adminDb.collection('users').doc(id).set(updatedUser, { merge: true });
+      await adminDb.collection('users').doc(userId).set(updatedUser, { merge: true });
     } catch (err: any) {
-      console.warn(`[Firestore User] Update error for doc ${id}:`, err.message);
+      console.warn(`[Firestore User] Profile update error for doc ${userId}:`, err.message);
     }
 
-    return updatedUser;
+    return sanitizeUser(updatedUser);
   },
 
   listUsers: async (options?: { page?: number; limit?: number; search?: string; role?: Role }): Promise<{

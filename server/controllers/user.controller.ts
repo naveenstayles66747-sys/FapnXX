@@ -23,7 +23,8 @@ export const userController = {
       const { id } = req.params;
       const { role } = req.body;
       const actorRole = req.user!.role;
-      const updated = await userService.updateRole(id, role as Role, actorRole, req.user?.id, req.user?.email);
+      const actorId = req.user!.userId;
+      const updated = await userService.updateRole(id, role as Role, actorRole, actorId, req.user?.email);
       return responseUtil.success(res, updated, 'User role updated successfully.');
     } catch (err: any) {
       next(err);
@@ -38,6 +39,20 @@ export const userController = {
 
       const updated = await userService.setUserStatus(id, status as 'active' | 'suspended', actorRole);
       return responseUtil.success(res, updated, `User account ${status}.`);
+    } catch (err: any) {
+      next(err);
+    }
+  },
+
+  updateProfile: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const actorId = req.user!.userId;
+      const targetUserId = req.params.id || actorId;
+      const updates = req.body;
+      const actorRole = req.user!.role;
+
+      const updated = await userService.updateProfile(targetUserId, updates, actorId, actorRole);
+      return responseUtil.success(res, updated, 'User profile updated successfully.');
     } catch (err: any) {
       next(err);
     }

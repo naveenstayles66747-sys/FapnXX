@@ -112,13 +112,16 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // USERS: Owner can update basic profile. Owner CANNOT modify role/permissions.
+    // USERS: Owner can update basic profile. Owner CANNOT modify role/permissions/status/admin flags.
     // ─────────────────────────────────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if isOwner(userId) || isModerator();
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) && (
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isAdmin', 'status', 'permissions', 'bannedAt'])
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'role', 'permissions', 'status', 'banStatus', 'bannedAt', 'isBanned', 
+          'isAdmin', 'admin', 'isModerator', 'moderator', 'email'
+        ])
       ) || isAdmin();
       allow delete: if isAdmin();
     }

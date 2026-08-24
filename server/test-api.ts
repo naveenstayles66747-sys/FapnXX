@@ -206,6 +206,43 @@ async function runTests() {
     });
     assert(adminRoleChangeToAdmin.status === 200 && adminRoleChangeToAdmin.data.data.role === 'ADMIN', 'Super Admin successfully promoted user to ADMIN');
 
+    // 6c. User Profile Field Protection (role, permissions, status, admin flags)
+    console.log('\n--- 6c. User Profile Field Protection ---');
+    const validProfileUpdate = await request('/api/v1/users/profile', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { displayName: 'Verified User', savedVideoIds: ['vid_01', 'vid_02'] },
+    });
+    assert(validProfileUpdate.status === 200, 'Normal user can update legitimate profile fields (displayName, savedVideos)');
+
+    const privilegeEscalationAttempt1 = await request('/api/v1/users/profile', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { role: 'SUPER_ADMIN' },
+    });
+    assert(privilegeEscalationAttempt1.status === 422 || privilegeEscalationAttempt1.status === 400, 'User profile role tampering blocked with validation error');
+
+    const privilegeEscalationAttempt2 = await request('/api/v1/users/profile', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { isAdmin: true },
+    });
+    assert(privilegeEscalationAttempt2.status === 422 || privilegeEscalationAttempt2.status === 400, 'User profile admin flag tampering blocked with validation error');
+
+    const privilegeEscalationAttempt3 = await request('/api/v1/users/profile', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { permissions: ['*'] },
+    });
+    assert(privilegeEscalationAttempt3.status === 422 || privilegeEscalationAttempt3.status === 400, 'User profile permissions tampering blocked with validation error');
+
+    const unbanTamperAttempt = await request('/api/v1/users/profile', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { status: 'active', banStatus: 'none' },
+    });
+    assert(unbanTamperAttempt.status === 422 || unbanTamperAttempt.status === 400, 'User profile ban status tampering blocked with validation error');
+
     // 7. Video Creation RBAC Security (Guest 401, User 403, Staff 201)
     console.log('\n--- 7. Video Creation RBAC Security ---');
     const guestVideoRes = await request('/api/v1/videos', {
