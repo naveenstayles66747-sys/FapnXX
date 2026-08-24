@@ -30,29 +30,26 @@ service firebase.storage {
     // ─────────────────────────────────────────────────────────────────────────────
     match /videos/{videoId} {
       allow read: if true;
-      // Allow authenticated staff/moderator video upload (MP4/WebM, max 2GB)
-      allow write: if isAuthenticated() && (
-        (request.resource.size < 2048 * 1024 * 1024 &&
-        (request.resource.contentType.matches('video/.*') || request.resource.contentType.matches('application/x-mpegURL'))) || isModerator()
-      );
+      // Allow authenticated staff/moderator video upload only (MP4/WebM, max 2GB)
+      allow write: if isModerator() &&
+        request.resource.size < 2048 * 1024 * 1024 &&
+        (request.resource.contentType.matches('video/.*') || request.resource.contentType.matches('application/x-mpegURL'));
     }
 
     match /previews/{previewId} {
       allow read: if true;
       // Allow authenticated preview / animated thumbnail upload (Images/WebP, max 50MB)
-      allow write: if isAuthenticated() && (
-        (request.resource.size < 50 * 1024 * 1024 &&
-        (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'))) || isModerator()
-      );
+      allow write: if isModerator() &&
+        request.resource.size < 50 * 1024 * 1024 &&
+        (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
     }
 
     match /thumbnails/{thumbId} {
       allow read: if true;
       // Allow authenticated thumbnail upload (Images, max 20MB)
-      allow write: if isAuthenticated() && (
-        (request.resource.size < 20 * 1024 * 1024 &&
-        request.resource.contentType.matches('image/.*')) || isModerator()
-      );
+      allow write: if isModerator() &&
+        request.resource.size < 20 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
     }
 
     match /banners/{bannerId} {
