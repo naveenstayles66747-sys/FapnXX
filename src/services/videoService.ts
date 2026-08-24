@@ -31,8 +31,90 @@ import { storage, db, auth, cleanForFirestore, getAppCheckToken } from './fireba
 
 const API_BASE = '/api/v1';
 
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+class SmartMemoryCache {
+  private cache = new Map<string, CacheEntry<any>>();
+
+  get<T>(key: string, ttlMs: number = 60000): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > ttlMs) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.data as T;
+  }
+
+  set<T>(key: string, data: T): void {
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
+  invalidate(prefixOrKey?: string): void {
+    if (!prefixOrKey) {
+      this.cache.clear();
+      return;
+    }
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(prefixOrKey)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+}
 
 export class VideoService {
+  private smartCache = new SmartMemoryCache();
+
+  private setupVisibilityAwareFallback<T>(
+    fetcher: () => Promise<T>,
+    callback: (data: T) => void,
+    intervalMs: number
+  ): () => void {
+    let timer: any = null;
+    let isSubscribed = true;
+
+    const runPoll = async () => {
+      if (!isSubscribed) return;
+      if (typeof document !== 'undefined' && document.hidden) {
+        // Tab is hidden or minimized: pause background network polling
+        return;
+      }
+      try {
+        const data = await fetcher();
+        if (isSubscribed && data) {
+          callback(data);
+        }
+      } catch (err) {
+        console.warn('[SmartPoll] Background fetch notice:', err);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden && isSubscribed) {
+        // Tab restored to focus: immediately revalidate
+        runPoll();
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    timer = setInterval(runPoll, intervalMs);
+
+    return () => {
+      isSubscribed = false;
+      if (timer) clearInterval(timer);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+    };
+  }
+
   private async getAuthHeaders(): Promise<Record<string, string>> {
     const token = localStorage.getItem('fapnxx_auth_token');
     const appCheckToken = await getAppCheckToken();
@@ -206,9 +288,15 @@ export class VideoService {
   }
 
   /**
-   * Fetch all videos via direct Firestore SDK with Backend API and CDN fallbacks
+   * Fetch all videos via direct Firestore SDK with Backend API and CDN fallbacks with Smart Cache
    */
   async fetchVideos(category?: string): Promise<Video[]> {
+    const cacheKey = `videos_${category || 'all'}`;
+    const cached = this.smartCache.get<Video[]>(cacheKey, 60000);
+    if (cached && cached.length > 0) {
+      return cached;
+    }
+
     // 1. Direct Firestore attempt
     try {
       let videoCollectionRef = collection(db, 'videos');
@@ -261,6 +349,7 @@ export class VideoService {
         if (firestoreVideos.length > 0) {
           // Sort newest first
           firestoreVideos.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          this.smartCache.set(cacheKey, firestoreVideos);
           return firestoreVideos;
         }
       }
@@ -279,48 +368,49 @@ export class VideoService {
       }
     ).then((res) => {
       const list = res.videos || [];
+      if (list.length > 0) {
+        this.smartCache.set(cacheKey, list);
+      }
       return list;
     });
   }
 
   /**
-   * Subscribe to videos (live updates across all worldwide devices)
+   * Subscribe to videos (live updates across all worldwide devices with Firestore Realtime & Visibility-Aware fallback)
    */
   subscribeToVideos(callback: (videos: Video[]) => void) {
     try {
       const q = query(collection(db, 'videos'));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const list: Video[] = [];
-          snapshot.forEach((d) => {
-            const data = d.data() as any;
-            list.push({
-              ...data,
-              id: d.id,
-              isEmbed: data.isEmbed !== undefined ? data.isEmbed : true,
-              viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 1,
-              likesCount: typeof data.likesCount === 'number' ? data.likesCount : 0,
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const list: Video[] = [];
+            snapshot.forEach((d) => {
+              const data = d.data() as any;
+              list.push({
+                ...data,
+                id: d.id,
+                isEmbed: data.isEmbed !== undefined ? data.isEmbed : true,
+                viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 1,
+                likesCount: typeof data.likesCount === 'number' ? data.likesCount : 0,
+              });
             });
-          });
-          if (list.length > 0) {
-            list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-            callback(list);
+            if (list.length > 0) {
+              list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+              this.smartCache.set('videos_all', list);
+              callback(list);
+            }
           }
+        },
+        (err) => {
+          console.warn('⚠️ [Firestore] Realtime subscription fallback to visibility-aware poll:', err.message);
+          this.setupVisibilityAwareFallback(() => this.fetchVideos(), callback, 60000);
         }
-      }, (err) => {
-        console.warn('⚠️ [Firestore] Realtime subscription fallback to polling:', err.message);
-      });
+      );
       return unsubscribe;
     } catch {
-      const interval = setInterval(async () => {
-        try {
-          const videos = await this.fetchVideos();
-          if (videos && videos.length > 0) {
-            callback(videos);
-          }
-        } catch {}
-      }, 15000);
-      return () => clearInterval(interval);
+      return this.setupVisibilityAwareFallback(() => this.fetchVideos(), callback, 60000);
     }
   }
 
@@ -338,6 +428,9 @@ export class VideoService {
       views: video.views || '1 view',
     };
 
+    // Invalidate local video cache
+    this.smartCache.invalidate('videos');
+
     // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<Video>(
       '/videos',
@@ -353,6 +446,7 @@ export class VideoService {
    * Update an existing video via Backend API (Admin/Staff only)
    */
   async updateVideo(video: Video): Promise<Video> {
+    this.smartCache.invalidate('videos');
     // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<Video>(
       `/videos/${video.id}`,
@@ -365,9 +459,10 @@ export class VideoService {
   }
 
   /**
-   * Delete a video via Backend API (Admin/Staff only)
+   * Delete video via Backend API (Admin/Staff only)
    */
   async deleteVideo(videoId: string): Promise<boolean> {
+    this.smartCache.invalidate('videos');
     // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<{ id: string }>(
       `/videos/${videoId}`,
@@ -662,9 +757,15 @@ export class VideoService {
   }
 
   /**
-   * Fetch comments for a video from Firestore with memory sorting to prevent index errors
+   * Fetch comments for a video from Firestore with Smart Cache & memory sorting
    */
   async fetchComments(videoId: string): Promise<VideoComment[]> {
+    const cacheKey = `comments_${videoId}`;
+    const cached = this.smartCache.get<VideoComment[]>(cacheKey, 45000);
+    if (cached) {
+      return cached;
+    }
+
     try {
       const q = query(
         collection(db, 'comments'),
@@ -676,6 +777,7 @@ export class VideoService {
         const list: VideoComment[] = [];
         snap.forEach((d) => list.push({ ...(d.data() as VideoComment), id: d.id }));
         list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        this.smartCache.set(cacheKey, list);
         return list;
       }
     } catch (err: any) {
@@ -686,37 +788,42 @@ export class VideoService {
       `/comments/video/${videoId}`,
       { method: 'GET' },
       () => []
-    );
+    ).then((list) => {
+      if (Array.isArray(list)) {
+        this.smartCache.set(cacheKey, list);
+      }
+      return list || [];
+    });
   }
 
   /**
-   * Subscribe to comments with Firestore Realtime onSnapshot (Live across all worldwide users)
+   * Subscribe to comments with Firestore Realtime onSnapshot & Visibility-Aware Smart Fallback
    */
   subscribeToComments(videoId: string, callback: (comments: VideoComment[]) => void) {
+    const cacheKey = `comments_${videoId}`;
     try {
       const q = query(
         collection(db, 'comments'),
         where('videoId', '==', videoId),
         limit(100)
       );
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const list: VideoComment[] = [];
-        snapshot.forEach((d) => list.push({ ...(d.data() as VideoComment), id: d.id }));
-        // Sort newest first in memory
-        list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-        callback(list);
-      }, (err) => {
-        console.warn('⚠️ [Firestore Client] Comment realtime subscription fallback:', err.message);
-      });
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const list: VideoComment[] = [];
+          snapshot.forEach((d) => list.push({ ...(d.data() as VideoComment), id: d.id }));
+          list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          this.smartCache.set(cacheKey, list);
+          callback(list);
+        },
+        (err) => {
+          console.warn('⚠️ [Firestore Client] Comment realtime subscription fallback:', err.message);
+          this.setupVisibilityAwareFallback(() => this.fetchComments(videoId), callback, 45000);
+        }
+      );
       return unsubscribe;
     } catch {
-      const interval = setInterval(async () => {
-        try {
-          const comments = await this.fetchComments(videoId);
-          callback(comments);
-        } catch {}
-      }, 10000);
-      return () => clearInterval(interval);
+      return this.setupVisibilityAwareFallback(() => this.fetchComments(videoId), callback, 45000);
     }
   }
 
@@ -731,6 +838,9 @@ export class VideoService {
       createdAt: comment.createdAt || new Date().toISOString(),
       likesCount: typeof comment.likesCount === 'number' ? comment.likesCount : 0,
     };
+
+    // Invalidate local comments cache
+    this.smartCache.invalidate(`comments_${comment.videoId}`);
 
     try {
       await setDoc(doc(db, 'comments', id), cleanForFirestore(fullComment));
@@ -753,6 +863,7 @@ export class VideoService {
    * Like comment via Backend API
    */
   async likeComment(commentId: string): Promise<void> {
+    this.smartCache.invalidate('comments_');
     await this.apiFetch(
       `/comments/${commentId}/like`,
       { method: 'POST' },
@@ -764,6 +875,7 @@ export class VideoService {
    * Delete comment via Backend API
    */
   async deleteComment(commentId: string): Promise<void> {
+    this.smartCache.invalidate('comments_');
     await this.apiFetch(
       `/comments/${commentId}`,
       { method: 'DELETE' },
