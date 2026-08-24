@@ -152,29 +152,96 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     });
   }, [displayBanners]);
 
-  // Continuous auto-swipe timer every 4.5 seconds (paused when interacting)
-  useEffect(() => {
+  // Continuous auto-swipe timer every 4.5 seconds (resets cleanly when user swipes or clicks)
+  const autoSwipeTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetAutoSwipeTimer = useCallback(() => {
+    if (autoSwipeTimerRef.current) clearInterval(autoSwipeTimerRef.current);
     if (displayBanners.length <= 1) return;
-    const interval = setInterval(() => {
+    autoSwipeTimerRef.current = setInterval(() => {
       React.startTransition(() => {
         setCurrentSlideIndex((prev) => (prev + 1) % displayBanners.length);
       });
     }, 4500);
-    return () => clearInterval(interval);
   }, [displayBanners.length]);
 
-  const handleNextSlide = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  useEffect(() => {
+    resetAutoSwipeTimer();
+    return () => {
+      if (autoSwipeTimerRef.current) clearInterval(autoSwipeTimerRef.current);
+    };
+  }, [resetAutoSwipeTimer]);
+
+  const goToNextSlide = useCallback(() => {
     React.startTransition(() => {
       setCurrentSlideIndex((prev) => (prev + 1) % displayBanners.length);
     });
+    resetAutoSwipeTimer();
+  }, [displayBanners.length, resetAutoSwipeTimer]);
+
+  const goToPrevSlide = useCallback(() => {
+    React.startTransition(() => {
+      setCurrentSlideIndex((prev) => (prev - 1 + displayBanners.length) % displayBanners.length);
+    });
+    resetAutoSwipeTimer();
+  }, [displayBanners.length, resetAutoSwipeTimer]);
+
+  const handleNextSlide = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    goToNextSlide();
   };
 
   const handlePrevSlide = (e: React.MouseEvent) => {
     e.stopPropagation();
-    React.startTransition(() => {
-      setCurrentSlideIndex((prev) => (prev - 1 + displayBanners.length) % displayBanners.length);
-    });
+    goToPrevSlide();
+  };
+
+  // Touch / Mobile Swipe Handlers
+  const touchStartXRef = useRef<number>(0);
+  const touchStartYRef = useRef<number>(0);
+  const touchEndXRef = useRef<number>(0);
+  const touchEndYRef = useRef<number>(0);
+  const isSwipingRef = useRef<boolean>(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 0) return;
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+    touchEndXRef.current = e.touches[0].clientX;
+    touchEndYRef.current = e.touches[0].clientY;
+    isSwipingRef.current = false;
+    if (autoSwipeTimerRef.current) clearInterval(autoSwipeTimerRef.current);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 0) return;
+    touchEndXRef.current = e.touches[0].clientX;
+    touchEndYRef.current = e.touches[0].clientY;
+    const deltaX = Math.abs(touchEndXRef.current - touchStartXRef.current);
+    const deltaY = Math.abs(touchEndYRef.current - touchStartYRef.current);
+    if (deltaX > 10 && deltaX > deltaY) {
+      isSwipingRef.current = true;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    const deltaX = touchEndXRef.current - touchStartXRef.current;
+    const deltaY = touchEndYRef.current - touchStartYRef.current;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    // Minimum swipe threshold (35px) and ensure horizontal intent over vertical scroll
+    if (absX > 35 && absX > absY) {
+      if (deltaX < 0) {
+        // Swiped Left -> Next Slide
+        goToNextSlide();
+      } else {
+        // Swiped Right -> Previous Slide
+        goToPrevSlide();
+      }
+    } else {
+      resetAutoSwipeTimer();
+    }
   };
 
   // Trending calculation using Cloud Firestore data / activeVideos (no 404 API calls)
@@ -373,7 +440,10 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       {/* Auto-Swiping 6-Image Hero Banner Slider (Hidden during active search so searched results show at very top) */}
       {!cleanSearch && selectedCategory === 'all' && displayBanners.length > 0 && (
         <section
-          className="hero-banner-container block mb-6 md:mb-10 relative w-full h-[220px] sm:h-[320px] md:h-[360px] xl:h-[420px] overflow-hidden rounded-2xl border border-[#27272a] shadow-2xl group/slider select-none bg-[#09090b]"
+          className="hero-banner-container block mb-6 md:mb-10 relative w-full h-[220px] sm:h-[320px] md:h-[360px] xl:h-[420px] overflow-hidden rounded-2xl border border-[#27272a] shadow-2xl group/slider select-none bg-[#09090b] touch-pan-y"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           {/* Continuous Hardware-Accelerated Sliding Track (Zero Black Gap) */}
           <div
@@ -389,6 +459,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 <div
                   key={banner.id}
                   onClick={() => {
+                    if (isSwipingRef.current) return;
                     if (banner.targetCategory) {
                       onSelectCategory(banner.targetCategory);
                     }
@@ -464,6 +535,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   setCurrentSlideIndex(index);
+                  resetAutoSwipeTimer();
                 }}
                 aria-label={`Go to slide ${index + 1}`}
                 className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
