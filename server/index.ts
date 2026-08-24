@@ -8,6 +8,7 @@ import { logger } from './utils/logger';
 import { responseUtil } from './utils/response';
 import { errorHandler } from './middleware/error.middleware';
 import { apiLimiter } from './middleware/rateLimit';
+import { verifyAppCheckOptional } from './middleware/appcheck.middleware';
 import apiRoutes from './routes';
 
 const app = express();
@@ -64,8 +65,8 @@ app.get('/ready', (_req: Request, res: Response) => {
   });
 });
 
-// 6. Mount API routes with global baseline rate limit
-app.use('/api', apiLimiter, apiRoutes);
+// 6. Mount API routes with global baseline rate limit and App Check verification
+app.use('/api', apiLimiter, verifyAppCheckOptional, apiRoutes);
 
 // 7. 404 Handler for API routes
 app.use('/api/*', (req: Request, res: Response) => {

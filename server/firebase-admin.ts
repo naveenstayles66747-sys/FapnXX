@@ -2,6 +2,7 @@ import { initializeApp, cert, getApps, App } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getAuth, Auth } from 'firebase-admin/auth';
 import { getStorage, Storage } from 'firebase-admin/storage';
+import { getAppCheck, AppCheck } from 'firebase-admin/app-check';
 import path from 'path';
 import fs from 'fs';
 
@@ -44,3 +45,4 @@ export const adminDb: Firestore = getFirestore(app);
 adminDb.settings({ ignoreUndefinedProperties: true });
 export const adminAuth: Auth = getAuth(app);
 export const adminStorage: Storage = getStorage(app);
+export const adminAppCheck: AppCheck = getAppCheck(app);

@@ -3,7 +3,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
+import { initializeAppCheck, ReCaptchaV3Provider, AppCheck, getToken } from 'firebase/app-check';
 
 // Firebase configuration for project: indianfullxx
 const firebaseConfig = {
@@ -19,18 +19,39 @@ const firebaseConfig = {
 // Initialize Firebase instance safely
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize App Check in browser environment if key is configured
+// Initialize App Check
+export let appCheck: AppCheck | null = null;
+
 if (typeof window !== 'undefined') {
   try {
-    const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+    // Support App Check Debug token in development environment
+    if (import.meta.env.DEV || import.meta.env.VITE_APPCHECK_DEBUG_TOKEN) {
+      (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true;
+    }
+
+    const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
     if (recaptchaSiteKey) {
-      initializeAppCheck(app, {
+      appCheck = initializeAppCheck(app, {
         provider: new ReCaptchaV3Provider(recaptchaSiteKey),
         isTokenAutoRefreshEnabled: true,
       });
+      console.log('🛡️ [Firebase AppCheck] Initialized successfully with ReCaptchaV3Provider');
     }
-  } catch (appCheckErr) {
-    console.warn('[Firebase AppCheck] Initialization notice:', appCheckErr);
+  } catch (appCheckErr: any) {
+    console.warn('[Firebase AppCheck] Initialization notice:', appCheckErr?.message || appCheckErr);
+  }
+}
+
+/**
+ * Retrieve active App Check token to attach to backend API requests
+ */
+export async function getAppCheckToken(): Promise<string | null> {
+  try {
+    if (!appCheck) return null;
+    const tokenResult = await getToken(appCheck, false);
+    return tokenResult.token;
+  } catch {
+    return null;
   }
 }
 

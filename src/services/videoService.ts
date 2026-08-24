@@ -27,17 +27,19 @@ import {
   limit,
 } from 'firebase/firestore';
 import { signInWithCustomToken } from 'firebase/auth';
-import { storage, db, auth, cleanForFirestore } from './firebaseConfig';
+import { storage, db, auth, cleanForFirestore, getAppCheckToken } from './firebaseConfig';
 
 const API_BASE = '/api/v1';
 
 
 export class VideoService {
-  private getAuthHeaders(): HeadersInit {
+  private async getAuthHeaders(): Promise<Record<string, string>> {
     const token = localStorage.getItem('fapnxx_auth_token');
+    const appCheckToken = await getAppCheckToken();
     return {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
     };
   }
 
@@ -123,10 +125,11 @@ export class VideoService {
     fallback?: () => Promise<T> | T
   ): Promise<T> {
     try {
+      const authHeaders = await this.getAuthHeaders();
       const response = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
         headers: {
-          ...this.getAuthHeaders(),
+          ...authHeaders,
           ...(options?.headers || {}),
         },
       });
