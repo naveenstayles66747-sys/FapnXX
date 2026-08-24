@@ -28,8 +28,6 @@ import {
   getDocs,
   getDoc,
   setDoc,
-  updateDoc,
-  deleteDoc,
   onSnapshot,
   query,
   where,
@@ -381,15 +379,7 @@ export class VideoService {
       views: video.views || '1 view',
     };
 
-    // 1. Direct Firestore write
-    try {
-      await setDoc(doc(db, 'videos', videoId), cleanForFirestore(fullVideo), { merge: true });
-      console.log('✅ [Firestore] Video saved to cloud database:', videoId);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] saveVideo notice:', err.message);
-    }
-
-    // 2. Sync to Backend API
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<Video>(
       '/videos',
       {
@@ -411,17 +401,10 @@ export class VideoService {
   }
 
   /**
-   * Update an existing video in Firestore and Backend API
+   * Update an existing video via Backend API (Admin/Staff only)
    */
   async updateVideo(video: Video): Promise<Video> {
-    // 1. Direct Firestore update
-    try {
-      await setDoc(doc(db, 'videos', video.id), cleanForFirestore(video), { merge: true });
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] updateVideo fallback to API:', err.message);
-    }
-
-    // 2. Sync to Backend API
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<Video>(
       `/videos/${video.id}`,
       {
@@ -443,17 +426,10 @@ export class VideoService {
   }
 
   /**
-   * Delete a video from Firestore and Backend API
+   * Delete a video via Backend API (Admin/Staff only)
    */
   async deleteVideo(videoId: string): Promise<boolean> {
-    // 1. Direct Firestore delete
-    try {
-      await deleteDoc(doc(db, 'videos', videoId));
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] deleteVideo fallback to API:', err.message);
-    }
-
-    // 2. Sync to Backend API
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<{ id: string }>(
       `/videos/${videoId}`,
       { method: 'DELETE' },
@@ -591,19 +567,13 @@ export class VideoService {
   }
 
   /**
-   * Save a category to Firestore and Backend API
+   * Save a category via Backend API (Admin/Staff only)
    */
   async saveCategory(category: CategoryInfo): Promise<CategoryInfo> {
     const id = category.id.trim().toLowerCase().replace(/\s+/g, '-');
     const fullCategory = { ...category, id };
 
-    try {
-      await setDoc(doc(db, 'categories', id), cleanForFirestore(fullCategory), { merge: true });
-      console.log('✅ [Firestore] Category saved to cloud:', id);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] saveCategory fallback:', err.message);
-    }
-
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<CategoryInfo>(
       '/categories',
       {
@@ -625,15 +595,10 @@ export class VideoService {
   }
 
   /**
-   * Update category in Firestore and Backend API
+   * Update category via Backend API (Admin/Staff only)
    */
   async updateCategory(category: CategoryInfo): Promise<CategoryInfo> {
-    try {
-      await setDoc(doc(db, 'categories', category.id), cleanForFirestore(category), { merge: true });
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] updateCategory fallback:', err.message);
-    }
-
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<CategoryInfo>(
       `/categories/${category.id}`,
       {
@@ -650,15 +615,10 @@ export class VideoService {
   }
 
   /**
-   * Delete category from Firestore and Backend API
+   * Delete category via Backend API (Admin/Staff only)
    */
   async deleteCategory(categoryId: string): Promise<boolean> {
-    try {
-      await deleteDoc(doc(db, 'categories', categoryId));
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] deleteCategory fallback:', err.message);
-    }
-
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<{ id: string }>(
       `/categories/${categoryId}`,
       { method: 'DELETE' },
@@ -672,17 +632,11 @@ export class VideoService {
   }
 
   /**
-   * Submit category request
+   * Submit category request via Backend API
    */
   async saveCategoryRequest(categoryReq: CategoryRequest): Promise<CategoryRequest> {
     const reqId = `cat-req-${Date.now()}`;
     const fullReq = { ...categoryReq, id: reqId, createdAt: new Date().toISOString(), status: 'pending' as const };
-
-    try {
-      await setDoc(doc(db, 'category_requests', reqId), cleanForFirestore(fullReq));
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] saveCategoryRequest fallback:', err.message);
-    }
 
     return this.apiFetch<CategoryRequest>(
       '/categories/requests',
@@ -717,15 +671,10 @@ export class VideoService {
   }
 
   /**
-   * Update category request status (Admin)
+   * Update category request status (Admin/Staff only)
    */
   async updateCategoryRequestStatus(requestId: string, status: 'approved' | 'rejected'): Promise<void> {
-    try {
-      await setDoc(doc(db, 'category_requests', requestId), { status }, { merge: true });
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] updateCategoryRequestStatus fallback:', err.message);
-    }
-
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     await this.apiFetch(
       `/categories/admin/requests/${requestId}`,
       {
@@ -767,19 +716,13 @@ export class VideoService {
   }
 
   /**
-   * Save banner to Firestore and Backend API
+   * Save banner via Backend API (Admin/Staff only)
    */
   async saveBanner(banner: LandingBanner): Promise<LandingBanner> {
     const id = banner.id || `banner-${Date.now()}`;
     const fullBanner = { ...banner, id };
 
-    try {
-      await setDoc(doc(db, 'banners', id), cleanForFirestore(fullBanner), { merge: true });
-      console.log('✅ [Firestore] Banner saved to cloud:', id);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] saveBanner fallback:', err.message);
-    }
-
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<LandingBanner>(
       '/banners',
       {
@@ -801,15 +744,10 @@ export class VideoService {
   }
 
   /**
-   * Update banner in Firestore and Backend API
+   * Update banner via Backend API (Admin/Staff only)
    */
   async updateBanner(banner: LandingBanner): Promise<LandingBanner> {
-    try {
-      await setDoc(doc(db, 'banners', banner.id), cleanForFirestore(banner), { merge: true });
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] updateBanner fallback:', err.message);
-    }
-
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<LandingBanner>(
       `/banners/${banner.id}`,
       {
@@ -826,15 +764,10 @@ export class VideoService {
   }
 
   /**
-   * Delete banner from Firestore and Backend API
+   * Delete banner via Backend API (Admin/Staff only)
    */
   async deleteBanner(bannerId: string): Promise<boolean> {
-    try {
-      await deleteDoc(doc(db, 'banners', bannerId));
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] deleteBanner fallback:', err.message);
-    }
-
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<{ id: string }>(
       `/banners/${bannerId}`,
       { method: 'DELETE' },
@@ -936,16 +869,9 @@ export class VideoService {
   }
 
   /**
-   * Like comment with Direct Atomic Firestore update
+   * Like comment via Backend API
    */
   async likeComment(commentId: string): Promise<void> {
-    try {
-      const cRef = doc(db, 'comments', commentId);
-      await updateDoc(cRef, { likesCount: increment(1) });
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] likeComment notice:', err?.message);
-    }
-
     await this.apiFetch(
       `/comments/${commentId}/like`,
       { method: 'POST' },
@@ -954,15 +880,9 @@ export class VideoService {
   }
 
   /**
-   * Delete comment
+   * Delete comment via Backend API
    */
   async deleteComment(commentId: string): Promise<void> {
-    try {
-      await deleteDoc(doc(db, 'comments', commentId));
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] deleteComment fallback:', err.message);
-    }
-
     await this.apiFetch(
       `/comments/${commentId}`,
       { method: 'DELETE' },
@@ -971,18 +891,11 @@ export class VideoService {
   }
 
   /**
-   * Save DMCA/Moderation Report
+   * Save DMCA/Moderation Report via Backend API
    */
   async saveReport(report: DMCAReport): Promise<DMCAReport> {
     const id = report.id || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const fullReport: DMCAReport = { ...report, id, createdAt: new Date().toISOString() };
-
-    try {
-      await setDoc(doc(db, 'reports', id), cleanForFirestore(fullReport));
-      console.log('✅ [Firestore] Report saved to cloud database:', id);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] saveReport fallback:', err.message);
-    }
 
     return this.apiFetch<DMCAReport>(
       '/reports',
@@ -1005,7 +918,7 @@ export class VideoService {
   }
 
   /**
-   * Fetch reports (Admin)
+   * Fetch reports (Admin/Staff only)
    */
   async fetchReports(): Promise<DMCAReport[]> {
     try {
@@ -1027,15 +940,10 @@ export class VideoService {
   }
 
   /**
-   * Update report status (Admin)
+   * Update report status via Backend API (Admin/Staff only)
    */
   async updateReportStatus(reportId: string, status: ReportStatus): Promise<void> {
-    try {
-      await setDoc(doc(db, 'reports', reportId), { status, resolvedAt: new Date().toISOString() }, { merge: true });
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] updateReportStatus fallback:', err.message);
-    }
-
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     await this.apiFetch(
       `/reports/${reportId}/status`,
       {
@@ -1069,18 +977,13 @@ export class VideoService {
   }
 
   /**
-   * Save ad campaign to Firestore and Backend API
+   * Save ad campaign via Backend API (Admin/Staff only)
    */
   async saveAdCampaign(campaign: AdCampaign): Promise<AdCampaign> {
     const id = campaign.id || `ad-${Date.now()}`;
     const fullAd = { ...campaign, id };
 
-    try {
-      await setDoc(doc(db, 'ad_campaigns', id), cleanForFirestore(fullAd), { merge: true });
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] saveAdCampaign fallback:', err.message);
-    }
-
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<AdCampaign>(
       '/ads',
       {
@@ -1092,15 +995,10 @@ export class VideoService {
   }
 
   /**
-   * Update ad campaign
+   * Update ad campaign via Backend API (Admin/Staff only)
    */
   async updateAdCampaign(campaign: AdCampaign): Promise<AdCampaign> {
-    try {
-      await setDoc(doc(db, 'ad_campaigns', campaign.id), cleanForFirestore(campaign), { merge: true });
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] updateAdCampaign fallback:', err.message);
-    }
-
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     return this.apiFetch<AdCampaign>(
       `/ads/${campaign.id}`,
       {
@@ -1112,15 +1010,10 @@ export class VideoService {
   }
 
   /**
-   * Delete ad campaign
+   * Delete ad campaign via Backend API (Admin/Staff only)
    */
   async deleteAdCampaign(campaignId: string): Promise<void> {
-    try {
-      await deleteDoc(doc(db, 'ad_campaigns', campaignId));
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] deleteAdCampaign fallback:', err.message);
-    }
-
+    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
     await this.apiFetch(
       `/ads/${campaignId}`,
       { method: 'DELETE' },
