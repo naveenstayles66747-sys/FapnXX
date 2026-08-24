@@ -243,8 +243,12 @@ export async function extractEmbedMetadataOnline(url: string): Promise<Extracted
   if (!url || typeof url !== 'string') return {};
   const trimmed = url.trim();
 
+  const apiBase = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL && import.meta.env.VITE_API_URL.trim() !== '')
+    ? `${import.meta.env.VITE_API_URL.trim().replace(/\/+$/, '')}/api/v1`
+    : '/api/v1';
+
   try {
-    const res = await fetch(`/api/v1/videos/extract-metadata?url=${encodeURIComponent(trimmed)}`);
+    const res = await fetch(`${apiBase}/videos/extract-metadata?url=${encodeURIComponent(trimmed)}`);
     if (res.ok) {
       const json = await res.json();
       if (json?.data) {
