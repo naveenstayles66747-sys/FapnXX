@@ -90,13 +90,24 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawEmbed);
       setPlayerMode(d ? 'video' : 'embed');
       setCurrentVideoSrc(c);
+      // Embed iframes have their own internal player; play directly without blocking with dummy VAST
+      if (!d) {
+        setVastState('contentPlaying');
+        contentStartedRef.current = true;
+      }
     } else if (rawMp4) {
       const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawMp4);
       setPlayerMode(d ? 'video' : 'embed');
       setCurrentVideoSrc(c);
+      if (!d) {
+        setVastState('contentPlaying');
+        contentStartedRef.current = true;
+      }
     } else {
       setPlayerMode('embed');
       setCurrentVideoSrc('');
+      setVastState('contentPlaying');
+      contentStartedRef.current = true;
     }
   }, [video.id, video.embedUrl, video.previewMp4Url]);
 
@@ -196,20 +207,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 },
                 noVastVideoCallback: () => {
                   if (!isMounted || contentStartedRef.current) return;
-                  const elapsed = Date.now() - adStartTimeRef.current;
-                  // Smart Retry Check: if under max retries and total budget < 5500ms
-                  if (retryCountRef.current < maxRetries && elapsed < 5500) {
-                    retryCountRef.current += 1;
-                    setAdStatusMessage(`Connecting to Sponsor Network (Attempt ${retryCountRef.current + 1})...`);
-                    cleanupPreroll();
-                    retryTimer = setTimeout(() => {
-                      if (isMounted && !contentStartedRef.current) {
-                        attachPrerollVast();
-                      }
-                    }, 400);
-                  } else {
-                    startMainContent('no_vast_after_smart_retries');
-                  }
+                  startMainContent('no_vast_video');
                 },
                 vastVideoSkippedCallback: () => {
                   if (isMounted) {
@@ -239,8 +237,8 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         }
       } else {
         fluidLoadAttempts += 1;
-        if (fluidLoadAttempts > 8) {
-          // If fluidPlayer library is not loaded after 800ms (e.g. adblocker active), proceed directly to video
+        if (fluidLoadAttempts > 4) {
+          // If fluidPlayer library is not loaded after 400ms (e.g. adblocker active), proceed directly to video
           if (isMounted) startMainContent('fluidplayer_not_available');
         } else {
           setTimeout(attachPrerollVast, 100);
@@ -250,12 +248,12 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
     const initTimer = setTimeout(attachPrerollVast, 50);
 
-    // Smart Safeguard: 6.5s total window to allow aggressive retries & slow cellular network responses
+    // Fast Safeguard: 2.0s max fallback to prevent user getting stuck on sponsor connecting screen
     safetyFallbackTimer = setTimeout(() => {
       if (isMounted && !contentStartedRef.current) {
         startMainContent('vast_safety_timeout');
       }
-    }, 6500);
+    }, 2000);
 
     return () => {
       isMounted = false;
@@ -291,7 +289,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
           {/* Sleek Visual "Connecting to Sponsor Ad..." Loader Overlay */}
           {vastState === 'requesting' && (
-            <div className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-4 pointer-events-none animate-in fade-in duration-200">
+            <div className="absolute inset-0 z-40 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-4 animate-in fade-in duration-150">
               <div className="relative flex items-center justify-center">
                 <div className="w-12 h-12 rounded-full border-3 border-rose-500/20 border-t-rose-500 animate-spin" />
                 <span className="material-symbols-outlined text-rose-500 text-lg absolute">play_circle</span>
@@ -303,6 +301,15 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 </span>
                 <span className="text-[10px] text-zinc-400 mt-0.5">Please wait, your video will begin shortly</span>
               </div>
+              {/* Instant Skip & Play Video Action */}
+              <button
+                type="button"
+                onClick={() => startMainContent('user_clicked_skip')}
+                className="mt-2 px-5 py-2 rounded-full bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-bold text-xs shadow-lg transition-all flex items-center gap-1.5 cursor-pointer z-50 pointer-events-auto"
+              >
+                <span>Skip Ad & Play Video</span>
+                <span className="material-symbols-outlined text-sm">play_arrow</span>
+              </button>
             </div>
           )}
         </div>

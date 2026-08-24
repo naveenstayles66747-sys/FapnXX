@@ -325,18 +325,13 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           <span>Recommended Videos</span>
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5">
-          {(topRelatedVideos || []).map((relatedVideo, idx) => (
-            <React.Fragment key={relatedVideo.id}>
-              <div className="relative group">
-                <VideoCard
-                  video={relatedVideo}
-                  onClick={() => onSelectVideo(relatedVideo)}
-                />
-              </div>
-              {idx === 0 && (
-                <OutstreamVideoCardAd key="detail-outstream-ad" />
-              )}
-            </React.Fragment>
+          {(topRelatedVideos || []).map((relatedVideo) => (
+            <div key={relatedVideo.id} className="relative group">
+              <VideoCard
+                video={relatedVideo}
+                onClick={() => onSelectVideo(relatedVideo)}
+              />
+            </div>
           ))}
         </div>
 

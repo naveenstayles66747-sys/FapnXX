@@ -851,9 +851,9 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     video={video}
                     onClick={() => onSelectVideo(video)}
                   />
-                  {/* In-Feed Outstream Video Ad Placement every AD_CONFIG.OUTSTREAM_FEED_FREQUENCY cards */}
-                  {(idx + 1) % AD_CONFIG.OUTSTREAM_FEED_FREQUENCY === 0 && (
-                    <OutstreamVideoCardAd key={`outstream-ad-card-${idx}`} />
+                  {/* Single Clean In-Feed Outstream Ad Placement after the 8th card */}
+                  {idx === 7 && (
+                    <OutstreamVideoCardAd key="browse-infeed-outstream-ad" />
                   )}
                 </React.Fragment>
               ))}
