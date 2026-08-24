@@ -2,7 +2,7 @@ import React from 'react';
 import { CategoryId, CategoryInfo, Video } from '../types';
 import { CATEGORIES, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
-import { OutstreamVideoCardAd } from './AdSpaces';
+import { OutstreamVideoCardAd, NativeRecommendationAd } from './AdSpaces';
 import { AD_CONFIG } from '../config/adConfig';
 import { getCategoryHeroImage, handleCategoryImageError } from '../utils/mediaHelper';
 
@@ -187,33 +187,38 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
 
         {/* Video Card Layout */}
         {filteredCategoryVideos.length > 0 ? (
-          categoryId === 'pov' ? (
-            <div className="flex flex-col gap-6">
-              {filteredCategoryVideos.map((video) => (
-                <VideoCard
-                  key={video.id}
-                  video={video}
-                  onClick={() => onSelectVideo(video)}
-                  layout="horizontal"
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {filteredCategoryVideos.map((video, idx) => (
-                <React.Fragment key={video.id}>
+          <>
+            {categoryId === 'pov' ? (
+              <div className="flex flex-col gap-6">
+                {filteredCategoryVideos.map((video) => (
                   <VideoCard
+                    key={video.id}
                     video={video}
                     onClick={() => onSelectVideo(video)}
-                    layout="grid"
+                    layout="horizontal"
                   />
-                  {(idx + 1) % AD_CONFIG.OUTSTREAM_FEED_FREQUENCY === 0 && (
-                    <OutstreamVideoCardAd key={`category-outstream-ad-${idx}`} />
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-          )
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                {filteredCategoryVideos.map((video, idx) => (
+                  <React.Fragment key={video.id}>
+                    <VideoCard
+                      video={video}
+                      onClick={() => onSelectVideo(video)}
+                      layout="grid"
+                    />
+                    {(idx + 1) % AD_CONFIG.OUTSTREAM_FEED_FREQUENCY === 0 && (
+                      <OutstreamVideoCardAd key={`category-outstream-ad-${idx}`} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
+
+            {/* Multi-Device Native Recommendation Sponsored Widget (Zone ID: 6010176) */}
+            <NativeRecommendationAd title="Sponsored Picks & Recommendations" className="mt-8" />
+          </>
         ) : (
           <div className="p-12 text-center text-zinc-600 dark:text-[#debec8] bg-zinc-100 dark:bg-[#1c1b1d] rounded-2xl border border-zinc-200 dark:border-[#353437]">
             <span className="material-symbols-outlined text-4xl mb-2 text-[#ec4899] dark:text-[#ffb0cd]">video_library</span>
