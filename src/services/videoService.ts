@@ -202,36 +202,6 @@ export class VideoService {
   }
 
   /**
-   * Helper to seed initial catalog, categories, and banners into Firestore if database is empty
-   */
-  async seedInitialVideosToFirestore(): Promise<void> {
-    try {
-      console.log('🔄 [Firestore] Seeding initial video catalog to Firestore database...');
-      // Seed categories
-      for (const cat of CATEGORIES) {
-        if (cat && cat.id) {
-          await setDoc(doc(db, 'categories', cat.id), cleanForFirestore(cat), { merge: true });
-        }
-      }
-      // Seed banners
-      for (const banner of INITIAL_LANDING_BANNERS) {
-        if (banner && banner.id) {
-          await setDoc(doc(db, 'banners', banner.id), cleanForFirestore(banner), { merge: true });
-        }
-      }
-      // Seed videos
-      for (const v of INITIAL_VIDEOS) {
-        if (v && v.id) {
-          await setDoc(doc(db, 'videos', v.id), cleanForFirestore(v), { merge: true });
-        }
-      }
-      console.log('✅ [Firestore] Initial catalog seeded successfully to Firestore worldwide!');
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Seeding notice:', err?.message);
-    }
-  }
-
-  /**
    * Fetch all videos via direct Firestore SDK with Backend API and CDN fallbacks
    */
   async fetchVideos(category?: string): Promise<Video[]> {

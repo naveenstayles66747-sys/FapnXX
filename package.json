@@ -9,7 +9,9 @@
     "start": "tsx server/index.ts",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "seed:dev": "tsx server/seed-all-firestore.ts",
+    "test:api": "tsx server/test-api.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

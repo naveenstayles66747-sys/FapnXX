@@ -16,37 +16,9 @@ export interface AdCampaignRecord {
   updatedAt?: string;
 }
 
+// In-memory cache synced with Firestore
 const adCampaigns = new Map<string, AdCampaignRecord>();
 let isFirestoreAdsInitialized = false;
-
-const INITIAL_ADS: AdCampaignRecord[] = [
-  {
-    id: 'ad-1',
-    brandName: 'FapnXX VIP Pass',
-    title: 'Unlock Unlimited 4K Streaming & Original Content',
-    bannerImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCoYe4d2pIABe86FsPcEzfnsBgshTwLMpB3JldWw6KpYDhCxwmc-ts6JLePq7jRgzo7T0CR6cluXgWh5POzYkOubjPkkPHZyeuo05COHnK577vd4Gv1TWhzqJ5uqE5ImXEd7q6s48cXZKHvI5wTWZYsy1grVbKoFBbzeEJfbZ5Et7B8Ns-muFWNe95tNNSmEI7ZSANX2TFAu6rFz4XlMQ7h3hl-UAHtcUZ0jFC0pDJPQNoEUnGmB1KqBg',
-    targetUrl: '#vip-upgrade',
-    cpmRate: '$14.50',
-    impressions: 142500,
-    clicks: 8420,
-    isActive: true,
-    position: 'banner_top',
-  },
-  {
-    id: 'ad-2',
-    brandName: 'Luxury Silk Apparel',
-    title: 'Exclusive Midnight Collection - 25% Off VIPs',
-    bannerImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDvu8sGdltZki91ehu4_TciVh4ojFc2rkzEbjdpwT0f5CLnFmvQzwYrEOQxEFJ_5nuaxrYR5ciK2iYmRsy2xBkg_ftrLdEVMKzs0Mo7wZJj8dGjATtrpcrXvwKvJX9cojHQ3HXSmrDB9oyFdG_EbNoZ_IyKVxNxSzjWcNqxV9DZCb9emwKm10HSw50UmQCf-2beum05L1bV6fTQBVtTvEbXbkY0kh99hiKCxl2v-kLPTgTtkEfqFhfeYQ',
-    targetUrl: '#silk-collection',
-    cpmRate: '$18.00',
-    impressions: 89100,
-    clicks: 5310,
-    isActive: true,
-    position: 'card_inline',
-  },
-];
-
-INITIAL_ADS.forEach((a) => adCampaigns.set(a.id, a));
 
 // Sync from Firestore DB
 async function initFirestoreAdsSync() {
@@ -62,7 +34,7 @@ async function initFirestoreAdsSync() {
     }
     isFirestoreAdsInitialized = true;
   } catch (err: any) {
-    console.warn('⚠️ [Firestore AdService] Sync fallback:', err.message);
+    console.warn('⚠️ [Firestore AdService] Sync notice:', err.message);
   }
 }
 

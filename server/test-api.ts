@@ -142,24 +142,8 @@ async function runTests() {
     });
     assert(auditRes.status === 200 && Array.isArray(auditRes.data.data.logs) && auditRes.data.data.logs.length > 0, 'Audit logs recorded and accessible to Super Admin');
 
-    // 7. Video Views & Anti-Spam View Debounce
-    console.log('\n--- 7. View Count Anti-Spam Engine ---');
-    const view1 = await request('/api/v1/videos/vid-test-user-1/views', { method: 'POST' });
-    assert(view1.status === 200 && view1.data.data.counted === true, 'First view increment counted');
-
-    const view2 = await request('/api/v1/videos/vid-test-user-1/views', { method: 'POST' });
-    assert(view2.status === 200 && view2.data.data.counted === false, 'Immediate repeat view debounced (anti-spam protection active)');
-
-    // 8. Video Likes Engine
-    console.log('\n--- 8. Like Counter ---');
-    const likeRes = await request('/api/v1/videos/vid-test-user-1/likes', {
-      method: 'POST',
-      body: { isLike: true },
-    });
-    assert(likeRes.status === 200 && typeof likeRes.data.data.likesCount === 'number' && typeof likeRes.data.data.rating === 'string', 'POST /api/v1/videos/:id/likes updates likes and calculates rating');
-
-    // 9. Video Creation RBAC Security (Guest 401, User 403, Staff 201)
-    console.log('\n--- 9. Video Creation RBAC Security ---');
+    // 7. Video Creation RBAC Security (Guest 401, User 403, Staff 201)
+    console.log('\n--- 7. Video Creation RBAC Security ---');
     const guestVideoRes = await request('/api/v1/videos', {
       method: 'POST',
       body: { title: 'Unauthorized Video' },
@@ -184,28 +168,45 @@ async function runTests() {
       method: 'POST',
       headers: { Authorization: `Bearer ${superAdminToken}` },
       body: {
-        title: 'Secure Admin Upload Test Video 4K',
+        title: 'Dynamic Test Video 4K',
         thumbnail: 'https://images.unsplash.com/photo-1534447677768-be436bb09401',
-        category: 'indian',
+        category: 'amateur',
         duration: '12:45',
         quality: '4K',
       },
     });
     assert(validVideoRes.status === 201 && validVideoRes.data.success, 'Super Admin POST /api/v1/videos succeeds with 201 Created');
+    const createdVideoId = validVideoRes.data?.data?.id;
+
+    // 8. Video Views & Anti-Spam View Debounce
+    console.log('\n--- 8. View Count Anti-Spam Engine ---');
+    const view1 = await request(`/api/v1/videos/${createdVideoId}/views`, { method: 'POST' });
+    assert(view1.status === 200 && view1.data.data.counted === true, 'First view increment counted');
+
+    const view2 = await request(`/api/v1/videos/${createdVideoId}/views`, { method: 'POST' });
+    assert(view2.status === 200 && view2.data.data.counted === false, 'Immediate repeat view debounced (anti-spam protection active)');
+
+    // 9. Video Likes Engine
+    console.log('\n--- 9. Like Counter ---');
+    const likeRes = await request(`/api/v1/videos/${createdVideoId}/likes`, {
+      method: 'POST',
+      body: { isLike: true },
+    });
+    assert(likeRes.status === 200 && typeof likeRes.data.data.likesCount === 'number' && typeof likeRes.data.data.rating === 'string', 'POST /api/v1/videos/:id/likes updates likes and calculates rating');
 
     // 10. Comments & Reports
     console.log('\n--- 10. Community Comments & DMCA Reports ---');
     const commentRes = await request('/api/v1/comments', {
       method: 'POST',
-      body: { videoId: 'vid-test-user-1', text: 'Great 4K scene!' },
+      body: { videoId: createdVideoId, text: 'Great 4K scene!' },
     });
     assert(commentRes.status === 201 && commentRes.data.data.text === 'Great 4K scene!', 'POST /api/v1/comments creates comment');
 
     const reportRes = await request('/api/v1/reports', {
       method: 'POST',
       body: {
-        videoId: 'vid-test-user-1',
-        videoTitle: 'Desi Romance Scene 4K',
+        videoId: createdVideoId,
+        videoTitle: 'Dynamic Test Video 4K',
         reason: 'copyright_dmca',
         details: 'Copyright claim validation test',
       },

@@ -58,45 +58,7 @@ let isFirestoreInitialized = false;
 const viewCooldowns = new Map<string, number>();
 const VIEW_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
 
-// Initial video seeds
-const INITIAL_SEED_VIDEOS: VideoRecord[] = [
-  {
-    id: 'vid-test-user-1',
-    title: 'Desi Romance Scene 4K',
-    category: 'amateur',
-    categoryLabel: 'Amateur',
-    categories: ['amateur', 'trending'],
-    tags: ['Amateur', 'HD', 'Featured', 'Desi'],
-    models_actors: ['Pooja B', 'Karan'],
-    modelsActors: ['Pooja B', 'Karan'],
-    thumbnail: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop',
-    duration: '05:00',
-    quality: 'HD',
-    views: '1.2K views',
-    viewsCount: 1200,
-    likesCount: 340,
-    rating: '98%',
-    timeAgo: '2 hours ago',
-    createdAt: '2026-08-10T12:00:00.000Z',
-    updatedAt: '2026-08-10T12:00:00.000Z',
-    publishedAt: '2026-08-10T12:00:00.000Z',
-    performerName: 'User Uploaded',
-    performerAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150&auto=format&fit=crop',
-    description: 'Exclusive adult video stream.',
-    orientation: 'straight',
-    isNew: true,
-    embedUrl: 'https://hornhub.embedseek.com/#9sq8g',
-    isEmbed: true,
-    status: VideoStatus.PUBLISHED,
-    createdBy: 'system',
-    version: 1,
-  },
-];
-
-INITIAL_SEED_VIDEOS.forEach((v) => videos.set(v.id, v));
-
-// Synchronize from Firestore Collection on start & real-time updates
+// Synchronize from Firestore Collection on start
 async function initFirestoreVideosSync() {
   if (isFirestoreInitialized) return;
   try {
@@ -107,16 +69,10 @@ async function initFirestoreVideosSync() {
         videos.set(doc.id, { ...data, id: doc.id });
       });
       console.log(`✅ [Firestore VideoService] Loaded ${snapshot.size} videos from Firestore DB.`);
-    } else {
-      // Seed default videos to Firestore
-      for (const v of INITIAL_SEED_VIDEOS) {
-        await adminDb.collection('videos').doc(v.id).set(v, { merge: true });
-      }
-      console.log('🌱 [Firestore VideoService] Seeded initial videos to Firestore DB.');
     }
     isFirestoreInitialized = true;
   } catch (err: any) {
-    console.warn('⚠️ [Firestore VideoService] Sync fallback:', err.message);
+    console.warn('⚠️ [Firestore VideoService] Sync notice:', err.message);
   }
 }
 

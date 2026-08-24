@@ -1,12 +1,18 @@
 import { adminDb } from './firebase-admin';
 
 // ============================================================
-// FULL FIRESTORE SEEDER — seeds videos, categories, banners,
-// ads, users, comments into Firestore so the console shows data
+// DEVELOPMENT-ONLY FIRESTORE SEEDER
+// Strictly isolated from production environment
 // ============================================================
 
+if (process.env.NODE_ENV === 'production' && !process.argv.includes('--force-prod-seed')) {
+  console.error('⛔ [SECURITY REJECTED] Seeding demo/test data is blocked in PRODUCTION environment.');
+  console.error('Seed scripts are strictly development-only. Run with development NODE_ENV.');
+  process.exit(1);
+}
+
 async function seedAll() {
-  console.log('\n🚀 Starting Full Firestore Seeder for Project: indianfullxx\n');
+  console.log('\n🚀 [DEV SEED] Starting Development Firestore Seeder for Project: indianfullxx\n');
 
   // ── 1. CATEGORIES ─────────────────────────────────────────
   const categories = [
