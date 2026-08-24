@@ -2,6 +2,7 @@ import { Role } from '../config/constants';
 import { env } from '../config/env';
 import { passwordUtil } from '../utils/password';
 import { adminDb, adminAuth } from '../firebase-admin';
+import { auditService } from './audit.service';
 
 export interface User {
   id: string;
@@ -228,7 +229,18 @@ export const userService = {
     };
   },
 
-  updateRole: async (targetUserId: string, newRole: Role, actorRole: Role): Promise<User> => {
+  updateRole: async (
+    targetUserId: string,
+    newRole: Role,
+    actorRole: Role,
+    actorId?: string,
+    actorEmail?: string
+  ): Promise<User> => {
+    // 1. Role Change: Admin only gate
+    if (actorRole !== Role.ADMIN && actorRole !== Role.SUPER_ADMIN) {
+      throw new Error('Access denied. Only administrators can modify user roles.');
+    }
+
     if (newRole === Role.SUPER_ADMIN && actorRole !== Role.SUPER_ADMIN) {
       throw new Error('Only a SUPER_ADMIN can assign the SUPER_ADMIN role.');
     }
@@ -239,32 +251,61 @@ export const userService = {
     }
 
     if (targetUser.role === Role.SUPER_ADMIN && actorRole !== Role.SUPER_ADMIN) {
-      throw new Error('Cannot modify role of a SUPER_ADMIN.');
+      throw new Error('Cannot modify the role of a SUPER_ADMIN account.');
     }
 
+    const oldRole = targetUser.role;
     targetUser.role = newRole;
     targetUser.updatedAt = new Date().toISOString();
     users.set(targetUser.email.toLowerCase(), targetUser);
 
-    // Save in Firestore DB
+    // 2. Save in Firestore DB
     try {
-      await adminDb.collection('users').doc(targetUserId).set({ role: newRole, updatedAt: targetUser.updatedAt }, { merge: true });
+      await adminDb.collection('users').doc(targetUserId).set(
+        { role: newRole, updatedAt: targetUser.updatedAt },
+        { merge: true }
+      );
     } catch (err: any) {
       console.warn(`[Firestore User] Role update error:`, err.message);
     }
 
-    // Set Firebase Auth Custom Claims if user exists in Firebase Auth
+    // 3. Set Firebase Auth Custom Claims (USER, MODERATOR, ADMIN)
     try {
-      const firebaseUser = await adminAuth.getUserByEmail(targetUser.email).catch(() => null);
+      const claims = {
+        role: newRole,
+        admin: newRole === Role.ADMIN || newRole === Role.SUPER_ADMIN,
+        moderator: newRole === Role.MODERATOR || newRole === Role.ADMIN || newRole === Role.SUPER_ADMIN,
+      };
+
+      let firebaseUser = await adminAuth.getUser(targetUserId).catch(() => null);
+      if (!firebaseUser) {
+        firebaseUser = await adminAuth.getUserByEmail(targetUser.email).catch(() => null);
+      }
       if (firebaseUser) {
-        await adminAuth.setCustomUserClaims(firebaseUser.uid, {
-          role: newRole,
-          admin: newRole === Role.ADMIN || newRole === Role.SUPER_ADMIN,
-        });
-        console.log(`🛡️ [FirebaseAuth] Custom claims updated for ${targetUser.email} -> ${newRole}`);
+        await adminAuth.setCustomUserClaims(firebaseUser.uid, claims);
+        console.log(`🛡️ [FirebaseAuth] Custom claims set for ${targetUser.email} (${firebaseUser.uid}) -> ${JSON.stringify(claims)}`);
       }
     } catch (err: any) {
-      console.warn('[FirebaseAuth] Claims update error:', err.message);
+      console.warn('[FirebaseAuth] Claims update notice:', err.message);
+    }
+
+    // 4. Record Audit Log
+    try {
+      await auditService.log({
+        actorId: actorId || 'admin_system',
+        actorEmail: actorEmail || 'admin@indianfullxx.com',
+        actorRole: actorRole,
+        action: 'user.role_changed',
+        targetType: 'user',
+        targetId: targetUserId,
+        metadata: {
+          targetEmail: targetUser.email,
+          previousRole: oldRole,
+          newRole: newRole,
+        },
+      });
+    } catch (auditErr: any) {
+      console.warn('[AuditLog] Role change audit notice:', auditErr.message);
     }
 
     return targetUser;

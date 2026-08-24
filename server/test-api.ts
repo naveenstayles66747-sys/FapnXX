@@ -137,6 +137,7 @@ async function runTests() {
     });
     assert(userLoginRes.status === 200 && userLoginRes.data.data.accessToken, 'POST /api/v1/auth/login logs in user');
     userToken = userLoginRes.data?.data?.accessToken;
+    const testUserId = registerRes.data?.data?.id || userLoginRes.data?.data?.user?.id;
 
     const invalidLoginRes = await request('/api/v1/auth/login', {
       method: 'POST',
@@ -181,6 +182,29 @@ async function runTests() {
       headers: { Authorization: `Bearer ${superAdminToken}` },
     });
     assert(auditRes.status === 200 && Array.isArray(auditRes.data.data.logs) && auditRes.data.data.logs.length > 0, 'Audit logs recorded and accessible to Super Admin');
+
+    // 6b. User Roles & Custom Claims (Admin-Only Gate)
+    console.log('\n--- 6b. User Roles & Admin-Only Role Change ---');
+    const userRoleChangeAttempt = await request(`/api/v1/users/${testUserId}/role`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { role: 'ADMIN' },
+    });
+    assert(userRoleChangeAttempt.status === 403, 'Normal user blocked from changing user roles (403 Forbidden)');
+
+    const adminRoleChangeToModerator = await request(`/api/v1/users/${testUserId}/role`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+      body: { role: 'MODERATOR' },
+    });
+    assert(adminRoleChangeToModerator.status === 200 && adminRoleChangeToModerator.data.data.role === 'MODERATOR', 'Super Admin successfully promoted user to MODERATOR');
+
+    const adminRoleChangeToAdmin = await request(`/api/v1/users/${testUserId}/role`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+      body: { role: 'ADMIN' },
+    });
+    assert(adminRoleChangeToAdmin.status === 200 && adminRoleChangeToAdmin.data.data.role === 'ADMIN', 'Super Admin successfully promoted user to ADMIN');
 
     // 7. Video Creation RBAC Security (Guest 401, User 403, Staff 201)
     console.log('\n--- 7. Video Creation RBAC Security ---');

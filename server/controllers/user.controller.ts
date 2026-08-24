@@ -23,8 +23,7 @@ export const userController = {
       const { id } = req.params;
       const { role } = req.body;
       const actorRole = req.user!.role;
-
-      const updated = await userService.updateRole(id, role as Role, actorRole);
+      const updated = await userService.updateRole(id, role as Role, actorRole, req.user?.id, req.user?.email);
       return responseUtil.success(res, updated, 'User role updated successfully.');
     } catch (err: any) {
       next(err);

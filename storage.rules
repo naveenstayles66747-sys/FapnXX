@@ -19,6 +19,7 @@ service firebase.storage {
     function isModerator() {
       return isAuthenticated() && (
         isAdmin() ||
+        request.auth.token.moderator == true ||
         request.auth.token.role == 'MODERATOR' ||
         request.auth.token.role == 'EDITOR'
       );
