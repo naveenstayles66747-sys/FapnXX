@@ -7,6 +7,7 @@ import { env } from './config/env';
 import { logger } from './utils/logger';
 import { responseUtil } from './utils/response';
 import { errorHandler } from './middleware/error.middleware';
+import { apiLimiter } from './middleware/rateLimit';
 import apiRoutes from './routes';
 
 const app = express();
@@ -63,8 +64,8 @@ app.get('/ready', (_req: Request, res: Response) => {
   });
 });
 
-// 6. Mount API routes
-app.use('/api', apiRoutes);
+// 6. Mount API routes with global baseline rate limit
+app.use('/api', apiLimiter, apiRoutes);
 
 // 7. 404 Handler for API routes
 app.use('/api/*', (req: Request, res: Response) => {

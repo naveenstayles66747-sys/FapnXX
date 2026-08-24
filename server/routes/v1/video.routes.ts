@@ -6,6 +6,8 @@ import { requirePermission, requireRole } from '../../middleware/rbac.middleware
 import { validateBody } from '../../middleware/validate';
 import { Permission, Role, VideoStatus } from '../../config/constants';
 
+import { videoCreationLimiter, metadataExtractionLimiter } from '../../middleware/rateLimit';
+
 const router = Router();
 
 const createVideoSchema = z.object({
@@ -46,14 +48,14 @@ const toggleLikeSchema = z.object({
 });
 
 // Public / Hybrid endpoints (with optional auth so admin sees unpublished videos)
-router.get('/extract-metadata', videoController.extractMetadata);
+router.get('/extract-metadata', metadataExtractionLimiter, videoController.extractMetadata);
 router.get('/', optionalAuth, videoController.listVideos);
 router.get('/:id', optionalAuth, videoController.getVideoById);
 router.post('/:id/views', videoController.incrementViews);
 router.post('/:id/likes', validateBody(toggleLikeSchema), videoController.toggleLikes);
 
 // Privileged endpoints
-router.post('/', authenticateToken, requireRole(Role.ADMIN, Role.MODERATOR, Role.EDITOR), validateBody(createVideoSchema), videoController.createVideo);
+router.post('/', authenticateToken, requireRole(Role.ADMIN, Role.MODERATOR, Role.EDITOR), videoCreationLimiter, validateBody(createVideoSchema), videoController.createVideo);
 router.put('/:id', authenticateToken, requirePermission(Permission.VIDEOS_UPDATE), validateBody(updateVideoSchema), videoController.updateVideo);
 router.delete('/:id', authenticateToken, requirePermission(Permission.VIDEOS_DELETE), videoController.deleteVideo);
 
