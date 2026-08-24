@@ -83,8 +83,10 @@ service cloud.firestore {
       allow create: if request.resource.data.keys().hasAll(['videoId', 'text', 'createdAt']) &&
                        request.resource.data.text is string &&
                        request.resource.data.text.size() > 0 &&
-                       request.resource.data.text.size() <= 2000;
-      allow update: if isModerator() || (isAuthenticated() && resource.data.userId == request.auth.uid) ||
+                       request.resource.data.text.size() <= 2000 &&
+                       (!('isModerated' in request.resource.data) || isModerator()) &&
+                       (!('moderatedBy' in request.resource.data) || isModerator());
+      allow update: if isModerator() ||
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']);
       allow delete: if isModerator() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }

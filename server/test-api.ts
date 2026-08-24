@@ -307,13 +307,37 @@ async function runTests() {
     });
     assert(likeRes.status === 200 && typeof likeRes.data.data.likesCount === 'number' && typeof likeRes.data.data.rating === 'string', 'POST /api/v1/videos/:id/likes updates likes and calculates rating');
 
-    // 10. Comments & Reports
-    console.log('\n--- 10. Community Comments & DMCA Reports ---');
+    // 10. Comments Moderation & DMCA Reports
+    console.log('\n--- 10. Community Comments Moderation & DMCA Reports ---');
     const commentRes = await request('/api/v1/comments', {
       method: 'POST',
       body: { videoId: createdVideoId, text: 'Great 4K scene!' },
     });
-    assert(commentRes.status === 201 && commentRes.data.data.text === 'Great 4K scene!', 'POST /api/v1/comments creates comment');
+    assert(commentRes.status === 201 && commentRes.data.data.text === 'Great 4K scene!', 'POST /api/v1/comments creates comment with policy status');
+    const testCommentId = commentRes.data?.data?.id;
+
+    // Normal user trying to set arbitrary moderation fields
+    const commentTamperRes = await request('/api/v1/comments', {
+      method: 'POST',
+      body: { videoId: createdVideoId, text: 'Spam text', status: 'approved', isModerated: true, moderatedBy: 'admin' },
+    });
+    assert(commentTamperRes.status === 422 || commentTamperRes.status === 400, 'Client arbitrary comment moderation fields blocked with validation error');
+
+    // Normal user trying to moderate comment
+    const userModerateRes = await request(`/api/v1/comments/${testCommentId}/moderate`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { status: 'rejected' },
+    });
+    assert(userModerateRes.status === 403, 'Normal user blocked from moderating comments (403 Forbidden)');
+
+    // Staff/Super Admin moderates comment to 'rejected'
+    const adminModerateRes = await request(`/api/v1/comments/${testCommentId}/moderate`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+      body: { status: 'rejected', reason: 'Violation of community guidelines' },
+    });
+    assert(adminModerateRes.status === 200 && adminModerateRes.data.data.status === 'rejected', 'Super Admin successfully moderated comment to rejected');
 
     const reportRes = await request('/api/v1/reports', {
       method: 'POST',
