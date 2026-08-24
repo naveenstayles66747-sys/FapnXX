@@ -525,7 +525,7 @@ export class VideoService {
    */
   async incrementVideoLikes(videoId: string, isLike: boolean): Promise<number> {
     const delta = isLike ? 1 : -1;
-    return this.apiFetch<{ likesCount: number }>(
+    return this.apiFetch<{ likesCount: number; rating?: string }>(
       `/videos/${videoId}/likes`,
       {
         method: 'POST',
@@ -545,11 +545,13 @@ export class VideoService {
         return { likesCount: newCount };
       }
     ).then((res) => {
-      // Synchronize local cache with verified server count
+      // Synchronize local cache with verified server count & rating
       if (res && typeof res.likesCount === 'number') {
         const current = getStoredVideos();
         const updated = current.map((v) =>
-          v.id === videoId ? { ...v, likesCount: res.likesCount } : v
+          v.id === videoId
+            ? { ...v, likesCount: res.likesCount, ...(res.rating ? { rating: res.rating } : {}) }
+            : v
         );
         setStoredVideos(updated);
         return res.likesCount;

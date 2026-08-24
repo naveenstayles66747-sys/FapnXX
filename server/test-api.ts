@@ -155,7 +155,7 @@ async function runTests() {
       method: 'POST',
       body: { isLike: true },
     });
-    assert(likeRes.status === 200 && typeof likeRes.data.data.likesCount === 'number', 'POST /api/v1/videos/:id/likes updates likes');
+    assert(likeRes.status === 200 && typeof likeRes.data.data.likesCount === 'number' && typeof likeRes.data.data.rating === 'string', 'POST /api/v1/videos/:id/likes updates likes and calculates rating');
 
     // 9. Video Creation RBAC Security (Guest 401, User 403, Staff 201)
     console.log('\n--- 9. Video Creation RBAC Security ---');

@@ -375,7 +375,7 @@ export const videoServiceBackend = {
     return { newViewsCount: video.viewsCount, counted: true };
   },
 
-  incrementLikes: (videoId: string, isLike: boolean): number => {
+  incrementLikes: (videoId: string, isLike: boolean): { likesCount: number; rating: string } => {
     const video = videos.get(videoId);
     if (!video) {
       throw new Error('Video not found.');
@@ -383,14 +383,22 @@ export const videoServiceBackend = {
 
     const delta = isLike ? 1 : -1;
     video.likesCount = Math.max(0, (video.likesCount || 0) + delta);
+    
+    // Server-calculated verified rating (prevents client-side arbitrary rating manipulation)
+    const baseViews = Math.max(1, video.viewsCount || 1);
+    const likeRatio = Math.min(1, video.likesCount / baseViews);
+    const calculatedScore = Math.round(75 + likeRatio * 25);
+    video.rating = `${Math.min(100, Math.max(50, calculatedScore))}%`;
+
     videos.set(videoId, video);
 
-    // Async persist likes in Firestore
+    // Async persist likes and calculated rating in Firestore
     adminDb.collection('videos').doc(videoId).set({
       likesCount: video.likesCount,
+      rating: video.rating,
       updatedAt: new Date().toISOString(),
     }, { merge: true }).catch(() => null);
 
-    return video.likesCount;
+    return { likesCount: video.likesCount, rating: video.rating };
   },
 };

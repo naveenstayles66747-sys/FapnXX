@@ -118,8 +118,8 @@ export const videoController = {
     try {
       const { id } = req.params;
       const { isLike } = req.body;
-      const newLikesCount = videoServiceBackend.incrementLikes(id, isLike !== false);
-      return responseUtil.success(res, { likesCount: newLikesCount }, 'Likes updated.');
+      const result = videoServiceBackend.incrementLikes(id, isLike !== false);
+      return responseUtil.success(res, result, 'Likes and rating updated.');
     } catch (err: any) {
       next(err);
     }
