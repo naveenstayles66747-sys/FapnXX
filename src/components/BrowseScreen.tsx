@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { CategoryId, CategoryInfo, LandingBanner, Video } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
