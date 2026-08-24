@@ -124,6 +124,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   [Role.MODERATOR]: [
     Permission.VIDEOS_READ,
     Permission.VIDEOS_CREATE,
+    Permission.VIDEOS_UPDATE,
     Permission.CATEGORIES_READ,
     Permission.COMMENTS_READ,
     Permission.COMMENTS_DELETE_ANY,

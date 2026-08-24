@@ -431,6 +431,212 @@ async function runTests() {
     });
     assert(adminDeleteReportRes.status === 200, 'Super Admin successfully deletes processed report record');
 
+    // =========================================================================
+    // --- PHASE 7: 4-IDENTITY FINAL PRODUCTION VERIFICATION MATRIX ---
+    // =========================================================================
+    console.log('\n======================================================');
+    console.log('🏛️ PHASE 7 — FINAL 4-IDENTITY PRODUCTION VALIDATION MATRIX');
+    console.log('======================================================');
+
+    // ─── Identity 1: Guest (Unauthenticated Visitor) ──────────────────────────
+    console.log('\n--- Identity 1: Guest Visitor ---');
+    // 1. Browse ✅
+    const guestBrowse = await request('/api/v1/videos');
+    assert(guestBrowse.status === 200 && Array.isArray(guestBrowse.data?.data?.videos), 'Guest: Browse videos permitted (200 OK)');
+
+    // 2. Watch (View count increment) ✅
+    const guestWatch = await request(`/api/v1/videos/${createdVideoId}/views`, { method: 'POST' });
+    assert(guestWatch.status === 200, 'Guest: Watch video view count increment permitted (200 OK)');
+
+    // 3. Upload ❌ (401 Unauthorized)
+    const guestUpload = await request('/api/v1/videos', {
+      method: 'POST',
+      body: { title: 'Unauthorized Video', embedUrl: 'https://example.com/embed/123' },
+    });
+    assert(guestUpload.status === 401, 'Guest: Video upload blocked (401 Unauthorized)');
+
+    // 4. Admin ❌ (401 Unauthorized)
+    const guestAdmin = await request('/api/v1/admin/overview');
+    assert(guestAdmin.status === 401, 'Guest: Admin panel & API access blocked (401 Unauthorized)');
+
+
+    // ─── Identity 2: Normal Authenticated User ────────────────────────────────
+    console.log('\n--- Identity 2: Normal Registered User ---');
+    // 1. Login ✅
+    assert(!!userToken, 'Normal User: Authenticated session established (JWT token active)');
+
+    // 2. Comment ✅
+    const userComment = await request('/api/v1/comments', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { videoId: createdVideoId, text: 'Great community content!' },
+    });
+    assert(userComment.status === 201, 'Normal User: Comment submission permitted (201 Created)');
+
+    // 3. Report ✅
+    const userReport = await request('/api/v1/reports', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { videoId: createdVideoId, videoTitle: 'Test Video', reason: 'inappropriate_content', details: 'Testing user report' },
+    });
+    assert(userReport.status === 201, 'Normal User: Report creation permitted (201 Created)');
+
+    // 4. Video upload ❌ (403 Forbidden)
+    const userVideoUpload = await request('/api/v1/videos', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { title: 'User Attempt Video', embedUrl: 'https://example.com/embed/user' },
+    });
+    assert(userVideoUpload.status === 403, 'Normal User: Video upload blocked (403 Forbidden)');
+
+    // 5. Admin APIs ❌ (403 Forbidden)
+    const userAdminOverview = await request('/api/v1/admin/overview', {
+      headers: { Authorization: `Bearer ${userToken}` },
+    });
+    assert(userAdminOverview.status === 403, 'Normal User: Admin overview API blocked (403 Forbidden)');
+
+    const userAdminAudit = await request('/api/v1/admin/audit-logs', {
+      headers: { Authorization: `Bearer ${userToken}` },
+    });
+    assert(userAdminAudit.status === 403, 'Normal User: Admin audit logs API blocked (403 Forbidden)');
+
+    // 6. Role tampering ❌ (403 Forbidden)
+    const userRoleChange = await request(`/api/v1/users/${testUserId}/role`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { role: 'ADMIN' },
+    });
+    assert(userRoleChange.status === 403, 'Normal User: Role change & privilege escalation blocked (403 Forbidden)');
+
+
+    // ─── Identity 3: Moderator Staff ──────────────────────────────────────────
+    console.log('\n--- Identity 3: Moderator Staff ---');
+    // Create dedicated moderator
+    const modEmail = `moderator_${Date.now()}@example.com`;
+    const modReg = await request('/api/v1/auth/register', {
+      method: 'POST',
+      body: { email: modEmail, password: 'ModeratorPassword123!', role: 'USER' },
+    });
+    const modUserId = modReg.data?.data?.id;
+
+    // Super Admin promotes to MODERATOR
+    await request(`/api/v1/users/${modUserId}/role`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+      body: { role: 'MODERATOR' },
+    });
+
+    // Login as Moderator
+    const modLogin = await request('/api/v1/auth/login', {
+      method: 'POST',
+      body: { email: modEmail, password: 'ModeratorPassword123!' },
+    });
+    const moderatorToken = modLogin.data?.data?.accessToken;
+    assert(!!moderatorToken, 'Moderator: Authenticated session established with MODERATOR role');
+
+    // 1. Moderation: Reports queue access ✅
+    const modReports = await request('/api/v1/reports', {
+      headers: { Authorization: `Bearer ${moderatorToken}` },
+    });
+    assert(modReports.status === 200, 'Moderator: Reports moderation queue access permitted (200 OK)');
+
+    // 2. Moderation: Moderate comments ✅
+    const modComment = await request(`/api/v1/comments/${testCommentId}/moderate`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${moderatorToken}` },
+      body: { status: 'approved' },
+    });
+    assert(modComment.status === 200, 'Moderator: Comment moderation approval/rejection permitted (200 OK)');
+
+    // 3. Video Upload ✅
+    const modUpload = await request('/api/v1/videos', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${moderatorToken}` },
+      body: {
+        title: 'Moderator Approved Video',
+        embedUrl: 'https://example.com/embed/mod-vid',
+        thumbnail: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800',
+        category: 'amateur',
+        tags: ['HD', 'Moderator'],
+      },
+    });
+    assert(modUpload.status === 201, 'Moderator: Video creation & upload permitted (201 Created)');
+    const modCreatedVidId = modUpload.data?.data?.id;
+
+    // 4. Video Management / Update ✅
+    const modVideoUpdate = await request(`/api/v1/videos/${modCreatedVidId}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${moderatorToken}` },
+      body: { title: 'Moderator Updated Video Title' },
+    });
+    assert(modVideoUpdate.status === 200, 'Moderator: Video management & metadata editing permitted (200 OK)');
+
+    // 5. Admin-only Settings ❌ (403 Forbidden)
+    const modRoleTamper = await request(`/api/v1/users/${modUserId}/role`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${moderatorToken}` },
+      body: { role: 'ADMIN' },
+    });
+    assert(modRoleTamper.status === 403, 'Moderator: Admin-only role management blocked (403 Forbidden)');
+
+    const modAuditLogs = await request('/api/v1/admin/audit-logs', {
+      headers: { Authorization: `Bearer ${moderatorToken}` },
+    });
+    assert(modAuditLogs.status === 403, 'Moderator: Admin-only audit logs access blocked (403 Forbidden)');
+
+
+    // ─── Identity 4: Admin / Super Admin ──────────────────────────────────────
+    console.log('\n--- Identity 4: Admin / Super Admin ---');
+    // 1. Admin Overview ✅
+    const adminOverview = await request('/api/v1/admin/overview', {
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+    });
+    assert(adminOverview.status === 200, 'Admin: Full system overview & stats authorized (200 OK)');
+
+    // 2. Audit Logs ✅
+    const adminAudit = await request('/api/v1/admin/audit-logs', {
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+    });
+    assert(adminAudit.status === 200, 'Admin: Audit logs authorized (200 OK)');
+
+    // 3. User Role Management ✅
+    const adminRoleManage = await request(`/api/v1/users/${modUserId}/role`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+      body: { role: 'ADMIN' },
+    });
+    assert(adminRoleManage.status === 200, 'Admin: User role promotion & assignment authorized (200 OK)');
+
+    // 4. Video Deletion & Management ✅
+    const adminVideoDelete = await request(`/api/v1/videos/${modCreatedVidId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+    });
+    assert(adminVideoDelete.status === 200, 'Admin: Video deletion authorized (200 OK)');
+
+    // 5. Banners Management ✅
+    const adminBannerCreate = await request('/api/v1/banners', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+      body: {
+        title: 'Phase 7 Final Verification Banner',
+        subtitle: 'Production ready 4K streaming experience',
+        bannerImage: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1',
+        tag: '4K',
+        targetCategory: 'trending',
+      },
+    });
+    assert(adminBannerCreate.status === 201, 'Admin: Banner creation authorized (201 Created)');
+    const adminBannerId = adminBannerCreate.data?.data?.id;
+
+    if (adminBannerId) {
+      const adminBannerDelete = await request(`/api/v1/banners/${adminBannerId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${superAdminToken}` },
+      });
+      assert(adminBannerDelete.status === 200, 'Admin: Banner deletion authorized (200 OK)');
+    }
+
     // Summary
     console.log('\n======================================================');
     console.log(`📊 TEST RESULTS: ${passed} PASSED, ${failed} FAILED`);
