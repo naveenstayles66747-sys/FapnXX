@@ -412,19 +412,19 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                       isActive ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-90'
                     }`}
                   >
-                    <span className="inline-block px-2 py-0.5 sm:px-3 sm:py-1 bg-[#ec4899] text-white text-[9px] sm:text-[11px] font-black uppercase tracking-wider rounded-md shadow-lg">
+                    <span className="hero-banner-tag inline-block px-2 py-0.5 sm:px-3 sm:py-1 bg-[#ec4899] text-white text-[9px] sm:text-[11px] font-black uppercase tracking-wider rounded-md shadow-lg">
                       {banner.tag || 'Featured Release'}
                     </span>
-                    <h1 className="text-base sm:text-3xl xl:text-5xl font-black text-white italic tracking-tight hover:text-[#ffb0cd] transition-colors duration-150 line-clamp-1 sm:line-clamp-none">
+                    <h1 className="hero-banner-title hero-text banner-title text-base sm:text-3xl xl:text-5xl font-black text-white italic tracking-tight hover:text-[#ffb0cd] transition-colors duration-150 line-clamp-1 sm:line-clamp-none drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
                       {banner.title}
                     </h1>
-                    <p className="text-[10px] sm:text-xs xl:text-sm text-[#debec8] line-clamp-1 sm:line-clamp-2 leading-snug sm:leading-relaxed">
+                    <p className="hero-banner-subtitle text-[10px] sm:text-xs xl:text-sm text-zinc-100 line-clamp-1 sm:line-clamp-2 leading-snug sm:leading-relaxed drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)] font-medium">
                       {banner.subtitle}
                     </p>
                     <div className="pt-0.5 sm:pt-2">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 sm:px-5 sm:py-2.5 rounded-full bg-white/10 hover:bg-[#ec4899] text-white font-extrabold text-[9px] sm:text-xs uppercase tracking-wider backdrop-blur-md transition-all duration-150 border border-white/20 shadow-lg hover:scale-105 active:scale-95">
-                        <span>{banner.ctaText || 'Watch Now'}</span>
-                        <span className="material-symbols-outlined text-xs sm:text-sm">arrow_forward</span>
+                      <span className="hero-banner-cta inline-flex items-center gap-1 px-3 py-1 sm:px-5 sm:py-2.5 rounded-full bg-black/70 hover:bg-[#ec4899] text-white font-extrabold text-[9px] sm:text-xs uppercase tracking-wider backdrop-blur-md transition-all duration-150 border border-white/30 shadow-lg hover:scale-105 active:scale-95">
+                        <span className="text-white">{banner.ctaText || 'Watch Now'}</span>
+                        <span className="material-symbols-outlined text-xs sm:text-sm text-white">arrow_forward</span>
                       </span>
                     </div>
                   </div>

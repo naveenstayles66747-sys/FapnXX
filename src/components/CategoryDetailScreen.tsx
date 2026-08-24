@@ -114,10 +114,10 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
         </div>
 
         <div className="relative z-20 max-w-7xl w-full">
-          <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-3 tracking-tight">
+          <h1 className="hero-banner-title hero-text banner-title text-4xl md:text-6xl font-extrabold !text-white mb-3 tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
             {category.name}
           </h1>
-          <p className="text-base md:text-lg text-[#debec8] max-w-2xl leading-relaxed">
+          <p className="hero-banner-subtitle text-base md:text-lg !text-zinc-100 max-w-2xl leading-relaxed drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)] font-medium">
             {category.description}
           </p>
 
