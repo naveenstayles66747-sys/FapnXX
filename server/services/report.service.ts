@@ -1,4 +1,4 @@
-import { ReportStatus } from '../config/constants';
+import { ReportStatus, Role } from '../config/constants';
 import { auditService } from './audit.service';
 import { adminDb } from '../firebase-admin';
 
@@ -14,6 +14,7 @@ export interface DMCAReportRecord {
   createdAt: string;
   resolvedAt?: string;
   resolvedBy?: string;
+  resolutionNotes?: string;
   clientIp?: string;
 }
 
@@ -108,7 +109,8 @@ export const reportService = {
     status: ReportStatus,
     actorId: string,
     actorEmail: string,
-    actorRole: string
+    actorRole: string,
+    resolutionNotes?: string
   ): Promise<DMCAReportRecord> => {
     const report = await reportService.findById(id);
     if (!report) {
@@ -119,6 +121,9 @@ export const reportService = {
     if (status === ReportStatus.RESOLVED || status === ReportStatus.TAKEDOWN || status === ReportStatus.DISMISSED) {
       report.resolvedAt = new Date().toISOString();
       report.resolvedBy = actorEmail;
+      if (resolutionNotes) {
+        report.resolutionNotes = resolutionNotes;
+      }
     }
 
     reports.set(id, report);
@@ -137,10 +142,41 @@ export const reportService = {
       action: `report.status_change`,
       targetType: 'dmca_report',
       targetId: id,
-      metadata: { videoId: report.videoId, newStatus: status },
+      metadata: { videoId: report.videoId, newStatus: status, resolutionNotes },
     });
 
     return report;
   },
-};
 
+  delete: async (
+    id: string,
+    actorId: string,
+    actorEmail: string,
+    actorRole: string
+  ): Promise<boolean> => {
+    const report = await reportService.findById(id);
+    if (!report) {
+      return false;
+    }
+
+    reports.delete(id);
+
+    try {
+      await adminDb.collection('reports').doc(id).delete();
+    } catch (err: any) {
+      console.warn(`[Firestore Report] Delete error for doc ${id}:`, err.message);
+    }
+
+    await auditService.log({
+      actorId,
+      actorEmail,
+      actorRole,
+      action: 'report.deleted',
+      targetType: 'dmca_report',
+      targetId: id,
+      metadata: { videoId: report.videoId, reportReason: report.reason },
+    });
+
+    return true;
+  },
+};

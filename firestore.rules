@@ -92,11 +92,14 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // REPORTS (DMCA & Abuse): Create allowed for all users. Read/Manage strictly Staff.
+    // REPORTS (DMCA & Abuse): Create allowed for all users. Read/Manage/Resolve strictly Staff.
     // ─────────────────────────────────────────────────────────────────────────────
     match /reports/{reportId} {
-      allow create: if request.resource.data.keys().hasAll(['videoId', 'reason', 'timestamp']) &&
-                       request.resource.data.reason is string;
+      allow create: if request.resource.data.keys().hasAll(['videoId', 'reason']) &&
+                       request.resource.data.reason is string &&
+                       (!('status' in request.resource.data) || request.resource.data.status == 'pending' || isModerator()) &&
+                       (!('resolvedBy' in request.resource.data) || isModerator()) &&
+                       (!('resolvedAt' in request.resource.data) || isModerator());
       allow read, update, delete: if isModerator();
     }
 

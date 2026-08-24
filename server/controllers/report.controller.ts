@@ -35,13 +35,37 @@ export const reportController = {
   updateStatus: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const { status } = req.body;
+      const { status, resolutionNotes } = req.body;
       const actorId = req.user!.userId;
       const actorEmail = req.user!.email;
       const actorRole = req.user!.role;
 
-      const updated = await reportService.updateStatus(id, status as ReportStatus, actorId, actorEmail, actorRole);
+      const updated = await reportService.updateStatus(
+        id,
+        status as ReportStatus,
+        actorId,
+        actorEmail,
+        actorRole,
+        resolutionNotes
+      );
       return responseUtil.success(res, updated, `Report marked as ${status}.`);
+    } catch (err: any) {
+      next(err);
+    }
+  },
+
+  deleteReport: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const actorId = req.user!.userId;
+      const actorEmail = req.user!.email;
+      const actorRole = req.user!.role;
+
+      const deleted = await reportService.delete(id, actorId, actorEmail, actorRole);
+      if (!deleted) {
+        return responseUtil.error(res, 'NOT_FOUND', 'Report not found.', 404);
+      }
+      return responseUtil.success(res, { id }, 'Report deleted successfully.');
     } catch (err: any) {
       next(err);
     }

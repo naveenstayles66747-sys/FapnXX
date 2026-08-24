@@ -339,6 +339,8 @@ async function runTests() {
     });
     assert(adminModerateRes.status === 200 && adminModerateRes.data.data.status === 'rejected', 'Super Admin successfully moderated comment to rejected');
 
+    // 10b. Reports Security (Public Submit, Staff Read/Manage/Resolve)
+    console.log('\n--- 10b. Community Reports Security & Staff Management ---');
     const reportRes = await request('/api/v1/reports', {
       method: 'POST',
       body: {
@@ -349,6 +351,56 @@ async function runTests() {
       },
     });
     assert(reportRes.status === 201 && reportRes.data.data.status === 'pending', 'POST /api/v1/reports creates pending DMCA claim');
+    const testReportId = reportRes.data?.data?.id;
+
+    // Normal user trying to set arbitrary status on creation
+    const reportTamperRes = await request('/api/v1/reports', {
+      method: 'POST',
+      body: {
+        videoId: createdVideoId,
+        videoTitle: 'Dynamic Test Video 4K',
+        reason: 'copyright_dmca',
+        details: 'Tampered claim',
+        status: 'resolved',
+        resolvedBy: 'admin',
+      },
+    });
+    assert(reportTamperRes.status === 422 || reportTamperRes.status === 400, 'Client arbitrary report resolution fields blocked with validation error');
+
+    // Normal user trying to list reports
+    const userListReportsRes = await request('/api/v1/reports', {
+      headers: { Authorization: `Bearer ${userToken}` },
+    });
+    assert(userListReportsRes.status === 403, 'Normal user blocked from reading moderation reports (403 Forbidden)');
+
+    // Normal user trying to resolve a report
+    const userResolveReportRes = await request(`/api/v1/reports/${testReportId}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { status: 'resolved' },
+    });
+    assert(userResolveReportRes.status === 403, 'Normal user blocked from resolving reports (403 Forbidden)');
+
+    // Staff/Super Admin lists reports
+    const adminListReportsRes = await request('/api/v1/reports', {
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+    });
+    assert(adminListReportsRes.status === 200 && Array.isArray(adminListReportsRes.data.data), 'Super Admin successfully retrieves reports queue');
+
+    // Staff/Super Admin resolves report
+    const adminResolveReportRes = await request(`/api/v1/reports/${testReportId}/resolve`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+      body: { resolutionNotes: 'Reviewed and confirmed valid claim.' },
+    });
+    assert(adminResolveReportRes.status === 200 && adminResolveReportRes.data.data.status === 'resolved', 'Super Admin successfully resolves DMCA report');
+
+    // Super Admin deletes processed report
+    const adminDeleteReportRes = await request(`/api/v1/reports/${testReportId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+    });
+    assert(adminDeleteReportRes.status === 200, 'Super Admin successfully deletes processed report record');
 
     // Summary
     console.log('\n======================================================');
