@@ -104,14 +104,14 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // USER INTERACTIONS: Scoped strictly with schema validation & size constraints
+    // USER INTERACTIONS: Private interaction data (likes, watch history, saved).
+    // Access: Owner only or authorized Staff (Moderator / Admin).
     // ─────────────────────────────────────────────────────────────────────────────
-    match /user_interactions/{deviceId} {
-      allow read: if true;
-      allow write: if isModerator() || (
-        request.resource.data.deviceId == deviceId &&
-        (!('savedVideos' in request.resource.data) || (request.resource.data.savedVideos is list && request.resource.data.savedVideos.size() <= 300)) &&
-        (!('likedVideos' in request.resource.data) || (request.resource.data.likedVideos is list && request.resource.data.likedVideos.size() <= 600)) &&
+    match /user_interactions/{userId} {
+      allow read: if isOwner(userId) || isModerator();
+      allow write: if (isOwner(userId) || isModerator()) && (
+        (!('savedVideos' in request.resource.data) || (request.resource.data.savedVideos is list && request.resource.data.savedVideos.size() <= 500)) &&
+        (!('likedVideos' in request.resource.data) || (request.resource.data.likedVideos is list && request.resource.data.likedVideos.size() <= 1000)) &&
         (!('watchHistory' in request.resource.data) || (request.resource.data.watchHistory is list && request.resource.data.watchHistory.size() <= 100))
       );
     }

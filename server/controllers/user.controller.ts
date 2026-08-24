@@ -57,4 +57,30 @@ export const userController = {
       next(err);
     }
   },
+
+  getInteractions: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const actorId = req.user!.userId;
+      const targetUserId = req.params.id || actorId;
+      const actorRole = req.user!.role;
+
+      const data = await userService.getInteractions(targetUserId, actorId, actorRole);
+      return responseUtil.success(res, data, 'User interactions retrieved.');
+    } catch (err: any) {
+      next(err);
+    }
+  },
+
+  syncInteractions: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const actorId = req.user!.userId;
+      const targetUserId = req.params.id || actorId;
+      const actorRole = req.user!.role;
+
+      const data = await userService.syncInteractions(targetUserId, req.body, actorId, actorRole);
+      return responseUtil.success(res, data, 'User interactions synced successfully.');
+    } catch (err: any) {
+      next(err);
+    }
+  },
 };

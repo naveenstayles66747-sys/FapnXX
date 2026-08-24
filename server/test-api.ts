@@ -243,6 +243,35 @@ async function runTests() {
     });
     assert(unbanTamperAttempt.status === 422 || unbanTamperAttempt.status === 400, 'User profile ban status tampering blocked with validation error');
 
+    // 6d. User Interaction Data Privacy (Likes, Watch History, Saved Videos)
+    console.log('\n--- 6d. Interaction Data Privacy ---');
+    const syncInteractionRes = await request('/api/v1/users/interactions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: {
+        savedVideos: ['vid_priv_01', 'vid_priv_02'],
+        likedVideos: ['vid_priv_01'],
+        watchHistory: [{ videoId: 'vid_priv_01', watchedAt: new Date().toISOString() }],
+        contentPreference: 'straight',
+      },
+    });
+    assert(syncInteractionRes.status === 200, 'User can sync own interaction data securely');
+
+    const getOwnInteractionsRes = await request('/api/v1/users/interactions', {
+      headers: { Authorization: `Bearer ${userToken}` },
+    });
+    assert(getOwnInteractionsRes.status === 200 && Array.isArray(getOwnInteractionsRes.data.data.savedVideos), 'User can read own interaction data');
+
+    // Unauthenticated GET interaction data -> 401
+    const unauthInteractionsRes = await request('/api/v1/users/interactions');
+    assert(unauthInteractionsRes.status === 401, 'Unauthenticated interaction access blocked with 401 Unauthorized');
+
+    // Super Admin authorized access to user interaction data
+    const adminReadInteractionsRes = await request(`/api/v1/users/${testUserId}/interactions`, {
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+    });
+    assert(adminReadInteractionsRes.status === 200, 'Super Admin / Moderator has authorized moderation access to user interactions');
+
     // 7. Video Creation RBAC Security (Guest 401, User 403, Staff 201)
     console.log('\n--- 7. Video Creation RBAC Security ---');
     const guestVideoRes = await request('/api/v1/videos', {

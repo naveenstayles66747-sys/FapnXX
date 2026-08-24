@@ -208,6 +208,85 @@ export const userService = {
     return sanitizeUser(updatedUser);
   },
 
+  getInteractions: async (
+    targetUserId: string,
+    actorId: string,
+    actorRole: Role
+  ) => {
+    const isSelf = targetUserId === actorId;
+    const isStaff =
+      actorRole === Role.ADMIN ||
+      actorRole === Role.SUPER_ADMIN ||
+      actorRole === Role.MODERATOR;
+
+    if (!isSelf && !isStaff) {
+      throw new Error('Access denied. You can only view your own interaction data.');
+    }
+
+    try {
+      const snap = await adminDb.collection('user_interactions').doc(targetUserId).get();
+      if (snap.exists) {
+        return snap.data();
+      }
+    } catch (err: any) {
+      console.warn(`[Firestore Interactions] Fetch notice for ${targetUserId}:`, err.message);
+    }
+
+    const user = await userService.findById(targetUserId);
+    if (!user) {
+      throw new Error('User not found.');
+    }
+
+    return {
+      userId: user.id,
+      savedVideos: user.savedVideoIds || [],
+      likedVideos: user.likedVideoIds || [],
+      watchHistory: [],
+    };
+  },
+
+  syncInteractions: async (
+    targetUserId: string,
+    data: {
+      savedVideos?: string[];
+      likedVideos?: string[];
+      watchHistory?: any[];
+      contentPreference?: string;
+    },
+    actorId: string,
+    actorRole: Role
+  ) => {
+    const isSelf = targetUserId === actorId;
+    const isStaff =
+      actorRole === Role.ADMIN ||
+      actorRole === Role.SUPER_ADMIN ||
+      actorRole === Role.MODERATOR;
+
+    if (!isSelf && !isStaff) {
+      throw new Error('Access denied. You can only update your own interaction data.');
+    }
+
+    const interactionPayload = {
+      userId: targetUserId,
+      savedVideos: Array.isArray(data.savedVideos) ? data.savedVideos.slice(0, 500) : [],
+      likedVideos: Array.isArray(data.likedVideos) ? data.likedVideos.slice(0, 1000) : [],
+      watchHistory: Array.isArray(data.watchHistory) ? data.watchHistory.slice(0, 100) : [],
+      contentPreference: data.contentPreference || 'all',
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      await adminDb
+        .collection('user_interactions')
+        .doc(targetUserId)
+        .set(interactionPayload, { merge: true });
+    } catch (err: any) {
+      console.warn(`[Firestore Interactions] Sync notice for ${targetUserId}:`, err.message);
+    }
+
+    return interactionPayload;
+  },
+
   listUsers: async (options?: { page?: number; limit?: number; search?: string; role?: Role }): Promise<{
     users: Array<Omit<User, 'passwordHash'>>;
     total: number;
