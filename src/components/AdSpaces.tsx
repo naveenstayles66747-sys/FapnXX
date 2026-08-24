@@ -487,4 +487,125 @@ export const UnderPlayerBanner: React.FC<{ className?: string }> = ({ className 
   );
 };
 
+/**
+ * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile — Zone ID: 6010176)
+ * Class: eas6a97888e20
+ * Formats responsive native thumbnail cards.
+ */
+export const NativeRecommendationAd: React.FC<{ className?: string; title?: string }> = ({
+  className = '',
+  title = 'Sponsored Recommendations',
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState<boolean>(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        },
+        { rootMargin: '300px' }
+      );
+      observer.observe(el);
+      return () => observer.disconnect();
+    } else {
+      setIsVisible(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    const el = containerRef.current;
+    if (!el || el.dataset.adInitialized === 'true') return;
+
+    try {
+      el.innerHTML = '';
+      const ins = document.createElement('ins');
+      ins.className = `eas${AD_ZONES.SITE_HASH}20`;
+      ins.setAttribute('data-zoneid', AD_ZONES.NATIVE_RECOMMENDED);
+      ins.style.display = 'block';
+      ins.style.width = '100%';
+      ins.style.margin = '0 auto';
+      el.appendChild(ins);
+
+      const win = window as any;
+      win.AdProvider = win.AdProvider || [];
+      win.AdProvider.push({ serve: {} });
+
+      el.dataset.adInitialized = 'true';
+    } catch (e) {
+      console.warn('[ExoClick] Native recommendation ad error:', e);
+    }
+  }, [isVisible]);
+
+  return (
+    <div className={`w-full my-6 p-3 sm:p-4 rounded-2xl border border-zinc-200 dark:border-white/10 bg-white/95 dark:bg-[#0f1523]/80 backdrop-blur-md shadow-sm ${className}`}>
+      {/* Header bar */}
+      <div className="flex items-center justify-between pb-3 mb-2 border-b border-zinc-200 dark:border-white/10">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-rose-500 text-base">recommend</span>
+          <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-zinc-900 dark:text-zinc-100">
+            {title}
+          </span>
+        </div>
+        <span className="text-[10px] font-mono font-bold text-zinc-500 dark:text-zinc-400 uppercase px-2 py-0.5 rounded bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10">
+          SPONSORED
+        </span>
+      </div>
+
+      {/* Native Ad Mount Target */}
+      <div
+        ref={containerRef}
+        id="exoclick-native-recommended-zone-6010176"
+        className="w-full overflow-hidden min-h-[160px] flex items-center justify-center"
+      />
+    </div>
+  );
+};
+
+/**
+ * Global Popunder Ad Loader (Desktop Zone: 6010172 | Mobile Zone: 6010174)
+ * Loads ExoClick popunder script with official capping & user-experience safety.
+ */
+export const PopunderAd: React.FC = () => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const scriptId = 'popmagicldr';
+    if (document.getElementById(scriptId)) return;
+
+    try {
+      const isMobile = window.innerWidth < 1024;
+      const zoneId = isMobile ? AD_ZONES.MOBILE_POPUNDER : AD_ZONES.DESKTOP_POPUNDER;
+
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.type = 'application/javascript';
+      script.async = true;
+      script.src = 'https://a.pemsrv.com/popunder1000.js';
+      script.setAttribute('data-exo-idzone', zoneId);
+      script.setAttribute('data-exo-frequency_period', '180');
+      script.setAttribute('data-exo-frequency_count', '1');
+      script.setAttribute('data-exo-trigger_method', '3');
+      script.setAttribute('data-exo-capping_enabled', 'true');
+      script.setAttribute('data-exo-chrome_enabled', 'true');
+      script.setAttribute('data-exo-syndication_host', 's.pemsrv.com');
+      script.setAttribute('data-exo-ads_host', 'a.pemsrv.com');
+
+      document.body.appendChild(script);
+    } catch (e) {
+      console.warn('[ExoClick] Popunder load error:', e);
+    }
+  }, []);
+
+  return null;
+};
+
 export default AdBanner;

@@ -6,7 +6,7 @@ import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
 import { MobileDrawer } from './components/MobileDrawer';
 import { AgeGateModal } from './components/AgeGateModal';
-import { StickyBottomLeaderboard, MobileInstantMessage, DesktopFullpageInterstitial, MobileFullpageInterstitial } from './components/AdSpaces';
+import { StickyBottomLeaderboard, MobileInstantMessage, DesktopFullpageInterstitial, MobileFullpageInterstitial, PopunderAd } from './components/AdSpaces';
 import { adManager } from './utils/adManager';
 import { BrowseScreen } from './components/BrowseScreen';
 import { CategoriesScreen } from './components/CategoriesScreen';
@@ -652,6 +652,9 @@ export default function App() {
 
           {/* ExoClick Mobile Instant Message Ad (Zone ID: 6003178) */}
           <MobileInstantMessage />
+
+          {/* ExoClick Popunder Ad (Desktop Zone: 6010172 | Mobile Zone: 6010174) */}
+          <PopunderAd />
 
           <BottomNav
             currentScreen={currentScreen}

@@ -13,6 +13,9 @@ export const AD_ZONES = {
   IN_PAGE_BANNER: import.meta.env.VITE_EXO_BANNER || '6003172',                     // Standard In-Page Banner (eas6a97888e17)
   DESKTOP_UNDER_PLAYER: import.meta.env.VITE_EXO_DESKTOP_UNDER_PLAYER || '6010076', // Desktop Under-Player (eas6a97888e2)
   MOBILE_UNDER_PLAYER: import.meta.env.VITE_EXO_MOBILE_UNDER_PLAYER || '6010078',   // Mobile Under-Player (eas6a97888e10)
+  DESKTOP_POPUNDER: import.meta.env.VITE_EXO_DESKTOP_POPUNDER || '6010172',         // Desktop Popunder
+  MOBILE_POPUNDER: import.meta.env.VITE_EXO_MOBILE_POPUNDER || '6010174',           // Mobile Popunder
+  NATIVE_RECOMMENDED: import.meta.env.VITE_EXO_NATIVE_RECOMMENDED || '6010176',     // Native Recommendation (eas6a97888e20)
 } as const;
 
 export const AD_CONFIG = {

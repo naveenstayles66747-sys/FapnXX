@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { CategoryId, CategoryInfo, LandingBanner, Video } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
-import { OutstreamVideoCardAd } from './AdSpaces';
+import { OutstreamVideoCardAd, NativeRecommendationAd } from './AdSpaces';
 import { AD_CONFIG } from '../config/adConfig';
 import { useLanguage } from '../i18n/LanguageContext';
 import { getBannerImageUrl, handleBannerImageError } from '../utils/mediaHelper';
@@ -860,6 +860,9 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 </button>
               </div>
             )}
+
+            {/* Multi-Device Native Recommendation Sponsored Widget (Zone ID: 6010176) */}
+            <NativeRecommendationAd title="Sponsored Picks & Recommendations" className="mt-8" />
           </>
         ) : (
           <div className="p-12 text-center text-[#debec8] bg-[#1c1b1d] rounded-2xl border border-[#353437] space-y-3">

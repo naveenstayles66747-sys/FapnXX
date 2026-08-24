@@ -4,7 +4,7 @@ import { VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { ReportModal } from './ReportModal';
 import { FluidPlayerWrapper } from './FluidPlayerWrapper';
-import { OutstreamVideoCardAd, UnderPlayerBanner } from './AdSpaces';
+import { OutstreamVideoCardAd, UnderPlayerBanner, NativeRecommendationAd } from './AdSpaces';
 import { CommentsSection } from './CommentsSection';
 import { useLanguage } from '../i18n/LanguageContext';
 import { videoService } from '../services/videoService';
@@ -341,6 +341,9 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
             </React.Fragment>
           ))}
         </div>
+
+        {/* Multi-Device Native Recommendation Widget (Zone ID: 6010176) */}
+        <NativeRecommendationAd title="Sponsored Content You May Like" />
       </div>
 
       {/* ─────────────────────────────────────────────
