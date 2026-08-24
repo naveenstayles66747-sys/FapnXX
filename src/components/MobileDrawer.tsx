@@ -27,6 +27,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onSelectCategory,
   onNavigate,
   onOpenUpload,
+  onOpenAds,
   onOpenAdminPanel,
   isAdminAuthenticated = false,
   categories = CATEGORIES,

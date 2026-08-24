@@ -64,10 +64,13 @@ const GlobeIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) 
 );
 
 export const Header: React.FC<HeaderProps> = ({
+  currentScreen,
   onNavigate,
+  isMobileDrawerOpen = false,
   onToggleMobileDrawer,
   onOpenSearch,
   onOpenUpload,
+  onOpenAds,
   onOpenAdminPanel,
   isAdminAuthenticated = false,
   searchQuery,
