@@ -11,7 +11,19 @@ const serviceAccountPath = fs.existsSync(serviceAccountPath1) ? serviceAccountPa
 let app: App;
 
 if (getApps().length === 0) {
-  if (fs.existsSync(serviceAccountPath)) {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    try {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+      app = initializeApp({
+        credential: cert(serviceAccount),
+        projectId: serviceAccount.project_id || 'indianfullxx',
+      });
+      console.log('✅ [Firebase Admin] Initialized with FIREBASE_SERVICE_ACCOUNT_KEY env var for project:', serviceAccount.project_id);
+    } catch (err) {
+      console.error('❌ [Firebase Admin] Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:', err);
+      app = initializeApp({ projectId: 'indianfullxx' });
+    }
+  } else if (fs.existsSync(serviceAccountPath)) {
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
     app = initializeApp({
       credential: cert(serviceAccount),
