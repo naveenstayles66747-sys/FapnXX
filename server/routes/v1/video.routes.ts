@@ -2,9 +2,9 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { videoController } from '../../controllers/video.controller';
 import { optionalAuth, authenticateToken } from '../../middleware/auth.middleware';
-import { requirePermission } from '../../middleware/rbac.middleware';
+import { requirePermission, requireRole } from '../../middleware/rbac.middleware';
 import { validateBody } from '../../middleware/validate';
-import { Permission, VideoStatus } from '../../config/constants';
+import { Permission, Role, VideoStatus } from '../../config/constants';
 
 const router = Router();
 
@@ -53,7 +53,7 @@ router.post('/:id/views', videoController.incrementViews);
 router.post('/:id/likes', validateBody(toggleLikeSchema), videoController.toggleLikes);
 
 // Privileged endpoints
-router.post('/', optionalAuth, validateBody(createVideoSchema), videoController.createVideo);
+router.post('/', authenticateToken, requireRole(Role.ADMIN, Role.MODERATOR, Role.EDITOR), validateBody(createVideoSchema), videoController.createVideo);
 router.put('/:id', authenticateToken, requirePermission(Permission.VIDEOS_UPDATE), validateBody(updateVideoSchema), videoController.updateVideo);
 router.delete('/:id', authenticateToken, requirePermission(Permission.VIDEOS_DELETE), videoController.deleteVideo);
 

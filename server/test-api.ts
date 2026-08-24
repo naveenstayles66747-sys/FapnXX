@@ -157,13 +157,40 @@ async function runTests() {
     });
     assert(likeRes.status === 200 && typeof likeRes.data.data.likesCount === 'number', 'POST /api/v1/videos/:id/likes updates likes');
 
-    // 9. Input Validation
-    console.log('\n--- 9. Payload Schema Validation ---');
+    // 9. Video Creation RBAC Security (Guest 401, User 403, Staff 201)
+    console.log('\n--- 9. Video Creation RBAC Security ---');
+    const guestVideoRes = await request('/api/v1/videos', {
+      method: 'POST',
+      body: { title: 'Unauthorized Video' },
+    });
+    assert(guestVideoRes.status === 401, 'Guest POST /api/v1/videos blocked with 401 Unauthorized');
+
+    const userVideoRes = await request('/api/v1/videos', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { title: 'Forbidden User Video', thumbnail: 'https://images.unsplash.com/test.jpg', category: 'indian' },
+    });
+    assert(userVideoRes.status === 403, 'Normal User POST /api/v1/videos blocked with 403 Forbidden');
+
     const invalidVideoRes = await request('/api/v1/videos', {
       method: 'POST',
+      headers: { Authorization: `Bearer ${superAdminToken}` },
       body: { title: '' }, // Missing thumbnail and invalid title
     });
-    assert(invalidVideoRes.status === 422, 'POST /api/v1/videos rejects invalid payload with 422 Unprocessable Entity');
+    assert(invalidVideoRes.status === 422, 'Super Admin POST /api/v1/videos with invalid payload returns 422 Unprocessable Entity');
+
+    const validVideoRes = await request('/api/v1/videos', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${superAdminToken}` },
+      body: {
+        title: 'Secure Admin Upload Test Video 4K',
+        thumbnail: 'https://images.unsplash.com/photo-1534447677768-be436bb09401',
+        category: 'indian',
+        duration: '12:45',
+        quality: '4K',
+      },
+    });
+    assert(validVideoRes.status === 201 && validVideoRes.data.success, 'Super Admin POST /api/v1/videos succeeds with 201 Created');
 
     // 10. Comments & Reports
     console.log('\n--- 10. Community Comments & DMCA Reports ---');
