@@ -85,6 +85,29 @@ async function runTests() {
     });
     assert(blockedCorsRes.status === 403 && blockedCorsRes.data?.error?.code === 'CORS_FORBIDDEN', 'Unknown origin https://unauthorized-attacker.xyz blocked with 403 CORS_FORBIDDEN');
 
+    // 1c. SSRF & Metadata Security Validation
+    console.log('\n--- 1c. SSRF & Metadata Security Protection ---');
+    const ssrfLocalhost = await request('/api/v1/videos/extract-metadata?url=http://localhost:5000/api/v1/admin/overview');
+    assert(ssrfLocalhost.status === 400 && ssrfLocalhost.data?.error?.code === 'SSRF_BLOCKED', 'SSRF attempt to localhost:5000 blocked with 400 SSRF_BLOCKED');
+
+    const ssrfLoopbackIp = await request('/api/v1/videos/extract-metadata?url=http://127.0.0.1:8080/secret');
+    assert(ssrfLoopbackIp.status === 400 && ssrfLoopbackIp.data?.error?.code === 'SSRF_BLOCKED', 'SSRF attempt to 127.0.0.1 blocked with 400 SSRF_BLOCKED');
+
+    const ssrfMetadataIp = await request('/api/v1/videos/extract-metadata?url=http://169.254.169.254/latest/meta-data/');
+    assert(ssrfMetadataIp.status === 400 && ssrfMetadataIp.data?.error?.code === 'SSRF_BLOCKED', 'SSRF attempt to Cloud Metadata IP 169.254.169.254 blocked with 400 SSRF_BLOCKED');
+
+    const ssrfPrivateClassA = await request('/api/v1/videos/extract-metadata?url=http://10.0.0.1/admin');
+    assert(ssrfPrivateClassA.status === 400 && ssrfPrivateClassA.data?.error?.code === 'SSRF_BLOCKED', 'SSRF attempt to private network 10.0.0.1 blocked with 400 SSRF_BLOCKED');
+
+    const ssrfPrivateClassC = await request('/api/v1/videos/extract-metadata?url=http://192.168.1.1/router');
+    assert(ssrfPrivateClassC.status === 400 && ssrfPrivateClassC.data?.error?.code === 'SSRF_BLOCKED', 'SSRF attempt to private network 192.168.1.1 blocked with 400 SSRF_BLOCKED');
+
+    const ssrfInternalHost = await request('/api/v1/videos/extract-metadata?url=http://metadata.google.internal/computeMetadata/v1/');
+    assert(ssrfInternalHost.status === 400 && ssrfInternalHost.data?.error?.code === 'SSRF_BLOCKED', 'SSRF attempt to internal host metadata.google.internal blocked with 400 SSRF_BLOCKED');
+
+    const ssrfBadProto = await request('/api/v1/videos/extract-metadata?url=file:///etc/passwd');
+    assert(ssrfBadProto.status === 400 && ssrfBadProto.data?.error?.code === 'SSRF_BLOCKED', 'SSRF attempt with non-http protocol blocked with 400 SSRF_BLOCKED');
+
     // 2. Public Content APIs
     console.log('\n--- 2. Public Content APIs ---');
     const videosRes = await request('/api/v1/videos');

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { videoServiceBackend } from '../services/video.service';
 import { responseUtil } from '../utils/response';
 import { VideoStatus, Role } from '../config/constants';
+import { validateSafeUrl, safeFetchHtml } from '../utils/ssrf.util';
 
 export const videoController = {
   listVideos: async (req: Request, res: Response, next: NextFunction) => {
@@ -143,20 +144,26 @@ export const videoController = {
       cleanTarget = cleanTarget.replace(/^["']|["']$/g, '').trim();
       if (cleanTarget.startsWith('//')) cleanTarget = 'https:' + cleanTarget;
 
+      // Strict SSRF Security Validation
+      const validation = await validateSafeUrl(cleanTarget);
+      if (!validation.valid) {
+        return responseUtil.error(res, 'SSRF_BLOCKED', validation.error || 'Access to internal host or private IP address is forbidden.', 400);
+      }
+
       let html = '';
-      try {
-        const response = await fetch(cleanTarget, {
-          headers: {
-            'User-Agent': userAgent,
-            'X-Forwarded-For': clientIp,
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-          },
-        });
-        if (response.ok) {
-          html = await response.text();
-        }
-      } catch (fetchErr) {
-        // Direct fetch may fail for some sites, fallback to regex-based URL extractors
+      const fetchResult = await safeFetchHtml(cleanTarget, {
+        timeoutMs: 5000,
+        maxSizeBytes: 1024 * 1024, // 1MB limit
+        headers: {
+          'User-Agent': userAgent,
+          'X-Forwarded-For': clientIp,
+        },
+      });
+
+      if (fetchResult.ok) {
+        html = fetchResult.text;
+      } else if (fetchResult.status === 400 && fetchResult.error?.includes('SSRF')) {
+        return responseUtil.error(res, 'SSRF_BLOCKED', fetchResult.error, 400);
       }
 
       // 1. Extract Title
