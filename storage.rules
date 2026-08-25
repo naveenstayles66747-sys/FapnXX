@@ -26,25 +26,25 @@ service firebase.storage {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // Public Media Assets: Videos, Previews, Thumbnails, Banners
+    // Explicit Public Media Assets: Videos, Previews, Thumbnails, Banners, Categories
     // ─────────────────────────────────────────────────────────────────────────────
-    match /videos/{videoId} {
+    match /videos/{allPaths=**} {
       allow read: if true;
-      // Allow authenticated staff/moderator video upload only (MP4/WebM, max 2GB)
+      // Allow authenticated staff/moderator video upload only (MP4/WebM/HLS, max 2GB)
       allow write: if isModerator() &&
         request.resource.size < 2048 * 1024 * 1024 &&
-        (request.resource.contentType.matches('video/.*') || request.resource.contentType.matches('application/x-mpegURL'));
+        (request.resource.contentType.matches('video/.*') || request.resource.contentType.matches('application/x-mpegURL') || request.resource.contentType.matches('application/vnd.apple.mpegurl'));
     }
 
-    match /previews/{previewId} {
+    match /previews/{allPaths=**} {
       allow read: if true;
-      // Allow authenticated preview / animated thumbnail upload (Images/WebP, max 50MB)
+      // Allow authenticated preview / animated thumbnail upload (Images/WebP/MP4, max 50MB)
       allow write: if isModerator() &&
         request.resource.size < 50 * 1024 * 1024 &&
         (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
     }
 
-    match /thumbnails/{thumbId} {
+    match /thumbnails/{allPaths=**} {
       allow read: if true;
       // Allow authenticated thumbnail upload (Images, max 20MB)
       allow write: if isModerator() &&
@@ -52,26 +52,41 @@ service firebase.storage {
         request.resource.contentType.matches('image/.*');
     }
 
-    match /banners/{bannerId} {
+    match /banners/{allPaths=**} {
       allow read: if true;
-      allow write: if isModerator();
+      // Allow authenticated banner upload (Images, max 15MB)
+      allow write: if isModerator() &&
+        request.resource.size < 15 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
     }
 
-    match /categories/{categoryId} {
+    match /categories/{allPaths=**} {
       allow read: if true;
-      allow write: if isModerator();
+      // Allow authenticated category image upload (Images, max 15MB)
+      allow write: if isModerator() &&
+        request.resource.size < 15 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
     }
 
-    // User-specific upload directory
+    match /avatars/{userId}/{allPaths=**} {
+      allow read: if true;
+      // User avatar upload (Max 5MB)
+      allow write: if ((isAuthenticated() && request.auth.uid == userId) || isModerator()) &&
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    // User-specific upload directory (Isolated per authenticated user)
     match /users/{userId}/{allPaths=**} {
       allow read: if true;
       allow write: if (isAuthenticated() && request.auth.uid == userId) || isModerator();
     }
 
-    // Default fallback
+    // ─────────────────────────────────────────────────────────────────────────────
+    // DEFAULT DENY: Any unrecognized path outside explicit paths is strictly denied
+    // ─────────────────────────────────────────────────────────────────────────────
     match /{allPaths=**} {
-      allow read: if true;
-      allow write: if isModerator();
+      allow read, write: if false;
     }
   }
 }
