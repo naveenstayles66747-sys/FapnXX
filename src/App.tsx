@@ -678,9 +678,6 @@ export default function App() {
         <SignInScreen
           onSuccess={(email) => {
             setUserEmail(email);
-            if (email.trim().toLowerCase() === 'naveenstayles66747@gmail.com') {
-              setIsAdminModalOpen(true);
-            }
             handleNavigate('browse');
           }}
           onBack={() => handleNavigate('browse')}
