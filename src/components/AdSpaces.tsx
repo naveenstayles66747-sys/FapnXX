@@ -271,6 +271,7 @@ export const MobileInstantMessage: React.FC = () => {
 export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ className = '' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [hasAdLoaded, setHasAdLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -284,7 +285,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
             observer.disconnect();
           }
         },
-        { rootMargin: '400px' }
+        { rootMargin: '300px' }
       );
       observer.observe(el);
       return () => observer.disconnect();
@@ -317,18 +318,28 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       ins.style.display = 'block';
       ins.style.width = '100%';
       ins.style.height = '100%';
-      ins.style.minHeight = '160px';
+      ins.style.minHeight = '180px';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
-      // Trigger ExoClick AdProvider serve after microtask delay to guarantee DOM layout attachment
+      // Mutation observer to detect when ExoClick injects the video player
+      const observer = new MutationObserver(() => {
+        if (ins.children.length > 0 || ins.querySelector('iframe, video, a')) {
+          setHasAdLoaded(true);
+        }
+      });
+      observer.observe(ins, { childList: true, subtree: true });
+
+      // Direct inline execution + AdProvider push for 100% execution guarantee
       setTimeout(() => {
         try {
           const win = window as any;
           win.AdProvider = win.AdProvider || [];
           win.AdProvider.push({ serve: {} });
         } catch {}
-      }, 80);
+      }, 60);
+
+      return () => observer.disconnect();
     } catch (e) {
       console.warn('[ExoClick] Outstream ad mount error:', e);
     }
@@ -340,13 +351,25 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       aria-label="Sponsored Video Advertisement"
     >
       {/* 16:9 Full-Width Thumbnail / Player Container matching VideoCard */}
-      <div className="video-card-container relative w-full aspect-[16/9] min-h-[160px] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b] flex items-center justify-center">
+      <div className="video-card-container relative w-full aspect-[16/9] min-h-[180px] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b] flex items-center justify-center">
         {/* Outstream / Native In-Feed Ad Mount Container */}
         <div
           ref={containerRef}
           id="exoclick-outstream-zone-6003190"
-          className="w-full h-full min-h-[160px] flex items-center justify-center overflow-hidden"
+          className="w-full h-full min-h-[180px] flex items-center justify-center overflow-hidden z-10"
         />
+
+        {/* Loading / Placeholder Animation until Outstream Video Player initializes */}
+        {!hasAdLoaded && (
+          <div className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 bg-[#09090b]/90 pointer-events-none">
+            <div className="w-10 h-10 rounded-full border-2 border-rose-500/30 border-t-rose-500 animate-spin flex items-center justify-center">
+              <span className="material-symbols-outlined text-rose-500 text-sm">play_arrow</span>
+            </div>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">
+              Sponsored Video
+            </span>
+          </div>
+        )}
 
         {/* Top-Right Badge: SPONSORED / AD */}
         <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
