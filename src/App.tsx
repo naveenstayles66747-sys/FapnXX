@@ -123,13 +123,15 @@ export default function App() {
           const idTokenResult = await user.getIdTokenResult();
           const claims = idTokenResult.claims;
           const isStaff =
-            claims.admin === true ||
-            claims.role === 'ADMIN' ||
             claims.role === 'SUPER_ADMIN' ||
-            user.email.toLowerCase() === 'naveenstayles66747@gmail.com';
-          setIsAdminAuthenticated(isStaff);
+            claims.role === 'ADMIN' ||
+            claims.role === 'MODERATOR' ||
+            claims.role === 'EDITOR' ||
+            claims.admin === true ||
+            claims.moderator === true;
+          setIsAdminAuthenticated(Boolean(isStaff));
         } catch {
-          setIsAdminAuthenticated(user.email.toLowerCase() === 'naveenstayles66747@gmail.com');
+          setIsAdminAuthenticated(false);
         }
 
         // Fetch logged-in user cloud interactions for auth.currentUser.uid and merge

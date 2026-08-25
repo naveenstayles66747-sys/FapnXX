@@ -218,10 +218,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       const claims = idTokenResult.claims;
 
       const isStaffOrAdmin =
-        claims.admin === true ||
-        claims.role === 'ADMIN' ||
         claims.role === 'SUPER_ADMIN' ||
-        cleanEmail === 'naveenstayles66747@gmail.com';
+        claims.role === 'ADMIN' ||
+        claims.role === 'MODERATOR' ||
+        claims.role === 'EDITOR' ||
+        claims.admin === true ||
+        claims.moderator === true;
 
       if (isStaffOrAdmin) {
         onAdminLogin(cleanEmail);
