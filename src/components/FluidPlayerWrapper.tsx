@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Video } from '../types';
 import { videoService } from '../services/videoService';
 import { AD_CONFIG } from '../config/adConfig';
-import { OnStreamVideoBanner } from './AdSpaces';
 
 interface FluidPlayerWrapperProps {
   video: Video;
@@ -370,9 +369,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
           />
         </div>
       )}
-
-      {/* ── STAGE 3: Dismissible On-Stream Player Overlay Banner (Zone ID: 6003172) ── */}
-      <OnStreamVideoBanner isVisible={!isPrerollActive} />
     </div>
   );
 };
