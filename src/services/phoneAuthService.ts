@@ -28,7 +28,8 @@ class PhoneAuthService {
   private recaptchaVerifier: RecaptchaVerifier | null = null;
 
   /**
-   * Initializes or retrieves an existing RecaptchaVerifier instance
+   * Initializes or retrieves an existing RecaptchaVerifier instance safely
+   * Reuses existing verifier to prevent "reCAPTCHA already rendered" errors.
    */
   getOrCreateRecaptchaVerifier(containerId = 'recaptcha-container'): RecaptchaVerifier {
     if (this.recaptchaVerifier) {
@@ -39,10 +40,17 @@ class PhoneAuthService {
       throw new Error('RecaptchaVerifier can only be initialized in browser environment.');
     }
 
+    let container = document.getElementById(containerId);
+    if (!container) {
+      container = document.createElement('div');
+      container.id = containerId;
+      document.body.appendChild(container);
+    }
+
     this.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
       size: 'invisible',
       callback: () => {
-        // reCAPTCHA automatically solved
+        // reCAPTCHA solved — will proceed with SMS dispatch
       },
       'expired-callback': () => {
         this.clearRecaptcha();

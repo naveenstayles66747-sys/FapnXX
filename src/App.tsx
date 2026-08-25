@@ -114,13 +114,15 @@ export default function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // Observe real-time Firebase Auth token changes and verify staff/admin claims
+  // Observe real-time Firebase Auth token changes and verify staff/admin custom claims
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      if (user && user.email) {
-        setUserEmail(user.email);
+      if (user) {
+        const identifier = user.email || user.phoneNumber || user.uid;
+        setUserEmail(identifier);
         try {
-          const idTokenResult = await user.getIdTokenResult();
+          // Force fresh token to accurately read any newly assigned custom claims
+          const idTokenResult = await user.getIdTokenResult(true);
           const claims = idTokenResult.claims;
           const isStaff =
             claims.role === 'SUPER_ADMIN' ||
