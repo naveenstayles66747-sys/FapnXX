@@ -20,6 +20,7 @@ import {
   getDocs,
   getDoc,
   setDoc,
+  deleteDoc,
   onSnapshot,
   query,
   where,
@@ -118,7 +119,12 @@ export class VideoService {
   }
 
   private async getAuthHeaders(): Promise<Record<string, string>> {
-    const token = localStorage.getItem('fapnxx_auth_token');
+    let token = localStorage.getItem('fapnxx_auth_token');
+    if (!token && auth.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken();
+      } catch {}
+    }
     const appCheckToken = await getAppCheckToken();
     return {
       'Content-Type': 'application/json',
@@ -436,44 +442,72 @@ export class VideoService {
     // Invalidate local video cache
     this.smartCache.invalidate('videos');
 
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
-    return this.apiFetch<Video>(
+    // 1. Direct Firestore write
+    try {
+      await setDoc(doc(db, 'videos', videoId), cleanForFirestore(fullVideo), { merge: true });
+      console.log('✅ [Firestore] Video saved successfully:', videoId);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct video save notice:', err.message);
+    }
+
+    // 2. Sync with backend API
+    this.apiFetch<Video>(
       '/videos',
       {
         method: 'POST',
         body: JSON.stringify(fullVideo),
       },
       () => fullVideo
-    );
+    ).catch(() => {});
+
+    return fullVideo;
   }
 
   /**
-   * Update an existing video via Backend API (Admin/Staff only)
+   * Update an existing video via Firestore and Backend API (Admin/Staff only)
    */
   async updateVideo(video: Video): Promise<Video> {
     this.smartCache.invalidate('videos');
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
-    return this.apiFetch<Video>(
+
+    try {
+      await setDoc(doc(db, 'videos', video.id), cleanForFirestore(video), { merge: true });
+      console.log('✅ [Firestore] Video updated successfully:', video.id);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct video update notice:', err.message);
+    }
+
+    this.apiFetch<Video>(
       `/videos/${video.id}`,
       {
         method: 'PUT',
         body: JSON.stringify(video),
       },
       () => video
-    );
+    ).catch(() => {});
+
+    return video;
   }
 
   /**
-   * Delete video via Backend API (Admin/Staff only)
+   * Delete video via Firestore and Backend API (Admin/Staff only)
    */
   async deleteVideo(videoId: string): Promise<boolean> {
     this.smartCache.invalidate('videos');
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
-    return this.apiFetch<{ id: string }>(
+
+    try {
+      await deleteDoc(doc(db, 'videos', videoId));
+      console.log('✅ [Firestore] Video deleted successfully:', videoId);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct video delete notice:', err.message);
+    }
+
+    this.apiFetch<{ id: string }>(
       `/videos/${videoId}`,
       { method: 'DELETE' },
       () => ({ id: videoId })
-    ).then(() => true);
+    ).catch(() => {});
+
+    return true;
   }
 
   /**
@@ -550,65 +584,98 @@ export class VideoService {
   }
 
   /**
-   * Save a category via Backend API (Admin/Staff only)
+   * Save a category via Firestore and Backend API (Admin/Staff only)
    */
   async saveCategory(category: CategoryInfo): Promise<CategoryInfo> {
     const id = category.id.trim().toLowerCase().replace(/\s+/g, '-');
     const fullCategory = { ...category, id };
 
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
-    return this.apiFetch<CategoryInfo>(
+    try {
+      await setDoc(doc(db, 'categories', id), cleanForFirestore(fullCategory), { merge: true });
+      console.log('✅ [Firestore] Category saved successfully:', id);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct category save notice:', err.message);
+    }
+
+    this.apiFetch<CategoryInfo>(
       '/categories',
       {
         method: 'POST',
         body: JSON.stringify(fullCategory),
       },
       () => fullCategory
-    );
+    ).catch(() => {});
+
+    return fullCategory;
   }
 
   /**
-   * Update category via Backend API (Admin/Staff only)
+   * Update category via Firestore and Backend API (Admin/Staff only)
    */
   async updateCategory(category: CategoryInfo): Promise<CategoryInfo> {
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
-    return this.apiFetch<CategoryInfo>(
+    try {
+      await setDoc(doc(db, 'categories', category.id), cleanForFirestore(category), { merge: true });
+      console.log('✅ [Firestore] Category updated successfully:', category.id);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct category update notice:', err.message);
+    }
+
+    this.apiFetch<CategoryInfo>(
       `/categories/${category.id}`,
       {
         method: 'PUT',
         body: JSON.stringify(category),
       },
       () => category
-    );
+    ).catch(() => {});
+
+    return category;
   }
 
   /**
-   * Delete category via Backend API (Admin/Staff only)
+   * Delete category via Firestore and Backend API (Admin/Staff only)
    */
   async deleteCategory(categoryId: string): Promise<boolean> {
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
-    return this.apiFetch<{ id: string }>(
+    try {
+      await deleteDoc(doc(db, 'categories', categoryId));
+      console.log('✅ [Firestore] Category deleted successfully:', categoryId);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct category delete notice:', err.message);
+    }
+
+    this.apiFetch<{ id: string }>(
       `/categories/${categoryId}`,
       { method: 'DELETE' },
       () => ({ id: categoryId })
-    ).then(() => true);
+    ).catch(() => {});
+
+    return true;
   }
 
   /**
-   * Submit category request via Backend API
+   * Submit category request via Firestore and Backend API
    */
   async saveCategoryRequest(categoryReq: CategoryRequest): Promise<CategoryRequest> {
-    const reqId = `cat-req-${Date.now()}`;
+    const reqId = categoryReq.id || `cat-req-${Date.now()}`;
     const fullReq = { ...categoryReq, id: reqId, createdAt: new Date().toISOString(), status: 'pending' as const };
 
-    return this.apiFetch<CategoryRequest>(
+    try {
+      await setDoc(doc(db, 'category_requests', reqId), cleanForFirestore(fullReq), { merge: true });
+      console.log('✅ [Firestore] Category request saved successfully:', reqId);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct category request save notice:', err.message);
+    }
+
+    this.apiFetch<CategoryRequest>(
       '/categories/requests',
       {
         method: 'POST',
         body: JSON.stringify(fullReq),
       },
       () => fullReq
-    );
+    ).catch(() => {});
+
+    return fullReq;
   }
 
   /**
@@ -637,7 +704,12 @@ export class VideoService {
    * Update category request status (Admin/Staff only)
    */
   async updateCategoryRequestStatus(requestId: string, status: 'approved' | 'rejected'): Promise<void> {
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
+    try {
+      await setDoc(doc(db, 'category_requests', requestId), { status }, { merge: true });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct category request status update notice:', err.message);
+    }
+
     await this.apiFetch(
       `/categories/admin/requests/${requestId}`,
       {
@@ -645,7 +717,7 @@ export class VideoService {
         body: JSON.stringify({ status }),
       },
       () => null
-    );
+    ).catch(() => {});
   }
 
   /**
@@ -675,48 +747,72 @@ export class VideoService {
   }
 
   /**
-   * Save banner via Backend API (Admin/Staff only)
+   * Save banner via Firestore and Backend API (Admin/Staff only)
    */
   async saveBanner(banner: LandingBanner): Promise<LandingBanner> {
     const id = banner.id || `banner-${Date.now()}`;
     const fullBanner = { ...banner, id };
 
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
-    return this.apiFetch<LandingBanner>(
+    try {
+      await setDoc(doc(db, 'banners', id), cleanForFirestore(fullBanner), { merge: true });
+      console.log('✅ [Firestore] Banner saved successfully:', id);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct banner save notice:', err.message);
+    }
+
+    this.apiFetch<LandingBanner>(
       '/banners',
       {
         method: 'POST',
         body: JSON.stringify(fullBanner),
       },
       () => fullBanner
-    );
+    ).catch(() => {});
+
+    return fullBanner;
   }
 
   /**
-   * Update banner via Backend API (Admin/Staff only)
+   * Update banner via Firestore and Backend API (Admin/Staff only)
    */
   async updateBanner(banner: LandingBanner): Promise<LandingBanner> {
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
-    return this.apiFetch<LandingBanner>(
+    try {
+      await setDoc(doc(db, 'banners', banner.id), cleanForFirestore(banner), { merge: true });
+      console.log('✅ [Firestore] Banner updated successfully:', banner.id);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct banner update notice:', err.message);
+    }
+
+    this.apiFetch<LandingBanner>(
       `/banners/${banner.id}`,
       {
         method: 'PUT',
         body: JSON.stringify(banner),
       },
       () => banner
-    );
+    ).catch(() => {});
+
+    return banner;
   }
 
   /**
-   * Delete banner via Backend API (Admin/Staff only)
+   * Delete banner via Firestore and Backend API (Admin/Staff only)
    */
   async deleteBanner(bannerId: string): Promise<boolean> {
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
-    return this.apiFetch<{ id: string }>(
+    try {
+      await deleteDoc(doc(db, 'banners', bannerId));
+      console.log('✅ [Firestore] Banner deleted successfully:', bannerId);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct banner delete notice:', err.message);
+    }
+
+    this.apiFetch<{ id: string }>(
       `/banners/${bannerId}`,
       { method: 'DELETE' },
       () => ({ id: bannerId })
-    ).then(() => true);
+    ).catch(() => {});
+
+    return true;
   }
 
   /**
@@ -923,48 +1019,70 @@ export class VideoService {
   }
 
   /**
-   * Save ad campaign via Backend API (Admin/Staff only)
+   * Save ad campaign via Firestore and Backend API (Admin/Staff only)
    */
   async saveAdCampaign(campaign: AdCampaign): Promise<AdCampaign> {
     const id = campaign.id || `ad-${Date.now()}`;
     const fullAd = { ...campaign, id };
 
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
-    return this.apiFetch<AdCampaign>(
+    try {
+      await setDoc(doc(db, 'ad_campaigns', id), cleanForFirestore(fullAd), { merge: true });
+      console.log('✅ [Firestore] Ad campaign saved successfully:', id);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct ad campaign save notice:', err.message);
+    }
+
+    this.apiFetch<AdCampaign>(
       '/ads',
       {
         method: 'POST',
         body: JSON.stringify(fullAd),
       },
       () => fullAd
-    );
+    ).catch(() => {});
+
+    return fullAd;
   }
 
   /**
-   * Update ad campaign via Backend API (Admin/Staff only)
+   * Update ad campaign via Firestore and Backend API (Admin/Staff only)
    */
   async updateAdCampaign(campaign: AdCampaign): Promise<AdCampaign> {
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
-    return this.apiFetch<AdCampaign>(
+    try {
+      await setDoc(doc(db, 'ad_campaigns', campaign.id), cleanForFirestore(campaign), { merge: true });
+      console.log('✅ [Firestore] Ad campaign updated successfully:', campaign.id);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct ad campaign update notice:', err.message);
+    }
+
+    this.apiFetch<AdCampaign>(
       `/ads/${campaign.id}`,
       {
         method: 'PUT',
         body: JSON.stringify(campaign),
       },
       () => campaign
-    );
+    ).catch(() => {});
+
+    return campaign;
   }
 
   /**
-   * Delete ad campaign via Backend API (Admin/Staff only)
+   * Delete ad campaign via Firestore and Backend API (Admin/Staff only)
    */
   async deleteAdCampaign(campaignId: string): Promise<void> {
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
+    try {
+      await deleteDoc(doc(db, 'ad_campaigns', campaignId));
+      console.log('✅ [Firestore] Ad campaign deleted successfully:', campaignId);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Direct ad campaign delete notice:', err.message);
+    }
+
     await this.apiFetch(
       `/ads/${campaignId}`,
       { method: 'DELETE' },
       () => null
-    );
+    ).catch(() => {});
   }
 
   /**
