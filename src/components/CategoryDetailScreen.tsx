@@ -223,8 +223,9 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
                       onClick={() => onSelectVideo(video)}
                       layout="grid"
                     />
-                    {(idx + 1) % AD_CONFIG.OUTSTREAM_FEED_FREQUENCY === 0 && (
-                      <OutstreamVideoCardAd key={`category-outstream-ad-${idx}`} />
+                    {/* Single Clean Outstream Video Placement after the 8th card */}
+                    {idx === 7 && (
+                      <OutstreamVideoCardAd key="category-infeed-outstream-ad" />
                     )}
                   </React.Fragment>
                 ))}

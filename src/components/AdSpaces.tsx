@@ -284,7 +284,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
             observer.disconnect();
           }
         },
-        { rootMargin: '300px' }
+        { rootMargin: '400px' }
       );
       observer.observe(el);
       return () => observer.disconnect();
@@ -296,9 +296,20 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
   useEffect(() => {
     if (!isVisible) return;
     const el = containerRef.current;
-    if (!el || el.dataset.adInitialized === 'true') return;
+    if (!el) return;
 
     try {
+      // Ensure global ad-provider script is present in DOM
+      const scriptId = 'exoclick-ad-provider-script';
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.type = 'application/javascript';
+        script.async = true;
+        script.src = 'https://a.magsrv.com/ad-provider.js';
+        document.head.appendChild(script);
+      }
+
       el.innerHTML = '';
       const ins = document.createElement('ins');
       ins.className = `eas${AD_ZONES.SITE_HASH}37`;
@@ -306,14 +317,18 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       ins.style.display = 'block';
       ins.style.width = '100%';
       ins.style.height = '100%';
+      ins.style.minHeight = '160px';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
-      const win = window as any;
-      win.AdProvider = win.AdProvider || [];
-      win.AdProvider.push({ serve: {} });
-
-      el.dataset.adInitialized = 'true';
+      // Trigger ExoClick AdProvider serve after microtask delay to guarantee DOM layout attachment
+      setTimeout(() => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      }, 80);
     } catch (e) {
       console.warn('[ExoClick] Outstream ad mount error:', e);
     }
@@ -322,16 +337,15 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
   return (
     <article
       className={`group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
-      style={{ contentVisibility: 'auto', containIntrinsicSize: '240px' }}
       aria-label="Sponsored Video Advertisement"
     >
       {/* 16:9 Full-Width Thumbnail / Player Container matching VideoCard */}
-      <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b] flex items-center justify-center">
+      <div className="video-card-container relative w-full aspect-[16/9] min-h-[160px] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b] flex items-center justify-center">
         {/* Outstream / Native In-Feed Ad Mount Container */}
         <div
           ref={containerRef}
           id="exoclick-outstream-zone-6003190"
-          className="w-full h-full flex items-center justify-center overflow-hidden"
+          className="w-full h-full min-h-[160px] flex items-center justify-center overflow-hidden"
         />
 
         {/* Top-Right Badge: SPONSORED / AD */}
