@@ -362,7 +362,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const selectedCategoryObj = categories.find((c) => c.id === selectedCategory);
 
   return (
-    <main className="flex-1 overflow-y-auto bg-[#09090b] p-4 md:p-12 pb-32 lg:ml-64">
+    <main className="flex-1 overflow-y-auto bg-white dark:bg-[#09090b] p-4 md:p-12 pb-32 lg:ml-64 transition-colors">
       {/* Search Header Banner (Ultra Clean Minimalist Reference Header) */}
       {cleanSearch && (
         <section className="mb-4 sm:mb-6 flex items-center justify-between">
@@ -533,11 +533,11 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       {!cleanSearch && rankedTrendingVideos.length > 3 && (
         <section className="hidden md:block mb-12 relative w-full">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#ffb0cd] flex items-center gap-2">
+            <h2 className="text-2xl md:text-3xl font-bold text-rose-600 dark:text-[#ffb0cd] flex items-center gap-2">
               <span className="material-symbols-outlined fill-1 text-rose-500">local_fire_department</span>
               {t.trendingNow}
             </h2>
-            <span className="text-xs text-[#a19fa6] font-semibold tracking-wider uppercase hidden sm:inline">
+            <span className="text-xs text-zinc-500 dark:text-[#a19fa6] font-semibold tracking-wider uppercase hidden sm:inline">
               Ranked by Dynamic Engagement Engine
             </span>
           </div>
@@ -547,7 +547,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
               <div
                 key={video.id}
                 onClick={() => onSelectVideo(video)}
-                className="snap-start shrink-0 w-[85vw] md:w-[60vw] lg:w-[45vw] aspect-video relative rounded-xl overflow-hidden group cursor-pointer border border-[#27272a] hover:border-[#ffb0cd] transition-all duration-300 shadow-xl"
+                className="snap-start shrink-0 w-[85vw] md:w-[60vw] lg:w-[45vw] aspect-video relative rounded-xl overflow-hidden group cursor-pointer border border-zinc-200 dark:border-[#27272a] hover:border-rose-500 transition-all duration-300 shadow-xl"
               >
                 <img
                   src={video.thumbnail}
@@ -604,7 +604,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
               className={`snap-start shrink-0 px-4 md:px-5 py-1.5 md:py-2 rounded-full font-semibold text-xs transition-all cursor-pointer active:scale-95 ${
                 selectedCategory === 'all'
                   ? 'bg-[#ec4899] text-white border border-[#ec4899] shadow-neon-pink'
-                  : 'bg-[#27272a] text-white hover:bg-[#ffb0cd] hover:text-black border border-transparent'
+                  : 'bg-zinc-200 dark:bg-[#27272a] text-zinc-800 dark:text-white hover:bg-[#ec4899] hover:text-white dark:hover:bg-[#ffb0cd] dark:hover:text-black border border-transparent'
               }`}
             >
               {t.allCategories}
@@ -616,7 +616,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 className={`snap-start shrink-0 px-4 md:px-5 py-1.5 md:py-2 rounded-full font-semibold text-xs transition-all cursor-pointer active:scale-95 capitalize ${
                   selectedCategory === cat.id
                     ? 'bg-[#ec4899] text-white border border-[#ec4899] shadow-neon-pink'
-                    : 'bg-[#27272a] text-white hover:bg-[#ffb0cd] hover:text-black border border-transparent'
+                    : 'bg-zinc-200 dark:bg-[#27272a] text-zinc-800 dark:text-white hover:bg-[#ec4899] hover:text-white dark:hover:bg-[#ffb0cd] dark:hover:text-black border border-transparent'
                 }`}
               >
                 {cat.name}
@@ -635,7 +635,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-                className="sort-filter-btn flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-[#1c1b1f] hover:bg-[#27272a] text-white border border-white/10 hover:border-[#e0358d] transition-all shadow-none cursor-pointer active:scale-95"
+                className="sort-filter-btn flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#1c1b1f] dark:hover:bg-[#27272a] text-zinc-900 dark:text-white border border-zinc-300 dark:border-white/10 hover:border-[#e0358d] transition-all shadow-none cursor-pointer active:scale-95"
                 title="Click to change video sorting filter"
               >
                 <span className="font-bold text-xs sm:text-sm flex items-center gap-1.5">
@@ -648,8 +648,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
               </button>
 
               {isSortDropdownOpen && (
-                <div className="dropdown-modal-menu absolute left-0 mt-2 w-48 rounded-2xl shadow-2xl py-1.5 z-50 text-xs border border-white/10 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
+                <div className="dropdown-modal-menu absolute left-0 mt-2 w-48 rounded-2xl shadow-2xl py-1.5 z-50 text-xs border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#18171a] text-zinc-900 dark:text-white animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-zinc-500 dark:text-[#debec8] border-b border-zinc-200 dark:border-white/10 mb-1 flex items-center justify-between">
                     <span>Sort Videos</span>
                     <span className="text-[#e0358d] text-[9px] font-mono">FILTER</span>
                   </div>
@@ -664,7 +664,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                       });
                     }}
                     className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                      sortBy === 'latest' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                      sortBy === 'latest' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-zinc-100 dark:hover:bg-white/10 font-semibold'
                     }`}
                   >
                     <span className="font-bold text-xs">Latest</span>
@@ -681,7 +681,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                       });
                     }}
                     className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                      sortBy === 'most_relevant' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                      sortBy === 'most_relevant' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-zinc-100 dark:hover:bg-white/10 font-semibold'
                     }`}
                   >
                     <span className="font-bold text-xs">Most Relevant</span>
@@ -698,7 +698,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                       });
                     }}
                     className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                      sortBy === 'top_rated' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                      sortBy === 'top_rated' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-zinc-100 dark:hover:bg-white/10 font-semibold'
                     }`}
                   >
                     <span className="font-bold text-xs">Top Rated</span>
@@ -715,8 +715,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 onClick={() => setIsDurationDropdownOpen(!isDurationDropdownOpen)}
                 className={`sort-filter-btn flex items-center gap-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer active:scale-95 ${
                   durationFilter !== 'all'
-                    ? 'bg-[#e0358d]/20 border-[#e0358d] text-white shadow-[0_0_15px_rgba(224,53,141,0.2)]'
-                    : 'bg-[#1c1b1f] hover:bg-[#27272a] text-white border-white/10 hover:border-[#e0358d]'
+                    ? 'bg-[#e0358d]/20 border-[#e0358d] text-zinc-900 dark:text-white shadow-[0_0_15px_rgba(224,53,141,0.2)]'
+                    : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-[#1c1b1f] dark:hover:bg-[#27272a] text-zinc-900 dark:text-white border-zinc-300 dark:border-white/10 hover:border-[#e0358d]'
                 }`}
                 title="Filter videos by length / duration"
               >
@@ -736,8 +736,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
               </button>
 
               {isDurationDropdownOpen && (
-                <div className="dropdown-modal-menu absolute left-0 mt-2 w-48 rounded-2xl shadow-2xl py-1.5 z-50 text-xs border border-white/10 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
+                <div className="dropdown-modal-menu absolute left-0 mt-2 w-48 rounded-2xl shadow-2xl py-1.5 z-50 text-xs border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#18171a] text-zinc-900 dark:text-white animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-zinc-500 dark:text-[#debec8] border-b border-zinc-200 dark:border-white/10 mb-1 flex items-center justify-between">
                     <span>Duration Filter</span>
                     <span className="text-[#e0358d] text-[9px] font-mono">LENGTH</span>
                   </div>
@@ -749,7 +749,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                       React.startTransition(() => setDurationFilter('all'));
                     }}
                     className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                      durationFilter === 'all' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                      durationFilter === 'all' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-zinc-100 dark:hover:bg-white/10 font-semibold'
                     }`}
                   >
                     <span className="font-bold text-xs">All Lengths</span>
@@ -763,7 +763,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                       React.startTransition(() => setDurationFilter('short'));
                     }}
                     className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                      durationFilter === 'short' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                      durationFilter === 'short' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-zinc-100 dark:hover:bg-white/10 font-semibold'
                     }`}
                   >
                     <span className="font-bold text-xs">Short (&lt; 10 mins)</span>
@@ -777,7 +777,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                       React.startTransition(() => setDurationFilter('medium'));
                     }}
                     className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                      durationFilter === 'medium' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                      durationFilter === 'medium' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-zinc-100 dark:hover:bg-white/10 font-semibold'
                     }`}
                   >
                     <span className="font-bold text-xs">Medium (10 - 20 mins)</span>
@@ -791,7 +791,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                       React.startTransition(() => setDurationFilter('long'));
                     }}
                     className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                      durationFilter === 'long' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                      durationFilter === 'long' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-zinc-100 dark:hover:bg-white/10 font-semibold'
                     }`}
                   >
                     <span className="font-bold text-xs">Long (20+ mins)</span>
@@ -802,7 +802,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
             </div>
           </div>
 
-          <div className="text-xs text-zinc-400 font-mono font-semibold">
+          <div className="text-xs text-zinc-600 dark:text-zinc-400 font-mono font-semibold">
             <span>Showing {displayedVideos.length} of {sortedVideos.length} Videos</span>
           </div>
         </div>
@@ -833,7 +833,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setVisibleCount((prev) => Math.min(prev + 16, sortedVideos.length))}
-                  className="px-6 py-3 rounded-2xl bg-[#1c1b1f] hover:bg-[#27272a] text-white font-extrabold text-xs uppercase tracking-wider border border-white/10 hover:border-[#e0358d] transition-all cursor-pointer active:scale-95 shadow-lg flex items-center gap-2"
+                  className="px-6 py-3 rounded-2xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#1c1b1f] dark:hover:bg-[#27272a] text-zinc-900 dark:text-white font-extrabold text-xs uppercase tracking-wider border border-zinc-300 dark:border-white/10 hover:border-[#e0358d] transition-all cursor-pointer active:scale-95 shadow-md flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined text-sm text-[#e0358d]">expand_more</span>
                   <span>Load More Videos ({sortedVideos.length - visibleCount} Remaining)</span>
@@ -845,10 +845,10 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
             <NativeRecommendationAd title="Sponsored Picks & Recommendations" className="mt-8" />
           </>
         ) : (
-          <div className="p-12 text-center text-[#debec8] bg-[#1c1b1d] rounded-2xl border border-[#353437] space-y-3 my-6">
-            <span className="material-symbols-outlined text-5xl text-[#ffb0cd]">video_library</span>
+          <div className="p-12 text-center text-zinc-600 dark:text-[#debec8] bg-zinc-50 dark:bg-[#1c1b1d] rounded-2xl border border-zinc-200 dark:border-[#353437] space-y-3 my-6">
+            <span className="material-symbols-outlined text-5xl text-rose-500 dark:text-[#ffb0cd]">video_library</span>
             <h3 className="text-xl font-bold text-zinc-900 dark:text-white">No Videos Available</h3>
-            <p className="text-sm text-[#debec8] max-w-md mx-auto">
+            <p className="text-sm text-zinc-600 dark:text-[#debec8] max-w-md mx-auto">
               No videos have been uploaded yet. Upload a video from the admin panel to get started!
             </p>
           </div>

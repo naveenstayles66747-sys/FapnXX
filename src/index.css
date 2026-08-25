@@ -310,15 +310,80 @@ html.light .bg-\[\#f751a1\] * {
   color: #ffffff !important;
 }
 
-/* 4. Page Text Colors on White Page Backgrounds */
-html.light h1:not(.hero-text):not(.banner-title):not(.hero-banner-title),
-html.light h2:not(.hero-text):not(.banner-title):not(.hero-banner-title),
+/* 4. Page Text Colors on White Page Backgrounds (Day Mode High Contrast) */
+html.light h1:not(.hero-text):not(.banner-title):not(.hero-banner-title):not(.player-wrapper *):not(.video-player-container *):not(.age-gate-card *):not(.admin-panel-card *),
+html.light h2:not(.hero-text):not(.banner-title):not(.hero-banner-title):not(.player-wrapper *):not(.video-player-container *):not(.age-gate-card *):not(.admin-panel-card *),
+html.light h3:not(.hero-text):not(.banner-title):not(.hero-banner-title):not(.player-wrapper *):not(.video-player-container *):not(.age-gate-card *):not(.admin-panel-card *):not(.aspect-video *):not(.video-card-container *),
+html.light h4:not(.hero-text):not(.banner-title):not(.hero-banner-title):not(.player-wrapper *):not(.video-player-container *):not(.age-gate-card *):not(.admin-panel-card *),
 html.light .page-title {
   color: #0f172a !important;
 }
 
 html.light p.page-subtitle {
   color: #475569 !important;
+}
+
+/* Light Mode Global Text Contrast Fixes (Replaces washed-out dark-theme silvers with crisp slate) */
+html.light .text-\[\#e5e1e4\]:not(.hero-banner-container *):not(.aspect-video .absolute *):not(.player-wrapper *):not(.video-player-container *):not(.video-loading-screen *):not(.age-gate-card *):not(.admin-panel-card *):not(button[class*="bg-rose"]):not(button[class*="bg-[#ec4899]"]) {
+  color: #0f172a !important;
+}
+
+html.light .text-\[\#debec8\]:not(.hero-banner-container *):not(.aspect-video .absolute *):not(.player-wrapper *):not(.video-player-container *):not(.video-loading-screen *):not(.age-gate-card *):not(.admin-panel-card *) {
+  color: #475569 !important;
+}
+
+html.light .text-\[\#a19fa6\]:not(.hero-banner-container *):not(.aspect-video .absolute *):not(.player-wrapper *):not(.video-player-container *):not(.video-loading-screen *):not(.age-gate-card *):not(.admin-panel-card *) {
+  color: #64748b !important;
+}
+
+html.light .text-\[\#ffdad6\]:not(.age-gate-card *):not(.admin-panel-card *) {
+  color: #b91c1c !important;
+}
+
+/* Dark Mode Global Text Contrast Guarantees */
+html.dark body,
+html.dark #root,
+html.dark main {
+  background-color: #09090b !important;
+  color: #f8fafc !important;
+}
+
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark .page-title {
+  color: #ffffff !important;
+}
+
+html.dark p,
+html.dark .text-zinc-600,
+html.dark .text-zinc-700 {
+  color: #cbd5e1 !important;
+}
+
+/* Card & Container Borders in Light Mode */
+html.light .border-white\/10,
+html.light .border-white\/5,
+html.light .border-white\/15,
+html.light .border-white\/20,
+html.light .border-\[\#353437\],
+html.light .border-\[\#27272a\],
+html.light .border-\[\#2e2d30\] {
+  border-color: #e2e8f0 !important;
+}
+
+/* Dark Containers in Light Mode */
+html.light .bg-\[\#141418\],
+html.light .bg-\[\#141417\],
+html.light .bg-\[\#1e1e24\],
+html.light .bg-\[\#1a1a1e\],
+html.light .bg-\[\#18171a\],
+html.light .bg-\[\#1c1c20\],
+html.light .bg-\[\#0f1523\],
+html.light .bg-\[\#1a233a\] {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
 }
 
 /* Brand Logo & Pink Accents in Light Mode */

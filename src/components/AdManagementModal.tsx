@@ -7,7 +7,6 @@ interface AdManagementModalProps {
   onClose: () => void;
 }
 
-
 export const AdManagementModal: React.FC<AdManagementModalProps> = ({
   isOpen,
   onClose,
@@ -76,21 +75,21 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
       }}
       className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
     >
-      <div className="glass-panel w-full max-w-3xl rounded-2xl p-6 md:p-8 border border-[#353437] my-8 relative shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-[#121113] w-full max-w-3xl rounded-2xl p-6 md:p-8 border border-zinc-200 dark:border-[#353437] my-8 relative shadow-2xl animate-in zoom-in-95 duration-200 text-zinc-900 dark:text-[#e5e1e4] transition-all">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
+        <div className="flex justify-between items-center mb-6 pb-4 border-b border-zinc-200 dark:border-white/10">
           <div>
-            <h2 className="text-2xl font-extrabold text-[#e5e1e4] flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#eab308]">campaign</span>
+            <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-[#e5e1e4] flex items-center gap-2">
+              <span className="material-symbols-outlined text-amber-500">campaign</span>
               Ad & Sponsorship Management
             </h2>
-            <p className="text-xs text-[#debec8] mt-0.5">
+            <p className="text-xs text-zinc-600 dark:text-[#debec8] mt-0.5">
               Control video pre-rolls, inline banner campaigns, and CPM monetization settings.
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-[#2a2a2c] hover:bg-white/10 text-[#debec8] hover:text-white transition-colors cursor-pointer"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-[#2a2a2c] dark:hover:bg-white/10 text-zinc-600 dark:text-[#debec8] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -98,27 +97,27 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
 
         {/* Analytics Summary Bar */}
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="p-4 rounded-xl bg-[#1e1d21] border border-[#353437] text-center">
-            <span className="text-xs text-[#debec8] font-bold uppercase tracking-wider block mb-1">
+          <div className="p-4 rounded-xl bg-zinc-100 dark:bg-[#1e1d21] border border-zinc-200 dark:border-[#353437] text-center">
+            <span className="text-xs text-zinc-600 dark:text-[#debec8] font-bold uppercase tracking-wider block mb-1">
               Total Impressions
             </span>
-            <span className="text-xl font-extrabold text-white">
+            <span className="text-xl font-extrabold text-zinc-900 dark:text-white">
               {campaigns.reduce((acc, c) => acc + c.impressions, 0).toLocaleString()}
             </span>
           </div>
-          <div className="p-4 rounded-xl bg-[#1e1d21] border border-[#353437] text-center">
-            <span className="text-xs text-[#debec8] font-bold uppercase tracking-wider block mb-1">
+          <div className="p-4 rounded-xl bg-zinc-100 dark:bg-[#1e1d21] border border-zinc-200 dark:border-[#353437] text-center">
+            <span className="text-xs text-zinc-600 dark:text-[#debec8] font-bold uppercase tracking-wider block mb-1">
               Total Clicks
             </span>
             <span className="text-xl font-extrabold text-[#ec4899]">
               {campaigns.reduce((acc, c) => acc + c.clicks, 0).toLocaleString()}
             </span>
           </div>
-          <div className="p-4 rounded-xl bg-[#1e1d21] border border-[#353437] text-center">
-            <span className="text-xs text-[#debec8] font-bold uppercase tracking-wider block mb-1">
+          <div className="p-4 rounded-xl bg-zinc-100 dark:bg-[#1e1d21] border border-zinc-200 dark:border-[#353437] text-center">
+            <span className="text-xs text-zinc-600 dark:text-[#debec8] font-bold uppercase tracking-wider block mb-1">
               Avg. CTR
             </span>
-            <span className="text-xl font-extrabold text-[#eab308]">
+            <span className="text-xl font-extrabold text-amber-600 dark:text-[#eab308]">
               {(() => {
                 const totalImpressions = campaigns.reduce((acc, c) => acc + (c.impressions || 0), 0);
                 const totalClicks = campaigns.reduce((acc, c) => acc + (c.clicks || 0), 0);
@@ -134,7 +133,7 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
         {!showNewForm ? (
           <button
             onClick={() => setShowNewForm(true)}
-            className="w-full py-3 mb-6 rounded-xl border border-dashed border-[#eab308] hover:bg-[#eab308]/10 text-[#eab308] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="w-full py-3 mb-6 rounded-xl border border-dashed border-amber-500 hover:bg-amber-500/10 text-amber-700 dark:text-[#eab308] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <span className="material-symbols-outlined text-lg">add_circle</span>
             <span>Launch New Ad Campaign</span>
@@ -142,14 +141,14 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
         ) : (
           <form
             onSubmit={handleCreateCampaign}
-            className="mb-6 p-5 bg-[#18181b] rounded-xl border border-[#eab308]/40 space-y-4"
+            className="mb-6 p-5 bg-zinc-50 dark:bg-[#18181b] rounded-xl border border-amber-500/40 space-y-4"
           >
-            <h3 className="text-sm font-bold text-[#eab308] uppercase tracking-wider flex items-center justify-between">
+            <h3 className="text-sm font-bold text-amber-700 dark:text-[#eab308] uppercase tracking-wider flex items-center justify-between">
               <span>New Sponsorship Details</span>
               <button
                 type="button"
                 onClick={() => setShowNewForm(false)}
-                className="text-xs text-[#debec8] hover:text-white"
+                className="text-xs text-zinc-500 dark:text-[#debec8] hover:text-zinc-900 dark:hover:text-white"
               >
                 Cancel
               </button>
@@ -157,7 +156,7 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-[#debec8] uppercase mb-1">
+                <label className="block text-[11px] font-bold text-zinc-700 dark:text-[#debec8] uppercase mb-1">
                   Brand / Advertiser Name
                 </label>
                 <input
@@ -166,12 +165,12 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
                   value={brandName}
                   onChange={(e) => setBrandName(e.target.value)}
                   placeholder="e.g. FapnXX Luxe Cosmetics"
-                  className="w-full bg-[#2a2a2c] border border-[#353437] rounded-lg p-2.5 text-xs text-[#e5e1e4] focus:outline-none focus:border-[#eab308]"
+                  className="w-full bg-white dark:bg-[#2a2a2c] border border-zinc-300 dark:border-[#353437] rounded-lg p-2.5 text-xs text-zinc-900 dark:text-[#e5e1e4] focus:outline-none focus:border-amber-500"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#debec8] uppercase mb-1">
+                <label className="block text-[11px] font-bold text-zinc-700 dark:text-[#debec8] uppercase mb-1">
                   Campaign Title
                 </label>
                 <input
@@ -180,14 +179,14 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Exclusive Midnight Collection"
-                  className="w-full bg-[#2a2a2c] border border-[#353437] rounded-lg p-2.5 text-xs text-[#e5e1e4] focus:outline-none focus:border-[#eab308]"
+                  className="w-full bg-white dark:bg-[#2a2a2c] border border-zinc-300 dark:border-[#353437] rounded-lg p-2.5 text-xs text-zinc-900 dark:text-[#e5e1e4] focus:outline-none focus:border-amber-500"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-[#debec8] uppercase mb-1">
+                <label className="block text-[11px] font-bold text-zinc-700 dark:text-[#debec8] uppercase mb-1">
                   Ad Placement Position
                 </label>
                 <select
@@ -195,7 +194,7 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
                   onChange={(e) =>
                     setPosition(e.target.value as 'banner_top' | 'card_inline' | 'pre_roll')
                   }
-                  className="w-full bg-[#2a2a2c] border border-[#353437] rounded-lg p-2.5 text-xs text-[#e5e1e4] focus:outline-none focus:border-[#eab308]"
+                  className="w-full bg-white dark:bg-[#2a2a2c] border border-zinc-300 dark:border-[#353437] rounded-lg p-2.5 text-xs text-zinc-900 dark:text-[#e5e1e4] focus:outline-none focus:border-amber-500"
                 >
                   <option value="banner_top">Top Showcase Banner</option>
                   <option value="card_inline">Inline Video Grid Card</option>
@@ -204,7 +203,7 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#debec8] uppercase mb-1">
+                <label className="block text-[11px] font-bold text-zinc-700 dark:text-[#debec8] uppercase mb-1">
                   Target Destination URL
                 </label>
                 <input
@@ -212,14 +211,14 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
                   value={targetUrl}
                   onChange={(e) => setTargetUrl(e.target.value)}
                   placeholder="https://sponsorbrand.com/promo"
-                  className="w-full bg-[#2a2a2c] border border-[#353437] rounded-lg p-2.5 text-xs text-[#e5e1e4] focus:outline-none focus:border-[#eab308]"
+                  className="w-full bg-white dark:bg-[#2a2a2c] border border-zinc-300 dark:border-[#353437] rounded-lg p-2.5 text-xs text-zinc-900 dark:text-[#e5e1e4] focus:outline-none focus:border-amber-500"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-2.5 rounded-lg bg-[#eab308] text-black font-bold text-xs uppercase tracking-wider hover:bg-[#facc15] transition-all cursor-pointer"
+              className="w-full py-2.5 rounded-lg bg-amber-500 text-white font-bold text-xs uppercase tracking-wider hover:bg-amber-600 transition-all cursor-pointer"
             >
               Activate Campaign
             </button>
@@ -228,7 +227,7 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
 
         {/* Campaign List */}
         <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
-          <h3 className="text-xs font-bold text-[#debec8] uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-zinc-700 dark:text-[#debec8] uppercase tracking-wider">
             Active Sponsorship Campaigns ({campaigns.length})
           </h3>
 
@@ -237,28 +236,28 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
               key={c.id}
               className={`p-4 rounded-xl border transition-all flex items-center justify-between ${
                 c.isActive
-                  ? 'bg-[#1a1a1c] border-[#353437]'
-                  : 'bg-[#141415]/50 border-white/5 opacity-60'
+                  ? 'bg-zinc-50 dark:bg-[#1a1a1c] border-zinc-200 dark:border-[#353437]'
+                  : 'bg-zinc-100 dark:bg-[#141415]/50 border-zinc-200 dark:border-white/5 opacity-60'
               }`}
             >
               <div className="flex items-center gap-3">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#eab308] shrink-0" />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-extrabold text-[#eab308] uppercase">
+                    <span className="text-xs font-extrabold text-amber-600 dark:text-[#eab308] uppercase">
                       {c.brandName}
                     </span>
-                    <span className="text-[10px] bg-[#2a2a2c] text-[#debec8] px-2 py-0.5 rounded uppercase">
+                    <span className="text-[10px] bg-zinc-200 dark:bg-[#2a2a2c] text-zinc-700 dark:text-[#debec8] px-2 py-0.5 rounded uppercase">
                       {c.position.replace('_', ' ')}
                     </span>
                   </div>
-                  <h4 className="text-sm font-semibold text-white">{c.title}</h4>
-                  <div className="flex gap-3 text-[11px] text-[#debec8] mt-1">
+                  <h4 className="text-sm font-semibold text-zinc-900 dark:text-white">{c.title}</h4>
+                  <div className="flex gap-3 text-[11px] text-zinc-500 dark:text-[#debec8] mt-1">
                     <span>{c.impressions.toLocaleString()} views</span>
                     <span>•</span>
                     <span>{c.clicks.toLocaleString()} clicks</span>
                     <span>•</span>
-                    <span className="text-[#eab308] font-bold">{c.cpmRate} CPM</span>
+                    <span className="text-amber-600 dark:text-[#eab308] font-bold">{c.cpmRate} CPM</span>
                   </div>
                 </div>
               </div>
@@ -267,8 +266,8 @@ export const AdManagementModal: React.FC<AdManagementModalProps> = ({
                 onClick={() => toggleCampaign(c.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors cursor-pointer ${
                   c.isActive
-                    ? 'bg-[#353437] text-white hover:bg-red-900/40'
-                    : 'bg-[#eab308] text-black'
+                    ? 'bg-zinc-200 hover:bg-zinc-300 dark:bg-[#353437] text-zinc-800 dark:text-white hover:text-rose-600'
+                    : 'bg-amber-500 text-white hover:bg-amber-600'
                 }`}
               >
                 {c.isActive ? 'Pause' : 'Activate'}
