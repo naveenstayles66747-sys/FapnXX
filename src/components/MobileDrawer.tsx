@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CategoryId, CategoryInfo, ContentPreference, ScreenId } from '../types';
 import { CATEGORIES } from '../data';
 import { ThemeMode } from '../utils/storage';
@@ -38,234 +38,333 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   contentPreference,
   onChangeContentPreference,
 }) => {
+  // Navigation view inside drawer: 'main' menu or 'categories' drill-down folder
+  const [drawerSubView, setDrawerSubView] = useState<'main' | 'categories'>('main');
+  const [isVideosExpanded, setIsVideosExpanded] = useState<boolean>(true);
+
   if (!isOpen) return null;
 
+  const handleCategoryClick = (catId: CategoryId) => {
+    onSelectCategory(catId);
+    onClose();
+    setDrawerSubView('main');
+  };
+
+  const handleHomeClick = () => {
+    onNavigate('browse');
+    onClose();
+    setDrawerSubView('main');
+  };
+
+  const handlePerformersClick = () => {
+    onNavigate('performers');
+    onClose();
+    setDrawerSubView('main');
+  };
+
+  const handleSignInClick = () => {
+    onNavigate('signin');
+    onClose();
+    setDrawerSubView('main');
+  };
+
   return (
-    <div className="fixed inset-0 z-[100]">
-      {/* Overlay with smooth backdrop fade */}
+    <div className="fixed inset-0 z-[100] flex">
+      {/* Dark Overlay Backdrop with Smooth Fade */}
       <div
-        onClick={onClose}
-        className="mobile-drawer-backdrop-anim absolute inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
+        onClick={() => {
+          onClose();
+          setDrawerSubView('main');
+        }}
+        className="mobile-drawer-backdrop-anim fixed inset-0 bg-black/80 backdrop-blur-sm cursor-pointer"
       />
 
-      {/* Drawer Content with natural spring physics slide */}
-      <aside className="mobile-drawer-aside mobile-drawer-anim absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-[#131315] border-r border-white/10 flex flex-col z-10 shadow-[20px_0_50px_rgba(0,0,0,0.8)]">
-        {/* Drawer Header matching Header height (h-16) and exact top-left hamburger button position */}
-        <div className="h-16 px-3 flex items-center gap-3 border-b border-zinc-200/80 dark:border-white/10 shrink-0">
-          {/* Close Button placed at the EXACT same position as the 3-line hamburger button */}
+      {/* Main Drawer Container matching Pornktube layout */}
+      <aside className="mobile-drawer-aside mobile-drawer-anim relative w-[310px] max-w-[85vw] h-full bg-white dark:bg-[#121115] text-zinc-900 dark:text-zinc-100 flex flex-col z-20 shadow-[20px_0_60px_rgba(0,0,0,0.9)] border-r border-zinc-200 dark:border-white/10 select-none transition-colors">
+        {/* ── TOP ACTION BAR (Theme Toggle + Login + Sign Up) ─────────── */}
+        <div className="p-3 bg-zinc-100 dark:bg-[#18171d] border-b border-zinc-200 dark:border-white/10 flex items-center justify-between gap-2 shrink-0">
+          {/* Theme Switcher Button */}
           <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700/80 text-zinc-800 dark:text-zinc-100 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0"
-            aria-label="Close menu"
-            title="Close menu"
+            type="button"
+            onClick={onToggleTheme}
+            className="w-9 h-9 rounded-lg bg-white dark:bg-[#2a2933] hover:bg-zinc-200 dark:hover:bg-[#34333f] text-[#ec4899] dark:text-[#ffb0cd] flex items-center justify-center transition-colors cursor-pointer border border-zinc-300 dark:border-white/5 active:scale-95 shrink-0 shadow-sm"
+            title={themeMode === 'dark' ? 'Switch to Day Mode' : 'Switch to Dark Mode'}
+            aria-label="Toggle Theme"
           >
-            <span className="material-symbols-outlined text-xl text-[#e0358d]">close</span>
+            <span className="material-symbols-outlined text-[18px]">
+              {themeMode === 'dark' ? 'light_mode' : 'dark_mode'}
+            </span>
           </button>
 
-          <div
-            onClick={() => {
-              onNavigate('browse');
-              onClose();
-            }}
-            className="text-xl font-black italic cursor-pointer tracking-tight select-none"
-          >
-            <span className="text-[#e0358d] drop-shadow-[0_0_10px_rgba(224,53,141,0.5)] font-black">Fap</span>
-            <span className="brand-letter-n font-black">n</span>
-            <span className="mobile-drawer-text font-black">XX</span>
-          </div>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto py-4">
-          <ul className="flex flex-col px-3 gap-1">
-            {/* Mobile Theme Switcher Toggle (Hidden in Web View drawer) */}
-            <li className="lg:hidden">
-              <button
-                onClick={onToggleTheme}
-                className="mobile-drawer-card w-full flex items-center justify-between px-4 py-3 rounded-xl text-[#e5e1e4] bg-[#27272a]/70 hover:bg-white/10 transition-all font-semibold text-sm border border-white/5 cursor-pointer shadow-sm active:scale-95"
-              >
-                <div className="flex items-center gap-3.5">
-                  <span className="material-symbols-outlined text-[#ffb0cd]">
-                    {themeMode === 'dark' ? 'light_mode' : 'dark_mode'}
-                  </span>
-                  <span className="mobile-drawer-text">{themeMode === 'dark' ? 'Daytime Light Mode' : 'Nighttime Dark Mode'}</span>
-                </div>
-                <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-[#ec4899]/20 text-[#ffb0cd] border border-[#ec4899]/30">
-                  {themeMode}
-                </span>
-              </button>
-            </li>
-
-            {/* Mobile Content Preference Selector (Hidden in Web View drawer) */}
-            <li className="my-1 lg:hidden">
-              <div className="mobile-drawer-card p-3 rounded-xl bg-[#27272a]/70 border border-white/5 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="mobile-drawer-text-sub text-[11px] font-bold text-[#debec8] uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-sm text-[#ffb0cd]">tune</span>
-                    Content Preference
-                  </span>
-                  <span className="text-[10px] font-bold capitalize text-[#ffb0cd]">
-                    {contentPreference}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(['straight', 'gay', 'lesbian'] as ContentPreference[]).map((pref) => (
-                    <button
-                      key={pref}
-                      onClick={() => onChangeContentPreference(pref)}
-                      className={`py-2 rounded-lg text-xs font-bold capitalize transition-all cursor-pointer ${
-                        contentPreference === pref
-                          ? 'bg-[#ec4899] text-white shadow-neon-pink'
-                          : 'mobile-drawer-unselected-btn text-[#a19fa6] hover:text-white bg-black/40'
-                      }`}
-                    >
-                      {pref}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </li>
-            {onOpenAdminPanel && (
-              <li>
-                <button
-                  onClick={() => {
-                    onClose();
-                    onOpenAdminPanel();
-                  }}
-                  className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg font-bold text-sm cursor-pointer ${
-                    isAdminAuthenticated
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-[#27272a] text-[#ffb0cd]'
-                  }`}
-                >
-                  <span className="material-symbols-outlined">admin_panel_settings</span>
-                  <span>{isAdminAuthenticated ? 'Admin Console' : 'Admin Portal'}</span>
-                </button>
-              </li>
-            )}
-
-            {onOpenUpload && (
-              <li>
-                <button
-                  onClick={() => {
-                    onClose();
-                    onOpenUpload();
-                  }}
-                  className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-[#ec4899] bg-[#ec4899]/10 border border-[#ec4899]/30 font-bold text-sm cursor-pointer"
-                >
-                  <span className="material-symbols-outlined">upload</span>
-                  <span>Upload Video</span>
-                </button>
-              </li>
-            )}
-
-            <li>
-              <button
-                onClick={() => {
-                  onNavigate('browse');
-                  onClose();
-                }}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-zinc-900 dark:text-[#e5e1e4] hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-bold text-sm cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[#e0358d] dark:text-[#ffb0cd]">home</span>
-                <span>Home</span>
-              </button>
-            </li>
-
-            {categories.map((cat) => (
-              <li key={cat.id}>
-                <button
-                  onClick={() => {
-                    onSelectCategory(cat.id);
-                    onClose();
-                  }}
-                  className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-zinc-900 dark:text-[#e5e1e4] hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-bold text-sm cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[#e0358d] dark:text-[#ffb0cd]">
-                    {cat.icon}
-                  </span>
-                  <span>{cat.name}</span>
-                </button>
-              </li>
-            ))}
-
-            <li className="pt-2 border-t border-zinc-200 dark:border-white/5 mt-2">
-              <button
-                onClick={() => {
-                  onNavigate('performers');
-                  onClose();
-                }}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-zinc-900 dark:text-[#e5e1e4] hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-bold text-sm cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[#e0358d] dark:text-[#ffb0cd]">groups</span>
-                <span>Pornstars</span>
-              </button>
-            </li>
-
-            <li>
-              <button
-                onClick={() => {
-                  if (!userEmail) {
-                    onClose();
-                    if (onOpenSoftLogin) onOpenSoftLogin('Cloud Bookmarks & Sync');
-                  } else {
-                    onNavigate('browse');
-                    onClose();
-                  }
-                }}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-zinc-900 dark:text-[#e5e1e4] hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-bold text-sm cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[#ec4899]">bookmark_add</span>
-                <span>Saved Videos</span>
-                {!userEmail && (
-                  <span className="ml-auto text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-zinc-200 dark:bg-white/10 text-zinc-700 dark:text-[#a19fa6]">
-                    Sync
-                  </span>
-                )}
-              </button>
-            </li>
-          </ul>
-        </nav>
-
-        <div className="p-6 border-t border-white/5 flex flex-col gap-3">
+          {/* User Auth Buttons */}
           {userEmail ? (
-            <div className="flex flex-col gap-2">
-              <div className="text-xs text-[#debec8] flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                <span className="font-semibold truncate">{userEmail}</span>
+            <div className="flex-1 flex items-center justify-end gap-2 overflow-hidden">
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#2a2933] border border-zinc-200 dark:border-white/5 text-xs text-zinc-900 dark:text-zinc-200 truncate">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                <span className="truncate font-semibold text-[11px]">{userEmail.split('@')[0]}</span>
               </div>
               <button
-                onClick={() => {
-                  onNavigate('signin');
-                  onClose();
-                }}
-                className="w-full py-2.5 bg-[#27272a] text-[#debec8] font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-white/10 transition-colors"
+                type="button"
+                onClick={handleSignInClick}
+                className="px-2.5 py-1.5 bg-[#ec4899] hover:bg-[#f751a1] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer shrink-0"
               >
-                Account Settings
+                Profile
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between text-xs text-[#a19fa6] px-1">
-                <span className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-sm">person_outline</span>
-                  Guest Mode Active
-                </span>
-                <span className="text-[10px] text-emerald-400 font-bold uppercase">Private</span>
-              </div>
+            <div className="flex-1 flex items-center justify-end gap-2">
               <button
-                onClick={() => {
-                  onNavigate('signin');
-                  onClose();
-                }}
-                className="w-full py-3 bg-[#ec4899] text-[#fafafa] font-bold text-xs uppercase tracking-wider rounded-xl active:scale-95 transition-transform shadow-neon-pink cursor-pointer flex items-center justify-center gap-2"
+                type="button"
+                onClick={handleSignInClick}
+                className="flex-1 py-1.5 px-3 bg-white hover:bg-zinc-200 dark:bg-[#2a2933] dark:hover:bg-[#34333f] border border-zinc-300 dark:border-white/10 rounded-lg text-xs font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
               >
-                <span className="material-symbols-outlined text-sm">login</span>
-                Sign In / Sync Account
+                <span className="material-symbols-outlined text-sm text-[#ec4899]">key</span>
+                <span>LOGIN</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSignInClick}
+                className="flex-1 py-1.5 px-3 bg-white hover:bg-zinc-200 dark:bg-[#2a2933] dark:hover:bg-[#34333f] border border-zinc-300 dark:border-white/10 rounded-lg text-xs font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-sm text-[#ec4899]">lock</span>
+                <span>SIGN UP</span>
               </button>
             </div>
           )}
         </div>
+
+        {/* ── DRAWER CONTENT BODY WITH SCROLL SUPPORT ────────────────── */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {drawerSubView === 'main' ? (
+            /* ── VIEW 1: MAIN MENU VIEW ─────────────────────────────── */
+            <ul className="py-2 divide-y divide-zinc-200 dark:divide-white/5 text-sm">
+              {/* Home */}
+              <li>
+                <button
+                  type="button"
+                  onClick={handleHomeClick}
+                  className="w-full px-5 py-3.5 flex items-center gap-3.5 text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-semibold text-left active:bg-zinc-200 dark:active:bg-white/10"
+                >
+                  <span className="material-symbols-outlined text-lg text-zinc-500 dark:text-zinc-400">home</span>
+                  <span>Home</span>
+                </button>
+              </li>
+
+              {/* Videos Dropdown (Accordion) */}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setIsVideosExpanded(!isVideosExpanded)}
+                  className="w-full px-5 py-3.5 flex items-center justify-between text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-semibold text-left active:bg-zinc-200 dark:active:bg-white/10"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <span className="material-symbols-outlined text-lg text-zinc-500 dark:text-zinc-400">smart_display</span>
+                    <span>Videos</span>
+                  </div>
+                  <span className={`material-symbols-outlined text-sm text-zinc-500 dark:text-zinc-400 transition-transform duration-200 ${isVideosExpanded ? 'rotate-180' : ''}`}>
+                    expand_more
+                  </span>
+                </button>
+
+                {/* Sub-items when Videos dropdown is expanded */}
+                {isVideosExpanded && (
+                  <ul className="bg-zinc-50 dark:bg-[#0c0c0f] py-1 border-t border-b border-zinc-200 dark:border-white/5 space-y-0.5">
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelectCategory('all');
+                          onClose();
+                        }}
+                        className="w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-zinc-700 dark:text-zinc-300 hover:text-[#ec4899] hover:bg-zinc-200/60 dark:hover:bg-white/5 text-xs font-semibold text-left transition-colors cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-amber-500">trophy</span>
+                        <span>Top Rated</span>
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelectCategory('trending');
+                          onClose();
+                        }}
+                        className="w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-zinc-700 dark:text-zinc-300 hover:text-[#ec4899] hover:bg-zinc-200/60 dark:hover:bg-white/5 text-xs font-semibold text-left transition-colors cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-rose-500">local_fire_department</span>
+                        <span>Most Popular</span>
+                      </button>
+                    </li>
+                  </ul>
+                )}
+              </li>
+
+              {/* All Categories Drill-Down Folder (Opens Full List View) */}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setDrawerSubView('categories')}
+                  className="w-full px-5 py-3.5 flex items-center justify-between text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-semibold text-left active:bg-zinc-200 dark:active:bg-white/10 group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <span className="material-symbols-outlined text-lg text-zinc-500 dark:text-zinc-400 group-hover:text-[#ec4899] transition-colors">menu_book</span>
+                    <span>All categories</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 text-xs font-mono">
+                    <span>({categories.length})</span>
+                    <span className="material-symbols-outlined text-sm">chevron_right</span>
+                  </div>
+                </button>
+              </li>
+
+              {/* Popular Categories (Quick Grid View) */}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onNavigate('categories');
+                    onClose();
+                  }}
+                  className="w-full px-5 py-3.5 flex items-center gap-3.5 text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-semibold text-left active:bg-zinc-200 dark:active:bg-white/10"
+                >
+                  <span className="material-symbols-outlined text-lg text-zinc-500 dark:text-zinc-400">inventory_2</span>
+                  <span>Popular categories</span>
+                </button>
+              </li>
+
+              {/* Pornstars / Performers */}
+              <li>
+                <button
+                  type="button"
+                  onClick={handlePerformersClick}
+                  className="w-full px-5 py-3.5 flex items-center gap-3.5 text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-semibold text-left active:bg-zinc-200 dark:active:bg-white/10"
+                >
+                  <span className="material-symbols-outlined text-lg text-zinc-500 dark:text-zinc-400">groups</span>
+                  <span>Pornstars</span>
+                </button>
+              </li>
+
+              {/* Saved Videos / Bookmarks */}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!userEmail && onOpenSoftLogin) {
+                      onClose();
+                      onOpenSoftLogin('Cloud Bookmarks & Playlists');
+                    } else {
+                      onNavigate('browse');
+                      onClose();
+                    }
+                  }}
+                  className="w-full px-5 py-3.5 flex items-center justify-between text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-semibold text-left active:bg-zinc-200 dark:active:bg-white/10"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <span className="material-symbols-outlined text-lg text-[#ec4899]">bookmark</span>
+                    <span>Saved Videos</span>
+                  </div>
+                  {!userEmail && (
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-zinc-400">
+                      Sync
+                    </span>
+                  )}
+                </button>
+              </li>
+
+              {/* Admin Panel Quick Link (If staff/admin) */}
+              {onOpenAdminPanel && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenAdminPanel();
+                    }}
+                    className={`w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors font-semibold text-left ${
+                      isAdminAuthenticated
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                        : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+                    <span>{isAdminAuthenticated ? 'Admin Console' : 'Support / Admin'}</span>
+                  </button>
+                </li>
+              )}
+
+              {/* Upload Video Button */}
+              {onOpenUpload && (
+                <li className="p-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenUpload();
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-base">cloud_upload</span>
+                    <span>Upload Video</span>
+                  </button>
+                </li>
+              )}
+            </ul>
+          ) : (
+            /* ── VIEW 2: CATEGORIES FOLDER DRILL-DOWN (Matches Screenshot 2) ─ */
+            <div className="flex flex-col h-full animate-in slide-in-from-right-4 duration-200">
+              {/* Back Button Header */}
+              <div className="p-2.5 bg-zinc-100 dark:bg-[#18171d] border-b border-zinc-200 dark:border-white/10 flex items-center justify-between shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setDrawerSubView('main')}
+                  className="px-3.5 py-1.5 rounded-lg bg-white dark:bg-[#2a2933] hover:bg-zinc-200 dark:hover:bg-[#353440] text-zinc-900 dark:text-zinc-200 font-bold text-xs uppercase flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95 border border-zinc-300 dark:border-transparent shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-sm">arrow_back</span>
+                  <span>Back</span>
+                </button>
+                <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider pr-2">
+                  All Categories ({categories.length})
+                </span>
+              </div>
+
+              {/* Scrollable Categories List (Pornktube Style Clean Rows) */}
+              <ul className="divide-y divide-zinc-200 dark:divide-white/5 text-sm py-1">
+                {categories.map((cat) => (
+                  <li key={cat.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleCategoryClick(cat.id)}
+                      className="w-full px-5 py-3 flex items-center justify-between text-zinc-800 dark:text-zinc-200 hover:text-[#ec4899] dark:hover:text-[#ffb0cd] hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer text-left active:bg-zinc-200 dark:active:bg-white/10"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-base text-[#ec4899] opacity-80">
+                          {cat.icon || 'folder'}
+                        </span>
+                        <span className="font-semibold text-xs capitalize">{cat.name}</span>
+                      </div>
+                      <span className="material-symbols-outlined text-xs text-zinc-400 dark:text-zinc-600">chevron_right</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       </aside>
+
+      {/* ── EXTERNAL WHITE CLOSE BUTTON ON OVERLAY (Matches Screenshot 1) ─ */}
+      <button
+        type="button"
+        onClick={() => {
+          onClose();
+          setDrawerSubView('main');
+        }}
+        className="relative z-20 m-3 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center cursor-pointer active:scale-90 transition-all border border-white/20 shadow-2xl self-start shrink-0"
+        aria-label="Close menu"
+        title="Close menu"
+      >
+        <span className="material-symbols-outlined text-2xl font-bold">close</span>
+      </button>
     </div>
   );
 };
