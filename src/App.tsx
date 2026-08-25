@@ -593,7 +593,7 @@ export default function App() {
               />
             )}
 
-            {currentScreen === 'performers' && <PerformersScreen />}
+            {currentScreen === 'performers' && <PerformersScreen videos={filteredVideosList} />}
 
             {currentScreen === 'video-detail' && (
               selectedVideo ? (

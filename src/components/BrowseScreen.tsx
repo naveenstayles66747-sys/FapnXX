@@ -24,69 +24,6 @@ interface BrowseScreenProps {
   setSearchQuery?: (query: string) => void;
 }
 
-const DEFAULT_DESKTOP_BANNERS: LandingBanner[] = [
-  {
-    id: 'banner-1',
-    title: 'Neon Midnight Fantasies',
-    subtitle: 'Exclusive 4K Ultra-HD release featuring top international performers in a private penthouse setting.',
-    bannerImage: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=75&w=1600&auto=format&fit=crop',
-    tag: 'Featured 4K Release',
-    targetCategory: 'trending',
-    ctaText: 'Watch Now in 4K',
-    isActive: true
-  },
-  {
-    id: 'banner-2',
-    title: 'Private VIP Encounters',
-    subtitle: 'Unfiltered, raw, and intense scenes curated specifically for FapnXX members.',
-    bannerImage: 'https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?q=75&w=1600&auto=format&fit=crop',
-    tag: 'Exclusive VIP',
-    targetCategory: 'milf',
-    ctaText: 'Explore VIP Series',
-    isActive: true
-  },
-  {
-    id: 'banner-3',
-    title: 'Subtle Illumination & Passion',
-    subtitle: 'Experience intimate POV and aesthetic romance shot on high-resolution cinema sensors.',
-    bannerImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=75&w=1600&auto=format&fit=crop',
-    tag: 'Trending POV',
-    targetCategory: 'pov',
-    ctaText: 'Stream Immediately',
-    isActive: true
-  },
-  {
-    id: 'banner-4',
-    title: 'Velvet Dusk Rendezvous',
-    subtitle: 'Sophisticated glamour and dramatic moonlight encounters in 60FPS Ultra HD.',
-    bannerImage: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=75&w=1600&auto=format&fit=crop',
-    tag: '4K Ultra-HD',
-    targetCategory: 'amateur',
-    ctaText: 'Watch Amateur Cut',
-    isActive: true
-  },
-  {
-    id: 'banner-5',
-    title: 'Midnight Penthouse Encounter',
-    subtitle: 'Uncut cinematic releases with immersive surround audio and 60fps streaming.',
-    bannerImage: 'https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?q=75&w=1600&auto=format&fit=crop',
-    tag: '60FPS Cinema',
-    targetCategory: 'lesbian',
-    ctaText: 'Stream 60FPS',
-    isActive: true
-  },
-  {
-    id: 'banner-6',
-    title: 'City Lights Encounters',
-    subtitle: 'Vibrant urban aesthetic, moody neon lighting, and high-energy intimate encounters.',
-    bannerImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=75&w=1600&auto=format&fit=crop',
-    tag: 'Top Choice',
-    targetCategory: 'teen',
-    ctaText: 'Discover Highlights',
-    isActive: true
-  }
-];
-
 export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   onSelectVideo,
   onSelectCategory,
@@ -139,10 +76,24 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     [banners]
   );
   const displayBanners = React.useMemo(() => {
-    return activeBanners.length >= 6
-      ? activeBanners
-      : [...activeBanners, ...DEFAULT_DESKTOP_BANNERS.filter((db) => !activeBanners.some((ab) => ab.id === db.id))].slice(0, 6);
-  }, [activeBanners]);
+    if (activeBanners.length > 0) {
+      return activeBanners;
+    }
+    // If no custom banners uploaded by admin, dynamically showcase the top real uploaded videos
+    if (activeVideos.length > 0) {
+      return activeVideos.slice(0, 5).map((v) => ({
+        id: `hero-${v.id}`,
+        title: v.title || 'Featured Video',
+        subtitle: v.description || `${v.categoryLabel || 'Exclusive'} • ${v.duration || '05:00'} • ${v.quality || 'HD'} Ultra-HD`,
+        bannerImage: v.thumbnail || '',
+        tag: v.quality ? `${v.quality} Ultra-HD` : 'Featured',
+        targetCategory: v.category || 'trending',
+        ctaText: 'Watch Now',
+        isActive: true,
+      }));
+    }
+    return [];
+  }, [activeBanners, activeVideos]);
 
   // Progressive on-demand prefetch: Only preload the NEXT slide image when slide changes
   useEffect(() => {

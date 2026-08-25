@@ -1,16 +1,61 @@
-import React, { useState } from 'react';
-import { Performer } from '../types';
-import { PERFORMERS } from '../data';
+import React, { useState, useMemo } from 'react';
+import { Performer, Video } from '../types';
 
-export const PerformersScreen: React.FC = () => {
-  const [performers, setPerformers] = useState<Performer[]>(PERFORMERS);
+interface PerformersScreenProps {
+  videos?: Video[];
+}
+
+export const PerformersScreen: React.FC<PerformersScreenProps> = ({ videos = [] }) => {
   const [filterTag, setFilterTag] = useState<string>('All');
-  const [visibleCount, setVisibleCount] = useState<number>(5);
+  const [visibleCount, setVisibleCount] = useState<number>(10);
+  const [followedIds, setFollowedIds] = useState<Record<string, boolean>>({});
+
+  // Dynamically extract real unique performers from genuine uploaded videos only
+  const performers = useMemo<Performer[]>(() => {
+    const map = new Map<string, Performer>();
+
+    (videos || []).forEach((v) => {
+      if (!v || v.isTakenDown) return;
+      const performerNames: string[] = [];
+      if (v.performerName && v.performerName.trim() && v.performerName !== 'User Uploaded') {
+        performerNames.push(v.performerName.trim());
+      }
+      if (Array.isArray(v.modelsActors)) {
+        v.modelsActors.forEach((m) => {
+          if (m && typeof m === 'string' && m.trim()) performerNames.push(m.trim());
+        });
+      }
+      if (Array.isArray(v.models_actors)) {
+        v.models_actors.forEach((m) => {
+          if (m && typeof m === 'string' && m.trim()) performerNames.push(m.trim());
+        });
+      }
+
+      performerNames.forEach((name) => {
+        const id = name.toLowerCase().replace(/\s+/g, '-');
+        if (!map.has(id)) {
+          map.set(id, {
+            id,
+            name,
+            avatar: v.performerAvatar || v.thumbnail || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop',
+            subscribers: '1.2K',
+            videosCount: 1,
+            bio: `Official creator profile for ${name}. Featuring high quality exclusive streams.`,
+            tags: Array.isArray(v.tags) && v.tags.length > 0 ? v.tags : ['HD', 'Creator'],
+            isFollowing: !!followedIds[id],
+          });
+        } else {
+          const existing = map.get(id)!;
+          existing.videosCount += 1;
+        }
+      });
+    });
+
+    return Array.from(map.values());
+  }, [videos, followedIds]);
 
   const toggleFollow = (id: string) => {
-    setPerformers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, isFollowing: !p.isFollowing } : p))
-    );
+    setFollowedIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const filteredPerformers = React.useMemo(() => {
