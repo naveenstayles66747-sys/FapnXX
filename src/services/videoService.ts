@@ -296,6 +296,31 @@ export class VideoService {
   }
 
   /**
+   * Check if a video is fake or demo data
+   */
+  isDemoOrFakeVideo(v: any): boolean {
+    if (!v || typeof v !== 'object') return true;
+    const id = (v.id || '').toLowerCase();
+    const embed = (v.embedUrl || '').toLowerCase();
+    const title = (v.title || '').toLowerCase();
+    const createdBy = (v.createdBy || '').toLowerCase();
+
+    if (id.startsWith('vid-0') || id.startsWith('demo-') || id.startsWith('test-')) return true;
+    if (embed.includes('embedseek.com/#9sq8g') || embed.includes('example.com')) return true;
+    if (createdBy === 'system' || v.isDemo === true) return true;
+    if (
+      title.includes('desi bhabhi romance 4k') ||
+      title.includes('indian college girl - amateur hd') ||
+      title.includes('trending milf scene - full hd') ||
+      title.includes('asian beauty - exclusive 4k vr') ||
+      title.includes('hot lesbian scene - premium hd')
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Fetch all videos via direct Firestore SDK with Backend API and CDN fallbacks with Smart Cache
    */
   async fetchVideos(category?: string): Promise<Video[]> {
@@ -355,9 +380,9 @@ export class VideoService {
         });
 
         if (firestoreVideos.length > 0) {
-          // Sort newest first, filter out taken-down or embed-less videos
+          // Sort newest first, filter out taken-down, embed-less, and demo/fake videos
           const cleanVideos = firestoreVideos.filter(
-            (v) => !(v as any).isTakenDown && (v.embedUrl || v.previewMp4Url)
+            (v) => !(v as any).isTakenDown && (v.embedUrl || v.previewMp4Url) && !this.isDemoOrFakeVideo(v)
           );
           cleanVideos.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
           this.smartCache.set(cacheKey, cleanVideos);
@@ -380,7 +405,9 @@ export class VideoService {
     ).then((res) => {
       const list = res.videos || [];
       if (list.length > 0) {
-        this.smartCache.set(cacheKey, list);
+        const filtered = list.filter((v) => !this.isDemoOrFakeVideo(v));
+        this.smartCache.set(cacheKey, filtered);
+        return filtered;
       }
       return list;
     });
@@ -408,9 +435,12 @@ export class VideoService {
               });
             });
             if (list.length > 0) {
-              list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-              this.smartCache.set('videos_all', list);
-              callback(list);
+              const cleanList = list.filter(
+                (v) => !(v as any).isTakenDown && (v.embedUrl || v.previewMp4Url) && !this.isDemoOrFakeVideo(v)
+              );
+              cleanList.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+              this.smartCache.set('videos_all', cleanList);
+              callback(cleanList);
             }
           }
         },
