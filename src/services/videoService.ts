@@ -447,11 +447,12 @@ export class VideoService {
   }
 
   /**
-   * Save a new video to Firestore and Backend API
+   * Save a new video (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async saveVideo(video: Video): Promise<Video> {
     const videoId = video.id || `vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const fullVideo = {
+    const fullVideo: Video = {
       ...video,
       id: videoId,
       createdAt: video.createdAt || new Date().toISOString(),
@@ -463,47 +464,71 @@ export class VideoService {
     // Invalidate local video cache
     this.smartCache.invalidate('videos');
 
-    // Direct Firestore write (Single authoritative write path)
-    try {
-      await setDoc(doc(db, 'videos', videoId), cleanForFirestore(fullVideo), { merge: true });
-      console.log('✅ [Firestore] Video saved successfully:', videoId);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct video save notice:', err.message);
-    }
-
-    return fullVideo;
+    return this.apiFetch<Video>(
+      '/videos',
+      {
+        method: 'POST',
+        body: JSON.stringify(cleanForFirestore(fullVideo)),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'videos', videoId), cleanForFirestore(fullVideo), { merge: true });
+          console.log('✅ [Firestore Client] Video saved:', videoId);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct video save notice:', err.message);
+        }
+        return fullVideo;
+      }
+    );
   }
 
   /**
-   * Update an existing video via Firestore (Admin/Staff only)
+   * Update an existing video (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async updateVideo(video: Video): Promise<Video> {
     this.smartCache.invalidate('videos');
 
-    try {
-      await setDoc(doc(db, 'videos', video.id), cleanForFirestore(video), { merge: true });
-      console.log('✅ [Firestore] Video updated successfully:', video.id);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct video update notice:', err.message);
-    }
-
-    return video;
+    return this.apiFetch<Video>(
+      `/videos/${video.id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(cleanForFirestore(video)),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'videos', video.id), cleanForFirestore(video), { merge: true });
+          console.log('✅ [Firestore Client] Video updated:', video.id);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct video update notice:', err.message);
+        }
+        return video;
+      }
+    );
   }
 
   /**
-   * Delete video via Firestore (Admin/Staff only)
+   * Delete video (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async deleteVideo(videoId: string): Promise<boolean> {
     this.smartCache.invalidate('videos');
 
-    try {
-      await deleteDoc(doc(db, 'videos', videoId));
-      console.log('✅ [Firestore] Video deleted successfully:', videoId);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct video delete notice:', err.message);
-    }
-
-    return true;
+    return this.apiFetch<boolean>(
+      `/videos/${videoId}`,
+      {
+        method: 'DELETE',
+      },
+      async () => {
+        try {
+          await deleteDoc(doc(db, 'videos', videoId));
+          console.log('✅ [Firestore Client] Video deleted:', videoId);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct video delete notice:', err.message);
+        }
+        return true;
+      }
+    );
   }
 
   /**
@@ -576,95 +601,145 @@ export class VideoService {
   }
 
   /**
-   * Save a category via Firestore and Backend API (Admin/Staff only)
+   * Save a category (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async saveCategory(category: CategoryInfo): Promise<CategoryInfo> {
     const id = category.id.trim().toLowerCase().replace(/\s+/g, '-');
     const fullCategory = { ...category, id };
 
-    try {
-      await setDoc(doc(db, 'categories', id), cleanForFirestore(fullCategory), { merge: true });
-      console.log('✅ [Firestore] Category saved successfully:', id);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct category save notice:', err.message);
-    }
-
-    return fullCategory;
+    return this.apiFetch<CategoryInfo>(
+      '/categories',
+      {
+        method: 'POST',
+        body: JSON.stringify(cleanForFirestore(fullCategory)),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'categories', id), cleanForFirestore(fullCategory), { merge: true });
+          console.log('✅ [Firestore Client] Category saved:', id);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct category save notice:', err.message);
+        }
+        return fullCategory;
+      }
+    );
   }
 
   /**
-   * Update category via Firestore (Admin/Staff only)
+   * Update category (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async updateCategory(category: CategoryInfo): Promise<CategoryInfo> {
-    try {
-      await setDoc(doc(db, 'categories', category.id), cleanForFirestore(category), { merge: true });
-      console.log('✅ [Firestore] Category updated successfully:', category.id);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct category update notice:', err.message);
-    }
-
-    return category;
+    return this.apiFetch<CategoryInfo>(
+      `/categories/${category.id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(cleanForFirestore(category)),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'categories', category.id), cleanForFirestore(category), { merge: true });
+          console.log('✅ [Firestore Client] Category updated:', category.id);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct category update notice:', err.message);
+        }
+        return category;
+      }
+    );
   }
 
   /**
-   * Delete category via Firestore (Admin/Staff only)
+   * Delete category (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async deleteCategory(categoryId: string): Promise<boolean> {
-    try {
-      await deleteDoc(doc(db, 'categories', categoryId));
-      console.log('✅ [Firestore] Category deleted successfully:', categoryId);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct category delete notice:', err.message);
-    }
-
-    return true;
+    return this.apiFetch<boolean>(
+      `/categories/${categoryId}`,
+      {
+        method: 'DELETE',
+      },
+      async () => {
+        try {
+          await deleteDoc(doc(db, 'categories', categoryId));
+          console.log('✅ [Firestore Client] Category deleted:', categoryId);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct category delete notice:', err.message);
+        }
+        return true;
+      }
+    );
   }
 
   /**
-   * Submit category request via Firestore
+   * Submit category request
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async saveCategoryRequest(categoryReq: CategoryRequest): Promise<CategoryRequest> {
     const reqId = categoryReq.id || `cat-req-${Date.now()}`;
     const fullReq = { ...categoryReq, id: reqId, createdAt: new Date().toISOString(), status: 'pending' as const };
 
-    try {
-      await setDoc(doc(db, 'category_requests', reqId), cleanForFirestore(fullReq), { merge: true });
-      console.log('✅ [Firestore] Category request saved successfully:', reqId);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct category request save notice:', err.message);
-    }
+    return this.apiFetch<CategoryRequest>(
+      '/categories/requests',
+      {
+        method: 'POST',
+        body: JSON.stringify(cleanForFirestore(fullReq)),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'category_requests', reqId), cleanForFirestore(fullReq), { merge: true });
+          console.log('✅ [Firestore Client] Category request saved:', reqId);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct category request save notice:', err.message);
+        }
+        return fullReq;
+      }
+    );
+  }
 
-    return fullReq;
+  /**
+   * Update category request status (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
+   */
+  async updateCategoryRequestStatus(requestId: string, status: 'approved' | 'rejected'): Promise<void> {
+    return this.apiFetch<void>(
+      `/categories/admin/requests/${requestId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'category_requests', requestId), { status }, { merge: true });
+          console.log('✅ [Firestore Client] Category request status updated:', requestId, status);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct category request status update notice:', err.message);
+        }
+      }
+    );
   }
 
   /**
    * Fetch all category requests (Admin)
    */
   async fetchCategoryRequests(): Promise<CategoryRequest[]> {
-    try {
-      const snap = await getDocs(collection(db, 'category_requests'));
-      if (!snap.empty) {
-        const list: CategoryRequest[] = [];
-        snap.forEach((d) => list.push({ ...(d.data() as CategoryRequest), id: d.id }));
-        return list;
+    return this.apiFetch<CategoryRequest[]>(
+      '/categories/admin/requests',
+      { method: 'GET' },
+      async () => {
+        try {
+          const snap = await getDocs(collection(db, 'category_requests'));
+          if (!snap.empty) {
+            const list: CategoryRequest[] = [];
+            snap.forEach((d) => list.push({ ...(d.data() as CategoryRequest), id: d.id }));
+            return list;
+          }
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] fetchCategoryRequests fallback:', err.message);
+        }
+        return [];
       }
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] fetchCategoryRequests fallback:', err.message);
-    }
-
-    return [];
-  }
-
-  /**
-   * Update category request status (Admin/Staff only)
-   */
-  async updateCategoryRequestStatus(requestId: string, status: 'approved' | 'rejected'): Promise<void> {
-    try {
-      await setDoc(doc(db, 'category_requests', requestId), { status }, { merge: true });
-      console.log('✅ [Firestore] Category request status updated:', requestId, status);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct category request status update notice:', err.message);
-    }
+    );
   }
 
   /**
@@ -719,48 +794,74 @@ export class VideoService {
   }
 
   /**
-   * Save banner via Firestore and Backend API (Admin/Staff only)
+   * Save banner (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async saveBanner(banner: LandingBanner): Promise<LandingBanner> {
     const id = banner.id || `banner-${Date.now()}`;
     const fullBanner = { ...banner, id };
 
-    try {
-      await setDoc(doc(db, 'banners', id), cleanForFirestore(fullBanner), { merge: true });
-      console.log('✅ [Firestore] Banner saved successfully:', id);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct banner save notice:', err.message);
-    }
-
-    return fullBanner;
+    return this.apiFetch<LandingBanner>(
+      '/banners',
+      {
+        method: 'POST',
+        body: JSON.stringify(cleanForFirestore(fullBanner)),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'banners', id), cleanForFirestore(fullBanner), { merge: true });
+          console.log('✅ [Firestore Client] Banner saved:', id);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct banner save notice:', err.message);
+        }
+        return fullBanner;
+      }
+    );
   }
 
   /**
-   * Update banner via Firestore (Admin/Staff only)
+   * Update banner (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async updateBanner(banner: LandingBanner): Promise<LandingBanner> {
-    try {
-      await setDoc(doc(db, 'banners', banner.id), cleanForFirestore(banner), { merge: true });
-      console.log('✅ [Firestore] Banner updated successfully:', banner.id);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct banner update notice:', err.message);
-    }
-
-    return banner;
+    return this.apiFetch<LandingBanner>(
+      `/banners/${banner.id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(cleanForFirestore(banner)),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'banners', banner.id), cleanForFirestore(banner), { merge: true });
+          console.log('✅ [Firestore Client] Banner updated:', banner.id);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct banner update notice:', err.message);
+        }
+        return banner;
+      }
+    );
   }
 
   /**
-   * Delete banner via Firestore (Admin/Staff only)
+   * Delete banner (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async deleteBanner(bannerId: string): Promise<boolean> {
-    try {
-      await deleteDoc(doc(db, 'banners', bannerId));
-      console.log('✅ [Firestore] Banner deleted successfully:', bannerId);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct banner delete notice:', err.message);
-    }
-
-    return true;
+    return this.apiFetch<boolean>(
+      `/banners/${bannerId}`,
+      {
+        method: 'DELETE',
+      },
+      async () => {
+        try {
+          await deleteDoc(doc(db, 'banners', bannerId));
+          console.log('✅ [Firestore Client] Banner deleted:', bannerId);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct banner delete notice:', err.message);
+        }
+        return true;
+      }
+    );
   }
 
   /**
@@ -835,7 +936,8 @@ export class VideoService {
   }
 
   /**
-   * Save comment to Firestore (Single authoritative write path)
+   * Save comment
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async saveComment(comment: VideoComment): Promise<VideoComment> {
     const id = comment.id || `comment_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -849,146 +951,230 @@ export class VideoService {
     // Invalidate local comments cache
     this.smartCache.invalidate(`comments_${comment.videoId}`);
 
-    try {
-      await setDoc(doc(db, 'comments', id), cleanForFirestore(fullComment));
-      console.log('✅ [Firestore] Comment posted to cloud database:', id);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] saveComment notice:', err.message);
-    }
-
-    return fullComment;
+    return this.apiFetch<VideoComment>(
+      '/comments',
+      {
+        method: 'POST',
+        body: JSON.stringify(cleanForFirestore(fullComment)),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'comments', id), cleanForFirestore(fullComment));
+          console.log('✅ [Firestore Client] Comment posted:', id);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] saveComment notice:', err.message);
+        }
+        return fullComment;
+      }
+    );
   }
 
   /**
-   * Like comment via Firestore
+   * Like comment
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async likeComment(commentId: string): Promise<void> {
     this.smartCache.invalidate('comments_');
-    try {
-      await setDoc(doc(db, 'comments', commentId), { likesCount: increment(1) }, { merge: true });
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] likeComment notice:', err.message);
-    }
+
+    return this.apiFetch<void>(
+      `/comments/${commentId}/like`,
+      {
+        method: 'POST',
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'comments', commentId), { likesCount: increment(1) }, { merge: true });
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] likeComment notice:', err.message);
+        }
+      }
+    );
   }
 
   /**
-   * Delete comment via Firestore
+   * Delete comment
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async deleteComment(commentId: string): Promise<void> {
     this.smartCache.invalidate('comments_');
-    try {
-      await deleteDoc(doc(db, 'comments', commentId));
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] deleteComment notice:', err.message);
-    }
+
+    return this.apiFetch<void>(
+      `/comments/${commentId}`,
+      {
+        method: 'DELETE',
+      },
+      async () => {
+        try {
+          await deleteDoc(doc(db, 'comments', commentId));
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] deleteComment notice:', err.message);
+        }
+      }
+    );
   }
 
   /**
-   * Save DMCA/Moderation Report via Firestore
+   * Save DMCA/Moderation Report
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async saveReport(report: DMCAReport): Promise<DMCAReport> {
     const id = report.id || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const fullReport: DMCAReport = { ...report, id, createdAt: new Date().toISOString(), status: 'pending' as const };
 
-    try {
-      await setDoc(doc(db, 'reports', id), cleanForFirestore(fullReport));
-      console.log('✅ [Firestore] Report submitted to database:', id);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] saveReport notice:', err.message);
-    }
-
-    return fullReport;
+    return this.apiFetch<DMCAReport>(
+      '/reports',
+      {
+        method: 'POST',
+        body: JSON.stringify(cleanForFirestore(fullReport)),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'reports', id), cleanForFirestore(fullReport));
+          console.log('✅ [Firestore Client] Report submitted:', id);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] saveReport notice:', err.message);
+        }
+        return fullReport;
+      }
+    );
   }
 
   /**
    * Fetch reports (Admin/Staff only)
    */
   async fetchReports(): Promise<DMCAReport[]> {
-    try {
-      const snap = await getDocs(collection(db, 'reports'));
-      if (!snap.empty) {
-        const list: DMCAReport[] = [];
-        snap.forEach((d) => list.push({ ...(d.data() as DMCAReport), id: d.id }));
-        return list;
+    return this.apiFetch<DMCAReport[]>(
+      '/reports',
+      { method: 'GET' },
+      async () => {
+        try {
+          const snap = await getDocs(collection(db, 'reports'));
+          if (!snap.empty) {
+            const list: DMCAReport[] = [];
+            snap.forEach((d) => list.push({ ...(d.data() as DMCAReport), id: d.id }));
+            return list;
+          }
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] fetchReports fallback:', err.message);
+        }
+        return [];
       }
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] fetchReports fallback:', err.message);
-    }
-
-    return [];
+    );
   }
 
   /**
-   * Update report status via Firestore (Admin/Staff only)
+   * Update report status (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async updateReportStatus(reportId: string, status: ReportStatus): Promise<void> {
-    try {
-      await setDoc(doc(db, 'reports', reportId), { status, resolvedAt: new Date().toISOString() }, { merge: true });
-      console.log('✅ [Firestore] Report status updated:', reportId, status);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] updateReportStatus notice:', err.message);
-    }
+    return this.apiFetch<void>(
+      `/reports/${reportId}/status`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'reports', reportId), { status, resolvedAt: new Date().toISOString() }, { merge: true });
+          console.log('✅ [Firestore Client] Report status updated:', reportId, status);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] updateReportStatus notice:', err.message);
+        }
+      }
+    );
   }
 
   /**
    * Fetch ad campaigns via Firestore SDK with fallback
    */
   async fetchAdCampaigns(): Promise<AdCampaign[]> {
-    try {
-      const snap = await getDocs(collection(db, 'ad_campaigns'));
-      if (!snap.empty) {
-        const list: AdCampaign[] = [];
-        snap.forEach((d) => list.push({ ...(d.data() as AdCampaign), id: d.id }));
-        return list;
+    return this.apiFetch<AdCampaign[]>(
+      '/ads',
+      { method: 'GET' },
+      async () => {
+        try {
+          const snap = await getDocs(collection(db, 'ad_campaigns'));
+          if (!snap.empty) {
+            const list: AdCampaign[] = [];
+            snap.forEach((d) => list.push({ ...(d.data() as AdCampaign), id: d.id }));
+            return list;
+          }
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] fetchAdCampaigns fallback:', err.message);
+        }
+        return [];
       }
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore Client] fetchAdCampaigns fallback:', err.message);
-    }
-
-    return [];
+    );
   }
 
   /**
-   * Save ad campaign via Firestore (Admin/Staff only)
+   * Save ad campaign (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async saveAdCampaign(campaign: AdCampaign): Promise<AdCampaign> {
     const id = campaign.id || `ad-${Date.now()}`;
     const fullAd = { ...campaign, id };
 
-    try {
-      await setDoc(doc(db, 'ad_campaigns', id), cleanForFirestore(fullAd), { merge: true });
-      console.log('✅ [Firestore] Ad campaign saved successfully:', id);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct ad campaign save notice:', err.message);
-    }
-
-    return fullAd;
+    return this.apiFetch<AdCampaign>(
+      '/ads',
+      {
+        method: 'POST',
+        body: JSON.stringify(cleanForFirestore(fullAd)),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'ad_campaigns', id), cleanForFirestore(fullAd), { merge: true });
+          console.log('✅ [Firestore Client] Ad campaign saved:', id);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct ad campaign save notice:', err.message);
+        }
+        return fullAd;
+      }
+    );
   }
 
   /**
-   * Update ad campaign via Firestore (Admin/Staff only)
+   * Update ad campaign (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async updateAdCampaign(campaign: AdCampaign): Promise<AdCampaign> {
-    try {
-      await setDoc(doc(db, 'ad_campaigns', campaign.id), cleanForFirestore(campaign), { merge: true });
-      console.log('✅ [Firestore] Ad campaign updated successfully:', campaign.id);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct ad campaign update notice:', err.message);
-    }
-
-    return campaign;
+    return this.apiFetch<AdCampaign>(
+      `/ads/${campaign.id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(cleanForFirestore(campaign)),
+      },
+      async () => {
+        try {
+          await setDoc(doc(db, 'ad_campaigns', campaign.id), cleanForFirestore(campaign), { merge: true });
+          console.log('✅ [Firestore Client] Ad campaign updated:', campaign.id);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct ad campaign update notice:', err.message);
+        }
+        return campaign;
+      }
+    );
   }
 
   /**
-   * Delete ad campaign via Firestore (Admin/Staff only)
+   * Delete ad campaign (Admin/Staff only)
+   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
   async deleteAdCampaign(campaignId: string): Promise<void> {
-    try {
-      await deleteDoc(doc(db, 'ad_campaigns', campaignId));
-      console.log('✅ [Firestore] Ad campaign deleted successfully:', campaignId);
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore] Direct ad campaign delete notice:', err.message);
-    }
+    return this.apiFetch<void>(
+      `/ads/${campaignId}`,
+      {
+        method: 'DELETE',
+      },
+      async () => {
+        try {
+          await deleteDoc(doc(db, 'ad_campaigns', campaignId));
+          console.log('✅ [Firestore Client] Ad campaign deleted:', campaignId);
+        } catch (err: any) {
+          console.warn('⚠️ [Firestore Client] Direct ad campaign delete notice:', err.message);
+        }
+      }
+    );
   }
 
   /**
