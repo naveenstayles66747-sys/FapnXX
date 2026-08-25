@@ -216,13 +216,18 @@ export class VideoService {
   ): Promise<T> {
     try {
       const authHeaders = await this.getAuthHeaders();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+
       const response = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
+        signal: controller.signal,
         headers: {
           ...authHeaders,
           ...(options?.headers || {}),
         },
       });
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const json = await response.json();
@@ -230,8 +235,8 @@ export class VideoService {
           return json.data as T;
         }
       }
-    } catch (err) {
-      console.warn(`[VideoService] API fetch error at ${endpoint}:`, err);
+    } catch {
+      // Fast non-blocking fallback
     }
 
     if (fallback) {
@@ -330,7 +335,7 @@ export class VideoService {
       return cached;
     }
 
-    // 1. Direct Firestore attempt
+    // Direct Fast Firestore attempt
     try {
       let videoCollectionRef = collection(db, 'videos');
       let snap;
@@ -389,28 +394,11 @@ export class VideoService {
           return cleanVideos;
         }
       }
+      return [];
     } catch (firestoreErr: any) {
-      console.warn('⚠️ [Firestore Client] fetchVideos fallback to API:', firestoreErr.message);
+      console.warn('⚠️ [Firestore Client] fetchVideos notice:', firestoreErr.message);
+      return [];
     }
-
-    // 2. Fallback to backend API
-    const queryParam = category && category !== 'all' ? `?category=${encodeURIComponent(category)}` : '';
-    return this.apiFetch<{ videos: Video[]; total: number }>(
-      `/videos${queryParam}`,
-      { method: 'GET' },
-      async () => {
-        const staticCatalog = await this.fetchStaticCatalog();
-        return { videos: staticCatalog.length > 0 ? staticCatalog : INITIAL_VIDEOS, total: INITIAL_VIDEOS.length };
-      }
-    ).then((res) => {
-      const list = res.videos || [];
-      if (list.length > 0) {
-        const filtered = list.filter((v) => !this.isDemoOrFakeVideo(v));
-        this.smartCache.set(cacheKey, filtered);
-        return filtered;
-      }
-      return list;
-    });
   }
 
   /**
@@ -606,11 +594,7 @@ export class VideoService {
       console.warn('⚠️ [Firestore Client] fetchCategories fallback:', err.message);
     }
 
-    return this.apiFetch<CategoryInfo[]>(
-      '/categories',
-      { method: 'GET' },
-      () => CATEGORIES
-    ).then((cats) => cats || CATEGORIES);
+    return CATEGORIES;
   }
 
   /**
@@ -768,12 +752,7 @@ export class VideoService {
     } catch (err: any) {
       console.warn('⚠️ [Firestore Client] fetchBanners fallback:', err.message);
     }
-
-    return this.apiFetch<LandingBanner[]>(
-      '/banners',
-      { method: 'GET' },
-      () => INITIAL_LANDING_BANNERS
-    ).then((banners) => banners || INITIAL_LANDING_BANNERS);
+    return INITIAL_LANDING_BANNERS;
   }
 
   /**
