@@ -26,6 +26,7 @@ import {
   where,
   orderBy,
   limit,
+  increment,
 } from 'firebase/firestore';
 import { signInWithCustomToken } from 'firebase/auth';
 import { storage, db, auth, cleanForFirestore, getAppCheckToken } from './firebaseConfig';
@@ -460,7 +461,7 @@ export class VideoService {
     // Invalidate local video cache
     this.smartCache.invalidate('videos');
 
-    // 1. Direct Firestore write
+    // Direct Firestore write (Single authoritative write path)
     try {
       await setDoc(doc(db, 'videos', videoId), cleanForFirestore(fullVideo), { merge: true });
       console.log('✅ [Firestore] Video saved successfully:', videoId);
@@ -468,21 +469,11 @@ export class VideoService {
       console.warn('⚠️ [Firestore] Direct video save notice:', err.message);
     }
 
-    // 2. Sync with backend API
-    this.apiFetch<Video>(
-      '/videos',
-      {
-        method: 'POST',
-        body: JSON.stringify(fullVideo),
-      },
-      () => fullVideo
-    ).catch(() => {});
-
     return fullVideo;
   }
 
   /**
-   * Update an existing video via Firestore and Backend API (Admin/Staff only)
+   * Update an existing video via Firestore (Admin/Staff only)
    */
   async updateVideo(video: Video): Promise<Video> {
     this.smartCache.invalidate('videos');
@@ -494,20 +485,11 @@ export class VideoService {
       console.warn('⚠️ [Firestore] Direct video update notice:', err.message);
     }
 
-    this.apiFetch<Video>(
-      `/videos/${video.id}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(video),
-      },
-      () => video
-    ).catch(() => {});
-
     return video;
   }
 
   /**
-   * Delete video via Firestore and Backend API (Admin/Staff only)
+   * Delete video via Firestore (Admin/Staff only)
    */
   async deleteVideo(videoId: string): Promise<boolean> {
     this.smartCache.invalidate('videos');
@@ -518,12 +500,6 @@ export class VideoService {
     } catch (err: any) {
       console.warn('⚠️ [Firestore] Direct video delete notice:', err.message);
     }
-
-    this.apiFetch<{ id: string }>(
-      `/videos/${videoId}`,
-      { method: 'DELETE' },
-      () => ({ id: videoId })
-    ).catch(() => {});
 
     return true;
   }
@@ -611,20 +587,11 @@ export class VideoService {
       console.warn('⚠️ [Firestore] Direct category save notice:', err.message);
     }
 
-    this.apiFetch<CategoryInfo>(
-      '/categories',
-      {
-        method: 'POST',
-        body: JSON.stringify(fullCategory),
-      },
-      () => fullCategory
-    ).catch(() => {});
-
     return fullCategory;
   }
 
   /**
-   * Update category via Firestore and Backend API (Admin/Staff only)
+   * Update category via Firestore (Admin/Staff only)
    */
   async updateCategory(category: CategoryInfo): Promise<CategoryInfo> {
     try {
@@ -634,20 +601,11 @@ export class VideoService {
       console.warn('⚠️ [Firestore] Direct category update notice:', err.message);
     }
 
-    this.apiFetch<CategoryInfo>(
-      `/categories/${category.id}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(category),
-      },
-      () => category
-    ).catch(() => {});
-
     return category;
   }
 
   /**
-   * Delete category via Firestore and Backend API (Admin/Staff only)
+   * Delete category via Firestore (Admin/Staff only)
    */
   async deleteCategory(categoryId: string): Promise<boolean> {
     try {
@@ -657,17 +615,11 @@ export class VideoService {
       console.warn('⚠️ [Firestore] Direct category delete notice:', err.message);
     }
 
-    this.apiFetch<{ id: string }>(
-      `/categories/${categoryId}`,
-      { method: 'DELETE' },
-      () => ({ id: categoryId })
-    ).catch(() => {});
-
     return true;
   }
 
   /**
-   * Submit category request via Firestore and Backend API
+   * Submit category request via Firestore
    */
   async saveCategoryRequest(categoryReq: CategoryRequest): Promise<CategoryRequest> {
     const reqId = categoryReq.id || `cat-req-${Date.now()}`;
@@ -679,15 +631,6 @@ export class VideoService {
     } catch (err: any) {
       console.warn('⚠️ [Firestore] Direct category request save notice:', err.message);
     }
-
-    this.apiFetch<CategoryRequest>(
-      '/categories/requests',
-      {
-        method: 'POST',
-        body: JSON.stringify(fullReq),
-      },
-      () => fullReq
-    ).catch(() => {});
 
     return fullReq;
   }
@@ -707,11 +650,7 @@ export class VideoService {
       console.warn('⚠️ [Firestore Client] fetchCategoryRequests fallback:', err.message);
     }
 
-    return this.apiFetch<CategoryRequest[]>(
-      '/categories/admin/requests',
-      { method: 'GET' },
-      () => []
-    );
+    return [];
   }
 
   /**
@@ -720,18 +659,10 @@ export class VideoService {
   async updateCategoryRequestStatus(requestId: string, status: 'approved' | 'rejected'): Promise<void> {
     try {
       await setDoc(doc(db, 'category_requests', requestId), { status }, { merge: true });
+      console.log('✅ [Firestore] Category request status updated:', requestId, status);
     } catch (err: any) {
       console.warn('⚠️ [Firestore] Direct category request status update notice:', err.message);
     }
-
-    await this.apiFetch(
-      `/categories/admin/requests/${requestId}`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-      },
-      () => null
-    ).catch(() => {});
   }
 
   /**
@@ -799,20 +730,11 @@ export class VideoService {
       console.warn('⚠️ [Firestore] Direct banner save notice:', err.message);
     }
 
-    this.apiFetch<LandingBanner>(
-      '/banners',
-      {
-        method: 'POST',
-        body: JSON.stringify(fullBanner),
-      },
-      () => fullBanner
-    ).catch(() => {});
-
     return fullBanner;
   }
 
   /**
-   * Update banner via Firestore and Backend API (Admin/Staff only)
+   * Update banner via Firestore (Admin/Staff only)
    */
   async updateBanner(banner: LandingBanner): Promise<LandingBanner> {
     try {
@@ -822,20 +744,11 @@ export class VideoService {
       console.warn('⚠️ [Firestore] Direct banner update notice:', err.message);
     }
 
-    this.apiFetch<LandingBanner>(
-      `/banners/${banner.id}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(banner),
-      },
-      () => banner
-    ).catch(() => {});
-
     return banner;
   }
 
   /**
-   * Delete banner via Firestore and Backend API (Admin/Staff only)
+   * Delete banner via Firestore (Admin/Staff only)
    */
   async deleteBanner(bannerId: string): Promise<boolean> {
     try {
@@ -844,12 +757,6 @@ export class VideoService {
     } catch (err: any) {
       console.warn('⚠️ [Firestore] Direct banner delete notice:', err.message);
     }
-
-    this.apiFetch<{ id: string }>(
-      `/banners/${bannerId}`,
-      { method: 'DELETE' },
-      () => ({ id: bannerId })
-    ).catch(() => {});
 
     return true;
   }
@@ -926,7 +833,7 @@ export class VideoService {
   }
 
   /**
-   * Save comment to Firestore worldwide and Backend API
+   * Save comment to Firestore (Single authoritative write path)
    */
   async saveComment(comment: VideoComment): Promise<VideoComment> {
     const id = comment.id || `comment_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -947,55 +854,48 @@ export class VideoService {
       console.warn('⚠️ [Firestore Client] saveComment notice:', err.message);
     }
 
-    return this.apiFetch<VideoComment>(
-      '/comments',
-      {
-        method: 'POST',
-        body: JSON.stringify(fullComment),
-      },
-      () => fullComment
-    );
+    return fullComment;
   }
 
   /**
-   * Like comment via Backend API
+   * Like comment via Firestore
    */
   async likeComment(commentId: string): Promise<void> {
     this.smartCache.invalidate('comments_');
-    await this.apiFetch(
-      `/comments/${commentId}/like`,
-      { method: 'POST' },
-      () => null
-    );
+    try {
+      await setDoc(doc(db, 'comments', commentId), { likesCount: increment(1) }, { merge: true });
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] likeComment notice:', err.message);
+    }
   }
 
   /**
-   * Delete comment via Backend API
+   * Delete comment via Firestore
    */
   async deleteComment(commentId: string): Promise<void> {
     this.smartCache.invalidate('comments_');
-    await this.apiFetch(
-      `/comments/${commentId}`,
-      { method: 'DELETE' },
-      () => null
-    );
+    try {
+      await deleteDoc(doc(db, 'comments', commentId));
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] deleteComment notice:', err.message);
+    }
   }
 
   /**
-   * Save DMCA/Moderation Report via Backend API
+   * Save DMCA/Moderation Report via Firestore
    */
   async saveReport(report: DMCAReport): Promise<DMCAReport> {
     const id = report.id || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const fullReport: DMCAReport = { ...report, id, createdAt: new Date().toISOString() };
+    const fullReport: DMCAReport = { ...report, id, createdAt: new Date().toISOString(), status: 'pending' as const };
 
-    return this.apiFetch<DMCAReport>(
-      '/reports',
-      {
-        method: 'POST',
-        body: JSON.stringify(fullReport),
-      },
-      () => fullReport
-    );
+    try {
+      await setDoc(doc(db, 'reports', id), cleanForFirestore(fullReport));
+      console.log('✅ [Firestore] Report submitted to database:', id);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] saveReport notice:', err.message);
+    }
+
+    return fullReport;
   }
 
   /**
@@ -1013,26 +913,19 @@ export class VideoService {
       console.warn('⚠️ [Firestore Client] fetchReports fallback:', err.message);
     }
 
-    return this.apiFetch<DMCAReport[]>(
-      '/reports',
-      { method: 'GET' },
-      () => []
-    );
+    return [];
   }
 
   /**
-   * Update report status via Backend API (Admin/Staff only)
+   * Update report status via Firestore (Admin/Staff only)
    */
   async updateReportStatus(reportId: string, status: ReportStatus): Promise<void> {
-    // Privileged Write: Route via Backend API -> Firebase Admin SDK -> Firestore
-    await this.apiFetch(
-      `/reports/${reportId}/status`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-      },
-      () => null
-    );
+    try {
+      await setDoc(doc(db, 'reports', reportId), { status, resolvedAt: new Date().toISOString() }, { merge: true });
+      console.log('✅ [Firestore] Report status updated:', reportId, status);
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] updateReportStatus notice:', err.message);
+    }
   }
 
   /**
@@ -1050,15 +943,11 @@ export class VideoService {
       console.warn('⚠️ [Firestore Client] fetchAdCampaigns fallback:', err.message);
     }
 
-    return this.apiFetch<AdCampaign[]>(
-      '/ads',
-      { method: 'GET' },
-      () => []
-    );
+    return [];
   }
 
   /**
-   * Save ad campaign via Firestore and Backend API (Admin/Staff only)
+   * Save ad campaign via Firestore (Admin/Staff only)
    */
   async saveAdCampaign(campaign: AdCampaign): Promise<AdCampaign> {
     const id = campaign.id || `ad-${Date.now()}`;
@@ -1071,20 +960,11 @@ export class VideoService {
       console.warn('⚠️ [Firestore] Direct ad campaign save notice:', err.message);
     }
 
-    this.apiFetch<AdCampaign>(
-      '/ads',
-      {
-        method: 'POST',
-        body: JSON.stringify(fullAd),
-      },
-      () => fullAd
-    ).catch(() => {});
-
     return fullAd;
   }
 
   /**
-   * Update ad campaign via Firestore and Backend API (Admin/Staff only)
+   * Update ad campaign via Firestore (Admin/Staff only)
    */
   async updateAdCampaign(campaign: AdCampaign): Promise<AdCampaign> {
     try {
@@ -1094,20 +974,11 @@ export class VideoService {
       console.warn('⚠️ [Firestore] Direct ad campaign update notice:', err.message);
     }
 
-    this.apiFetch<AdCampaign>(
-      `/ads/${campaign.id}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(campaign),
-      },
-      () => campaign
-    ).catch(() => {});
-
     return campaign;
   }
 
   /**
-   * Delete ad campaign via Firestore and Backend API (Admin/Staff only)
+   * Delete ad campaign via Firestore (Admin/Staff only)
    */
   async deleteAdCampaign(campaignId: string): Promise<void> {
     try {
@@ -1116,12 +987,6 @@ export class VideoService {
     } catch (err: any) {
       console.warn('⚠️ [Firestore] Direct ad campaign delete notice:', err.message);
     }
-
-    await this.apiFetch(
-      `/ads/${campaignId}`,
-      { method: 'DELETE' },
-      () => null
-    ).catch(() => {});
   }
 
   /**
