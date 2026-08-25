@@ -69,29 +69,29 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex">
+    <div className="fixed inset-0 z-[9999] flex pointer-events-auto">
       {/* Dark Overlay Backdrop with Smooth Fade */}
       <div
         onClick={() => {
           onClose();
           setDrawerSubView('main');
         }}
-        className="mobile-drawer-backdrop-anim fixed inset-0 bg-black/80 backdrop-blur-sm cursor-pointer"
+        className="mobile-drawer-backdrop-anim fixed inset-0 bg-black/80 backdrop-blur-sm cursor-pointer z-10"
       />
 
       {/* Main Drawer Container matching Pornktube layout */}
       <aside className="mobile-drawer-aside mobile-drawer-anim relative w-[310px] max-w-[85vw] h-full bg-white dark:bg-[#121115] text-zinc-900 dark:text-zinc-100 flex flex-col z-20 shadow-[20px_0_60px_rgba(0,0,0,0.9)] border-r border-zinc-200 dark:border-white/10 select-none transition-colors">
         {/* ── TOP ACTION BAR (Theme Toggle + Login + Sign Up) ─────────── */}
         <div className="p-3 bg-zinc-100 dark:bg-[#18171d] border-b border-zinc-200 dark:border-white/10 flex items-center justify-between gap-2 shrink-0">
-          {/* Theme Switcher Button */}
+          {/* Day / Night Theme Switcher Pill */}
           <button
             type="button"
             onClick={onToggleTheme}
-            className="w-9 h-9 rounded-lg bg-white dark:bg-[#2a2933] hover:bg-zinc-200 dark:hover:bg-[#34333f] text-[#ec4899] dark:text-[#ffb0cd] flex items-center justify-center transition-colors cursor-pointer border border-zinc-300 dark:border-white/5 active:scale-95 shrink-0 shadow-sm"
-            title={themeMode === 'dark' ? 'Switch to Day Mode' : 'Switch to Dark Mode'}
-            aria-label="Toggle Theme"
+            className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2933] hover:bg-zinc-200 dark:hover:bg-[#34333f] text-[#ec4899] dark:text-[#ffb0cd] flex items-center justify-center transition-colors cursor-pointer border border-zinc-300 dark:border-white/10 active:scale-95 shrink-0 shadow-sm"
+            title={themeMode === 'dark' ? 'Switch to Daytime Light Mode' : 'Switch to Nighttime Dark Mode'}
+            aria-label="Toggle Theme Mode"
           >
-            <span className="material-symbols-outlined text-[18px]">
+            <span className="material-symbols-outlined text-[20px] text-[#ec4899] dark:text-[#ffb0cd]">
               {themeMode === 'dark' ? 'light_mode' : 'dark_mode'}
             </span>
           </button>
@@ -116,7 +116,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               <button
                 type="button"
                 onClick={handleSignInClick}
-                className="flex-1 py-1.5 px-3 bg-white hover:bg-zinc-200 dark:bg-[#2a2933] dark:hover:bg-[#34333f] border border-zinc-300 dark:border-white/10 rounded-lg text-xs font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
+                className="flex-1 py-2 px-3 bg-white hover:bg-zinc-200 dark:bg-[#2a2933] dark:hover:bg-[#34333f] border border-zinc-300 dark:border-white/10 rounded-lg text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-200 hover:text-black dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
               >
                 <span className="material-symbols-outlined text-sm text-[#ec4899]">key</span>
                 <span>LOGIN</span>
@@ -124,7 +124,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               <button
                 type="button"
                 onClick={handleSignInClick}
-                className="flex-1 py-1.5 px-3 bg-white hover:bg-zinc-200 dark:bg-[#2a2933] dark:hover:bg-[#34333f] border border-zinc-300 dark:border-white/10 rounded-lg text-xs font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
+                className="flex-1 py-2 px-3 bg-white hover:bg-zinc-200 dark:bg-[#2a2933] dark:hover:bg-[#34333f] border border-zinc-300 dark:border-white/10 rounded-lg text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-200 hover:text-black dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
               >
                 <span className="material-symbols-outlined text-sm text-[#ec4899]">lock</span>
                 <span>SIGN UP</span>
@@ -143,9 +143,9 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 <button
                   type="button"
                   onClick={handleHomeClick}
-                  className="w-full px-5 py-3.5 flex items-center gap-3.5 text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-semibold text-left active:bg-zinc-200 dark:active:bg-white/10"
+                  className="w-full px-5 py-3.5 flex items-center gap-3.5 text-zinc-900 dark:text-zinc-200 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-bold text-left active:bg-zinc-200 dark:active:bg-white/10"
                 >
-                  <span className="material-symbols-outlined text-lg text-zinc-500 dark:text-zinc-400">home</span>
+                  <span className="material-symbols-outlined text-lg text-zinc-600 dark:text-zinc-400">home</span>
                   <span>Home</span>
                 </button>
               </li>
@@ -155,20 +155,20 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsVideosExpanded(!isVideosExpanded)}
-                  className="w-full px-5 py-3.5 flex items-center justify-between text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-semibold text-left active:bg-zinc-200 dark:active:bg-white/10"
+                  className="w-full px-5 py-3.5 flex items-center justify-between text-zinc-900 dark:text-zinc-200 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-bold text-left active:bg-zinc-200 dark:active:bg-white/10"
                 >
                   <div className="flex items-center gap-3.5">
-                    <span className="material-symbols-outlined text-lg text-zinc-500 dark:text-zinc-400">smart_display</span>
+                    <span className="material-symbols-outlined text-lg text-zinc-600 dark:text-zinc-400">smart_display</span>
                     <span>Videos</span>
                   </div>
-                  <span className={`material-symbols-outlined text-sm text-zinc-500 dark:text-zinc-400 transition-transform duration-200 ${isVideosExpanded ? 'rotate-180' : ''}`}>
+                  <span className={`material-symbols-outlined text-sm text-zinc-600 dark:text-zinc-400 transition-transform duration-200 ${isVideosExpanded ? 'rotate-180' : ''}`}>
                     expand_more
                   </span>
                 </button>
 
-                {/* Sub-items when Videos dropdown is expanded */}
+                {/* Sub-items when Videos dropdown is expanded (Day/Night High Contrast) */}
                 {isVideosExpanded && (
-                  <ul className="bg-zinc-50 dark:bg-[#0c0c0f] py-1 border-t border-b border-zinc-200 dark:border-white/5 space-y-0.5">
+                  <ul className="bg-zinc-100 dark:bg-[#0c0c0f] py-1 border-t border-b border-zinc-200 dark:border-white/5 space-y-0.5 mobile-drawer-videos-sub">
                     <li>
                       <button
                         type="button"
@@ -176,10 +176,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                           onSelectCategory('all');
                           onClose();
                         }}
-                        className="w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-zinc-700 dark:text-zinc-300 hover:text-[#ec4899] hover:bg-zinc-200/60 dark:hover:bg-white/5 text-xs font-semibold text-left transition-colors cursor-pointer"
+                        className="w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-zinc-900 dark:text-zinc-200 hover:text-[#ec4899] dark:hover:text-[#ffb0cd] hover:bg-zinc-200/80 dark:hover:bg-white/5 text-xs font-bold text-left transition-colors cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-base text-amber-500">trophy</span>
-                        <span>Top Rated</span>
+                        <span className="text-zinc-900 dark:text-zinc-200 font-bold">Top Rated</span>
                       </button>
                     </li>
                     <li>
@@ -189,10 +189,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                           onSelectCategory('trending');
                           onClose();
                         }}
-                        className="w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-zinc-700 dark:text-zinc-300 hover:text-[#ec4899] hover:bg-zinc-200/60 dark:hover:bg-white/5 text-xs font-semibold text-left transition-colors cursor-pointer"
+                        className="w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-zinc-900 dark:text-zinc-200 hover:text-[#ec4899] dark:hover:text-[#ffb0cd] hover:bg-zinc-200/80 dark:hover:bg-white/5 text-xs font-bold text-left transition-colors cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-base text-rose-500">local_fire_department</span>
-                        <span>Most Popular</span>
+                        <span className="text-zinc-900 dark:text-zinc-200 font-bold">Most Popular</span>
                       </button>
                     </li>
                   </ul>
@@ -204,14 +204,14 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => setDrawerSubView('categories')}
-                  className="w-full px-5 py-3.5 flex items-center justify-between text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-semibold text-left active:bg-zinc-200 dark:active:bg-white/10 group"
+                  className="w-full px-5 py-3.5 flex items-center justify-between text-zinc-900 dark:text-zinc-200 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-bold text-left active:bg-zinc-200 dark:active:bg-white/10 group"
                 >
                   <div className="flex items-center gap-3.5">
-                    <span className="material-symbols-outlined text-lg text-zinc-500 dark:text-zinc-400 group-hover:text-[#ec4899] transition-colors">menu_book</span>
+                    <span className="material-symbols-outlined text-lg text-zinc-600 dark:text-zinc-400 group-hover:text-[#ec4899] transition-colors">menu_book</span>
                     <span>All categories</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 text-xs font-mono">
-                    <span>({categories.length})</span>
+                  <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 text-xs font-mono">
+                    <span className="font-bold">({categories.length})</span>
                     <span className="material-symbols-outlined text-sm">chevron_right</span>
                   </div>
                 </button>
@@ -225,9 +225,9 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                     onNavigate('categories');
                     onClose();
                   }}
-                  className="w-full px-5 py-3.5 flex items-center gap-3.5 text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-semibold text-left active:bg-zinc-200 dark:active:bg-white/10"
+                  className="w-full px-5 py-3.5 flex items-center gap-3.5 text-zinc-900 dark:text-zinc-200 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-bold text-left active:bg-zinc-200 dark:active:bg-white/10"
                 >
-                  <span className="material-symbols-outlined text-lg text-zinc-500 dark:text-zinc-400">inventory_2</span>
+                  <span className="material-symbols-outlined text-lg text-zinc-600 dark:text-zinc-400">inventory_2</span>
                   <span>Popular categories</span>
                 </button>
               </li>
@@ -237,9 +237,9 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 <button
                   type="button"
                   onClick={handlePerformersClick}
-                  className="w-full px-5 py-3.5 flex items-center gap-3.5 text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-semibold text-left active:bg-zinc-200 dark:active:bg-white/10"
+                  className="w-full px-5 py-3.5 flex items-center gap-3.5 text-zinc-900 dark:text-zinc-200 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-bold text-left active:bg-zinc-200 dark:active:bg-white/10"
                 >
-                  <span className="material-symbols-outlined text-lg text-zinc-500 dark:text-zinc-400">groups</span>
+                  <span className="material-symbols-outlined text-lg text-zinc-600 dark:text-zinc-400">groups</span>
                   <span>Pornstars</span>
                 </button>
               </li>
@@ -257,14 +257,14 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                       onClose();
                     }
                   }}
-                  className="w-full px-5 py-3.5 flex items-center justify-between text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-semibold text-left active:bg-zinc-200 dark:active:bg-white/10"
+                  className="w-full px-5 py-3.5 flex items-center justify-between text-zinc-900 dark:text-zinc-200 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-bold text-left active:bg-zinc-200 dark:active:bg-white/10"
                 >
                   <div className="flex items-center gap-3.5">
                     <span className="material-symbols-outlined text-lg text-[#ec4899]">bookmark</span>
                     <span>Saved Videos</span>
                   </div>
                   {!userEmail && (
-                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-zinc-400">
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-zinc-200 dark:bg-white/10 text-zinc-700 dark:text-zinc-400">
                       Sync
                     </span>
                   )}
@@ -280,10 +280,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                       onClose();
                       onOpenAdminPanel();
                     }}
-                    className={`w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors font-semibold text-left ${
+                    className={`w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors font-bold text-left ${
                       isAdminAuthenticated
-                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-                        : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                        ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/10'
+                        : 'text-zinc-700 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                     }`}
                   >
                     <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
@@ -322,7 +322,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                   <span className="material-symbols-outlined text-sm">arrow_back</span>
                   <span>Back</span>
                 </button>
-                <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider pr-2">
+                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-400 uppercase tracking-wider pr-2">
                   All Categories ({categories.length})
                 </span>
               </div>
@@ -334,13 +334,13 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                     <button
                       type="button"
                       onClick={() => handleCategoryClick(cat.id)}
-                      className="w-full px-5 py-3 flex items-center justify-between text-zinc-800 dark:text-zinc-200 hover:text-[#ec4899] dark:hover:text-[#ffb0cd] hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer text-left active:bg-zinc-200 dark:active:bg-white/10"
+                      className="w-full px-5 py-3 flex items-center justify-between text-zinc-900 dark:text-zinc-200 hover:text-[#ec4899] dark:hover:text-[#ffb0cd] hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer text-left active:bg-zinc-200 dark:active:bg-white/10"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-base text-[#ec4899] opacity-80">
+                        <span className="material-symbols-outlined text-base text-[#ec4899]">
                           {cat.icon || 'folder'}
                         </span>
-                        <span className="font-semibold text-xs capitalize">{cat.name}</span>
+                        <span className="font-bold text-xs capitalize">{cat.name}</span>
                       </div>
                       <span className="material-symbols-outlined text-xs text-zinc-400 dark:text-zinc-600">chevron_right</span>
                     </button>

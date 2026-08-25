@@ -1046,6 +1046,36 @@ html.light .mobile-drawer-aside li button:hover {
   background-color: #f1f5f9 !important;
 }
 
+/* Mobile Drawer Videos Sub-Accordion Menu (Day Mode High Contrast) */
+html.light .mobile-drawer-videos-sub {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light .mobile-drawer-videos-sub button,
+html.light .mobile-drawer-videos-sub button span {
+  color: #0f172a !important;
+}
+
+html.light .mobile-drawer-videos-sub button:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Mobile Drawer Videos Sub-Accordion Menu (Dark Mode High Contrast) */
+html.dark .mobile-drawer-videos-sub {
+  background-color: #0c0c0f !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .mobile-drawer-videos-sub button,
+html.dark .mobile-drawer-videos-sub button span {
+  color: #f1f5f9 !important;
+}
+
+html.dark .mobile-drawer-videos-sub button:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
 /* ==========================================================================
    UI/UX DIRECTIVE: Responsive Iframe Video Player Container (.player-wrapper)
    ========================================================================== */
