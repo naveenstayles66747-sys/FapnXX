@@ -35,6 +35,8 @@ import {
   mergeUserInteractions,
   getStoredCachedVideos,
   setStoredCachedVideos,
+  getStoredCachedBanners,
+  setStoredCachedBanners,
 } from './utils/storage';
 import { usePrivacyStorage } from './hooks/usePrivacyStorage';
 
@@ -84,7 +86,10 @@ export default function App() {
     const cached = getStoredCachedVideos();
     return cached.length > 0 ? cached : VIDEOS;
   });
-  const [banners, setBanners] = useState<LandingBanner[]>(INITIAL_LANDING_BANNERS);
+  const [banners, setBanners] = useState<LandingBanner[]>(() => {
+    const cached = getStoredCachedBanners();
+    return cached.length > 0 ? cached : INITIAL_LANDING_BANNERS;
+  });
 
   // Filtered videos based on content preference (straight/gay/lesbian) without breaking standard horizontal/vertical videos
   const preferredVideos = (videosList || []).filter((v) => {
@@ -179,7 +184,10 @@ export default function App() {
       if (c && c.length > 0) setCategories(c);
     });
     videoService.fetchBanners().then((b) => {
-      if (b && b.length > 0) setBanners(b);
+      if (b && b.length > 0) {
+        setBanners(b);
+        setStoredCachedBanners(b);
+      }
     });
 
     // Fetch user cloud interactions and merge with local state (union without data loss)

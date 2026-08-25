@@ -95,16 +95,30 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     return [];
   }, [activeBanners, activeVideos]);
 
-  // Progressive on-demand prefetch: Only preload the NEXT slide image when slide changes
+  // Instant Image Pre-warming: Preload first banner image and next slide image immediately
   useEffect(() => {
-    if (typeof window === 'undefined' || displayBanners.length <= 1) return;
-    const nextIndex = (currentSlideIndex + 1) % displayBanners.length;
-    const nextBanner = displayBanners[nextIndex];
-    if (nextBanner) {
-      const nextUrl = getBannerImageUrl(nextBanner, nextIndex);
-      if (nextUrl) {
+    if (typeof window === 'undefined' || displayBanners.length === 0) return;
+    
+    // Preload current active slide image
+    const activeBanner = displayBanners[currentSlideIndex];
+    if (activeBanner) {
+      const activeUrl = getBannerImageUrl(activeBanner, currentSlideIndex);
+      if (activeUrl) {
         const img = new Image();
-        img.src = getOptimizedImageUrl(nextUrl, 1200, 75);
+        img.src = getOptimizedImageUrl(activeUrl, 1080, 75);
+      }
+    }
+
+    // Preload next slide image for seamless zero-delay transitions
+    if (displayBanners.length > 1) {
+      const nextIndex = (currentSlideIndex + 1) % displayBanners.length;
+      const nextBanner = displayBanners[nextIndex];
+      if (nextBanner) {
+        const nextUrl = getBannerImageUrl(nextBanner, nextIndex);
+        if (nextUrl) {
+          const nextImg = new Image();
+          nextImg.src = getOptimizedImageUrl(nextUrl, 1080, 75);
+        }
       }
     }
   }, [currentSlideIndex, displayBanners]);
@@ -425,15 +439,15 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 >
                   {(() => {
                     const rawUrl = getBannerImageUrl(banner, index);
-                    const optimizedUrl = getOptimizedImageUrl(rawUrl, index === 0 ? 1600 : 1200, 75);
-                    const srcSet = getResponsiveImageSrcSet(rawUrl, [640, 1080, 1600], 75);
+                    const optimizedUrl = getOptimizedImageUrl(rawUrl, index === 0 ? 1080 : 800, 75);
+                    const srcSet = getResponsiveImageSrcSet(rawUrl, [480, 800, 1200], 75);
                     return (
                       <img
                         src={optimizedUrl}
                         srcSet={srcSet || undefined}
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1600px"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1200px"
                         alt={banner.title}
-                        decoding="async"
+                        decoding={index === 0 ? 'sync' : 'async'}
                         loading={index === 0 ? 'eager' : 'lazy'}
                         fetchPriority={index === 0 ? 'high' : 'low'}
                         onError={(e) => handleBannerImageError(e, index)}

@@ -12,6 +12,7 @@ const KEYS = {
   CONTENT_PREFERENCE: 'indianfullxx_content_preference',
   DEVICE_UID: 'fapnxx_device_uid',
   CACHED_VIDEOS: 'fapnxx_cached_videos',
+  CACHED_BANNERS: 'fapnxx_cached_banners',
   // Legacy keys to purge
   LEGACY_CUSTOM_VIDEOS: 'indianfullxx_custom_videos',
   LEGACY_CUSTOM_CATEGORIES: 'indianfullxx_custom_categories',
@@ -85,6 +86,30 @@ export const setStoredCachedVideos = (videos: import('../types').Video[]): void 
   try {
     if (Array.isArray(videos) && videos.length > 0) {
       localStorage.setItem(KEYS.CACHED_VIDEOS, JSON.stringify(videos.slice(0, 100)));
+    }
+  } catch {}
+};
+
+/**
+ * Instant Banner Cache for Zero-Latency Hero Slider Rendering
+ */
+export const getStoredCachedBanners = (): import('../types').LandingBanner[] => {
+  try {
+    const raw = localStorage.getItem(KEYS.CACHED_BANNERS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return [];
+};
+
+export const setStoredCachedBanners = (banners: import('../types').LandingBanner[]): void => {
+  try {
+    if (Array.isArray(banners) && banners.length > 0) {
+      localStorage.setItem(KEYS.CACHED_BANNERS, JSON.stringify(banners));
     }
   } catch {}
 };
