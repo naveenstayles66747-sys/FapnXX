@@ -33,6 +33,8 @@ import {
   setStoredContentPreference,
   registerUserInteractionSync,
   mergeUserInteractions,
+  getStoredCachedVideos,
+  setStoredCachedVideos,
 } from './utils/storage';
 import { usePrivacyStorage } from './hooks/usePrivacyStorage';
 
@@ -76,9 +78,12 @@ export default function App() {
   const [isSoftLoginModalOpen, setIsSoftLoginModalOpen] = useState<boolean>(false);
   const [softLoginFeatureName, setSoftLoginFeatureName] = useState<string>('Personal Account Sync');
 
-  // System Core Dynamic Data State (Loaded from Service Layer / Firestore DB)
+  // System Core Dynamic Data State (Loaded from Service Layer / Firestore DB with Instant Cache)
   const [categories, setCategories] = useState<CategoryInfo[]>(CATEGORIES);
-  const [videosList, setVideosList] = useState<Video[]>(VIDEOS);
+  const [videosList, setVideosList] = useState<Video[]>(() => {
+    const cached = getStoredCachedVideos();
+    return cached.length > 0 ? cached : VIDEOS;
+  });
   const [banners, setBanners] = useState<LandingBanner[]>(INITIAL_LANDING_BANNERS);
 
   // Filtered videos based on content preference (straight/gay/lesbian) without breaking standard horizontal/vertical videos
@@ -153,8 +158,7 @@ export default function App() {
     videoService.fetchVideos().then((v) => {
       if (v && Array.isArray(v) && v.length > 0) {
         setVideosList(v);
-      } else {
-        setVideosList(VIDEOS);
+        setStoredCachedVideos(v);
       }
     });
 
@@ -162,6 +166,7 @@ export default function App() {
     const unsubscribe = videoService.subscribeToVideos((updatedVideos) => {
       if (updatedVideos && updatedVideos.length > 0) {
         setVideosList(updatedVideos);
+        setStoredCachedVideos(updatedVideos);
         setSelectedVideo((prev) => {
           if (!prev) return prev;
           const matched = updatedVideos.find((v) => v.id === prev.id);

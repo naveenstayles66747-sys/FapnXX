@@ -11,6 +11,7 @@ const KEYS = {
   THEME: 'indianfullxx_theme',
   CONTENT_PREFERENCE: 'indianfullxx_content_preference',
   DEVICE_UID: 'fapnxx_device_uid',
+  CACHED_VIDEOS: 'fapnxx_cached_videos',
   // Legacy keys to purge
   LEGACY_CUSTOM_VIDEOS: 'indianfullxx_custom_videos',
   LEGACY_CUSTOM_CATEGORIES: 'indianfullxx_custom_categories',
@@ -62,6 +63,30 @@ export const setStoredContentPreference = (pref: ContentPreference): void => {
   } catch (e) {
     console.warn('[Storage] Failed to persist content preference:', e);
   }
+};
+
+/**
+ * Instant Video Cache for Zero-Latency Instant Initial Page Rendering
+ */
+export const getStoredCachedVideos = (): import('../types').Video[] => {
+  try {
+    const raw = localStorage.getItem(KEYS.CACHED_VIDEOS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return [];
+};
+
+export const setStoredCachedVideos = (videos: import('../types').Video[]): void => {
+  try {
+    if (Array.isArray(videos) && videos.length > 0) {
+      localStorage.setItem(KEYS.CACHED_VIDEOS, JSON.stringify(videos.slice(0, 100)));
+    }
+  } catch {}
 };
 
 // Theme Persistence & Time-Based Auto Detection
