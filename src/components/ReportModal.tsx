@@ -61,15 +61,14 @@ export const ReportModal: React.FC<ReportModalProps> = ({
     };
 
     try {
-      // Save directly to Cloud Firestore via videoService
       await videoService.saveReport(newReport);
       onSubmitReportSuccess(newReport);
-    } catch (err) {
-      console.warn('[ReportModal] Firestore report save fallback:', err);
-      onSubmitReportSuccess(newReport);
+      onClose();
+    } catch (err: any) {
+      console.error('[ReportModal] Report submission failed:', err);
+      setErrorMsg(err?.message || 'Failed to submit report. Please check your connection and try again.');
     } finally {
       setIsSubmitting(false);
-      onClose();
     }
   };
 
