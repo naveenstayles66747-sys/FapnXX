@@ -3,7 +3,6 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import { CategoryId, CategoryInfo, ContentPreference, LandingBanner, ScreenId, Video } from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
-import { BottomNav } from './components/BottomNav';
 import { MobileDrawer } from './components/MobileDrawer';
 import { AgeGateModal } from './components/AgeGateModal';
 import { StickyBottomLeaderboard, MobileInstantMessage, DesktopFullpageInterstitial, MobileFullpageInterstitial, PopunderAd } from './components/AdSpaces';
@@ -668,11 +667,6 @@ export default function App() {
 
           {/* ExoClick Mobile Instant Message Ad (Zone ID: 6003178) */}
           <MobileInstantMessage />
-
-          <BottomNav
-            currentScreen={currentScreen}
-            onNavigate={handleNavigate}
-          />
         </>
       )}
 

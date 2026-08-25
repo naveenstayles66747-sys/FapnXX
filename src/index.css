@@ -224,34 +224,6 @@ html.light aside {
   border-right: 1px solid #e2e8f0 !important;
 }
 
-/* BottomNav in Dark Mode & General */
-nav.fixed.bottom-0 {
-  background-color: #09090b !important;
-  color: #e5e1e4 !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-}
-
-html.dark nav.fixed.bottom-0 {
-  background-color: #09090b !important;
-  color: #e5e1e4 !important;
-}
-
-/* BottomNav in Light Mode */
-html.light nav.fixed.bottom-0 {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-top: 1px solid #e2e8f0 !important;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05) !important;
-}
-
-html.light nav.fixed.bottom-0 button {
-  color: #64748b !important;
-}
-
-html.light nav.fixed.bottom-0 button.text-\[\#ffb0cd\],
-html.light nav.fixed.bottom-0 button .text-\[\#ffb0cd\] {
-  color: #e0358d !important;
-}
-
 /* 2. Main Page Backgrounds on White Pages */
 html.light .bg-\[\#09090b\],
 html.light .bg-\[\#0d0c0e\],
