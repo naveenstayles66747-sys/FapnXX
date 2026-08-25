@@ -634,9 +634,6 @@ export default function App() {
           {/* ExoClick Mobile Instant Message Ad (Zone ID: 6003178) */}
           <MobileInstantMessage />
 
-          {/* ExoClick Popunder Ad (Desktop Zone: 6010172 | Mobile Zone: 6010174) */}
-          <PopunderAd />
-
           <BottomNav
             currentScreen={currentScreen}
             onNavigate={handleNavigate}

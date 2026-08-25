@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AD_ZONES } from '../config/adConfig';
 import { adManager, triggerInterstitial } from '../utils/adManager';
 
@@ -104,11 +104,16 @@ export const StickyBottomLeaderboard: React.FC = () => {
 
 /**
  * Desktop Fullpage Interstitial Ad (Zone ID: 6003174)
- * Official Native ExoClick Interstitial (Controlled by adManager)
+ * Official Native ExoClick Interstitial (Controlled by adManager with auto-dismiss safety)
  */
 export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = ({ onDismiss }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isActive, setIsActive] = useState<boolean>(false);
+
+  const handleDismiss = useCallback(() => {
+    setIsActive(false);
+    if (onDismiss) onDismiss();
+  }, [onDismiss]);
 
   useEffect(() => {
     const handleRequest = (e: Event) => {
@@ -127,6 +132,8 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
     const el = containerRef.current;
     if (!el) return;
 
+    let timeoutTimer: NodeJS.Timeout | null = null;
+
     try {
       el.innerHTML = '';
       const ins = document.createElement('ins');
@@ -139,34 +146,56 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
       win.AdProvider = win.AdProvider || [];
       win.AdProvider.push({ serve: {} });
 
-      // Acknowledge successful initialization to adManager
       adManager.commitInterstitialSuccess();
+
+      // Safety timeout: If no interstitial fills within 4s, dismiss automatically so page never hangs
+      timeoutTimer = setTimeout(() => {
+        handleDismiss();
+      }, 4000);
     } catch (e) {
       console.warn('[ExoClick] Desktop Interstitial mount error:', e);
-      setIsActive(false);
-      if (onDismiss) onDismiss();
+      handleDismiss();
     }
-  }, [isActive, onDismiss]);
+
+    return () => {
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+    };
+  }, [isActive, handleDismiss]);
 
   if (!isActive) return null;
 
   return (
-    <div
-      ref={containerRef}
-      id="exoclick-desktop-interstitial"
-      className="hidden lg:block z-[99999]"
-      aria-label="Sponsored Interstitial"
-    />
+    <div className="hidden lg:flex fixed inset-0 z-[99999] items-center justify-center bg-black/80 backdrop-blur-sm">
+      <button
+        type="button"
+        onClick={handleDismiss}
+        className="absolute top-4 right-4 z-[100000] bg-zinc-800 hover:bg-zinc-700 text-white rounded-full w-9 h-9 flex items-center justify-center text-sm font-bold border border-white/20 shadow-xl cursor-pointer pointer-events-auto"
+        title="Close Ad"
+      >
+        ✕
+      </button>
+      <div
+        ref={containerRef}
+        id="exoclick-desktop-interstitial"
+        className="z-[99999] max-w-full max-h-full flex items-center justify-center"
+        aria-label="Sponsored Interstitial"
+      />
+    </div>
   );
 };
 
 /**
  * Mobile Fullpage Interstitial Ad (Zone ID: 6003180)
- * Official Native ExoClick Interstitial (Controlled by adManager)
+ * Official Native ExoClick Interstitial (Controlled by adManager with auto-dismiss safety)
  */
 export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = ({ onDismiss }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isActive, setIsActive] = useState<boolean>(false);
+
+  const handleDismiss = useCallback(() => {
+    setIsActive(false);
+    if (onDismiss) onDismiss();
+  }, [onDismiss]);
 
   useEffect(() => {
     const handleRequest = (e: Event) => {
@@ -180,12 +209,13 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
     return () => window.removeEventListener('exoclick-interstitial-request', handleRequest);
   }, []);
 
-  // Lock body scroll cleanly and restore exact previous overflow on cleanup
+  // Lock body scroll cleanly with safety timeout to prevent permanent freezing
   useEffect(() => {
     if (!isActive) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
+    let timeoutTimer: NodeJS.Timeout | null = null;
     const el = containerRef.current;
     if (el) {
       try {
@@ -200,29 +230,43 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
         win.AdProvider = win.AdProvider || [];
         win.AdProvider.push({ serve: {} });
 
-        // Acknowledge successful initialization
         adManager.commitInterstitialSuccess();
+
+        // Safety timeout: Auto-dismiss within 3.5s so mobile user is NEVER locked out
+        timeoutTimer = setTimeout(() => {
+          handleDismiss();
+        }, 3500);
       } catch (e) {
         console.warn('[ExoClick] Mobile Interstitial mount error:', e);
-        setIsActive(false);
-        if (onDismiss) onDismiss();
+        handleDismiss();
       }
     }
 
     return () => {
       document.body.style.overflow = prevOverflow;
+      if (timeoutTimer) clearTimeout(timeoutTimer);
     };
-  }, [isActive, onDismiss]);
+  }, [isActive, handleDismiss]);
 
   if (!isActive) return null;
 
   return (
-    <div
-      ref={containerRef}
-      id="exoclick-mobile-interstitial"
-      className="block lg:hidden fixed inset-0 z-[99999] pointer-events-auto"
-      aria-label="Sponsored Mobile Interstitial"
-    />
+    <div className="block lg:hidden fixed inset-0 z-[99999] pointer-events-auto bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center">
+      <button
+        type="button"
+        onClick={handleDismiss}
+        className="absolute top-4 right-4 z-[100000] bg-zinc-800 hover:bg-zinc-700 text-white rounded-full w-9 h-9 flex items-center justify-center text-sm font-bold border border-white/20 shadow-xl cursor-pointer pointer-events-auto"
+        title="Close Ad"
+      >
+        ✕
+      </button>
+      <div
+        ref={containerRef}
+        id="exoclick-mobile-interstitial"
+        className="w-full h-full flex items-center justify-center"
+        aria-label="Sponsored Mobile Interstitial"
+      />
+    </div>
   );
 };
 
