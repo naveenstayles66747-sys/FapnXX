@@ -131,6 +131,16 @@ export default function App() {
         } catch {
           setIsAdminAuthenticated(user.email.toLowerCase() === 'naveenstayles66747@gmail.com');
         }
+
+        // Fetch logged-in user cloud interactions for auth.currentUser.uid and merge
+        videoService.fetchUserInteractionsFromFirestore().then((interactions) => {
+          if (interactions) {
+            const merged = mergeUserInteractions(interactions);
+            if (merged.contentPreference) {
+              setContentPreference(merged.contentPreference as ContentPreference);
+            }
+          }
+        });
       } else {
         setUserEmail(null);
         setIsAdminAuthenticated(false);

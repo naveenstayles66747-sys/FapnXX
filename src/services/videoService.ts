@@ -1029,7 +1029,8 @@ export class VideoService {
   }
 
   /**
-   * Sync all user interactions (saved videos, liked videos, watch history, preferences) to Firestore server database
+   * Sync all user interactions (saved videos, liked videos, watch history, preferences) to Firestore for logged-in user
+   * Guest interactions are preserved purely in localStorage to prevent unauthorized Firestore writes.
    */
   async syncUserInteractionsToFirestore(data: {
     savedVideos?: string[];
@@ -1040,25 +1041,30 @@ export class VideoService {
     ageVerified?: boolean;
   }): Promise<void> {
     try {
-      const deviceId = this.getDeviceId();
-      const userDocRef = doc(db, 'user_interactions', deviceId);
+      const currentUser = auth.currentUser;
+      if (!currentUser || !currentUser.uid) {
+        // Guests stay in localStorage only
+        return;
+      }
+      const userDocRef = doc(db, 'user_interactions', currentUser.uid);
       await setDoc(
         userDocRef,
         {
           ...data,
-          deviceId,
+          userId: currentUser.uid,
+          email: currentUser.email || undefined,
           lastActiveAt: new Date().toISOString(),
         },
         { merge: true }
       );
-      console.log('✅ [Firestore] User interactions synced to server-side database for device:', deviceId);
+      console.log('✅ [Firestore] User interactions synced to cloud database for user:', currentUser.uid);
     } catch (err: any) {
-      console.warn('⚠️ [Firestore] User interactions server sync notice:', err?.message);
+      console.warn('⚠️ [Firestore] User interactions sync notice:', err?.message);
     }
   }
 
   /**
-   * Fetch saved user interactions from Firestore server database
+   * Fetch saved user interactions from Firestore for logged-in user
    */
   async fetchUserInteractionsFromFirestore(): Promise<{
     savedVideos?: string[];
@@ -1068,12 +1074,15 @@ export class VideoService {
     ageVerified?: boolean;
   } | null> {
     try {
-      const deviceId = this.getDeviceId();
-      const userDocRef = doc(db, 'user_interactions', deviceId);
+      const currentUser = auth.currentUser;
+      if (!currentUser || !currentUser.uid) {
+        return null;
+      }
+      const userDocRef = doc(db, 'user_interactions', currentUser.uid);
       const snapshot = await getDoc(userDocRef);
       if (snapshot.exists()) {
         const data = snapshot.data();
-        console.log('✅ [Firestore] Loaded user interactions from server-side database for device:', deviceId);
+        console.log('✅ [Firestore] Loaded cloud user interactions for user:', currentUser.uid);
         return data as any;
       }
     } catch (err: any) {

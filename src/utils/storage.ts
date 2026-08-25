@@ -1,4 +1,4 @@
-import { db } from '../services/firebaseConfig';
+import { db, auth } from '../services/firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
 import { ContentPreference } from '../types';
 
@@ -200,20 +200,23 @@ export const registerUserInteractionSync = (listener: SyncListener): (() => void
 };
 
 const notifyInteractionSync = (data: UserInteractionSyncData): void => {
-  // 1. Direct Cloud Firestore synchronization to 'user_interactions' collection using persistent device ID
+  // 1. Direct Cloud Firestore synchronization to 'user_interactions' collection ONLY for logged-in users matching request.auth.uid
   try {
-    const devId = getOrCreateDeviceId();
-    setDoc(
-      doc(db, 'user_interactions', devId),
-      {
-        ...data,
-        deviceId: devId,
-        lastActiveAt: new Date().toISOString(),
-      },
-      { merge: true }
-    ).catch((err) => {
-      console.warn('[Firestore] Sync user interactions notice:', err?.message);
-    });
+    const currentUser = auth.currentUser;
+    if (currentUser && currentUser.uid) {
+      setDoc(
+        doc(db, 'user_interactions', currentUser.uid),
+        {
+          ...data,
+          userId: currentUser.uid,
+          email: currentUser.email || undefined,
+          lastActiveAt: new Date().toISOString(),
+        },
+        { merge: true }
+      ).catch((err) => {
+        console.warn('[Firestore] Sync user interactions notice:', err?.message);
+      });
+    }
   } catch (err) {
     console.warn('[Firestore] Sync user interactions error:', err);
   }
