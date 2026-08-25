@@ -272,6 +272,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const [hasAdLoaded, setHasAdLoaded] = useState<boolean>(false);
+  const [isZeroFill, setIsZeroFill] = useState<boolean>(false);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -298,6 +299,8 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
     if (!isVisible) return;
     const el = containerRef.current;
     if (!el) return;
+
+    let fillTimeout: NodeJS.Timeout | null = null;
 
     try {
       // Ensure global ad-provider script is present in DOM
@@ -326,11 +329,12 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       const observer = new MutationObserver(() => {
         if (ins.children.length > 0 || ins.querySelector('iframe, video, a')) {
           setHasAdLoaded(true);
+          if (fillTimeout) clearTimeout(fillTimeout);
         }
       });
       observer.observe(ins, { childList: true, subtree: true });
 
-      // Direct inline execution + AdProvider push for 100% execution guarantee
+      // Direct inline execution + AdProvider push
       setTimeout(() => {
         try {
           const win = window as any;
@@ -339,11 +343,27 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
         } catch {}
       }, 60);
 
-      return () => observer.disconnect();
+      // Smart Zero-Fill Guard: If ExoClick returns no ad after 2.8s, collapse cleanly so no black box stays
+      fillTimeout = setTimeout(() => {
+        if (!ins.children.length && !ins.querySelector('iframe, video, a')) {
+          setIsZeroFill(true);
+        }
+      }, 2800);
+
+      return () => {
+        observer.disconnect();
+        if (fillTimeout) clearTimeout(fillTimeout);
+      };
     } catch (e) {
       console.warn('[ExoClick] Outstream ad mount error:', e);
+      setIsZeroFill(true);
     }
   }, [isVisible]);
+
+  // If ad network has zero fill (no advertiser bid), auto-collapse cleanly without showing empty black card
+  if (isZeroFill && !hasAdLoaded) {
+    return null;
+  }
 
   return (
     <article
@@ -359,9 +379,9 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
           className="w-full h-full min-h-[180px] flex items-center justify-center overflow-hidden z-10"
         />
 
-        {/* Loading / Placeholder Animation until Outstream Video Player initializes */}
+        {/* Loading shimmer while waiting for ExoClick video player stream */}
         {!hasAdLoaded && (
-          <div className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 bg-[#09090b]/90 pointer-events-none">
+          <div className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 bg-[#09090b] pointer-events-none animate-pulse">
             <div className="w-10 h-10 rounded-full border-2 border-rose-500/30 border-t-rose-500 animate-spin flex items-center justify-center">
               <span className="material-symbols-outlined text-rose-500 text-sm">play_arrow</span>
             </div>
