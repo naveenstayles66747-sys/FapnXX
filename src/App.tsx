@@ -180,6 +180,13 @@ export default function App() {
       }
     });
 
+    const unsubscribeBanners = videoService.subscribeToBanners((updatedBanners) => {
+      if (updatedBanners && updatedBanners.length > 0) {
+        setBanners(updatedBanners);
+        setStoredCachedBanners(updatedBanners);
+      }
+    });
+
     videoService.fetchCategories().then((c) => {
       if (c && c.length > 0) setCategories(c);
     });
@@ -207,6 +214,7 @@ export default function App() {
 
     return () => {
       unsubscribe();
+      unsubscribeBanners();
       unregisterSync();
     };
   }, [isAgeVerified]);

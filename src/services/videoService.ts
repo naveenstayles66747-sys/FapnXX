@@ -756,6 +756,36 @@ export class VideoService {
   }
 
   /**
+   * Real-time listener for landing banners updates across all devices worldwide
+   */
+  subscribeToBanners(callback: (banners: LandingBanner[]) => void) {
+    try {
+      const q = query(collection(db, 'banners'));
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const list: LandingBanner[] = [];
+            snapshot.forEach((d) => {
+              const data = d.data() as LandingBanner;
+              list.push({ ...data, id: d.id });
+            });
+            if (list.length > 0) {
+              callback(list);
+            }
+          }
+        },
+        (err) => {
+          console.warn('⚠️ [Firestore] Realtime banners subscription notice:', err.message);
+        }
+      );
+      return unsubscribe;
+    } catch {
+      return () => {};
+    }
+  }
+
+  /**
    * Save banner via Firestore and Backend API (Admin/Staff only)
    */
   async saveBanner(banner: LandingBanner): Promise<LandingBanner> {
