@@ -1018,6 +1018,125 @@ html.light .mobile-drawer-aside li button:hover {
   background-color: #f1f5f9 !important;
 }
 
+/* Day Mode (Light Theme) Top Action Bar */
+html.light .mobile-drawer-top-bar {
+  background-color: #f1f5f9 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+html.light .mobile-drawer-theme-btn {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light .mobile-drawer-theme-btn:hover {
+  background-color: #e2e8f0 !important;
+}
+
+html.light .mobile-drawer-theme-btn span {
+  color: #db2777 !important;
+}
+
+html.light .mobile-drawer-auth-btn {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light .mobile-drawer-auth-btn:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light .mobile-drawer-auth-btn span.material-symbols-outlined {
+  color: #db2777 !important;
+}
+
+html.light .mobile-drawer-auth-btn span:not(.material-symbols-outlined) {
+  color: #0f172a !important;
+}
+
+html.light .mobile-drawer-back-header {
+  background-color: #f1f5f9 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+html.light .mobile-drawer-back-btn {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light .mobile-drawer-back-btn span {
+  color: #0f172a !important;
+}
+
+/* Night Mode (Dark Theme) Top Action Bar (Preserves Night View 100%) */
+html.dark .mobile-drawer-top-bar,
+.mobile-drawer-top-bar {
+  background-color: #18171d !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .mobile-drawer-theme-btn,
+.mobile-drawer-theme-btn {
+  background-color: #2a2933 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .mobile-drawer-theme-btn:hover,
+.mobile-drawer-theme-btn:hover {
+  background-color: #34333f !important;
+}
+
+html.dark .mobile-drawer-theme-btn span,
+.mobile-drawer-theme-btn span {
+  color: #ffb0cd !important;
+}
+
+html.dark .mobile-drawer-auth-btn,
+.mobile-drawer-auth-btn {
+  background-color: #2a2933 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+html.dark .mobile-drawer-auth-btn:hover,
+.mobile-drawer-auth-btn:hover {
+  background-color: #34333f !important;
+  color: #ffffff !important;
+}
+
+html.dark .mobile-drawer-auth-btn span.material-symbols-outlined,
+.mobile-drawer-auth-btn span.material-symbols-outlined {
+  color: #ec4899 !important;
+}
+
+html.dark .mobile-drawer-auth-btn span:not(.material-symbols-outlined),
+.mobile-drawer-auth-btn span:not(.material-symbols-outlined) {
+  color: #ffffff !important;
+}
+
+html.dark .mobile-drawer-back-header,
+.mobile-drawer-back-header {
+  background-color: #18171d !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .mobile-drawer-back-btn,
+.mobile-drawer-back-btn {
+  background-color: #2a2933 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+html.dark .mobile-drawer-back-btn span,
+.mobile-drawer-back-btn span {
+  color: #ffffff !important;
+}
+
 /* Mobile Drawer Videos Sub-Accordion Menu (Day Mode High Contrast) */
 html.light .mobile-drawer-videos-sub {
   background-color: #f1f5f9 !important;
