@@ -449,7 +449,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen w-full max-w-full bg-[#09090b] text-[#e5e1e4] flex flex-col font-['Inter',sans-serif] relative">
+    <div className="min-h-screen w-full max-w-full bg-[#09090b] text-[#e5e1e4] flex flex-col font-['Inter',sans-serif] relative overflow-x-hidden">
 
       {/* Admin Panel Modal (Loaded Lazily on Demand) */}
       {isAdminModalOpen && (
