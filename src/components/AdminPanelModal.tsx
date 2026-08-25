@@ -171,7 +171,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const fetchAuditLogs = async () => {
     setIsLoadingAudit(true);
     try {
-      const token = localStorage.getItem('fapnxx_auth_token');
+      const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
       const res = await fetch('/api/v1/admin/audit-logs?limit=50', {
         headers: {
           'Content-Type': 'application/json',
@@ -199,7 +199,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Production Admin Authentication using Firebase Authentication SDK and backend verification
+  // Production Admin Authentication using Firebase Authentication SDK exclusively as Single Identity Provider
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
@@ -209,11 +209,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     const cleanPassword = passwordInput.trim();
 
     try {
-      // 1. Authenticate with real Firebase Authentication
+      // 1. Authenticate directly with Firebase Authentication
       const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
       const user = userCredential.user;
 
-      // 2. Get ID token and custom claims
+      // 2. Get verified ID token and custom claims
       const idTokenResult = await user.getIdTokenResult(true);
       const claims = idTokenResult.claims;
 
@@ -231,30 +231,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         setActiveTab('categories');
       } else {
         await signOut(auth);
-        setLoginError('Access denied. This account does not possess administrator privileges.');
+        setLoginError('Access denied. This account does not possess administrator privileges (ADMIN / MODERATOR custom claims required).');
       }
     } catch (err: any) {
-      console.warn('[AdminAuth] Firebase authentication notice:', err?.message || err);
-      // Fallback check against backend API
-      try {
-        const res = await fetch('/api/v1/auth/admin-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && (json.data?.user?.role === 'ADMIN' || json.data?.user?.role === 'SUPER_ADMIN')) {
-            onAdminLogin(cleanEmail);
-            setLoginError('');
-            setActiveTab('categories');
-            return;
-          }
-        }
-      } catch {}
-
+      console.warn('[AdminAuth] Firebase authentication error:', err?.message || err);
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
         setLoginError('Invalid email or password. Please verify your credentials.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setLoginError('Too many failed login attempts. Please try again later.');
       } else {
         setLoginError(err.message || 'Authentication failed. Please verify credentials.');
       }

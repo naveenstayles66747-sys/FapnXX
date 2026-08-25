@@ -120,11 +120,13 @@ export class VideoService {
   }
 
   private async getAuthHeaders(): Promise<Record<string, string>> {
-    let token = localStorage.getItem('fapnxx_auth_token');
-    if (!token && auth.currentUser) {
+    let token: string | null = null;
+    if (auth.currentUser) {
       try {
         token = await auth.currentUser.getIdToken();
-      } catch {}
+      } catch (err) {
+        console.warn('[VideoService] Failed to retrieve Firebase ID token:', err);
+      }
     }
     const appCheckToken = await getAppCheckToken();
     return {
