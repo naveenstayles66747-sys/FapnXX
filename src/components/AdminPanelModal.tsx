@@ -77,7 +77,19 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       });
     }
   }, [isOpen]);
-  
+
+  // Support Escape key to quickly exit Admin Panel and return to website
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Auth form state — no pre-filled values
   const [authStep, setAuthStep] = useState<'credentials'>('credentials');
   const [emailInput, setEmailInput] = useState('');
@@ -489,12 +501,26 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#27272a] hover:bg-[#3f3f46] text-[#debec8] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
-          >
-            <span className="material-symbols-outlined text-base sm:text-lg">close</span>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-[#ec4899]/20 to-[#8b5cf6]/20 hover:from-[#ec4899] hover:to-[#8b5cf6] text-[#ffb0cd] hover:text-white border border-[#ec4899]/40 hover:border-[#ec4899] text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+              title="Return to Main Website"
+            >
+              <span className="material-symbols-outlined text-sm sm:text-base">arrow_back</span>
+              <span className="hidden xs:inline sm:inline">Back to Website</span>
+              <span className="xs:hidden sm:hidden">Website</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close Admin Panel"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#27272a] hover:bg-[#3f3f46] text-[#debec8] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            >
+              <span className="material-symbols-outlined text-base sm:text-lg">close</span>
+            </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -703,6 +729,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       Open Admin Controls
                     </button>
                     <button
+                      type="button"
+                      onClick={onClose}
+                      className="w-full py-2.5 rounded-xl bg-[#27272a] hover:bg-[#353438] text-white font-bold text-xs transition-colors cursor-pointer border border-[#3f3e42] flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-sm">home</span>
+                      Return to Website
+                    </button>
+                    <button
                       onClick={() => {
                         handleAdminLogout();
                         setAuthStep('credentials');
@@ -778,7 +812,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-2">
+                  <div className="pt-2 space-y-2">
                     <button
                       type="submit"
                       disabled={isLoggingIn}
@@ -795,6 +829,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           Sign In to Admin Panel
                         </>
                       )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="w-full py-2.5 rounded-xl bg-[#27272a] hover:bg-[#353438] text-[#debec8] hover:text-white font-bold text-xs transition-colors cursor-pointer border border-[#3f3e42] flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-sm">arrow_back</span>
+                      Exit Admin & Return to Website
                     </button>
                   </div>
 
@@ -2064,6 +2106,22 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               )}
             </div>
           )}
+        </div>
+
+        {/* Modal Footer Quick Return Bar */}
+        <div className="p-3 sm:p-4 bg-[#141315] border-t border-[#2e2d30] flex items-center justify-between gap-3 shrink-0">
+          <p className="text-[11px] text-[#a19fa6] hidden sm:flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-xs text-[#ec4899]">keyboard</span>
+            <span>Press <kbd className="px-1.5 py-0.5 bg-[#27272a] text-white rounded text-[10px] font-mono border border-[#3f3e42]">Esc</kbd> key anytime to exit Admin Panel</span>
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#27272a] hover:bg-[#ec4899] text-[#debec8] hover:text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer border border-[#3f3e42] hover:border-[#ec4899] flex items-center justify-center gap-2 active:scale-95 shadow-md"
+          >
+            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            <span>Back to FapnXX Website</span>
+          </button>
         </div>
       </div>
     </div>
