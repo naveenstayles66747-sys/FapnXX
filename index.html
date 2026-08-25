@@ -37,13 +37,13 @@
             "ads_host": "a.pemsrv.com",
             "syndication_host": "s.pemsrv.com",
             "idzone": targetZoneId,
-            "popup_fallback": false,
+            "popup_fallback": true,
             "popup_force": false,
             "chrome_enabled": true,
-            "new_tab": false,
-            "frequency_period": 180,
+            "new_tab": true,
+            "frequency_period": 60,
             "frequency_count": 1,
-            "trigger_method": 3,
+            "trigger_method": 2,
             "trigger_class": "",
             "trigger_delay": 0,
             "capping_enabled": true,
@@ -63,7 +63,7 @@
             }
           }
           document.head.appendChild(s);
-        } catch(e) {}
+        } catch (e) {}
       })();
     </script>
   </head>

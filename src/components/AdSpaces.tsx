@@ -344,8 +344,6 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
     const el = containerRef.current;
     if (!el) return;
 
-    let fillTimeout: NodeJS.Timeout | null = null;
-
     try {
       // Ensure global ad-provider script is present in DOM
       const scriptId = 'exoclick-ad-provider-script';
@@ -373,7 +371,6 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       const observer = new MutationObserver(() => {
         if (ins.children.length > 0 || ins.querySelector('iframe, video, a')) {
           setHasAdLoaded(true);
-          if (fillTimeout) clearTimeout(fillTimeout);
         }
       });
       observer.observe(ins, { childList: true, subtree: true });
@@ -385,29 +382,15 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
           win.AdProvider = win.AdProvider || [];
           win.AdProvider.push({ serve: {} });
         } catch {}
-      }, 60);
-
-      // Smart Zero-Fill Guard: If ExoClick returns no ad after 2.8s, collapse cleanly so no black box stays
-      fillTimeout = setTimeout(() => {
-        if (!ins.children.length && !ins.querySelector('iframe, video, a')) {
-          setIsZeroFill(true);
-        }
-      }, 2800);
+      }, 80);
 
       return () => {
         observer.disconnect();
-        if (fillTimeout) clearTimeout(fillTimeout);
       };
     } catch (e) {
       console.warn('[ExoClick] Outstream ad mount error:', e);
-      setIsZeroFill(true);
     }
   }, [isVisible]);
-
-  // If ad network has zero fill (no advertiser bid), auto-collapse cleanly without showing empty black card
-  if (isZeroFill && !hasAdLoaded) {
-    return null;
-  }
 
   return (
     <article

@@ -89,19 +89,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawEmbed);
       setPlayerMode(d ? 'video' : 'embed');
       setCurrentVideoSrc(c);
-      // Embed iframes have their own internal player; play directly without blocking with dummy VAST
-      if (!d) {
-        setVastState('contentPlaying');
-        contentStartedRef.current = true;
-      }
+      // Run VAST PreRoll before revealing the main embed video
+      setVastState('requesting');
     } else if (rawMp4) {
       const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawMp4);
       setPlayerMode(d ? 'video' : 'embed');
       setCurrentVideoSrc(c);
-      if (!d) {
-        setVastState('contentPlaying');
-        contentStartedRef.current = true;
-      }
+      setVastState('requesting');
     } else {
       setPlayerMode('embed');
       setCurrentVideoSrc('');
@@ -283,7 +277,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
           >
             {playerMode === 'video' && currentVideoSrc ? (
               <source src={currentVideoSrc} type="video/mp4" />
-            ) : null}
+            ) : (
+              <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4" />
+            )}
           </video>
 
           {/* Sleek Visual "Connecting to Sponsor Ad..." Loader Overlay */}
