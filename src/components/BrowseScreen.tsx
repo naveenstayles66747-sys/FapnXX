@@ -830,32 +830,12 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
             {/* Multi-Device Native Recommendation Sponsored Widget (Zone ID: 6010176) */}
             <NativeRecommendationAd title="Sponsored Picks & Recommendations" className="mt-8" />
           </>
-        ) : (!videos || videos.length === 0) ? (
-          /* Sleek Video Skeleton Shimmer Loading Grid */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-y-5 gap-x-4 sm:gap-6">
-            {Array.from({ length: 8 }).map((_, idx) => (
-              <div key={idx} className="flex flex-col space-y-3 animate-pulse">
-                <div className="relative w-full aspect-video rounded-xl bg-zinc-800/60 border border-white/5 overflow-hidden flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-zinc-700/50 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-zinc-600 text-xl">play_arrow</span>
-                  </div>
-                </div>
-                <div className="space-y-2 px-1">
-                  <div className="h-4 bg-zinc-800/80 rounded w-4/5" />
-                  <div className="flex items-center gap-3">
-                    <div className="h-3 bg-zinc-800/60 rounded w-16" />
-                    <div className="h-3 bg-zinc-800/60 rounded w-12" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
         ) : (
-          <div className="p-12 text-center text-[#debec8] bg-[#1c1b1d] rounded-2xl border border-[#353437] space-y-3">
-            <span className="material-symbols-outlined text-5xl text-[#ffb0cd]">cloud_off</span>
-            <h3 className="text-xl font-bold text-zinc-900 dark:text-white">No Videos Found</h3>
+          <div className="p-12 text-center text-[#debec8] bg-[#1c1b1d] rounded-2xl border border-[#353437] space-y-3 my-6">
+            <span className="material-symbols-outlined text-5xl text-[#ffb0cd]">video_library</span>
+            <h3 className="text-xl font-bold text-zinc-900 dark:text-white">No Videos Available</h3>
             <p className="text-sm text-[#debec8] max-w-md mx-auto">
-              We couldn't find any content matching your current selection. Please try a different category, duration, or search query.
+              No videos have been uploaded yet. Upload a video from the admin panel to get started!
             </p>
           </div>
         )}
