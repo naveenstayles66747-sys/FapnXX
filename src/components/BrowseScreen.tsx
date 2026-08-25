@@ -595,9 +595,9 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         </section>
       )}
 
-      {/* Category Pills Filter — hidden during search query so results surface right at top */}
+      {/* Category Pills Filter — hidden on mobile view since categories are already present in the side drawer & bottom navigation */}
       {!cleanSearch && (
-        <section className="mb-10 w-full">
+        <section className="hidden md:block mb-10 w-full">
           <div className="flex md:flex-wrap gap-2 md:gap-3 overflow-x-auto md:overflow-x-visible hide-scrollbar snap-x snap-mandatory md:snap-none pb-1 md:pb-0">
             <button
               onClick={() => onSelectCategory('all')}
