@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, memo, useMemo } from 'react';
 import { Video } from '../types';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { cleanMediaUrl } from '../utils/mediaHelper';
 
 interface VideoCardProps {
   video: Video;
@@ -72,20 +73,22 @@ const formatTimeAgo = (createdAt?: string, fallbackStr?: string): string => {
 
 const FALLBACK_THUMBNAIL = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=800&auto=format&fit=crop';
 
-// ─── Extract ONLY dedicated preview media (WebP animated / MP4 clip) ───────────
+// ─── Extract ONLY dedicated preview media (WebP animated / MP4 clip / image frames) ───────────
 const extractPreviewDetails = (video: Video) => {
-  const mp4Src = (video.previewMp4Url || (video as any).mp4Url || '').trim();
+  const mp4Src = cleanMediaUrl(video.previewMp4Url || (video as any).mp4Url || '');
   if (mp4Src) {
     const urlPath = mp4Src.split('?')[0].split('#')[0].toLowerCase();
-    const isVideo = /\.(mp4|webm|m3u8|mov|ogg)$/i.test(urlPath) || !/\.(jpe?g|png|webp|gif|avif)$/i.test(urlPath);
+    const isImage = /\.(webp|gif|jpe?g|png|avif)$/i.test(urlPath) || urlPath.includes('.mp4.jpg');
+    const isVideo = !isImage && (/\.(mp4|webm|m3u8|mov|ogg)$/i.test(urlPath) || mp4Src.startsWith('http'));
     if (isVideo) return { previewSrc: mp4Src, previewType: 'video' as const };
+    if (isImage) return { previewSrc: mp4Src, previewType: 'image' as const };
   }
 
-  const webpSrc = (video.previewWebpUrl || '').trim();
+  const webpSrc = cleanMediaUrl(video.previewWebpUrl || '');
   if (webpSrc) {
     const urlPath = webpSrc.split('?')[0].split('#')[0].toLowerCase();
     const isVideo = /\.(mp4|webm|m3u8|mov|ogg)$/i.test(urlPath);
-    const isImage = /\.(webp|gif)$/i.test(urlPath);
+    const isImage = /\.(webp|gif|jpe?g|png|avif)$/i.test(urlPath) || !isVideo;
     if (isVideo) return { previewSrc: webpSrc, previewType: 'video' as const };
     if (isImage) return { previewSrc: webpSrc, previewType: 'image' as const };
   }
@@ -246,8 +249,26 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     }
   }, [shouldPlayPreview, previewType]);
 
-  const primaryThumb = (video.thumbnail || video.thumbnailUrl || '').trim();
+  const primaryThumb = cleanMediaUrl(video.thumbnail || video.thumbnailUrl || '');
   const displayThumbnail = primaryThumb || FALLBACK_THUMBNAIL;
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.currentTarget;
+    const currentSrc = target.src || '';
+
+    // If streamtape URL failed (e.g. embed url vs thumb cdn), fallback to streamtape direct thumb
+    if (currentSrc.includes('streamtape') && !currentSrc.includes('thumb.streamtape.com')) {
+      const match = currentSrc.match(/(?:streamtape|streamta\.pe|streamhide|shvip|streamhub)[^/]*\/(?:v|e|d)\/([a-zA-Z0-9_-]+)/i);
+      if (match && match[1]) {
+        target.src = `https://thumb.streamtape.com/${match[1]}.jpg`;
+        return;
+      }
+    }
+
+    if (target.src !== FALLBACK_THUMBNAIL) {
+      target.src = FALLBACK_THUMBNAIL;
+    }
+  };
 
   const renderPreviewOverlay = () => {
     if (!shouldPlayPreview || !previewSrc) return null;
@@ -260,12 +281,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           loading="eager"
           decoding="async"
           referrerPolicy="no-referrer"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            if (target.src !== FALLBACK_THUMBNAIL) {
-              target.src = FALLBACK_THUMBNAIL;
-            }
-          }}
+          onError={handleImageError}
           className="absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-300 z-10"
         />
       );
@@ -317,12 +333,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
             loading="lazy"
             decoding="async"
             referrerPolicy="no-referrer"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              if (target.src !== FALLBACK_THUMBNAIL) {
-                target.src = FALLBACK_THUMBNAIL;
-              }
-            }}
+            onError={handleImageError}
             className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
           />
 
@@ -406,12 +417,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           loading="lazy"
           decoding="async"
           referrerPolicy="no-referrer"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            if (target.src !== FALLBACK_THUMBNAIL) {
-              target.src = FALLBACK_THUMBNAIL;
-            }
-          }}
+          onError={handleImageError}
           className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
         />
 

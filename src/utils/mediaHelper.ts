@@ -403,3 +403,79 @@ export async function captureVideoFrame(
   if (frames.length > 0) return frames[0];
   throw new Error('Failed to capture frame.');
 }
+
+/**
+ * Clean & extract URL from iframe tags, quotes, or protocol-relative strings
+ */
+export function cleanMediaUrl(rawInput?: string): string {
+  if (!rawInput || typeof rawInput !== 'string') return '';
+  let str = rawInput.trim();
+
+  // If it's an <iframe> HTML snippet: <iframe src="https://..." ...></iframe>
+  if (str.includes('<iframe') || str.includes('src=')) {
+    const match = str.match(/src=["']([^"']+)["']/i);
+    if (match && match[1]) {
+      str = match[1].trim();
+    }
+  }
+
+  // Remove surrounding quotes
+  str = str.replace(/^["']|["']$/g, '').trim();
+
+  // If it starts with '//', prefix 'https:'
+  if (str.startsWith('//')) {
+    str = `https:${str}`;
+  }
+
+  return str;
+}
+
+/**
+ * Client-Side Image Compressor & Resizer (Converts 10MB+ images to lightweight ~50KB WebP/JPEG)
+ * Prevents Firebase Firestore 1MB document quota overflow on uploaded thumbnails.
+ */
+export function compressImageFile(
+  file: File,
+  maxWidth = 1280,
+  maxHeight = 720,
+  quality = 0.85
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      // Maintain aspect ratio within maxWidth x maxHeight
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        return resolve(url);
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Convert to clean optimized JPEG Data URL (~30-70 KB)
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressedDataUrl);
+    };
+
+    img.onerror = (err) => {
+      URL.revokeObjectURL(url);
+      reject(err);
+    };
+
+    img.src = url;
+  });
+}
+

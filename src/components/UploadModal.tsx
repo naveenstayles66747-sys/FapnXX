@@ -7,6 +7,8 @@ import {
   extractThumbnailFromEmbedUrl,
   extractEmbedMetadataOnline,
   captureMultiFrames,
+  cleanMediaUrl,
+  compressImageFile,
 } from '../utils/mediaHelper';
 
 interface UploadModalProps {
@@ -199,16 +201,34 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       }
       setIsUploadingThumb(true);
       try {
-        const storageUrl = await videoService.uploadPreviewToStorage(file);
-        setThumbnailUrl(storageUrl);
-      } catch {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result === 'string') {
-            setThumbnailUrl(reader.result);
+        // Compress client-side to standard 16:9 crisp thumbnail (~40-70KB)
+        // This guarantees it will NEVER exceed Firestore's 1MB document quota
+        const compressedDataUrl = await compressImageFile(file, 1280, 720, 0.85);
+        setThumbnailUrl(compressedDataUrl);
+
+        // Upload compressed image to Firebase Storage for permanent public CDN URL
+        try {
+          const storageUrl = await videoService.uploadDataUrlToStorage(compressedDataUrl);
+          if (storageUrl && !storageUrl.startsWith('data:image/')) {
+            setThumbnailUrl(storageUrl);
           }
-        };
-        reader.readAsDataURL(file);
+        } catch (storageErr) {
+          console.warn('[UploadModal] Firebase Storage upload notice, preserved compressed data URL:', storageErr);
+        }
+      } catch (compressErr) {
+        console.warn('[UploadModal] Compression error, fallback to direct upload:', compressErr);
+        try {
+          const storageUrl = await videoService.uploadPreviewToStorage(file);
+          setThumbnailUrl(storageUrl);
+        } catch {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === 'string') {
+              setThumbnailUrl(reader.result);
+            }
+          };
+          reader.readAsDataURL(file);
+        }
       } finally {
         setIsUploadingThumb(false);
       }
@@ -531,11 +551,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setIsPublishing(true);
 
     try {
-      let finalEmbedUrl = processedEmbedUrl || embedInput.trim();
+      let finalEmbedUrl = cleanMediaUrl(processedEmbedUrl || embedInput.trim());
       let finalThumbnail =
-        thumbnailUrl.trim() ||
-        previewWebpUrl.trim() ||
-        previewMp4Url.trim() ||
+        cleanMediaUrl(thumbnailUrl.trim()) ||
+        cleanMediaUrl(previewWebpUrl.trim()) ||
+        cleanMediaUrl(previewMp4Url.trim()) ||
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop';
 
       // Ensure thumbnail is NEVER a temporary device-local blob URL
@@ -557,9 +577,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       // Upload captured frame Data URLs directly to Firebase Cloud Storage for permanent public URL
       if (finalThumbnail.startsWith('data:image/')) {
         try {
-          finalThumbnail = await videoService.uploadDataUrlToStorage(finalThumbnail);
+          const storageUrl = await videoService.uploadDataUrlToStorage(finalThumbnail);
+          if (storageUrl && !storageUrl.startsWith('data:image/')) {
+            finalThumbnail = storageUrl;
+          }
         } catch (uploadErr) {
-          console.warn('[UploadModal] Storage frame upload notice:', uploadErr);
+          console.warn('[UploadModal] Storage frame upload notice, preserving optimized data URL:', uploadErr);
         }
       }
 
@@ -1164,10 +1187,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             {/* Thumbnail URL Input & Actions */}
             <div className="flex items-center gap-2">
               <input
-                type="url"
+                type="text"
                 value={thumbnailUrl}
-                onChange={(e) => setThumbnailUrl(e.target.value)}
-                placeholder="Paste Thumbnail Image URL (e.g. https://.../thumb.jpg) ->"
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const clean = cleanMediaUrl(raw);
+                  setThumbnailUrl(clean || raw);
+                }}
+                placeholder="Paste Thumbnail Image URL or <iframe> embed code..."
                 className="flex-1 upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500 font-mono"
               />
 
@@ -1201,7 +1228,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             </div>
 
             <p className="text-[10px] text-zinc-600 dark:text-zinc-400 flex items-center gap-1">
-              <span>💡 Tip: Paste an image link, click "Capture Frame", or select one of the frames above.</span>
+              <span>💡 Tip: Paste an image link, iframe code, click "Upload", or "Capture Frame".</span>
             </p>
           </div>
 
@@ -1211,9 +1238,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               Player Seekbar VTT / Sprite Sheet URL (Optional)
             </label>
             <input
-              type="url"
+              type="text"
               value={vttUrlInput}
-              onChange={(e) => setVttUrlInput(e.target.value)}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const clean = cleanMediaUrl(raw);
+                setVttUrlInput(clean || raw);
+              }}
               placeholder="https://example.com/thumbnails.vtt or sprite-sheet image URL..."
               className="w-full upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500 font-mono"
             />
@@ -1236,19 +1267,20 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
             <div className="flex items-center gap-2">
               <input
-                type="url"
+                type="text"
                 value={previewWebpUrl || previewMp4Url}
                 onChange={(e) => {
-                  const val = e.target.value.trim();
-                  if (val.match(/\.(webp|gif|png|jpe?g|avif)($|\?|#)/i)) {
-                    setPreviewWebpUrl(val);
+                  const raw = e.target.value;
+                  const clean = cleanMediaUrl(raw) || raw.trim();
+                  if (clean.match(/\.(webp|gif|png|jpe?g|avif)($|\?|#)/i)) {
+                    setPreviewWebpUrl(clean);
                     setPreviewMp4Url('');
                   } else {
-                    setPreviewMp4Url(val);
+                    setPreviewMp4Url(clean);
                     setPreviewWebpUrl('');
                   }
                 }}
-                placeholder="Paste MP4 preview link (e.g. https://.../video.mp4 or .webp) ->"
+                placeholder="Paste MP4/WebP preview link or <iframe> embed code..."
                 className="flex-1 upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500 font-mono"
               />
 

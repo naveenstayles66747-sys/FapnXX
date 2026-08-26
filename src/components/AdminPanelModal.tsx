@@ -10,6 +10,7 @@ import {
   handleBannerImageError,
   captureVideoFrame,
   extractThumbnailFromEmbedUrl,
+  cleanMediaUrl,
 } from '../utils/mediaHelper';
 
 interface AdminPanelModalProps {
@@ -1205,14 +1206,18 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                 📸 Thumbnail Cover URL
                               </label>
                               <input
-                                type="url"
+                                type="text"
                                 required
                                 value={editingVideo.thumbnail}
-                                onChange={(e) => setEditingVideo({ ...editingVideo, thumbnail: e.target.value, thumbnailUrl: e.target.value })}
-                                placeholder="https://cdn.example.com/thumbnail.jpg"
-                                className="w-full bg-[#181719] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ec4899] placeholder:text-[#555]"
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const clean = cleanMediaUrl(raw) || raw;
+                                  setEditingVideo({ ...editingVideo, thumbnail: clean, thumbnailUrl: clean });
+                                }}
+                                placeholder="https://cdn.example.com/thumbnail.jpg or <iframe> code..."
+                                className="w-full bg-[#181719] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ec4899] placeholder:text-[#555] font-mono"
                               />
-                              <p className="text-[10px] text-[#666] mt-0.5">Static cover image jo card pe dikhegi (JPG/PNG/WebP)</p>
+                              <p className="text-[10px] text-[#666] mt-0.5">Static cover image jo card pe dikhegi (JPG/PNG/WebP/iframe)</p>
                             </div>
 
                             <div>
@@ -1222,9 +1227,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               <input
                                 type="text"
                                 value={editingVideo.embedUrl || ''}
-                                onChange={(e) => setEditingVideo({ ...editingVideo, embedUrl: e.target.value, isEmbed: Boolean(e.target.value) })}
-                                placeholder="https://hornhub.embedseek.com/#abc123  (isi video ka embed link)"
-                                className="w-full bg-[#181719] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 placeholder:text-[#555]"
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const clean = cleanMediaUrl(raw) || raw;
+                                  setEditingVideo({ ...editingVideo, embedUrl: clean, isEmbed: Boolean(clean) });
+                                }}
+                                placeholder="https://streamtape.com/e/... or <iframe> code..."
+                                className="w-full bg-[#181719] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 placeholder:text-[#555] font-mono"
                               />
                               <p className="text-[10px] text-[#666] mt-0.5">Isi video ka embed/iframe link — thumbnail ke saath match karna chahiye</p>
                             </div>
@@ -1286,11 +1295,15 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               </label>
                               <div className="flex gap-2">
                                 <input
-                                  type="url"
+                                  type="text"
                                   value={editingVideo.previewMp4Url || ''}
-                                  onChange={(e) => setEditingVideo({ ...editingVideo, previewMp4Url: e.target.value })}
-                                  placeholder="https://cdn.example.com/preview-clip.mp4  (isi video ka short clip)"
-                                  className="flex-1 bg-[#181719] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 placeholder:text-[#555]"
+                                  onChange={(e) => {
+                                    const raw = e.target.value;
+                                    const clean = cleanMediaUrl(raw) || raw;
+                                    setEditingVideo({ ...editingVideo, previewMp4Url: clean });
+                                  }}
+                                  placeholder="https://cdn.example.com/preview-clip.mp4 or <iframe> code..."
+                                  className="flex-1 bg-[#181719] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 placeholder:text-[#555] font-mono"
                                 />
                                 <label className="px-3.5 py-2.5 bg-[#ec4899] hover:bg-[#db2777] rounded-xl text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors shrink-0">
                                   <span className="material-symbols-outlined text-sm">cloud_upload</span>
@@ -1324,11 +1337,15 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                 Animated WebP Preview URL (optional)
                               </label>
                               <input
-                                type="url"
+                                type="text"
                                 value={editingVideo.previewWebpUrl || ''}
-                                onChange={(e) => setEditingVideo({ ...editingVideo, previewWebpUrl: e.target.value })}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const clean = cleanMediaUrl(raw) || raw;
+                                  setEditingVideo({ ...editingVideo, previewWebpUrl: clean });
+                                }}
                                 placeholder="https://cdn.example.com/preview.webp"
-                                className="w-full bg-[#181719] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#a19fa6] placeholder:text-[#555]"
+                                className="w-full bg-[#181719] border border-[#2e2d30] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#a19fa6] placeholder:text-[#555] font-mono"
                               />
                             </div>
                           </div>
