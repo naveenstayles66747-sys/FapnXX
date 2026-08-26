@@ -439,7 +439,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
         )}
 
         {/* Under-Player Responsive Ad Banner (Desktop 728x90: Zone 6010076 | Mobile 300x250: Zone 6010078) */}
-        <UnderPlayerBanner />
+        <UnderPlayerBanner key={`under-player-${video.id}`} reloadKey={video.id} />
       </div>
 
       {/* ─────────────────────────────────────────────
@@ -462,8 +462,8 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
 
               {/* Native Recommendation Widget in-between related videos grid (After 4th video) */}
               {idx === 3 && (
-                <div key="detail-native-recommended-in-grid" className="col-span-full my-3">
-                  <NativeRecommendationAd />
+                <div key={`detail-native-recommended-in-grid-${video.id}`} className="col-span-full my-3">
+                  <NativeRecommendationAd key={`native-rec-${video.id}`} reloadKey={video.id} />
                 </div>
               )}
             </React.Fragment>
@@ -471,8 +471,8 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
 
           {/* Guaranteed in-grid placement if fewer than 4 related videos */}
           {(!topRelatedVideos || topRelatedVideos.length < 4) && (
-            <div className="col-span-full my-3">
-              <NativeRecommendationAd />
+            <div key={`detail-native-recommended-fallback-${video.id}`} className="col-span-full my-3">
+              <NativeRecommendationAd key={`native-rec-fallback-${video.id}`} reloadKey={video.id} />
             </div>
           )}
         </div>

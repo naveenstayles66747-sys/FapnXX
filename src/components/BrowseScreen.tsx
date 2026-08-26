@@ -825,8 +825,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
                   {/* Native Recommendation Widget in-between grid cards spanning full width (After 4th video) */}
                   {idx === 3 && (
-                    <div key="browse-native-recommended-in-grid" className="col-span-full my-3">
-                      <NativeRecommendationAd />
+                    <div key={`browse-native-recommended-in-grid-${selectedCategory}`} className="col-span-full my-3">
+                      <NativeRecommendationAd key={`browse-native-${selectedCategory}`} reloadKey={selectedCategory} />
                     </div>
                   )}
 
@@ -839,8 +839,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
               {/* Guaranteed in-grid placement if total videos is less than 4 */}
               {displayedVideos.length > 0 && displayedVideos.length < 4 && (
-                <div className="col-span-full my-3">
-                  <NativeRecommendationAd />
+                <div key={`browse-native-recommended-fallback-${selectedCategory}`} className="col-span-full my-3">
+                  <NativeRecommendationAd key={`browse-native-fallback-${selectedCategory}`} reloadKey={selectedCategory} />
                 </div>
               )}
             </div>

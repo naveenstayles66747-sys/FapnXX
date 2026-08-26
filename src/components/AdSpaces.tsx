@@ -496,7 +496,10 @@ export const OnStreamVideoBanner: React.FC<{
 /**
  * Under-Player Banner Ad (Responsive: Desktop Zone 6010076 & Mobile Zone 6010078)
  */
-export const UnderPlayerBanner: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: string | number }> = ({
+  className = '',
+  reloadKey,
+}) => {
   const desktopContainerRef = useRef<HTMLDivElement>(null);
   const mobileContainerRef = useRef<HTMLDivElement>(null);
 
@@ -506,7 +509,7 @@ export const UnderPlayerBanner: React.FC<{ className?: string }> = ({ className 
     const isMobile = window.innerWidth < 1024;
     const targetRef = isMobile ? mobileContainerRef : desktopContainerRef;
     const el = targetRef.current;
-    if (!el || el.dataset.adInitialized === 'true') return;
+    if (!el) return;
 
     try {
       el.innerHTML = '';
@@ -522,15 +525,20 @@ export const UnderPlayerBanner: React.FC<{ className?: string }> = ({ className 
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
+      // Inline trigger script
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
+
       const win = window as any;
       win.AdProvider = win.AdProvider || [];
       win.AdProvider.push({ serve: {} });
 
-      el.dataset.adInitialized = 'true';
     } catch (e) {
       console.warn('[ExoClick] Under-Player banner error:', e);
     }
-  }, []);
+  }, [reloadKey]);
 
   return (
     <div className={`w-full my-4 flex flex-col items-center justify-center ${className}`}>
@@ -550,39 +558,55 @@ export const UnderPlayerBanner: React.FC<{ className?: string }> = ({ className 
 
 /**
  * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile — Zone ID: 6010176)
- * Pure ExoClick Native Recommendation Widget Tag (Zero Fake Cards)
+ * Pure ExoClick Native Recommendation Widget Tag with seamless SPA navigation support
  */
-export const NativeRecommendationAd: React.FC<{ className?: string; title?: string }> = ({
+export const NativeRecommendationAd: React.FC<{ className?: string; title?: string; reloadKey?: string | number }> = ({
   className = '',
   title = 'Sponsor Picks & Recommendations',
+  reloadKey,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const instanceId = useRef(`exo_native_${Math.random().toString(36).substring(2, 9)}`);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    try {
-      const scriptId = 'exoclick-ad-provider-script';
-      if (!document.getElementById(scriptId)) {
-        const script = document.createElement('script');
-        script.id = scriptId;
-        script.type = 'application/javascript';
-        script.async = true;
-        script.src = 'https://a.magsrv.com/ad-provider.js';
-        document.head.appendChild(script);
-      }
+    let isMounted = true;
+    const timers: NodeJS.Timeout[] = [];
 
+    try {
       el.innerHTML = '';
+
+      // 1. Create Native Tag
       const ins = document.createElement('ins');
       ins.className = `eas${AD_ZONES.SITE_HASH}20`;
       ins.setAttribute('data-zoneid', AD_ZONES.NATIVE_RECOMMENDED || '6010176');
       ins.style.display = 'block';
       ins.style.width = '100%';
+      ins.style.minHeight = '140px';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
+      // 2. Inject inline script trigger
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
+
+      // 3. Ensure global provider SDK is present
+      if (!document.getElementById('exoclick-global-ad-provider')) {
+        const sdk = document.createElement('script');
+        sdk.id = 'exoclick-global-ad-provider';
+        sdk.type = 'application/javascript';
+        sdk.async = true;
+        sdk.src = 'https://a.pemsrv.com/ad-provider.js';
+        document.head.appendChild(sdk);
+      }
+
+      // 4. Repeated trigger bursts to guarantee ExoClick serves on SPA transitions
       const triggerAdServe = () => {
+        if (!isMounted) return;
         try {
           const win = window as any;
           win.AdProvider = win.AdProvider || [];
@@ -591,22 +615,23 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       };
 
       triggerAdServe();
-      const t1 = setTimeout(triggerAdServe, 100);
-      const t2 = setTimeout(triggerAdServe, 500);
-      const t3 = setTimeout(triggerAdServe, 1200);
-
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-        clearTimeout(t3);
-      };
+      timers.push(setTimeout(triggerAdServe, 50));
+      timers.push(setTimeout(triggerAdServe, 200));
+      timers.push(setTimeout(triggerAdServe, 600));
+      timers.push(setTimeout(triggerAdServe, 1200));
+      timers.push(setTimeout(triggerAdServe, 2500));
     } catch (e) {
-      console.warn('[ExoClick] Native recommendation ad error:', e);
+      console.warn('[ExoClick] Native recommendation ad mount error:', e);
     }
-  }, []);
+
+    return () => {
+      isMounted = false;
+      timers.forEach((t) => clearTimeout(t));
+    };
+  }, [reloadKey]);
 
   return (
-    <section className={`native-ad-section w-full my-2.5 sm:my-3 p-2.5 sm:p-3 rounded-2xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#121115] shadow-sm transition-colors ${className}`}>
+    <section className={`native-ad-section w-full my-2.5 sm:my-3 p-2.5 sm:p-3 rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-[#121115] shadow-sm transition-colors ${className}`}>
       {/* Minimal Header with AD Badge */}
       <div className="flex items-center justify-start pb-1.5 mb-1.5 border-b border-zinc-200 dark:border-white/10">
         <span className="px-2 py-0.5 rounded bg-[#ec4899] text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
@@ -614,11 +639,11 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         </span>
       </div>
 
-      {/* Pure ExoClick Native Recommendation Ad Container (Snug fit with zero dead whitespace) */}
+      {/* Pure ExoClick Native Recommendation Ad Container */}
       <div
         ref={containerRef}
-        id="exoclick-native-recommended-zone-6010176"
-        className="w-full overflow-visible block"
+        id={instanceId.current}
+        className="w-full overflow-visible block min-h-[140px]"
       />
     </section>
   );
