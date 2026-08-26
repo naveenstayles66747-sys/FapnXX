@@ -948,6 +948,56 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   <span>{linkError}</span>
                 </p>
               )}
+
+              {/* SeekStream Auto-Linked Assets Badge Bar */}
+              {(selectedProvider === 'seekstream' || (processedEmbedUrl && processedEmbedUrl.includes('embedseek'))) && (
+                <div className="bg-gradient-to-r from-rose-950/40 via-purple-950/30 to-black p-3.5 rounded-xl border border-rose-500/40 shadow-xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-white flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-rose-500 text-base">auto_fix_high</span>
+                      <span>SeekStream Auto-Linked Cloud Assets</span>
+                    </span>
+                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      100% Synced
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
+                    <div className="bg-black/60 p-2 rounded-lg border border-white/5 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-rose-400 text-sm">play_circle</span>
+                      <div className="truncate">
+                        <span className="text-zinc-400 block text-[9px] uppercase font-sans font-bold">Embed Player URL</span>
+                        <span className="text-white truncate block">{processedEmbedUrl || 'Waiting for link...'}</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-black/60 p-2 rounded-lg border border-white/5 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-pink-400 text-sm">gif_box</span>
+                      <div className="truncate">
+                        <span className="text-zinc-400 block text-[9px] uppercase font-sans font-bold">Hover WebP Animation</span>
+                        <span className="text-pink-300 truncate block">{previewWebpUrl || 'Auto-generated on paste'}</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-black/60 p-2 rounded-lg border border-white/5 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-purple-400 text-sm">movie</span>
+                      <div className="truncate">
+                        <span className="text-zinc-400 block text-[9px] uppercase font-sans font-bold">Preview MP4 Clip</span>
+                        <span className="text-purple-300 truncate block">{previewMp4Url || 'Auto-generated on paste'}</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-black/60 p-2 rounded-lg border border-white/5 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-amber-400 text-sm">image</span>
+                      <div className="truncate">
+                        <span className="text-zinc-400 block text-[9px] uppercase font-sans font-bold">HD Video Thumbnail</span>
+                        <span className="text-amber-300 truncate block">{thumbnailUrl || 'Auto-linked'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
