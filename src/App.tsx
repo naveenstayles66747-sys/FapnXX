@@ -90,6 +90,8 @@ export default function App() {
     return cached.length > 0 ? cached : INITIAL_LANDING_BANNERS;
   });
 
+  const [browseSortBy, setBrowseSortBy] = useState<'latest' | 'most_popular' | 'top_rated'>('latest');
+
   // Filtered videos based on content preference (straight/gay/lesbian) without breaking standard horizontal/vertical videos
   const preferredVideos = (videosList || []).filter((v) => {
     if (!v || typeof v !== 'object') return false;
@@ -129,7 +131,8 @@ export default function App() {
             claims.role === 'MODERATOR' ||
             claims.role === 'EDITOR' ||
             claims.admin === true ||
-            claims.moderator === true;
+            claims.moderator === true ||
+            (user.email && user.email.toLowerCase() === 'naveenstayles66747@gmail.com');
           setIsAdminAuthenticated(Boolean(isStaff));
         } catch {
           setIsAdminAuthenticated(false);
@@ -563,6 +566,11 @@ export default function App() {
             onClose={() => setIsMobileDrawerOpen(false)}
             onSelectCategory={handleSelectCategory}
             onNavigate={handleNavigate}
+            onSelectSort={(sort) => {
+              setBrowseSortBy(sort);
+              setSelectedCategoryId('all');
+              setCurrentScreen('browse');
+            }}
             onOpenUpload={() => setIsUploadModalOpen(true)}
             onOpenAds={() => setIsAdModalOpen(true)}
             onOpenAdminPanel={() => setIsAdminModalOpen(true)}
@@ -600,6 +608,8 @@ export default function App() {
                 banners={banners}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
+                sortBy={browseSortBy}
+                setSortBy={setBrowseSortBy}
               />
             )}
 

@@ -61,6 +61,21 @@ async function initFirestoreUsersSync() {
       console.log(`🛡️ [Firestore UserService] Super Admin ${superAdminEmail} registered in Firestore.`);
     }
 
+    // Automatically ensure Firebase Auth custom claims are set for super admin
+    try {
+      const fbUser = await adminAuth.getUserByEmail(superAdminEmail).catch(() => null);
+      if (fbUser) {
+        await adminAuth.setCustomUserClaims(fbUser.uid, {
+          role: Role.SUPER_ADMIN,
+          admin: true,
+          moderator: true,
+        });
+        console.log(`🛡️ [FirebaseAuth] Synced SUPER_ADMIN custom claims for ${superAdminEmail}`);
+      }
+    } catch (fbErr: any) {
+      console.warn('⚠️ [FirebaseAuth] Super Admin claims sync notice:', fbErr?.message || fbErr);
+    }
+
     isFirestoreUsersInitialized = true;
   } catch (err: any) {
     console.warn('⚠️ [Firestore UserService] Sync fallback:', err.message);

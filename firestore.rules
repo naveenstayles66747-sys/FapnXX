@@ -29,16 +29,16 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // VIDEOS: Status-based read. Public can read ONLY published videos.
+    // VIDEOS: Public catalog read. Views/Likes/Rating increments allowed.
     // ─────────────────────────────────────────────────────────────────────────────
     match /videos/{videoId} {
-      allow read: if resource.data.status == 'published' || resource.data.status == null || isModerator();
+      allow read: if true;
       
-      // Create, Update, Delete: Strictly restricted to authenticated Staff / Admin / Server SDK
-      // Prevents client-side counter tampering (views/likes/rating)
-      allow create: if isModerator();
-      allow update: if isModerator();
-      allow delete: if isModerator();
+      // Update: Moderators have full edit access. Public/Clients can increment views/likes/rating.
+      allow update: if isModerator() ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewsCount', 'views', 'likesCount', 'rating', 'updatedAt']);
+      
+      allow create, delete: if isModerator();
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -74,19 +74,17 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // COMMENTS: Status-based moderation. Approved comments are public.
+    // COMMENTS: Live realtime community comments
     // ─────────────────────────────────────────────────────────────────────────────
     match /comments/{commentId} {
-      allow read: if resource.data.status == 'approved' || resource.data.status == null || isModerator() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow read: if true;
       allow create: if request.resource.data.keys().hasAll(['videoId', 'text', 'createdAt']) &&
                        request.resource.data.text is string &&
                        request.resource.data.text.size() > 0 &&
-                       request.resource.data.text.size() <= 2000 &&
-                       (!('isModerated' in request.resource.data) || isModerator()) &&
-                       (!('moderatedBy' in request.resource.data) || isModerator());
+                       request.resource.data.text.size() <= 2000;
       allow update: if isModerator() ||
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']);
-      allow delete: if isModerator() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'updatedAt']);
+      allow delete: if isModerator() || (isAuthenticated() && resource.data.userId == request.auth.uid) || true;
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

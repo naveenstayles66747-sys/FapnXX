@@ -25,8 +25,8 @@ const formatViews = (count?: number, fallbackStr?: string): string => {
 const formatCardViews = (video: Video): string => {
   const n = video.viewsCount;
   if (typeof n === 'number' && !isNaN(n)) {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}k`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}k`;
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
     return `${n}`;
   }
   return (video.views || '1').replace(/[^0-9KMk.]/g, '') || '1';

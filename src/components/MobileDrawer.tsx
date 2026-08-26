@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CategoryId, CategoryInfo, ContentPreference, ScreenId } from '../types';
 import { CATEGORIES } from '../data';
 import { ThemeMode } from '../utils/storage';
@@ -8,6 +8,7 @@ interface MobileDrawerProps {
   onClose: () => void;
   onSelectCategory: (id: CategoryId) => void;
   onNavigate: (screen: ScreenId) => void;
+  onSelectSort?: (sort: 'latest' | 'most_popular' | 'top_rated') => void;
   onOpenUpload?: () => void;
   onOpenAds?: () => void;
   onOpenAdminPanel?: () => void;
@@ -26,6 +27,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onClose,
   onSelectCategory,
   onNavigate,
+  onSelectSort,
   onOpenUpload,
   onOpenAds,
   onOpenAdminPanel,
@@ -40,7 +42,15 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 }) => {
   // Navigation view inside drawer: 'main' menu or 'categories' drill-down folder
   const [drawerSubView, setDrawerSubView] = useState<'main' | 'categories'>('main');
-  const [isVideosExpanded, setIsVideosExpanded] = useState<boolean>(true);
+  const [isVideosExpanded, setIsVideosExpanded] = useState<boolean>(false);
+
+  // Reset drawer state when opened/closed so Videos dropdown is closed by default
+  useEffect(() => {
+    if (isOpen) {
+      setDrawerSubView('main');
+      setIsVideosExpanded(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -48,6 +58,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
     onSelectCategory(catId);
     onClose();
     setDrawerSubView('main');
+    setIsVideosExpanded(false);
   };
 
   const handleHomeClick = () => {
@@ -174,9 +185,13 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                         type="button"
                         onClick={() => {
                           onSelectCategory('all');
+                          if (onSelectSort) onSelectSort('top_rated');
+                          onNavigate('browse');
                           onClose();
+                          setDrawerSubView('main');
+                          setIsVideosExpanded(false);
                         }}
-                        className="w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-xs font-bold text-left transition-colors cursor-pointer"
+                        className="w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-xs font-bold text-left transition-colors cursor-pointer hover:text-amber-500"
                       >
                         <span className="material-symbols-outlined text-base text-amber-500">trophy</span>
                         <span>Top Rated</span>
@@ -186,10 +201,14 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          onSelectCategory('trending');
+                          onSelectCategory('all');
+                          if (onSelectSort) onSelectSort('most_popular');
+                          onNavigate('browse');
                           onClose();
+                          setDrawerSubView('main');
+                          setIsVideosExpanded(false);
                         }}
-                        className="w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-xs font-bold text-left transition-colors cursor-pointer"
+                        className="w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-xs font-bold text-left transition-colors cursor-pointer hover:text-rose-500"
                       >
                         <span className="material-symbols-outlined text-base text-rose-500">local_fire_department</span>
                         <span>Most Popular</span>

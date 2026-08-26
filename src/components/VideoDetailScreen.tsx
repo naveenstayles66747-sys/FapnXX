@@ -69,14 +69,28 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     }
   }, [video.id, video.viewsCount, video.likesCount, isGuest]);
 
-  // 5-second watch threshold for view increment
+  // Real-time Firestore document listener for live view & like updates
+  useEffect(() => {
+    if (!video.id) return;
+    const unsub = videoService.subscribeToSingleVideo(video.id, (fresh) => {
+      if (typeof fresh.viewsCount === 'number') {
+        setCurrentViewsCount(fresh.viewsCount);
+      }
+      if (typeof fresh.likesCount === 'number') {
+        setLikeCount(fresh.likesCount);
+      }
+    });
+    return () => unsub();
+  }, [video.id]);
+
+  // 3-second watch threshold for view increment
   useEffect(() => {
     hasCountedRef.current = false;
     setWatchSeconds(0);
     const timer = setInterval(() => {
       setWatchSeconds((prev) => {
         const next = prev + 1;
-        if (next >= 5 && !hasCountedRef.current) {
+        if (next >= 3 && !hasCountedRef.current) {
           hasCountedRef.current = true;
           videoService.incrementVideoViews(video.id).then((newViewsCount) => {
             setCurrentViewsCount(newViewsCount);
@@ -92,7 +106,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [video.id]);
+  }, [video.id, onVideoUpdated]);
 
   const handleLike = async () => {
     const nextLikedState = !isLiked;
@@ -103,11 +117,17 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     if (onVideoUpdated) {
       onVideoUpdated(video.id, { likesCount: updatedLikes });
     }
+    if (userEmail) {
+      videoService.syncUserInteractionsToFirestore({ likedVideos: getStoredLikedVideos() });
+    }
   };
 
   const handleSave = () => {
     toggleStoredSavedVideo(video.id);
     setIsSaved(!isSaved);
+    if (userEmail) {
+      videoService.syncUserInteractionsToFirestore({ savedVideos: getStoredSavedVideos() });
+    }
   };
 
   const handleShare = () => {

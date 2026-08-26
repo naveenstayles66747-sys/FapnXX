@@ -22,6 +22,8 @@ interface BrowseScreenProps {
   banners?: LandingBanner[];
   searchQuery?: string;
   setSearchQuery?: (query: string) => void;
+  sortBy?: 'latest' | 'most_popular' | 'top_rated';
+  setSortBy?: (sort: 'latest' | 'most_popular' | 'top_rated') => void;
 }
 
 export const BrowseScreen: React.FC<BrowseScreenProps> = ({
@@ -33,13 +35,17 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   banners = INITIAL_LANDING_BANNERS,
   searchQuery = '',
   setSearchQuery,
+  sortBy: externalSortBy,
+  setSortBy: externalSetSortBy,
 }) => {
   const { t, language, setLanguage, currentLanguageMeta } = useLanguage();
   const [rankedTrendingVideos, setRankedTrendingVideos] = useState<Video[]>([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [isHoveredSlider, setIsHoveredSlider] = useState<boolean>(false);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<'latest' | 'most_relevant' | 'top_rated'>('latest');
+  const [internalSortBy, setInternalSortBy] = useState<'latest' | 'most_popular' | 'top_rated'>('latest');
+  const sortBy = externalSortBy !== undefined ? externalSortBy : internalSortBy;
+  const setSortBy = externalSetSortBy || setInternalSortBy;
   const [isDurationDropdownOpen, setIsDurationDropdownOpen] = useState(false);
   const [durationFilter, setDurationFilter] = useState<'all' | 'short' | 'medium' | 'long'>('all');
   const [visibleCount, setVisibleCount] = useState<number>(16);
@@ -325,7 +331,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
     if (sortBy === 'latest') {
       list.sort((a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime());
-    } else if (sortBy === 'most_relevant') {
+    } else if (sortBy === 'most_popular' || (sortBy as any) === 'most_relevant') {
       list.sort((a, b) => parseViews(b) - parseViews(a));
     } else if (sortBy === 'top_rated') {
       list.sort((a, b) => {
@@ -641,7 +647,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 <span className="font-bold text-xs sm:text-sm flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-sm text-[#e0358d]">sort</span>
                   <span>
-                    {sortBy === 'latest' ? 'Latest' : sortBy === 'most_relevant' ? 'Most Relevant' : 'Top Rated'}
+                    {sortBy === 'latest' ? 'Latest' : sortBy === 'most_popular' || (sortBy as any) === 'most_relevant' ? 'Most Popular' : 'Top Rated'}
                   </span>
                 </span>
                 <span className="material-symbols-outlined text-sm sm:text-base opacity-80">expand_more</span>
@@ -671,21 +677,21 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     {sortBy === 'latest' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
                   </button>
 
-                  {/* Option 2: Most Relevant */}
+                  {/* Option 2: Most Popular */}
                   <button
                     type="button"
                     onClick={() => {
                       setIsSortDropdownOpen(false);
                       React.startTransition(() => {
-                        setSortBy('most_relevant');
+                        setSortBy('most_popular');
                       });
                     }}
                     className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                      sortBy === 'most_relevant' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-zinc-100 dark:hover:bg-white/10 font-semibold'
+                      sortBy === 'most_popular' || (sortBy as any) === 'most_relevant' ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-zinc-100 dark:hover:bg-white/10 font-semibold'
                     }`}
                   >
-                    <span className="font-bold text-xs">Most Relevant</span>
-                    {sortBy === 'most_relevant' && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                    <span className="font-bold text-xs">Most Popular</span>
+                    {(sortBy === 'most_popular' || (sortBy as any) === 'most_relevant') && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
                   </button>
 
                   {/* Option 3: Top Rated */}

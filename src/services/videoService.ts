@@ -447,6 +447,37 @@ export class VideoService {
   }
 
   /**
+   * Realtime listener for a single video document
+   */
+  subscribeToSingleVideo(videoId: string, callback: (video: Video) => void) {
+    if (!videoId) return () => {};
+    try {
+      const unsub = onSnapshot(
+        doc(db, 'videos', videoId),
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data() as any;
+            const fullVideo: Video = {
+              ...data,
+              id: docSnap.id,
+              isEmbed: data.isEmbed !== undefined ? data.isEmbed : true,
+              viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 1,
+              likesCount: typeof data.likesCount === 'number' ? data.likesCount : 0,
+            };
+            callback(fullVideo);
+          }
+        },
+        (err) => {
+          console.warn('[VideoService] Single video realtime notice:', err.message);
+        }
+      );
+      return unsub;
+    } catch {
+      return () => {};
+    }
+  }
+
+  /**
    * Save a new video (Admin/Staff only)
    * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
    */
@@ -532,11 +563,41 @@ export class VideoService {
   }
 
   /**
-   * Secure Server-Side Views Counter via Backend Validated API
-   * Direct arbitrary client tampering is disabled.
+   * Realtime Video Views Counter via Direct Atomic Firestore Increment with API Fallback
    */
   async incrementVideoViews(videoId: string): Promise<number> {
+    if (!videoId) return 1;
     const deviceId = getOrCreateDeviceId();
+    this.smartCache.invalidate('videos');
+
+    // 1. Direct Realtime Atomic Increment in Firestore
+    try {
+      const videoRef = doc(db, 'videos', videoId);
+      const snap = await getDoc(videoRef);
+      if (snap.exists()) {
+        const currentData = snap.data() as any;
+        const prevCount = typeof currentData.viewsCount === 'number' ? currentData.viewsCount : 0;
+        const newCount = prevCount + 1;
+        const newViewsStr = `${newCount} ${newCount === 1 ? 'view' : 'views'}`;
+
+        await setDoc(
+          videoRef,
+          {
+            viewsCount: increment(1),
+            views: newViewsStr,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+
+        console.log(`👁️ [Firestore Realtime] Video ${videoId} view incremented -> ${newCount}`);
+        return newCount;
+      }
+    } catch (firestoreErr: any) {
+      console.warn('⚠️ [Firestore Client] Direct view increment notice:', firestoreErr?.message || firestoreErr);
+    }
+
+    // 2. Backend API fallback
     try {
       const res = await this.apiFetch<{ newViewsCount: number; counted: boolean }>(
         `/videos/${videoId}/views`,
@@ -550,17 +611,51 @@ export class VideoService {
       if (res && typeof res.newViewsCount === 'number') {
         return res.newViewsCount;
       }
-      return 1;
-    } catch {
-      return 1;
+    } catch (apiErr: any) {
+      console.warn('⚠️ [VideoService API] View increment notice:', apiErr?.message || apiErr);
     }
+
+    return 1;
   }
 
   /**
-   * Secure Server-Side Likes Counter via Backend Validated API & Transaction
-   * Direct arbitrary client tampering is disabled.
+   * Realtime Video Likes Counter via Direct Atomic Firestore Increment with API Fallback
    */
   async incrementVideoLikes(videoId: string, isLike: boolean): Promise<number> {
+    if (!videoId) return 0;
+    this.smartCache.invalidate('videos');
+
+    // 1. Direct Realtime Atomic Update in Firestore
+    try {
+      const videoRef = doc(db, 'videos', videoId);
+      const snap = await getDoc(videoRef);
+      if (snap.exists()) {
+        const currentData = snap.data() as any;
+        const delta = isLike ? 1 : -1;
+        const prevLikes = typeof currentData.likesCount === 'number' ? currentData.likesCount : 0;
+        const newLikes = Math.max(0, prevLikes + delta);
+        const views = typeof currentData.viewsCount === 'number' && currentData.viewsCount > 0 ? currentData.viewsCount : 1;
+        const percent = Math.min(100, Math.round((newLikes / views) * 100));
+        const newRating = `${Math.max(1, percent)}%`;
+
+        await setDoc(
+          videoRef,
+          {
+            likesCount: increment(delta),
+            rating: newRating,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+
+        console.log(`👍 [Firestore Realtime] Video ${videoId} likes updated -> ${newLikes}`);
+        return newLikes;
+      }
+    } catch (firestoreErr: any) {
+      console.warn('⚠️ [Firestore Client] Direct like update notice:', firestoreErr?.message || firestoreErr);
+    }
+
+    // 2. Backend API fallback
     try {
       const res = await this.apiFetch<{ likesCount: number; rating?: string }>(
         `/videos/${videoId}/likes`,
@@ -572,10 +667,9 @@ export class VideoService {
       if (res && typeof res.likesCount === 'number') {
         return res.likesCount;
       }
-      return 0;
-    } catch {
-      return 0;
-    }
+    } catch {}
+
+    return 0;
   }
 
   /**
@@ -936,8 +1030,7 @@ export class VideoService {
   }
 
   /**
-   * Save comment
-   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
+   * Save comment directly to Firestore with real-time sync & API fallback
    */
   async saveComment(comment: VideoComment): Promise<VideoComment> {
     const id = comment.id || `comment_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -951,66 +1044,77 @@ export class VideoService {
     // Invalidate local comments cache
     this.smartCache.invalidate(`comments_${comment.videoId}`);
 
-    return this.apiFetch<VideoComment>(
-      '/comments',
-      {
-        method: 'POST',
-        body: JSON.stringify(cleanForFirestore(fullComment)),
-      },
-      async () => {
-        try {
-          await setDoc(doc(db, 'comments', id), cleanForFirestore(fullComment));
-          console.log('✅ [Firestore Client] Comment posted:', id);
-        } catch (err: any) {
-          console.warn('⚠️ [Firestore Client] saveComment notice:', err.message);
+    // 1. Direct Realtime Save to Firestore
+    try {
+      await setDoc(doc(db, 'comments', id), cleanForFirestore(fullComment));
+      console.log('✅ [Firestore Realtime] Comment saved:', id);
+      return fullComment;
+    } catch (firestoreErr: any) {
+      console.warn('⚠️ [Firestore Client] saveComment direct save notice:', firestoreErr?.message || firestoreErr);
+    }
+
+    // 2. Backend API fallback
+    try {
+      await this.apiFetch<VideoComment>(
+        '/comments',
+        {
+          method: 'POST',
+          body: JSON.stringify(cleanForFirestore(fullComment)),
         }
-        return fullComment;
-      }
-    );
+      );
+    } catch (apiErr: any) {
+      console.warn('⚠️ [VideoService API] saveComment API notice:', apiErr?.message || apiErr);
+    }
+
+    return fullComment;
   }
 
   /**
-   * Like comment
-   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
+   * Like comment directly in Firestore
    */
   async likeComment(commentId: string): Promise<void> {
     this.smartCache.invalidate('comments_');
 
-    return this.apiFetch<void>(
-      `/comments/${commentId}/like`,
-      {
-        method: 'POST',
-      },
-      async () => {
-        try {
-          await setDoc(doc(db, 'comments', commentId), { likesCount: increment(1) }, { merge: true });
-        } catch (err: any) {
-          console.warn('⚠️ [Firestore Client] likeComment notice:', err.message);
-        }
-      }
-    );
+    // 1. Direct Realtime Atomic Update in Firestore
+    try {
+      await setDoc(doc(db, 'comments', commentId), { likesCount: increment(1), updatedAt: new Date().toISOString() }, { merge: true });
+      console.log('✅ [Firestore Realtime] Liked comment:', commentId);
+      return;
+    } catch (firestoreErr: any) {
+      console.warn('⚠️ [Firestore Client] likeComment direct update notice:', firestoreErr?.message || firestoreErr);
+    }
+
+    // 2. Backend API fallback
+    try {
+      await this.apiFetch<void>(
+        `/comments/${commentId}/like`,
+        { method: 'POST' }
+      );
+    } catch {}
   }
 
   /**
-   * Delete comment
-   * Architecture: Frontend -> Backend API -> Firebase Admin SDK -> Firestore
+   * Delete comment directly in Firestore
    */
   async deleteComment(commentId: string): Promise<void> {
     this.smartCache.invalidate('comments_');
 
-    return this.apiFetch<void>(
-      `/comments/${commentId}`,
-      {
-        method: 'DELETE',
-      },
-      async () => {
-        try {
-          await deleteDoc(doc(db, 'comments', commentId));
-        } catch (err: any) {
-          console.warn('⚠️ [Firestore Client] deleteComment notice:', err.message);
-        }
-      }
-    );
+    // 1. Direct Realtime Delete in Firestore
+    try {
+      await deleteDoc(doc(db, 'comments', commentId));
+      console.log('✅ [Firestore Realtime] Deleted comment:', commentId);
+      return;
+    } catch (firestoreErr: any) {
+      console.warn('⚠️ [Firestore Client] deleteComment direct delete notice:', firestoreErr?.message || firestoreErr);
+    }
+
+    // 2. Backend API fallback
+    try {
+      await this.apiFetch<void>(
+        `/comments/${commentId}`,
+        { method: 'DELETE' }
+      );
+    } catch {}
   }
 
   /**
