@@ -3,6 +3,7 @@ import { CategoryId, CategoryInfo, Video } from '../types';
 import { CATEGORIES } from '../data';
 import { videoService } from '../services/videoService';
 import { streamtapeService } from '../services/streamtapeService';
+import { seekstreamService } from '../services/seekstreamService';
 import {
   captureVideoFrame,
   extractThumbnailFromEmbedUrl,
@@ -29,6 +30,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   categories = CATEGORIES,
 }) => {
   const [activeTab, setActiveTab] = useState<'embed' | 'file'>('embed');
+  const [selectedProvider, setSelectedProvider] = useState<'streamtape' | 'seekstream' | 'universal'>('streamtape');
   const [isPublishing, setIsPublishing] = useState(false);
 
   // Embed link input & processing state
@@ -409,9 +411,30 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           }
           extractedUrl = mixId ? `https://mixdrop.co/e/${mixId}` : trimmed;
           autoTitle = 'MixDrop Stream';
-        } else if (trimmed.includes('hornhub') || trimmed.includes('embedseek')) {
+        } else if (
+          trimmed.includes('embedseek') ||
+          trimmed.includes('seekstream') ||
+          trimmed.includes('preview.webp') ||
+          trimmed.includes('preview.MP4') ||
+          trimmed.includes('preview.mp4') ||
+          trimmed.includes('hornhub')
+        ) {
           extractedUrl = trimmed;
-          autoTitle = 'Exclusive Embed Stream';
+          autoTitle = 'SeekStream Video';
+          // Query SeekStream helper
+          seekstreamService.autoExtractMetadata(trimmed).then((sMeta) => {
+            if (sMeta) {
+              if (sMeta.embedUrl) setProcessedEmbedUrl(sMeta.embedUrl);
+              if (sMeta.previewWebpUrl) setPreviewWebpUrl(sMeta.previewWebpUrl);
+              if (sMeta.previewMp4Url) setPreviewMp4Url(sMeta.previewMp4Url);
+              if (sMeta.thumbnailUrl && !thumbnailUrl) setThumbnailUrl(sMeta.thumbnailUrl);
+              if (sMeta.duration) setDurationInput(sMeta.duration);
+              if (sMeta.title && (!title || title === 'Embedded Video' || title === 'Stream Video' || title === 'SeekStream Video')) {
+                setTitle(sMeta.title);
+              }
+              setProcessingStatus('✓ SeekStream Synced: Embed, WebP & MP4 clip auto-configured!');
+            }
+          }).catch(() => {});
         } else if (trimmed.match(/\.(webp)($|\?|#)/i)) {
           extractedUrl = trimmed;
           autoTitle = 'WebP Animated Preview';
@@ -787,48 +810,122 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
         {/* Scrollable Form Body */}
         <form onSubmit={handlePublish} className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4 custom-scrollbar">
-          {/* Tab Switcher */}
-          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl border upload-modal-header">
-            <button
-              type="button"
-              onClick={() => setActiveTab('embed')}
-              className={`py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                activeTab === 'embed'
-                  ? 'bg-rose-600 text-white shadow-md'
-                  : 'upload-modal-tab-unselected'
-              }`}
-            >
-              <span className="material-symbols-outlined text-base">link</span>
-              <span>Paste Video Link</span>
-            </button>
+          {/* Provider & Source Selector */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-extrabold uppercase tracking-wider text-zinc-400">
+              Select Video Cloud Provider
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {/* Option 1: Streamtape */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('embed');
+                  setSelectedProvider('streamtape');
+                }}
+                className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer text-center relative overflow-hidden ${
+                  activeTab === 'embed' && selectedProvider === 'streamtape'
+                    ? 'bg-sky-950/60 border-sky-500 text-sky-200 shadow-md shadow-sky-500/20 ring-1 ring-sky-500'
+                    : 'bg-zinc-100 dark:bg-zinc-900/60 border-zinc-300 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-sky-500/50'
+                }`}
+              >
+                <div className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-base">cloud_sync</span>
+                </div>
+                <span className="text-xs font-black text-white">Streamtape</span>
+                <span className="text-[9px] text-sky-400 font-semibold">Auto HD Thumb</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab('file')}
-              className={`py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                activeTab === 'file'
-                  ? 'bg-rose-600 text-white shadow-md'
-                  : 'upload-modal-tab-unselected'
-              }`}
-            >
-              <span className="material-symbols-outlined text-base">upload_file</span>
-              <span>Upload Video File</span>
-            </button>
+              {/* Option 2: SeekStream */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('embed');
+                  setSelectedProvider('seekstream');
+                }}
+                className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer text-center relative overflow-hidden ${
+                  activeTab === 'embed' && selectedProvider === 'seekstream'
+                    ? 'bg-rose-950/60 border-rose-500 text-rose-200 shadow-md shadow-rose-500/20 ring-1 ring-rose-500'
+                    : 'bg-zinc-100 dark:bg-zinc-900/60 border-zinc-300 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-rose-500/50'
+                }`}
+              >
+                <div className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-base">movie_filter</span>
+                </div>
+                <span className="text-xs font-black text-white">SeekStream</span>
+                <span className="text-[9px] text-rose-400 font-semibold">WebP & MP4 Clip</span>
+              </button>
+
+              {/* Option 3: Universal Embed */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('embed');
+                  setSelectedProvider('universal');
+                }}
+                className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer text-center relative overflow-hidden ${
+                  activeTab === 'embed' && selectedProvider === 'universal'
+                    ? 'bg-purple-950/60 border-purple-500 text-purple-200 shadow-md shadow-purple-500/20 ring-1 ring-purple-500'
+                    : 'bg-zinc-100 dark:bg-zinc-900/60 border-zinc-300 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-purple-500/50'
+                }`}
+              >
+                <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-base">public</span>
+                </div>
+                <span className="text-xs font-black text-white">Universal URL</span>
+                <span className="text-[9px] text-purple-400 font-semibold">MP4 / Any Host</span>
+              </button>
+
+              {/* Option 4: Physical File */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('file');
+                  setSelectedProvider('universal');
+                }}
+                className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer text-center relative overflow-hidden ${
+                  activeTab === 'file'
+                    ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-500'
+                    : 'bg-zinc-100 dark:bg-zinc-900/60 border-zinc-300 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-emerald-500/50'
+                }`}
+              >
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-base">upload_file</span>
+                </div>
+                <span className="text-xs font-black text-white">Upload File</span>
+                <span className="text-[9px] text-emerald-400 font-semibold">Direct Storage</span>
+              </button>
+            </div>
           </div>
 
           {/* Embed Link Input */}
           {activeTab === 'embed' && (
             <div className="space-y-2">
-              <label className="block text-xs font-bold opacity-80">
-                Video Link or Embed Code *
+              <label className="block text-xs font-bold opacity-80 flex items-center justify-between">
+                <span>
+                  {selectedProvider === 'streamtape'
+                    ? 'Streamtape Video Link or <iframe> Code *'
+                    : selectedProvider === 'seekstream'
+                    ? 'SeekStream / EmbedSeek Link or <iframe> Code *'
+                    : 'Video Link or Embed Code *'}
+                </span>
+                <span className="text-[10px] text-zinc-400 font-mono">
+                  {selectedProvider === 'streamtape' ? '🔵 Streamtape Active' : selectedProvider === 'seekstream' ? '🔴 SeekStream Active' : '🌐 Universal Mode'}
+                </span>
               </label>
               <div className="relative">
                 <textarea
                   rows={2}
                   value={embedInput}
                   onChange={(e) => setEmbedInput(e.target.value)}
-                  placeholder="Paste YouTube URL, Vimeo link, direct MP4 link, or <iframe src='...'> code..."
-                  className="w-full upload-modal-input border rounded-xl p-3 text-xs focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all resize-none"
+                  placeholder={
+                    selectedProvider === 'streamtape'
+                      ? "Paste Streamtape link (e.g. https://streamtape.com/e/qrvXVBOyLJuAPO/...) or <iframe src='...'>..."
+                      : selectedProvider === 'seekstream'
+                      ? "Paste SeekStream link (e.g. https://fapnxx.embedseek.com/j4HHdpWkhViUYmN8pgoz2Q/... or preview.webp / preview.MP4)..."
+                      : "Paste YouTube, Vimeo, Doodstream, Spankbang, XVideos, direct MP4, or <iframe src='...'> code..."
+                  }
+                  className="w-full upload-modal-input border rounded-xl p-3 text-xs focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all resize-none font-mono"
                 />
                 {isProcessingLink && (
                   <div className="absolute right-2.5 bottom-2.5 flex items-center gap-1.5 text-[11px] text-rose-500 font-semibold bg-black/70 px-2 py-0.5 rounded border border-rose-500/20">
