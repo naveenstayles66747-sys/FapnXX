@@ -1348,9 +1348,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   <video
                     ref={previewVideoRef}
                     src={previewMp4Url || processedEmbedUrl}
-                    crossOrigin="anonymous"
                     playsInline
-                    preload="metadata"
+                    preload="auto"
                     onLoadedMetadata={() => {
                       if (previewVideoRef.current) {
                         const dur = previewVideoRef.current.duration;
@@ -1458,6 +1457,27 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     <span>{captureSuccessMsg}</span>
                   </p>
                 )}
+              </div>
+            )}
+
+            {/* ─── LIVE WEBP ANIMATED PREVIEW CARD ─── */}
+            {previewWebpUrl && (
+              <div className="border border-rose-500/50 rounded-xl p-3 bg-black space-y-2 shadow-2xl mt-2 animate-in fade-in duration-300">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-white flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-rose-500 text-base">gif_box</span>
+                    <span>Animated WebP / Image Preview</span>
+                  </span>
+                  <span className="text-[10px] text-emerald-400 font-bold">✓ Ready for Card Hover</span>
+                </div>
+                <div className="relative aspect-video w-full max-w-xs mx-auto rounded-lg overflow-hidden border border-white/10 bg-zinc-900">
+                  <img
+                    src={previewWebpUrl}
+                    alt="Animated Preview"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               </div>
             )}
           </div>

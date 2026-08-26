@@ -119,7 +119,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           detail: video.id,
         })
       );
-    }, 300); // 300ms stable debounce to avoid spamming video decoders on casual mouse moves
+    }, 120); // Fast 120ms response for instantaneous hover previews
   };
 
   const handleMouseLeave = () => {
@@ -296,8 +296,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         playsInline
         autoPlay
         controls={false}
-        preload="none"
-        crossOrigin="anonymous"
+        preload="auto"
         onCanPlay={(e) => {
           const v = e.currentTarget;
           v.muted = true;
@@ -308,10 +307,11 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           v.muted = true;
           v.play().catch(() => {});
         }}
-        onError={() => {
-          console.warn('[VideoCard] Preview video load error.');
+        onError={(e) => {
+          console.warn('[VideoCard] Preview video load error:', e);
         }}
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-300 scale-105 z-10"
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-300 scale-105 z-10 bg-black"
+        style={{ objectFit: 'cover' }}
       />
     );
   };
