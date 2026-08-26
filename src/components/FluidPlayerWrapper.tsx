@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Video } from '../types';
 import { videoService } from '../services/videoService';
 import { AD_CONFIG } from '../config/adConfig';
+import { stopAllBackgroundMedia } from '../utils/mediaHelper';
 
 interface FluidPlayerWrapperProps {
   video: Video;
@@ -53,6 +54,14 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     return { cleanUrl: src, isDirectVideo };
   };
 
+  // ── Global Unmount / Navigation Media Killer ─────────────────────────────
+  useEffect(() => {
+    return () => {
+      // When leaving player / navigating back, kill all audio and video streams immediately
+      stopAllBackgroundMedia();
+    };
+  }, []);
+
   // ── Effect: Resolve video stream source ─────────────────────────────────
   useEffect(() => {
     setVideoMountKey((k) => k + 1);
@@ -87,12 +96,8 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     }
   }, [video.id, video.embedUrl, video.previewMp4Url]);
 
-  // ── Transition Helper: Reveal Main Video Stream cleanly ────────────────
-  const startMainContent = () => {
-    if (contentStartedRef.current) return;
-    contentStartedRef.current = true;
-
-    // Immediately stop and mute any playing preroll video/audio
+  // ── Helper: Kill all playing ad videos & destroy Fluid Player instance ───
+  const cleanupInstance = () => {
     try {
       const prerollEl = document.getElementById(prerollPlayerId) as HTMLVideoElement;
       if (prerollEl) {
@@ -100,10 +105,11 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         prerollEl.muted = true;
         prerollEl.src = '';
       }
-      document.querySelectorAll('.fluid_ad_video, .fluid_video_wrapper video').forEach((el: any) => {
+      document.querySelectorAll('.fluid_ad_video, .fluid_video_wrapper video, .fluid_vpaid_container video').forEach((el: any) => {
         try {
           el.pause();
           el.muted = true;
+          el.src = '';
         } catch {}
       });
     } catch {}
@@ -116,6 +122,17 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       } catch {}
       playerInstanceRef.current = null;
     }
+  };
+
+  // ── Transition Helper: Reveal Main Video Stream cleanly ────────────────
+  const startMainContent = () => {
+    if (contentStartedRef.current) return;
+    contentStartedRef.current = true;
+
+    // Call internal cleanup to kill ad players
+    cleanupInstance();
+    // Also use global media helper to ensure audio elements are silenced
+    stopAllBackgroundMedia();
 
     setIsPrerollActive(false);
   };
@@ -126,17 +143,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
     let isMounted = true;
     let fallbackTimer: NodeJS.Timeout | null = null;
-
-    const cleanupInstance = () => {
-      if (playerInstanceRef.current) {
-        try {
-          if (typeof playerInstanceRef.current.destroy === 'function') {
-            playerInstanceRef.current.destroy();
-          }
-        } catch {}
-        playerInstanceRef.current = null;
-      }
-    };
 
     let attempts = 0;
     const initNativeFluidVast = () => {

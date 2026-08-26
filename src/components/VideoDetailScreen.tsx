@@ -8,6 +8,7 @@ import { OutstreamVideoCardAd, UnderPlayerBanner, NativeRecommendationAd } from 
 import { CommentsSection } from './CommentsSection';
 import { useLanguage } from '../i18n/LanguageContext';
 import { videoService } from '../services/videoService';
+import { stopAllBackgroundMedia } from '../utils/mediaHelper';
 import {
   addStoredWatchHistory,
   getStoredLikedVideos,
@@ -56,6 +57,13 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   const [currentViewsCount, setCurrentViewsCount] = useState<number>(() => video.viewsCount || 1);
   const [watchSeconds, setWatchSeconds] = useState<number>(0);
   const hasCountedRef = useRef<boolean>(false);
+
+  // Hard media killer when user leaves VideoDetailScreen (navigates back)
+  useEffect(() => {
+    return () => {
+      stopAllBackgroundMedia();
+    };
+  }, []);
 
   // Initialize liked/saved status and true Firestore counts
   useEffect(() => {

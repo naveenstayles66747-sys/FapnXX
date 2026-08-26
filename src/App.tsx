@@ -38,6 +38,7 @@ import {
   setStoredCachedBanners,
 } from './utils/storage';
 import { usePrivacyStorage } from './hooks/usePrivacyStorage';
+import { stopAllBackgroundMedia } from './utils/mediaHelper';
 
 export default function App() {
   const { isAgeVerified, confirmAge, declineAge } = usePrivacyStorage();
@@ -411,6 +412,9 @@ export default function App() {
     // Request interstitial (checks eligibility & dispatches event if ready)
     adManager.requestInterstitial('video_select');
 
+    // Force stop any currently playing ad audio/video
+    stopAllBackgroundMedia();
+
     startTransition(() => {
       setSelectedVideo(video);
       setCurrentScreen('video-detail');
@@ -422,6 +426,9 @@ export default function App() {
   const handleSelectCategory = (id: CategoryId) => {
     adManager.recordEligibleTransition(id, selectedCategoryId);
     adManager.requestInterstitial('category_select');
+
+    // Force stop any currently playing ad audio/video
+    stopAllBackgroundMedia();
 
     startTransition(() => {
       setSelectedCategoryId(id);
@@ -440,6 +447,9 @@ export default function App() {
   };
 
   const handleNavigateToSearch = (query: string) => {
+    // Force stop any currently playing ad audio/video
+    stopAllBackgroundMedia();
+
     startTransition(() => {
       setSelectedCategoryId('all');
       setSearchQuery(query);
@@ -450,6 +460,9 @@ export default function App() {
   };
 
   const handleNavigate = (screen: ScreenId) => {
+    // Force stop any currently playing ad audio/video
+    stopAllBackgroundMedia();
+
     startTransition(() => {
       if (screen === 'browse') {
         setSelectedCategoryId('all');
