@@ -398,6 +398,13 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
+  const handleVideoUpdated = useCallback((vId: string, updates: Partial<Video>) => {
+    setVideosList((prev) =>
+      prev.map((v) => (v.id === vId ? { ...v, ...updates } : v))
+    );
+    setSelectedVideo((prev) => (prev && prev.id === vId ? { ...prev, ...updates } : prev));
+  }, []);
+
   const handleSelectVideo = (video: Video) => {
     // Increment transition ONLY if target is distinct from current video
     adManager.recordEligibleTransition(video.id, selectedVideo?.id);
@@ -644,12 +651,7 @@ export default function App() {
                   userEmail={userEmail}
                   onOpenSoftLogin={handleOpenSoftLogin}
                   videos={filteredVideosList}
-                  onVideoUpdated={(vId, updates) => {
-                    setVideosList((prev) =>
-                      prev.map((v) => (v.id === vId ? { ...v, ...updates } : v))
-                    );
-                    setSelectedVideo((prev) => (prev && prev.id === vId ? { ...prev, ...updates } : prev));
-                  }}
+                  onVideoUpdated={handleVideoUpdated}
                 />
               ) : (
                 <BrowseScreen

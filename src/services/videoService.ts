@@ -562,12 +562,27 @@ export class VideoService {
     );
   }
 
+  private viewedCooldownMap = new Map<string, number>();
+
   /**
-   * Realtime Video Views Counter via Direct Atomic Firestore Increment with API Fallback
+   * Realtime Video Views Counter via Direct Atomic Firestore Increment with 15m Client Debounce & API Fallback
    */
   async incrementVideoViews(videoId: string): Promise<number> {
     if (!videoId) return 1;
-    const deviceId = getOrCreateDeviceId();
+
+    // 15-minute client-side debounce cooldown per video to prevent spam / infinite loops
+    const now = Date.now();
+    const lastViewed = this.viewedCooldownMap.get(videoId) || 0;
+    if (now - lastViewed < 15 * 60 * 1000) {
+      try {
+        const snap = await getDoc(doc(db, 'videos', videoId));
+        if (snap.exists()) {
+          return (snap.data() as any)?.viewsCount || 1;
+        }
+      } catch {}
+      return 1;
+    }
+    this.viewedCooldownMap.set(videoId, now);
     this.smartCache.invalidate('videos');
 
     // 1. Direct Realtime Atomic Increment in Firestore

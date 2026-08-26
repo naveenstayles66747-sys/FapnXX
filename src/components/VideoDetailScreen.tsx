@@ -69,6 +69,12 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     }
   }, [video.id, video.viewsCount, video.likesCount, isGuest]);
 
+  // Keep latest onVideoUpdated callback in a ref to prevent infinite re-render loops
+  const onVideoUpdatedRef = useRef(onVideoUpdated);
+  useEffect(() => {
+    onVideoUpdatedRef.current = onVideoUpdated;
+  }, [onVideoUpdated]);
+
   // Real-time Firestore document listener for live view & like updates
   useEffect(() => {
     if (!video.id) return;
@@ -83,19 +89,49 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     return () => unsub();
   }, [video.id]);
 
-  // 3-second watch threshold for view increment
+  // Logical YouTube-style View Increment Engine:
+  // Requires 5 seconds of active watch time + 30-minute session cooldown per video
   useEffect(() => {
     hasCountedRef.current = false;
     setWatchSeconds(0);
+
+    const checkAlreadyViewedInSession = (vId: string): boolean => {
+      try {
+        const key = `fapnxx_viewed_${vId}`;
+        const val = sessionStorage.getItem(key);
+        if (!val) return false;
+        const timestamp = parseInt(val, 10);
+        // 30-minute cooldown per video view
+        return Date.now() - timestamp < 30 * 60 * 1000;
+      } catch {
+        return false;
+      }
+    };
+
+    const markViewedInSession = (vId: string) => {
+      try {
+        sessionStorage.setItem(`fapnxx_viewed_${vId}`, Date.now().toString());
+      } catch {}
+    };
+
+    // If already viewed recently in this session, don't count duplicate views
+    if (checkAlreadyViewedInSession(video.id)) {
+      hasCountedRef.current = true;
+      return;
+    }
+
     const timer = setInterval(() => {
       setWatchSeconds((prev) => {
         const next = prev + 1;
-        if (next >= 3 && !hasCountedRef.current) {
+        // Count 1 view after 5 seconds of active viewing
+        if (next >= 5 && !hasCountedRef.current) {
           hasCountedRef.current = true;
+          markViewedInSession(video.id);
+
           videoService.incrementVideoViews(video.id).then((newViewsCount) => {
             setCurrentViewsCount(newViewsCount);
-            if (onVideoUpdated) {
-              onVideoUpdated(video.id, {
+            if (onVideoUpdatedRef.current) {
+              onVideoUpdatedRef.current(video.id, {
                 viewsCount: newViewsCount,
                 views: `${newViewsCount} ${newViewsCount === 1 ? 'view' : 'views'}`,
               });
@@ -105,8 +141,9 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
         return next;
       });
     }, 1000);
+
     return () => clearInterval(timer);
-  }, [video.id, onVideoUpdated]);
+  }, [video.id]);
 
   const handleLike = async () => {
     const nextLikedState = !isLiked;
