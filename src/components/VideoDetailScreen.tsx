@@ -399,6 +399,13 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
               )}
             </React.Fragment>
           ))}
+
+          {/* Guaranteed in-grid placement if fewer than 4 related videos */}
+          {(!topRelatedVideos || topRelatedVideos.length < 4) && (
+            <div className="col-span-full my-3">
+              <NativeRecommendationAd />
+            </div>
+          )}
         </div>
       </div>
 
