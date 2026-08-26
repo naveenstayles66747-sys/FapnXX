@@ -319,113 +319,116 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           </div>
         </div>
 
-        {/* 3. Unified Pornktube-Style Collapsible Info & Comments Card */}
-        <div className="rounded-2xl p-3.5 sm:p-4 border border-zinc-200 dark:border-white/10 bg-[#f8fafc] dark:bg-[#131217] text-zinc-900 dark:text-zinc-100 space-y-3 shadow-sm transition-all">
-          {/* Expanded Content: Categories, Pornstars, Tags, Description & Live Comments */}
-          {isInfoExpanded && (
-            <div className="space-y-3.5 animate-fadeIn">
-              {/* Categories Row */}
-              <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm">
-                <span className="text-zinc-500 dark:text-zinc-400 font-medium">Categories:</span>
-                {categoriesList.length > 0 ? (
-                  categoriesList.map((cat, idx) => (
+        {/* 3. Unified Pornktube-Style Collapsible Info & Comments Card (Slim & Compact) */}
+        {isInfoExpanded ? (
+          <div className="rounded-2xl p-3.5 sm:p-4 border border-zinc-200 dark:border-white/10 bg-[#f8fafc] dark:bg-[#131217] text-zinc-900 dark:text-zinc-100 space-y-3.5 shadow-sm transition-all animate-fadeIn">
+            {/* Categories Row */}
+            <div className="flex items-center gap-2 flex-wrap text-xs">
+              <span className="text-zinc-500 dark:text-zinc-400 font-medium">Categories:</span>
+              {categoriesList.length > 0 ? (
+                categoriesList.map((cat, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => onNavigateToSearch && onNavigateToSearch(cat)}
+                    className="px-2.5 py-0.5 rounded-lg bg-zinc-200/80 hover:bg-[#ec4899] hover:text-white dark:bg-zinc-800 dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
+                  >
+                    {cat}
+                  </button>
+                ))
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onNavigateToSearch && onNavigateToSearch(video.category || 'Featured')}
+                  className="px-2.5 py-0.5 rounded-lg bg-zinc-200/80 hover:bg-[#ec4899] hover:text-white dark:bg-zinc-800 dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs transition-all cursor-pointer"
+                >
+                  {video.category || 'Featured'}
+                </button>
+              )}
+            </div>
+
+            {/* Pornstar Row */}
+            {performersList.length > 0 && (
+              <div className="text-xs font-medium flex items-center gap-2 flex-wrap">
+                <span className="text-zinc-500 dark:text-zinc-400">Pornstar:</span>
+                {performersList.map((p, pIdx) => (
+                  <button
+                    key={pIdx}
+                    type="button"
+                    onClick={() => onNavigateToSearch && onNavigateToSearch(p)}
+                    className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold hover:underline hover:text-rose-500 transition-colors cursor-pointer bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 active:scale-95 text-xs"
+                    title={`View all videos of ${p}`}
+                  >
+                    <span className="material-symbols-outlined text-xs">star</span>
+                    <span>{p}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Tags Row */}
+            {video.tags && video.tags.length > 0 && (
+              <div className="space-y-1">
+                <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Tags:</div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {video.tags.map((tag, idx) => (
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => onNavigateToSearch && onNavigateToSearch(cat)}
-                      className="px-3 py-1 rounded-lg bg-zinc-200/80 hover:bg-[#ec4899] hover:text-white dark:bg-zinc-800 dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
+                      onClick={() => onNavigateToSearch && onNavigateToSearch(tag)}
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] hover:bg-[#ec4899] hover:text-white dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-white/10 shadow-sm transition-all cursor-pointer active:scale-95"
                     >
-                      {cat}
-                    </button>
-                  ))
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => onNavigateToSearch && onNavigateToSearch(video.category || 'Featured')}
-                    className="px-3 py-1 rounded-lg bg-zinc-200/80 hover:bg-[#ec4899] hover:text-white dark:bg-zinc-800 dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs transition-all cursor-pointer"
-                  >
-                    {video.category || 'Featured'}
-                  </button>
-                )}
-              </div>
-
-              {/* Pornstar Row */}
-              {performersList.length > 0 && (
-                <div className="text-xs sm:text-sm font-medium flex items-center gap-2 flex-wrap">
-                  <span className="text-zinc-500 dark:text-zinc-400">Pornstar:</span>
-                  {performersList.map((p, pIdx) => (
-                    <button
-                      key={pIdx}
-                      type="button"
-                      onClick={() => onNavigateToSearch && onNavigateToSearch(p)}
-                      className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold hover:underline hover:text-rose-500 transition-colors cursor-pointer bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20 active:scale-95 text-xs"
-                      title={`View all videos of ${p}`}
-                    >
-                      <span className="material-symbols-outlined text-xs">star</span>
-                      <span>{p}</span>
+                      <span className="material-symbols-outlined text-xs text-zinc-400">tag</span>
+                      <span>{tag}</span>
                     </button>
                   ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Tags Row */}
-              {video.tags && video.tags.length > 0 && (
-                <div className="space-y-1.5">
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Tags:</div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {video.tags.map((tag, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => onNavigateToSearch && onNavigateToSearch(tag)}
-                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] hover:bg-[#ec4899] hover:text-white dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-white/10 shadow-sm transition-all cursor-pointer active:scale-95"
-                      >
-                        <span className="material-symbols-outlined text-xs text-zinc-400">tag</span>
-                        <span>{tag}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+            {/* Description */}
+            {video.description && (
+              <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed pt-1">
+                {video.description}
+              </p>
+            )}
 
-              {/* Description */}
-              {video.description && (
-                <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed pt-1">
-                  {video.description}
-                </p>
-              )}
+            {/* Source website attribution if present */}
+            {sourceSiteDomain && (
+              <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                <span>Source: </span>
+                <span className="text-rose-500 font-semibold">{sourceSiteDomain}</span>
+              </div>
+            )}
 
-              {/* Source website attribution if present */}
-              {sourceSiteDomain && (
-                <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  <span>Source: </span>
-                  <span className="text-rose-500 font-semibold">{sourceSiteDomain}</span>
-                </div>
-              )}
+            {/* Integrated Simple Live Comments Section inside Show More */}
+            <CommentsSection
+              videoId={video.id}
+              userEmail={userEmail}
+              onOpenSoftLogin={onOpenSoftLogin}
+            />
 
-              {/* Integrated Simple Live Comments Section inside Show More */}
-              <CommentsSection
-                videoId={video.id}
-                userEmail={userEmail}
-                onOpenSoftLogin={onOpenSoftLogin}
-              />
-            </div>
-          )}
-
-          {/* Show More / Show Less Toggle Button */}
-          <div>
+            {/* Slim Show Less Button */}
             <button
               type="button"
-              onClick={() => setIsInfoExpanded((prev) => !prev)}
-              className="w-full py-2.5 rounded-xl bg-zinc-200/80 hover:bg-zinc-300 dark:bg-zinc-800/80 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white font-extrabold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
+              onClick={() => setIsInfoExpanded(false)}
+              className="w-full py-1.5 rounded-xl bg-zinc-200/80 hover:bg-zinc-300 dark:bg-zinc-800/90 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1 shadow-sm active:scale-98"
             >
-              <span>{isInfoExpanded ? 'Show less' : 'Show more'}</span>
-              <span className="material-symbols-outlined text-base transition-transform">
-                {isInfoExpanded ? 'expand_less' : 'expand_more'}
-              </span>
+              <span>Show less</span>
+              <span className="material-symbols-outlined text-sm">expand_less</span>
             </button>
           </div>
-        </div>
+        ) : (
+          /* Slim Show More Button when collapsed */
+          <button
+            type="button"
+            onClick={() => setIsInfoExpanded(true)}
+            className="w-full py-1.5 sm:py-2 px-3 rounded-xl bg-zinc-200/70 hover:bg-zinc-300 dark:bg-[#1a191f] dark:hover:bg-[#25242b] border border-zinc-300/60 dark:border-white/10 text-zinc-800 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
+          >
+            <span>Show more</span>
+            <span className="material-symbols-outlined text-base">expand_more</span>
+          </button>
+        )}
 
         {/* Under-Player Responsive Ad Banner (Desktop 728x90: Zone 6010076 | Mobile 300x250: Zone 6010078) */}
         <UnderPlayerBanner />

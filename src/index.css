@@ -1464,4 +1464,23 @@ ins[data-zoneid="6003190"]:empty {
   box-shadow: none !important;
 }
 
+/* =====================================================================
+   FLUID PLAYER: Hide ugly 'Advertisement' overlay text box completely
+   ===================================================================== */
+.fluid_ad_text,
+.fluid_ad_container .fluid_ad_text,
+.fluid_video_wrapper .fluid_ad_text,
+.fluid_ad_title,
+.fluid_vast_ad_title {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+}
+
+
 

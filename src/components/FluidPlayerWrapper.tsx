@@ -160,15 +160,12 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 {
                   roll: 'preRoll',
                   vastTag: vastTagUrl,
-                  adText: 'Advertisement',
                   adClickable: true,
                   vpaidMode: 'insecure',
                 },
               ],
               skipButtonCaption: 'Skip in [seconds]s',
               skipButtonClickCaption: 'Skip Ad',
-              adText: 'Advertisement',
-              adTextPosition: 'top left',
               allowVPAID: true,
               vastAdvanced: {
                 vastLoadedCallback: () => {
