@@ -684,11 +684,11 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
   }, []);
 
   const handlePartnerClick = () => {
-    // Open sponsor destination
+    // Open sponsor destination (Direct ExoClick Splash / Advertiser Landing Page instead of raw VAST XML)
     try {
       const isMobile = window.innerWidth < 1024;
-      const zoneId = isMobile ? AD_ZONES.MOBILE_POPUNDER : AD_ZONES.DESKTOP_POPUNDER;
-      window.open(`https://s.magsrv.com/v1/vast.php?idz=${zoneId}`, '_blank', 'noopener,noreferrer');
+      const zoneId = isMobile ? (AD_ZONES.MOBILE_POPUNDER || '6010174') : (AD_ZONES.DESKTOP_POPUNDER || '6010172');
+      window.open(`https://s.pemsrv.com/splash.php?idzone=${zoneId}`, '_blank', 'noopener,noreferrer');
     } catch {}
   };
 

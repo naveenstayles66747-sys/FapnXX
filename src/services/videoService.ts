@@ -619,7 +619,7 @@ export class VideoService {
         {
           method: 'POST',
           headers: {
-            'x-client-device-id': deviceId,
+            'x-client-device-id': this.getDeviceId(),
           },
         }
       );
