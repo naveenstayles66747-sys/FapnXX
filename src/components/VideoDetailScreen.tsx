@@ -42,6 +42,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
 
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isInfoExpanded, setIsInfoExpanded] = useState(false);
   const [likeCount, setLikeCount] = useState<number>(() =>
     typeof video.likesCount === 'number' ? video.likesCount : 0
   );
@@ -214,6 +215,18 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     return [];
   })();
 
+  // Derive categories list
+  const categoriesList: string[] = (() => {
+    const list: string[] = [];
+    if (video.category) {
+      list.push(...video.category.split(',').map((c) => c.trim()).filter(Boolean));
+    }
+    if (Array.isArray((video as any).categories)) {
+      list.push(...(video as any).categories);
+    }
+    return Array.from(new Set(list));
+  })();
+
   // Source site domain display
   const sourceSiteDomain = video.sourceWebsite || video.channelName
     ? (video.sourceWebsite || video.channelName)
@@ -306,67 +319,112 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           </div>
         </div>
 
-        {/* 3. Rounded Info Card (Pornstar & Tags) — High contrast in Light & Dark mode */}
-        <div className="rounded-2xl p-4 sm:p-5 border border-zinc-200 dark:border-white/10 bg-[#f8fafc] dark:bg-[#0f1523] text-zinc-900 dark:text-zinc-100 space-y-4 shadow-sm">
-          {/* Pornstar Row */}
-          {performersList.length > 0 && (
-            <div className="text-xs sm:text-sm font-medium flex items-center gap-2 flex-wrap">
-              <span className="text-zinc-700 dark:text-zinc-400">Pornstar: </span>
-              {performersList.map((p, pIdx) => (
+        {/* 3. Unified Pornktube-Style Info & Comments Card */}
+        <div className="rounded-2xl p-4 sm:p-5 border border-zinc-200 dark:border-white/10 bg-[#f8fafc] dark:bg-[#131217] text-zinc-900 dark:text-zinc-100 space-y-3.5 shadow-sm transition-all">
+          {/* Categories Row */}
+          <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm">
+            <span className="text-zinc-500 dark:text-zinc-400 font-medium">Categories:</span>
+            {categoriesList.length > 0 ? (
+              categoriesList.map((cat, idx) => (
                 <button
-                  key={pIdx}
+                  key={idx}
                   type="button"
-                  onClick={() => onNavigateToSearch && onNavigateToSearch(p)}
-                  className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold hover:underline hover:text-rose-500 transition-colors cursor-pointer bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20 active:scale-95"
-                  title={`View all videos of ${p}`}
+                  onClick={() => onNavigateToSearch && onNavigateToSearch(cat)}
+                  className="px-3 py-1 rounded-lg bg-zinc-200/80 hover:bg-[#ec4899] hover:text-white dark:bg-zinc-800 dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
                 >
-                  <span className="material-symbols-outlined text-xs">star</span>
-                  <span>{p}</span>
+                  {cat}
                 </button>
-              ))}
-            </div>
-          )}
-
-          {/* Tags Section */}
-          <div className="space-y-2">
-            <div className="text-xs sm:text-sm text-zinc-700 dark:text-zinc-400 font-medium">
-              Tags:
-            </div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              {/* If user-provided tags exist, show them with rounded pill styling */}
-              {video.tags && video.tags.length > 0 ? (
-                video.tags.map((tag, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => onNavigateToSearch && onNavigateToSearch(tag)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] hover:bg-rose-500 hover:text-white dark:hover:bg-rose-600 dark:hover:text-white text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-white/10 shadow-sm hover:border-rose-400 transition-all cursor-pointer active:scale-95 group"
-                    title={`Search videos with tag #${tag}`}
-                  >
-                    <span className="material-symbols-outlined text-xs text-zinc-600 dark:text-zinc-400 group-hover:text-white transition-colors">tag</span>
-                    <span>{tag}</span>
-                  </button>
-                ))
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onNavigateToSearch && onNavigateToSearch(video.quality || 'HD')}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] hover:bg-rose-500 hover:text-white text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-white/10 shadow-sm cursor-pointer transition-colors"
-                >
-                  <span className="material-symbols-outlined text-xs text-zinc-600 dark:text-zinc-400">label</span>
-                  <span>{video.quality || 'HD'}</span>
-                </button>
-              )}
-            </div>
+              ))
+            ) : (
+              <button
+                type="button"
+                onClick={() => onNavigateToSearch && onNavigateToSearch(video.category || 'Featured')}
+                className="px-3 py-1 rounded-lg bg-zinc-200/80 hover:bg-[#ec4899] hover:text-white dark:bg-zinc-800 dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs transition-all cursor-pointer"
+              >
+                {video.category || 'Featured'}
+              </button>
+            )}
           </div>
 
-          {/* Source website attribution if present */}
-          {sourceSiteDomain && (
-            <div className="pt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-              <span>Source: </span>
-              <span className="text-rose-500 font-semibold">{sourceSiteDomain}</span>
+          {/* Expanded Content: Pornstars, Tags, Description */}
+          {isInfoExpanded && (
+            <div className="space-y-3 pt-2 border-t border-zinc-200 dark:border-white/10 animate-fadeIn">
+              {/* Pornstar Row */}
+              {performersList.length > 0 && (
+                <div className="text-xs sm:text-sm font-medium flex items-center gap-2 flex-wrap">
+                  <span className="text-zinc-500 dark:text-zinc-400">Pornstar:</span>
+                  {performersList.map((p, pIdx) => (
+                    <button
+                      key={pIdx}
+                      type="button"
+                      onClick={() => onNavigateToSearch && onNavigateToSearch(p)}
+                      className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold hover:underline hover:text-rose-500 transition-colors cursor-pointer bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20 active:scale-95 text-xs"
+                      title={`View all videos of ${p}`}
+                    >
+                      <span className="material-symbols-outlined text-xs">star</span>
+                      <span>{p}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Tags Row */}
+              {video.tags && video.tags.length > 0 && (
+                <div className="space-y-1.5">
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Tags:</div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {video.tags.map((tag, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => onNavigateToSearch && onNavigateToSearch(tag)}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-white dark:bg-[#1a233a] hover:bg-[#ec4899] hover:text-white dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-white/10 shadow-sm transition-all cursor-pointer active:scale-95"
+                      >
+                        <span className="material-symbols-outlined text-xs text-zinc-400">tag</span>
+                        <span>{tag}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              {video.description && (
+                <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed pt-1">
+                  {video.description}
+                </p>
+              )}
+
+              {/* Source website attribution if present */}
+              {sourceSiteDomain && (
+                <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <span>Source: </span>
+                  <span className="text-rose-500 font-semibold">{sourceSiteDomain}</span>
+                </div>
+              )}
             </div>
           )}
+
+          {/* Integrated Simple Live Comments Section */}
+          <CommentsSection
+            videoId={video.id}
+            userEmail={userEmail}
+            onOpenSoftLogin={onOpenSoftLogin}
+          />
+
+          {/* Show More / Show Less Toggle Button */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setIsInfoExpanded((prev) => !prev)}
+              className="w-full py-2 rounded-xl bg-zinc-200/70 hover:bg-zinc-300 dark:bg-zinc-800/80 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
+            >
+              <span>{isInfoExpanded ? 'Show less' : 'Show more'}</span>
+              <span className="material-symbols-outlined text-sm transition-transform">
+                {isInfoExpanded ? 'expand_less' : 'expand_more'}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Under-Player Responsive Ad Banner (Desktop 728x90: Zone 6010076 | Mobile 300x250: Zone 6010078) */}
@@ -407,17 +465,6 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
             </div>
           )}
         </div>
-      </div>
-
-      {/* ─────────────────────────────────────────────
-          COMMENTS SECTION
-      ───────────────────────────────────────────── */}
-      <div className="px-3 sm:px-4 md:px-6 mt-4 pt-4 border-t border-white/10">
-        <CommentsSection
-          videoId={video.id}
-          userEmail={userEmail}
-          onOpenSoftLogin={onOpenSoftLogin}
-        />
       </div>
 
       {/* DMCA Report Modal */}

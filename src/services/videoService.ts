@@ -1320,10 +1320,10 @@ export class VideoService {
   async getOrAssignAnonymousName(): Promise<string> {
     const STORAGE_KEY_NAME = 'indianfullxx_guest_assigned_name';
     const cachedName = localStorage.getItem(STORAGE_KEY_NAME);
-    if (cachedName) return cachedName;
+    if (cachedName && cachedName.startsWith('Guest_')) return cachedName;
 
-    const randomSuffix = Math.floor(Math.random() * 900) + 100;
-    const assignedName = `Anonymous${randomSuffix}`;
+    const randomSuffix = Math.floor(Math.random() * 9000) + 1000;
+    const assignedName = `Guest_${randomSuffix}`;
     localStorage.setItem(STORAGE_KEY_NAME, assignedName);
     return assignedName;
   }
