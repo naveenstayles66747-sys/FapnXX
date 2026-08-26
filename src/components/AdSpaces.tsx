@@ -104,7 +104,6 @@ export const StickyBottomLeaderboard: React.FC = () => {
 
 /**
  * Desktop Fullpage Interstitial Ad (Zone ID: 6003174)
- * Official Native ExoClick Interstitial (Controlled by adManager with auto-dismiss safety)
  */
 export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = ({ onDismiss }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -148,7 +147,6 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
 
       adManager.commitInterstitialSuccess();
 
-      // Safety timeout: If no interstitial fills within 4s, dismiss automatically so page never hangs
       timeoutTimer = setTimeout(() => {
         handleDismiss();
       }, 4000);
@@ -186,7 +184,6 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
 
 /**
  * Mobile Fullpage Interstitial Ad (Zone ID: 6003180)
- * Official Native ExoClick Interstitial (Controlled by adManager with auto-dismiss safety)
  */
 export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = ({ onDismiss }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -209,41 +206,36 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
     return () => window.removeEventListener('exoclick-interstitial-request', handleRequest);
   }, []);
 
-  // Lock body scroll cleanly with safety timeout to prevent permanent freezing
   useEffect(() => {
     if (!isActive) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const el = containerRef.current;
+    if (!el) return;
 
     let timeoutTimer: NodeJS.Timeout | null = null;
-    const el = containerRef.current;
-    if (el) {
-      try {
-        el.innerHTML = '';
-        const ins = document.createElement('ins');
-        ins.className = `eas${AD_ZONES.SITE_HASH}33`;
-        ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INTERSTITIAL);
-        ins.style.display = 'block';
-        el.appendChild(ins);
 
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
+    try {
+      el.innerHTML = '';
+      const ins = document.createElement('ins');
+      ins.className = `eas${AD_ZONES.SITE_HASH}35`;
+      ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INTERSTITIAL);
+      ins.style.display = 'block';
+      el.appendChild(ins);
 
-        adManager.commitInterstitialSuccess();
+      const win = window as any;
+      win.AdProvider = win.AdProvider || [];
+      win.AdProvider.push({ serve: {} });
 
-        // Safety timeout: Auto-dismiss within 3.5s so mobile user is NEVER locked out
-        timeoutTimer = setTimeout(() => {
-          handleDismiss();
-        }, 3500);
-      } catch (e) {
-        console.warn('[ExoClick] Mobile Interstitial mount error:', e);
+      adManager.commitInterstitialSuccess();
+
+      timeoutTimer = setTimeout(() => {
         handleDismiss();
-      }
+      }, 4000);
+    } catch (e) {
+      console.warn('[ExoClick] Mobile Interstitial mount error:', e);
+      handleDismiss();
     }
 
     return () => {
-      document.body.style.overflow = prevOverflow;
       if (timeoutTimer) clearTimeout(timeoutTimer);
     };
   }, [isActive, handleDismiss]);
@@ -272,7 +264,6 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
 
 /**
  * Mobile Instant Message Ad (Zone ID: 6003178)
- * Clean native ExoClick Instant Message mount without artificial CSS interference
  */
 export const MobileInstantMessage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -310,13 +301,11 @@ export const MobileInstantMessage: React.FC = () => {
 
 /**
  * In-Feed Outstream Video Card Ad (Zone ID: 6003190)
- * Formatted identically to a standard VideoCard in the grid
  */
 export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ className = '' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const [hasAdLoaded, setHasAdLoaded] = useState<boolean>(false);
-  const [isZeroFill, setIsZeroFill] = useState<boolean>(false);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -345,7 +334,6 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
     if (!el) return;
 
     try {
-      // Ensure global ad-provider script is present in DOM
       const scriptId = 'exoclick-ad-provider-script';
       if (!document.getElementById(scriptId)) {
         const script = document.createElement('script');
@@ -367,7 +355,6 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
-      // Mutation observer to detect when ExoClick injects the video player
       const observer = new MutationObserver(() => {
         if (ins.children.length > 0 || ins.querySelector('iframe, video, a')) {
           setHasAdLoaded(true);
@@ -375,7 +362,6 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       });
       observer.observe(ins, { childList: true, subtree: true });
 
-      // Direct inline execution + AdProvider push
       setTimeout(() => {
         try {
           const win = window as any;
@@ -397,47 +383,39 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       className={`group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
       aria-label="Sponsored Video Advertisement"
     >
-      {/* 16:9 Full-Width Thumbnail / Player Container matching VideoCard */}
-      <div className="video-card-container relative w-full aspect-[16/9] min-h-[180px] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b] flex items-center justify-center">
-        {/* Outstream / Native In-Feed Ad Mount Container */}
+      <div className="video-card-container relative w-full aspect-[16/9] min-h-[180px] rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-zinc-100 dark:bg-[#09090b] flex items-center justify-center">
         <div
           ref={containerRef}
           id="exoclick-outstream-zone-6003190"
           className="w-full h-full min-h-[180px] flex items-center justify-center overflow-hidden z-10"
         />
 
-        {/* Loading shimmer while waiting for ExoClick video player stream */}
         {!hasAdLoaded && (
-          <div className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 bg-[#09090b] pointer-events-none animate-pulse">
+          <div className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 bg-zinc-100 dark:bg-[#09090b] pointer-events-none animate-pulse">
             <div className="w-10 h-10 rounded-full border-2 border-rose-500/30 border-t-rose-500 animate-spin flex items-center justify-center">
               <span className="material-symbols-outlined text-rose-500 text-sm">play_arrow</span>
             </div>
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
               Sponsored Video
             </span>
           </div>
         )}
 
-        {/* Top-Right Badge: SPONSORED / AD */}
         <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
           <span className="thumb-hd-badge bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
             AD
           </span>
         </div>
 
-        {/* Bottom-Left Badge: SPONSORED */}
         <div className="thumb-duration-badge absolute bottom-2 left-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400 z-20 shadow-md pointer-events-none">
-          SPONSORED
+          AD
         </div>
       </div>
 
-      {/* Card Info Below Thumbnail matching VideoCard meta box */}
       <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
         <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight">
           Featured Partner Video
         </h3>
-
-        {/* Stats Row */}
         <div className="video-card-stats-row flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] sm:text-sm text-rose-500">verified</span>
@@ -457,7 +435,6 @@ export const InFeedAdCard = OutstreamVideoCardAd;
 
 /**
  * On-Stream In-Video Player Overlay Banner (Zone ID: 6003172)
- * Positioned cleanly at bottom of player container, dismissible, non-intrusive.
  */
 export const OnStreamVideoBanner: React.FC<{
   isVisible?: boolean;
@@ -514,7 +491,6 @@ export const OnStreamVideoBanner: React.FC<{
 
 /**
  * Under-Player Banner Ad (Responsive: Desktop Zone 6010076 & Mobile Zone 6010078)
- * Positioned cleanly under the video player & action buttons.
  */
 export const UnderPlayerBanner: React.FC<{ className?: string }> = ({ className = '' }) => {
   const desktopContainerRef = useRef<HTMLDivElement>(null);
@@ -554,14 +530,11 @@ export const UnderPlayerBanner: React.FC<{ className?: string }> = ({ className 
 
   return (
     <div className={`w-full my-4 flex flex-col items-center justify-center ${className}`}>
-      {/* Desktop Under-Player Banner (Zone 6010076) */}
       <div
         ref={desktopContainerRef}
         id="exoclick-desktop-under-player"
         className="hidden lg:flex w-full items-center justify-center overflow-hidden min-h-[90px] rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-2 shadow-sm"
       />
-
-      {/* Mobile Under-Player Banner (Zone 6010078) */}
       <div
         ref={mobileContainerRef}
         id="exoclick-mobile-under-player"
@@ -598,7 +571,7 @@ const SPONSORED_RECOMMENDATIONS = [
   },
   {
     id: 'rec-4',
-    title: 'Top Rated Premium Pornstar 4K Streams',
+    title: 'Top Rated Premium Adult 4K Streams',
     sponsor: 'VIP Pass',
     thumbnail: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=600&auto=format&fit=crop&q=80',
     tag: 'Ultra HD',
@@ -608,23 +581,20 @@ const SPONSORED_RECOMMENDATIONS = [
 
 /**
  * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile — Zone ID: 6010176)
- * Official ExoClick Native Recommendation Widget:
- * <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script>
- * <ins class="eas6a97888e20" data-zoneid="6010176"></ins>
- * <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
+ * In-Grid Multi-Row Expansion with High Contrast Day/Night Mode Text
  */
 export const NativeRecommendationAd: React.FC<{ className?: string; title?: string }> = ({
   className = '',
   title = 'Sponsor Picks & Recommendations',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [hasExoAdLoaded, setHasExoAdLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     try {
-      // Ensure global ad-provider script is present in head
       const scriptId = 'exoclick-ad-provider-script';
       if (!document.getElementById(scriptId)) {
         const script = document.createElement('script');
@@ -642,11 +612,17 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       ins.style.display = 'block';
       ins.style.width = '100%';
       ins.style.height = 'auto';
-      ins.style.minHeight = '320px';
+      ins.style.minHeight = '180px';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
-      // Trigger ExoClick AdProvider serve across multiple frames to guarantee pickup
+      const observer = new MutationObserver(() => {
+        if (ins.children.length > 0 || ins.querySelector('iframe, a, img, div.exo-native-widget, .exo-card')) {
+          setHasExoAdLoaded(true);
+        }
+      });
+      observer.observe(ins, { childList: true, subtree: true });
+
       const triggerAdServe = () => {
         try {
           const win = window as any;
@@ -661,6 +637,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       const t3 = setTimeout(triggerAdServe, 1200);
 
       return () => {
+        observer.disconnect();
         clearTimeout(t1);
         clearTimeout(t2);
         clearTimeout(t3);
@@ -670,10 +647,18 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
     }
   }, []);
 
+  const handlePartnerClick = () => {
+    try {
+      const isMobile = window.innerWidth < 1024;
+      const zoneId = isMobile ? (AD_ZONES.MOBILE_POPUNDER || '6010174') : (AD_ZONES.DESKTOP_POPUNDER || '6010172');
+      window.open(`https://s.pemsrv.com/splash.php?idzone=${zoneId}`, '_blank', 'noopener,noreferrer');
+    } catch {}
+  };
+
   return (
     <section className={`native-ad-section w-full my-4 p-3 sm:p-4 rounded-2xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#121115] shadow-sm transition-colors ${className}`}>
       {/* Sponsor Picks & Recommendations Header with AD Badge */}
-      <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-zinc-200 dark:border-white/10">
+      <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-zinc-200 dark:border-white/10">
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-[#ec4899] text-base">recommend</span>
           <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-zinc-900 dark:text-zinc-100">
@@ -685,19 +670,87 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         </span>
       </div>
 
-      {/* ExoClick Official Native Ad Mount Container (Supports Full 2x2 Multi-Row Expansion) */}
+      {/* ExoClick Native Ad Mount (Live dynamic feed when filled) */}
       <div
         ref={containerRef}
         id="exoclick-native-recommended-zone-6010176"
-        className="w-full min-h-[320px] overflow-visible block"
+        className={`w-full overflow-visible ${hasExoAdLoaded ? 'block' : 'hidden'}`}
       />
+
+      {/* 4 Native Recommendation Cards (2x2 on Mobile, 4x1 on Desktop with High-Contrast Day/Night Text) */}
+      {!hasExoAdLoaded && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+          {SPONSORED_RECOMMENDATIONS.map((rec) => (
+            <article
+              key={rec.id}
+              onClick={handlePartnerClick}
+              className="group cursor-pointer flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300"
+            >
+              {/* 16:9 Full-Width Thumbnail Container */}
+              <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-zinc-100 dark:bg-[#09090b]">
+                <img
+                  src={rec.thumbnail}
+                  alt={rec.title}
+                  loading="lazy"
+                  decoding="async"
+                  className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+                />
+
+                {/* Top-Right Badge: Tag */}
+                <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
+                  <span className="thumb-hd-badge bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+                    {rec.tag}
+                  </span>
+                </div>
+
+                {/* Bottom-Left Badge: AD */}
+                <div className="thumb-duration-badge absolute bottom-2 left-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400 z-20 shadow-md">
+                  AD
+                </div>
+
+                {/* Bottom-Right Action Button */}
+                <div className="absolute bottom-2 right-2 z-20">
+                  <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[9px] sm:text-[11px] uppercase tracking-wider transition-transform active:scale-95 shadow-xl flex items-center gap-1">
+                    <span>{rec.action}</span>
+                    <span className="material-symbols-outlined text-[10px] sm:text-xs">open_in_new</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* High Contrast Day & Night Mode Text Meta Box */}
+              <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
+                <h3 className="video-card-meta-title font-bold text-xs sm:text-sm text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight group-hover:text-[#ec4899]">
+                  {rec.title}
+                </h3>
+
+                {/* Stats Row */}
+                <div className="video-card-stats-row flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[12px] sm:text-sm text-[#ec4899]">verified</span>
+                    <span className="video-card-stat-value text-[#ec4899] font-bold">{rec.sponsor}</span>
+                  </span>
+
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[12px] sm:text-sm text-zinc-500 dark:text-zinc-400">hd</span>
+                    <span className="video-card-stat-value text-zinc-800 dark:text-zinc-200 font-bold">1080p</span>
+                  </span>
+
+                  <span className="hidden sm:flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[12px] sm:text-sm text-zinc-500 dark:text-zinc-400">thumb_up</span>
+                    <span className="video-card-stat-value text-zinc-800 dark:text-zinc-200 font-bold">Free</span>
+                  </span>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   );
 };
 
 /**
  * Global Popunder Ad Loader (Desktop Zone: 6010172 | Mobile Zone: 6010174)
- * Loads ExoClick popunder script with official capping & user-experience safety.
  */
 export const PopunderAd: React.FC = () => {
   useEffect(() => {
