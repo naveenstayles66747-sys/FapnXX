@@ -139,6 +139,7 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
       ins.className = `eas${AD_ZONES.SITE_HASH}35`;
       ins.setAttribute('data-zoneid', AD_ZONES.DESKTOP_INTERSTITIAL);
       ins.style.display = 'block';
+      ins.style.margin = '0 auto';
       el.appendChild(ins);
 
       const win = window as any;
@@ -147,9 +148,10 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
 
       adManager.commitInterstitialSuccess();
 
+      // Extended safety timeout (35 seconds) so ad has time to render without premature auto-cut
       timeoutTimer = setTimeout(() => {
         handleDismiss();
-      }, 4000);
+      }, 35000);
     } catch (e) {
       console.warn('[ExoClick] Desktop Interstitial mount error:', e);
       handleDismiss();
@@ -163,11 +165,11 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
   if (!isActive) return null;
 
   return (
-    <div className="hidden lg:flex fixed inset-0 z-[99999] items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="hidden lg:flex fixed inset-0 z-[99999] items-center justify-center bg-black/90 backdrop-blur-md p-4">
       <button
         type="button"
         onClick={handleDismiss}
-        className="absolute top-4 right-4 z-[100000] bg-zinc-800 hover:bg-zinc-700 text-white rounded-full w-9 h-9 flex items-center justify-center text-sm font-bold border border-white/20 shadow-xl cursor-pointer pointer-events-auto"
+        className="absolute top-6 right-6 z-[100000] bg-zinc-800/90 hover:bg-zinc-700 active:scale-95 text-white rounded-full w-10 h-10 flex items-center justify-center text-base font-bold border border-white/20 shadow-2xl cursor-pointer pointer-events-auto transition-all"
         title="Close Ad"
       >
         ✕
@@ -175,7 +177,7 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
       <div
         ref={containerRef}
         id="exoclick-desktop-interstitial"
-        className="z-[99999] max-w-full max-h-full flex items-center justify-center"
+        className="z-[99999] max-w-full max-h-full flex items-center justify-center min-h-[400px]"
         aria-label="Sponsored Interstitial"
       />
     </div>
@@ -216,9 +218,10 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
     try {
       el.innerHTML = '';
       const ins = document.createElement('ins');
-      ins.className = `eas${AD_ZONES.SITE_HASH}35`;
+      ins.className = `eas${AD_ZONES.SITE_HASH}33`; // eas6a97888e33 (Zone 6003180)
       ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INTERSTITIAL);
       ins.style.display = 'block';
+      ins.style.margin = '0 auto';
       el.appendChild(ins);
 
       const win = window as any;
@@ -227,9 +230,10 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
 
       adManager.commitInterstitialSuccess();
 
+      // Extended safety timeout (35 seconds) so ad has time to render without premature auto-cut
       timeoutTimer = setTimeout(() => {
         handleDismiss();
-      }, 4000);
+      }, 35000);
     } catch (e) {
       console.warn('[ExoClick] Mobile Interstitial mount error:', e);
       handleDismiss();
@@ -243,11 +247,11 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
   if (!isActive) return null;
 
   return (
-    <div className="block lg:hidden fixed inset-0 z-[99999] pointer-events-auto bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center">
+    <div className="block lg:hidden fixed inset-0 z-[99999] pointer-events-auto bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-3">
       <button
         type="button"
         onClick={handleDismiss}
-        className="absolute top-4 right-4 z-[100000] bg-zinc-800 hover:bg-zinc-700 text-white rounded-full w-9 h-9 flex items-center justify-center text-sm font-bold border border-white/20 shadow-xl cursor-pointer pointer-events-auto"
+        className="absolute top-4 right-4 z-[100000] bg-zinc-800/90 hover:bg-zinc-700 active:scale-95 text-white rounded-full w-10 h-10 flex items-center justify-center text-sm font-bold border border-white/20 shadow-2xl cursor-pointer pointer-events-auto transition-all"
         title="Close Ad"
       >
         ✕
@@ -255,7 +259,7 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
       <div
         ref={containerRef}
         id="exoclick-mobile-interstitial"
-        className="w-full h-full flex items-center justify-center"
+        className="w-full max-w-sm flex items-center justify-center min-h-[300px]"
         aria-label="Sponsored Mobile Interstitial"
       />
     </div>
