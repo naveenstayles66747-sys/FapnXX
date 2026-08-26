@@ -1512,8 +1512,73 @@ ins[data-zoneid="6003174"] iframe {
 }
 
 /* =====================================================================
-   FLUID PLAYER: Hide ugly 'Advertisement' overlay text box completely
+   FLUID PLAYER: Full Sizing & Guaranteed In-Stream Ad Video Visibility
    ===================================================================== */
+.fluid_video_wrapper {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #000000 !important;
+  z-index: 35 !important;
+  overflow: hidden !important;
+}
+
+.fluid_video_wrapper video,
+.fluid_video_wrapper .fluid_ad_video,
+.fluid_video_wrapper .fluid_vpaid_container,
+.fluid_video_wrapper .fluid_vpaid_iframe,
+.fluid_video_wrapper iframe {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 36 !important;
+}
+
+/* Fluid Player Skip Button & Controls Visibility */
+.fluid_controls_container,
+.fluid_skip_ad,
+.fluid_ad_cta,
+.fluid_ad_attribution {
+  z-index: 50 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.fluid_skip_ad {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  padding: 6px 14px !important;
+  font-weight: 800 !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6) !important;
+}
+
+.fluid_skip_ad:hover {
+  background: #ec4899 !important;
+  border-color: #ec4899 !important;
+  color: #ffffff !important;
+}
+
+/* Hide ugly 'Advertisement' overlay text box completely */
 .fluid_ad_text,
 .fluid_ad_container .fluid_ad_text,
 .fluid_video_wrapper .fluid_ad_text,

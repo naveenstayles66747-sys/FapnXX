@@ -92,6 +92,22 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     if (contentStartedRef.current) return;
     contentStartedRef.current = true;
 
+    // Immediately stop and mute any playing preroll video/audio
+    try {
+      const prerollEl = document.getElementById(prerollPlayerId) as HTMLVideoElement;
+      if (prerollEl) {
+        prerollEl.pause();
+        prerollEl.muted = true;
+        prerollEl.src = '';
+      }
+      document.querySelectorAll('.fluid_ad_video, .fluid_video_wrapper video').forEach((el: any) => {
+        try {
+          el.pause();
+          el.muted = true;
+        } catch {}
+      });
+    } catch {}
+
     if (playerInstanceRef.current) {
       try {
         if (typeof playerInstanceRef.current.destroy === 'function') {
@@ -165,10 +181,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 },
               ],
               skipButtonCaption: 'Skip in [seconds]s',
-              skipButtonClickCaption: 'Skip Ad',
+              skipButtonClickCaption: 'Skip Ad ✕',
               allowVPAID: true,
               vastAdvanced: {
                 vastLoadedCallback: () => {
+                  if (fallbackTimer) clearTimeout(fallbackTimer);
+                },
+                vastVideoStartedCallback: () => {
                   if (fallbackTimer) clearTimeout(fallbackTimer);
                 },
                 noVastVideoCallback: () => {
@@ -188,6 +207,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
           // Backup native end trigger
           if (targetEl) {
+            targetEl.onplay = () => {
+              if (fallbackTimer) clearTimeout(fallbackTimer);
+            };
             targetEl.onended = () => {
               if (isMounted) startMainContent();
             };
@@ -198,7 +220,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         }
       } else {
         attempts += 1;
-        if (attempts > 5) {
+        if (attempts > 6) {
           if (isMounted) startMainContent();
         } else {
           setTimeout(initNativeFluidVast, 80);
@@ -208,12 +230,12 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
     const timer = setTimeout(initNativeFluidVast, 30);
 
-    // Safeguard timeout (2.5s) in case network drops or zero fill occurs
+    // Safeguard timeout (8s) in case network drops or zero fill occurs
     fallbackTimer = setTimeout(() => {
       if (isMounted && !contentStartedRef.current) {
         startMainContent();
       }
-    }, 2500);
+    }, 8000);
 
     return () => {
       isMounted = false;
@@ -236,7 +258,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             id={prerollPlayerId}
             playsInline
             preload="auto"
-            crossOrigin="anonymous"
             className="w-full h-full object-contain block bg-black"
           >
             {playerMode === 'video' && currentVideoSrc ? (
