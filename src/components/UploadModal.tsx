@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CategoryId, CategoryInfo, Video } from '../types';
 import { CATEGORIES } from '../data';
 import { videoService } from '../services/videoService';
+import { streamtapeService } from '../services/streamtapeService';
 import {
   captureVideoFrame,
   extractThumbnailFromEmbedUrl,
@@ -326,19 +327,32 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           trimmed.includes('shvip') ||
           trimmed.includes('streamhub')
         ) {
-          let tapeId = '';
-          const match = trimmed.match(/(?:streamtape|streamta\.pe|streamhide|shvip|streamhub)[^/]*\/(?:v|e|d)\/([a-zA-Z0-9_-]+)/i)
-            || trimmed.match(/\/(?:v|e)\/([a-zA-Z0-9_-]+)/i);
-          if (match && match[1]) {
-            tapeId = match[1];
-          } else {
-            const parts = trimmed.split('/').filter(Boolean);
-            tapeId = parts[parts.length - 1]?.split('?')[0] || '';
-          }
+          const tapeId = streamtapeService.extractTapeId(trimmed) || '';
           extractedUrl = tapeId ? `https://streamtape.com/e/${tapeId}/` : trimmed;
-          autoTitle = 'Streamtape Stream';
+          autoTitle = 'Streamtape Video';
           if (tapeId && !thumbnailUrl) {
             setThumbnailUrl(`https://thumb.streamtape.com/${tapeId}.jpg`);
+          }
+
+          // Asynchronously query Streamtape API for exact title, duration & HD splash
+          if (tapeId) {
+            streamtapeService.autoExtractMetadata(tapeId).then((stMeta) => {
+              if (stMeta) {
+                if (stMeta.title && (!title || title === 'Embedded Video' || title === 'Streamtape Stream' || title === 'Streamtape Video')) {
+                  setTitle(stMeta.title);
+                }
+                if (stMeta.duration) {
+                  setDurationInput(stMeta.duration);
+                }
+                if (stMeta.thumbnailUrl && !thumbnailUrl) {
+                  setThumbnailUrl(stMeta.thumbnailUrl);
+                }
+                if (stMeta.quality) {
+                  setQuality(stMeta.quality);
+                }
+                setProcessingStatus('✓ Streamtape Synced: Title, Duration & Thumbnail auto-detected!');
+              }
+            }).catch(() => {});
           }
         } else if (trimmed.includes('dood') || trimmed.includes('doodstream') || trimmed.includes('ds2play') || trimmed.includes('doods.pro')) {
           let doodId = '';

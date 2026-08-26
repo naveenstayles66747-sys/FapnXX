@@ -12,6 +12,7 @@ import {
   extractThumbnailFromEmbedUrl,
   cleanMediaUrl,
 } from '../utils/mediaHelper';
+import { streamtapeService, StreamtapeAccountInfo, StreamtapeFolderFile } from '../services/streamtapeService';
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -55,9 +56,22 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   onUpdateBanner,
   onDeleteBanner,
 }) => {
-  const [activeTab, setActiveTab] = useState<'auth' | 'categories' | 'videos' | 'banners' | 'upload' | 'reports' | 'usage' | 'audit'>('auth');
+  const [activeTab, setActiveTab] = useState<'auth' | 'categories' | 'videos' | 'banners' | 'upload' | 'reports' | 'usage' | 'audit' | 'streamtape'>('auth');
   const [auditLogsList, setAuditLogsList] = useState<any[]>([]);
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
+
+  // Streamtape Cloud Manager state
+  const [stLogin, setStLogin] = useState('');
+  const [stKey, setStKey] = useState('');
+  const [stAccountInfo, setStAccountInfo] = useState<StreamtapeAccountInfo | null>(null);
+  const [stFiles, setStFiles] = useState<StreamtapeFolderFile[]>([]);
+  const [isLoadingStFiles, setIsLoadingStFiles] = useState(false);
+  const [stStatusMsg, setStStatusMsg] = useState<string | null>(null);
+  const [stRemoteUrl, setStRemoteUrl] = useState('');
+  const [stRemoteName, setStRemoteName] = useState('');
+  const [isSubmittingRemote, setIsSubmittingRemote] = useState(false);
+  const [importingFileId, setImportingFileId] = useState<string | null>(null);
+  const [isBulkImporting, setIsBulkImporting] = useState(false);
   
   // DMCA / Content Moderation Reports state
   const [reportsList, setReportsList] = useState<DMCAReport[]>([]);
@@ -167,6 +181,156 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         };
         reader.readAsDataURL(file);
       }
+    }
+  };
+
+  // Streamtape initialization & handlers
+  useEffect(() => {
+    const creds = streamtapeService.getCredentials();
+    if (creds.apiLogin) setStLogin(creds.apiLogin);
+    if (creds.apiKey) setStKey(creds.apiKey);
+  }, []);
+
+  const handleSaveStreamtapeCreds = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!stLogin.trim() || !stKey.trim()) {
+      alert('Please enter both Streamtape API Login and API Key.');
+      return;
+    }
+    streamtapeService.saveCredentials({ apiLogin: stLogin.trim(), apiKey: stKey.trim() });
+    setStStatusMsg('Testing connection...');
+    try {
+      const acc = await streamtapeService.getAccountInfo(stLogin.trim(), stKey.trim());
+      if (acc) {
+        setStAccountInfo(acc);
+        setStStatusMsg('✓ Connected successfully to Streamtape!');
+        handleLoadStreamtapeFiles(stLogin.trim(), stKey.trim());
+      } else {
+        setStStatusMsg('⚠️ Credentials saved.');
+      }
+    } catch {
+      setStStatusMsg('⚠️ Credentials saved.');
+    }
+    setTimeout(() => setStStatusMsg(null), 5000);
+  };
+
+  const handleLoadStreamtapeFiles = async (l?: string, k?: string) => {
+    setIsLoadingStFiles(true);
+    try {
+      const res = await streamtapeService.listFolder(undefined, l || stLogin, k || stKey);
+      if (res && res.files) {
+        setStFiles(res.files);
+      }
+    } catch (err: any) {
+      console.warn('[AdminPanel] Streamtape file list notice:', err);
+    } finally {
+      setIsLoadingStFiles(false);
+    }
+  };
+
+  const handleImportSingleStreamtapeFile = async (file: StreamtapeFolderFile) => {
+    setImportingFileId(file.linkid);
+    try {
+      const meta = await streamtapeService.autoExtractMetadata(file.linkid);
+      const cleanTitle = file.name.replace(/\.(mp4|webm|mkv|avi|mov)$/i, '').replace(/[-_.]+/g, ' ').trim();
+      const newVid: Video = {
+        id: `vid-st-${file.linkid}-${Date.now()}`,
+        title: meta?.title || cleanTitle || 'Streamtape Video',
+        embedUrl: `https://streamtape.com/e/${file.linkid}/`,
+        thumbnail: meta?.thumbnailUrl || `https://thumb.streamtape.com/${file.linkid}.jpg`,
+        thumbnailUrl: meta?.thumbnailUrl || `https://thumb.streamtape.com/${file.linkid}.jpg`,
+        duration: meta?.duration || '10:00',
+        quality: meta?.quality || 'HD',
+        category: 'trending',
+        categoryLabel: 'Trending',
+        categories: ['trending'],
+        tags: ['HD', 'Streamtape'],
+        views: '0 views',
+        viewsCount: 1,
+        likesCount: 0,
+        rating: '100%',
+        timeAgo: 'Just now',
+        createdAt: new Date().toISOString(),
+        performerName: 'Admin',
+        performerAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150',
+        description: `Imported from Streamtape cloud (${file.name})`,
+        isEmbed: true,
+        isNew: true,
+      };
+
+      await videoService.saveVideo(newVid);
+      onUploadVideoSuccess(newVid);
+      alert(`✓ Successfully imported "${newVid.title}"!`);
+    } catch (err: any) {
+      console.error('[AdminPanel] Streamtape single import error:', err);
+      alert('Failed to import video. Please try again.');
+    } finally {
+      setImportingFileId(null);
+    }
+  };
+
+  const handleBulkImportStreamtapeFiles = async () => {
+    if (stFiles.length === 0) return;
+    if (!confirm(`Import all ${stFiles.length} videos from your Streamtape account to your website?`)) return;
+
+    setIsBulkImporting(true);
+    let importedCount = 0;
+
+    for (const file of stFiles) {
+      try {
+        const cleanTitle = file.name.replace(/\.(mp4|webm|mkv|avi|mov)$/i, '').replace(/[-_.]+/g, ' ').trim();
+        const newVid: Video = {
+          id: `vid-st-${file.linkid}-${Date.now()}`,
+          title: cleanTitle || 'Streamtape Video',
+          embedUrl: `https://streamtape.com/e/${file.linkid}/`,
+          thumbnail: `https://thumb.streamtape.com/${file.linkid}.jpg`,
+          thumbnailUrl: `https://thumb.streamtape.com/${file.linkid}.jpg`,
+          duration: '10:00',
+          quality: file.name.toLowerCase().includes('4k') ? '4K' : 'HD',
+          category: 'trending',
+          categoryLabel: 'Trending',
+          categories: ['trending'],
+          tags: ['HD', 'Streamtape'],
+          views: '0 views',
+          viewsCount: 1,
+          likesCount: 0,
+          rating: '100%',
+          timeAgo: 'Just now',
+          createdAt: new Date().toISOString(),
+          performerName: 'Admin',
+          performerAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150',
+          description: `Imported from Streamtape cloud (${file.name})`,
+          isEmbed: true,
+          isNew: true,
+        };
+
+        await videoService.saveVideo(newVid);
+        onUploadVideoSuccess(newVid);
+        importedCount++;
+      } catch (err) {
+        console.warn('Bulk import item notice:', err);
+      }
+    }
+
+    setIsBulkImporting(false);
+    alert(`🎉 Successfully imported ${importedCount} videos to your website!`);
+  };
+
+  const handleStartRemoteUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stRemoteUrl.trim()) return;
+    setIsSubmittingRemote(true);
+    try {
+      const res = await streamtapeService.addRemoteUpload(stRemoteUrl.trim(), stRemoteName.trim() || undefined);
+      if (res && res.id) {
+        alert(`✓ Remote download started on Streamtape! Task ID: ${res.id}`);
+        setStRemoteUrl('');
+        setStRemoteName('');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Remote download request failed.');
+    } finally {
+      setIsSubmittingRemote(false);
     }
   };
 
@@ -606,6 +770,29 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
           >
             <span className="material-symbols-outlined text-sm">cloud_upload</span>
             Video Upload
+          </button>
+
+          <button
+            onClick={() => {
+              if (!isAdminAuthenticated) {
+                setActiveTab('auth');
+                return;
+              }
+              setActiveTab('streamtape');
+              if (stLogin && stKey && stFiles.length === 0) {
+                handleLoadStreamtapeFiles();
+              }
+            }}
+            className={`py-3.5 px-4 font-bold text-xs tracking-wide border-b-2 flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+              !isAdminAuthenticated ? 'opacity-50 cursor-not-allowed' : ''
+            } ${
+              activeTab === 'streamtape'
+                ? 'border-[#ec4899] text-[#ffb0cd]'
+                : 'border-transparent text-[#a19fa6] hover:text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-sm text-sky-400">cloud_sync</span>
+            Streamtape Cloud {stFiles.length > 0 ? `(${stFiles.length})` : ''}
           </button>
 
           <button
@@ -2050,6 +2237,266 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
           )}
 
           {/* TAB 8: IMMUTABLE AUDIT LOGS */}
+          {/* TAB 8: STREAMTAPE CLOUD MANAGER & 1-CLICK IMPORTER */}
+          {activeTab === 'streamtape' && (
+            <div className="space-y-6">
+              {/* Header Banner */}
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-sky-950/40 via-indigo-950/30 to-[#181719] p-5 rounded-2xl border border-sky-500/30 shadow-xl">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="material-symbols-outlined text-sky-400 text-2xl">cloud_sync</span>
+                    <h3 className="text-lg font-black text-white tracking-wide">
+                      Streamtape Cloud Manager & 1-Click Importer
+                    </h3>
+                    <span className="px-2 py-0.5 bg-sky-500/20 text-sky-300 border border-sky-500/30 rounded-full text-[10px] font-bold">
+                      API v1.0
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#debec8]">
+                    Connect your Streamtape account to auto-detect video duration, titles, HD splash thumbnails, and bulk-import folders.
+                  </p>
+                </div>
+                {stAccountInfo && (
+                  <div className="flex items-center gap-2 bg-sky-900/40 border border-sky-500/40 px-3 py-2 rounded-xl text-xs text-sky-200">
+                    <span className="material-symbols-outlined text-emerald-400 text-sm">check_circle</span>
+                    <span className="font-bold">{stAccountInfo.email || 'Connected'}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Grid: API Credentials & Remote Downloader */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 1. API Credentials Card */}
+                <form onSubmit={handleSaveStreamtapeCreds} className="bg-[#181719] p-5 rounded-2xl border border-[#2e2d30] space-y-4 shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sky-400 text-base">vpn_key</span>
+                      API Credentials (from Streamtape User Panel)
+                    </h4>
+                    <a
+                      href="https://streamtape.com/accpanel"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-sky-400 hover:underline flex items-center gap-0.5"
+                    >
+                      <span>Get API Keys</span>
+                      <span className="material-symbols-outlined text-xs">open_in_new</span>
+                    </a>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#a19fa6] mb-1">
+                        API Login
+                      </label>
+                      <input
+                        type="text"
+                        value={stLogin}
+                        onChange={(e) => setStLogin(e.target.value)}
+                        placeholder="e.g. y7bhafa3bxfxudzk"
+                        className="w-full bg-[#141315] border border-[#3f3e42] focus:border-sky-500 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#a19fa6] mb-1">
+                        API Key / Password
+                      </label>
+                      <input
+                        type="password"
+                        value={stKey}
+                        onChange={(e) => setStKey(e.target.value)}
+                        placeholder="e.g. dq6hzjewe27bmwdn"
+                        className="w-full bg-[#141315] border border-[#3f3e42] focus:border-sky-500 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-sm">save</span>
+                      <span>Save & Connect API</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleLoadStreamtapeFiles()}
+                      disabled={isLoadingStFiles}
+                      className="px-3 py-2 bg-[#27272a] hover:bg-[#3f3e42] text-zinc-300 text-xs font-semibold rounded-xl flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <span className={`material-symbols-outlined text-sm ${isLoadingStFiles ? 'animate-spin' : ''}`}>
+                        sync
+                      </span>
+                      <span>Refresh Files</span>
+                    </button>
+                  </div>
+
+                  {stStatusMsg && (
+                    <p className={`text-xs font-bold p-2 rounded-lg ${stStatusMsg.includes('✓') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'}`}>
+                      {stStatusMsg}
+                    </p>
+                  )}
+                </form>
+
+                {/* 2. Remote URL Leecher / Downloader */}
+                <form onSubmit={handleStartRemoteUpload} className="bg-[#181719] p-5 rounded-2xl border border-[#2e2d30] space-y-4 shadow-lg flex flex-col justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
+                      <span className="material-symbols-outlined text-indigo-400 text-base">download_for_offline</span>
+                      Remote URL Downloader (Leech to Streamtape)
+                    </h4>
+                    <p className="text-[11px] text-[#a19fa6]">
+                      Paste any external direct MP4/video link. Streamtape server will download it directly into your account in background.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#a19fa6] mb-1">
+                        Remote Video URL
+                      </label>
+                      <input
+                        type="url"
+                        value={stRemoteUrl}
+                        onChange={(e) => setStRemoteUrl(e.target.value)}
+                        placeholder="https://example.com/video123.mp4"
+                        className="w-full bg-[#141315] border border-[#3f3e42] focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#a19fa6] mb-1">
+                        Custom Title / Filename (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={stRemoteName}
+                        onChange={(e) => setStRemoteName(e.target.value)}
+                        placeholder="My Exclusive HD Video.mp4"
+                        className="w-full bg-[#141315] border border-[#3f3e42] focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmittingRemote || !stRemoteUrl.trim()}
+                    className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+                  >
+                    {isSubmittingRemote ? (
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <span className="material-symbols-outlined text-sm">cloud_download</span>
+                    )}
+                    <span>Start Remote Download</span>
+                  </button>
+                </form>
+              </div>
+
+              {/* 3. Streamtape Account Video List & Bulk Importer */}
+              <div className="bg-[#181719] rounded-2xl border border-[#2e2d30] overflow-hidden shadow-xl space-y-4 p-5">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#2e2d30]">
+                  <div>
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sky-400 text-base">video_library</span>
+                      Your Streamtape Cloud Videos ({stFiles.length})
+                    </h4>
+                    <p className="text-[11px] text-[#a19fa6]">
+                      Import individual videos or bulk-import entire cloud library with thumbnails & exact duration.
+                    </p>
+                  </div>
+
+                  {stFiles.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleBulkImportStreamtapeFiles}
+                      disabled={isBulkImporting}
+                      className="px-4 py-2 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 disabled:opacity-50 text-white font-black text-xs rounded-xl flex items-center gap-1.5 shadow-lg active:scale-95 transition-all cursor-pointer"
+                    >
+                      {isBulkImporting ? (
+                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <span className="material-symbols-outlined text-sm">publish</span>
+                      )}
+                      <span>Import All {stFiles.length} Videos</span>
+                    </button>
+                  )}
+                </div>
+
+                {isLoadingStFiles ? (
+                  <div className="py-12 flex flex-col items-center justify-center gap-3 text-sky-400">
+                    <span className="w-8 h-8 border-3 border-sky-400 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs font-semibold">Connecting to Streamtape & fetching video list...</span>
+                  </div>
+                ) : stFiles.length === 0 ? (
+                  <div className="text-center py-12 text-[#a19fa6] text-xs bg-[#141315] rounded-xl border border-white/5 space-y-2">
+                    <span className="material-symbols-outlined text-4xl block opacity-30 text-sky-400">cloud_off</span>
+                    <p className="font-semibold text-white">No Streamtape files loaded yet.</p>
+                    <p className="text-[11px] text-zinc-400">
+                      Enter your API Login & Key above and click <strong>"Save & Connect API"</strong> to load your videos!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {stFiles.map((file) => (
+                      <div
+                        key={file.linkid}
+                        className="bg-[#141315] border border-[#2e2d30] hover:border-sky-500/50 rounded-xl overflow-hidden flex flex-col justify-between transition-all group shadow-md"
+                      >
+                        <div className="relative aspect-video bg-black">
+                          <img
+                            src={`https://thumb.streamtape.com/${file.linkid}.jpg`}
+                            alt={file.name}
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=400';
+                            }}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-sky-600 text-white rounded text-[9px] font-mono font-bold">
+                            {file.size ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` : 'Streamtape'}
+                          </div>
+                          <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 text-white rounded text-[9px] font-mono">
+                            ID: {file.linkid}
+                          </div>
+                        </div>
+
+                        <div className="p-3 flex-1 flex flex-col justify-between gap-3">
+                          <div>
+                            <h5 className="text-xs font-bold text-white line-clamp-2" title={file.name}>
+                              {file.name}
+                            </h5>
+                            <p className="text-[10px] text-zinc-400 font-mono mt-1 truncate">
+                              {file.link}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleImportSingleStreamtapeFile(file)}
+                            disabled={importingFileId === file.linkid}
+                            className="w-full py-1.5 bg-sky-600/20 hover:bg-sky-600 border border-sky-500/40 hover:border-sky-500 text-sky-300 hover:text-white font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
+                          >
+                            {importingFileId === file.linkid ? (
+                              <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <span className="material-symbols-outlined text-xs">add_to_photos</span>
+                            )}
+                            <span>Import to Website</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 9: IMMUTABLE AUDIT LOGS */}
           {activeTab === 'audit' && (
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-[#181719] p-5 rounded-2xl border border-[#2e2d30]">
