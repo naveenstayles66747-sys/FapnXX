@@ -319,36 +319,36 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           </div>
         </div>
 
-        {/* 3. Unified Pornktube-Style Info & Comments Card */}
-        <div className="rounded-2xl p-4 sm:p-5 border border-zinc-200 dark:border-white/10 bg-[#f8fafc] dark:bg-[#131217] text-zinc-900 dark:text-zinc-100 space-y-3.5 shadow-sm transition-all">
-          {/* Categories Row */}
-          <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm">
-            <span className="text-zinc-500 dark:text-zinc-400 font-medium">Categories:</span>
-            {categoriesList.length > 0 ? (
-              categoriesList.map((cat, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => onNavigateToSearch && onNavigateToSearch(cat)}
-                  className="px-3 py-1 rounded-lg bg-zinc-200/80 hover:bg-[#ec4899] hover:text-white dark:bg-zinc-800 dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
-                >
-                  {cat}
-                </button>
-              ))
-            ) : (
-              <button
-                type="button"
-                onClick={() => onNavigateToSearch && onNavigateToSearch(video.category || 'Featured')}
-                className="px-3 py-1 rounded-lg bg-zinc-200/80 hover:bg-[#ec4899] hover:text-white dark:bg-zinc-800 dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs transition-all cursor-pointer"
-              >
-                {video.category || 'Featured'}
-              </button>
-            )}
-          </div>
-
-          {/* Expanded Content: Pornstars, Tags, Description */}
+        {/* 3. Unified Pornktube-Style Collapsible Info & Comments Card */}
+        <div className="rounded-2xl p-3.5 sm:p-4 border border-zinc-200 dark:border-white/10 bg-[#f8fafc] dark:bg-[#131217] text-zinc-900 dark:text-zinc-100 space-y-3 shadow-sm transition-all">
+          {/* Expanded Content: Categories, Pornstars, Tags, Description & Live Comments */}
           {isInfoExpanded && (
-            <div className="space-y-3 pt-2 border-t border-zinc-200 dark:border-white/10 animate-fadeIn">
+            <div className="space-y-3.5 animate-fadeIn">
+              {/* Categories Row */}
+              <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm">
+                <span className="text-zinc-500 dark:text-zinc-400 font-medium">Categories:</span>
+                {categoriesList.length > 0 ? (
+                  categoriesList.map((cat, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => onNavigateToSearch && onNavigateToSearch(cat)}
+                      className="px-3 py-1 rounded-lg bg-zinc-200/80 hover:bg-[#ec4899] hover:text-white dark:bg-zinc-800 dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
+                    >
+                      {cat}
+                    </button>
+                  ))
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateToSearch && onNavigateToSearch(video.category || 'Featured')}
+                    className="px-3 py-1 rounded-lg bg-zinc-200/80 hover:bg-[#ec4899] hover:text-white dark:bg-zinc-800 dark:hover:bg-[#ec4899] dark:hover:text-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs transition-all cursor-pointer"
+                  >
+                    {video.category || 'Featured'}
+                  </button>
+                )}
+              </div>
+
               {/* Pornstar Row */}
               {performersList.length > 0 && (
                 <div className="text-xs sm:text-sm font-medium flex items-center gap-2 flex-wrap">
@@ -402,25 +402,25 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
                   <span className="text-rose-500 font-semibold">{sourceSiteDomain}</span>
                 </div>
               )}
+
+              {/* Integrated Simple Live Comments Section inside Show More */}
+              <CommentsSection
+                videoId={video.id}
+                userEmail={userEmail}
+                onOpenSoftLogin={onOpenSoftLogin}
+              />
             </div>
           )}
 
-          {/* Integrated Simple Live Comments Section */}
-          <CommentsSection
-            videoId={video.id}
-            userEmail={userEmail}
-            onOpenSoftLogin={onOpenSoftLogin}
-          />
-
           {/* Show More / Show Less Toggle Button */}
-          <div className="pt-2">
+          <div>
             <button
               type="button"
               onClick={() => setIsInfoExpanded((prev) => !prev)}
-              className="w-full py-2 rounded-xl bg-zinc-200/70 hover:bg-zinc-300 dark:bg-zinc-800/80 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
+              className="w-full py-2.5 rounded-xl bg-zinc-200/80 hover:bg-zinc-300 dark:bg-zinc-800/80 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white font-extrabold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
             >
               <span>{isInfoExpanded ? 'Show less' : 'Show more'}</span>
-              <span className="material-symbols-outlined text-sm transition-transform">
+              <span className="material-symbols-outlined text-base transition-transform">
                 {isInfoExpanded ? 'expand_less' : 'expand_more'}
               </span>
             </button>
