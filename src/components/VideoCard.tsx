@@ -265,6 +265,15 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       }
     }
 
+    // If SeekStream / EmbedSeek URL failed, fallback to preview.webp or preview.MP4.jpg
+    if (currentSrc.includes('embedseek') || currentSrc.includes('seekstream')) {
+      const match = currentSrc.match(/(?:embedseek|seekstream)[^/]*\/(?:e\/|embed\/|v\/)?([a-zA-Z0-9_-]+)/i);
+      if (match && match[1] && !currentSrc.includes('preview.webp')) {
+        target.src = `https://fapnxx.embedseek.com/${match[1]}/preview.webp`;
+        return;
+      }
+    }
+
     if (target.src !== FALLBACK_THUMBNAIL) {
       target.src = FALLBACK_THUMBNAIL;
     }
