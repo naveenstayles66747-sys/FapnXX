@@ -1371,6 +1371,41 @@ html.light .player-wrapper {
 }
 
 /* =====================================================================
+   EXOCLICK NATIVE RECOMMENDATION WIDGET (Zone 6010176 | eas6a97888e20)
+   Full 2x2 Grid Multi-Row Expansion on Mobile & 4x1 on Desktop
+   ===================================================================== */
+#exoclick-native-recommended-zone-6010176,
+.eas6a97888e20 {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block !important;
+  margin: 0 auto !important;
+  overflow: visible !important;
+  height: auto !important;
+  min-height: 250px !important;
+}
+
+#exoclick-native-recommended-zone-6010176 iframe,
+.eas6a97888e20 iframe {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 320px !important;
+  height: auto !important;
+  border: none !important;
+  display: block !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+#exoclick-native-recommended-zone-6010176 ins,
+.eas6a97888e20 ins {
+  width: 100% !important;
+  display: block !important;
+  margin: 0 auto !important;
+  height: auto !important;
+}
+
+/* =====================================================================
    ZERO-FOOTPRINT COLLAPSE FOR EMPTY AD CONTAINERS (No Fake Empty Space)
    ===================================================================== */
 #exoclick-mobile-instant-message:empty,

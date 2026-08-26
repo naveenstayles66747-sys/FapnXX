@@ -641,7 +641,8 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       ins.setAttribute('data-zoneid', AD_ZONES.NATIVE_RECOMMENDED || '6010176');
       ins.style.display = 'block';
       ins.style.width = '100%';
-      ins.style.minHeight = '180px';
+      ins.style.height = 'auto';
+      ins.style.minHeight = '320px';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
@@ -684,11 +685,11 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         </span>
       </div>
 
-      {/* ExoClick Official Native Ad Mount Container */}
+      {/* ExoClick Official Native Ad Mount Container (Supports Full 2x2 Multi-Row Expansion) */}
       <div
         ref={containerRef}
         id="exoclick-native-recommended-zone-6010176"
-        className="w-full min-h-[180px] overflow-hidden flex items-center justify-center"
+        className="w-full min-h-[320px] overflow-visible block"
       />
     </section>
   );
