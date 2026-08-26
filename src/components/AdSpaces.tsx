@@ -605,14 +605,8 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
 
   return (
     <section className={`native-ad-section w-full my-4 p-3 sm:p-4 rounded-2xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#121115] shadow-sm transition-colors ${className}`}>
-      {/* Header bar with AD Badge */}
-      <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-zinc-200 dark:border-white/10">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#ec4899] text-base">recommend</span>
-          <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-zinc-900 dark:text-zinc-100">
-            {title}
-          </span>
-        </div>
+      {/* Minimal Header with AD Badge */}
+      <div className="flex items-center justify-start pb-2 mb-2.5 border-b border-zinc-200 dark:border-white/10">
         <span className="px-2 py-0.5 rounded bg-[#ec4899] text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
           AD
         </span>
