@@ -714,50 +714,71 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         className={`w-full overflow-hidden ${hasAdLoaded ? 'block' : 'hidden'}`}
       />
 
-      {/* Native Sponsored Recommendation Cards Grid (Always renders responsive, high-converting content) */}
+      {/* Native Sponsored Recommendation Cards Grid (100% matched to actual VideoCard dimensions & layout) */}
       {!hasAdLoaded && (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-6">
           {SPONSORED_RECOMMENDATIONS.map((rec) => (
-            <div
+            <article
               key={rec.id}
               onClick={handlePartnerClick}
-              className="group flex flex-col rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-rose-500 bg-zinc-50 dark:bg-[#141d30] transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+              className="group cursor-pointer flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300"
             >
-              {/* Thumbnail Container */}
-              <div className="relative aspect-[16/9] w-full overflow-hidden bg-black">
+              {/* 16:9 Full-Width Thumbnail Container matching real VideoCard */}
+              <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b]">
                 <img
                   src={rec.thumbnail}
                   alt={rec.title}
                   loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  decoding="async"
+                  className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
                 />
-                <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-rose-600 text-white font-black text-[9px] uppercase tracking-wide shadow">
-                  {rec.tag}
-                </span>
-              </div>
 
-              {/* Card Meta */}
-              <div className="p-2.5 flex flex-col justify-between flex-grow gap-2">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider block">
-                    {rec.sponsor}
+                {/* Top-Right Badge: Tag */}
+                <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
+                  <span className="thumb-hd-badge bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+                    {rec.tag}
                   </span>
-                  <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 line-clamp-2 leading-tight group-hover:text-rose-500 transition-colors">
-                    {rec.title}
-                  </h4>
                 </div>
 
-                <div className="pt-1 flex items-center justify-between">
-                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold flex items-center gap-0.5">
-                    <span className="material-symbols-outlined text-xs text-rose-500">verified</span>
-                    <span>Promoted</span>
-                  </span>
-                  <span className="px-2 py-0.5 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[10px] uppercase tracking-wider transition-colors shadow">
-                    {rec.action}
+                {/* Bottom-Left Badge: SPONSORED */}
+                <div className="thumb-duration-badge absolute bottom-2 left-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400 z-20 shadow-md">
+                  SPONSORED
+                </div>
+
+                {/* Bottom-Right Action Button */}
+                <div className="absolute bottom-2 right-2 z-20">
+                  <span className="px-2.5 py-1 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider transition-transform active:scale-95 shadow-xl flex items-center gap-1">
+                    <span>{rec.action}</span>
+                    <span className="material-symbols-outlined text-xs">open_in_new</span>
                   </span>
                 </div>
               </div>
-            </div>
+
+              {/* Card Meta Box matching real VideoCard typography & stats row */}
+              <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
+                <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight group-hover:text-rose-500">
+                  {rec.title}
+                </h3>
+
+                {/* Stats Row */}
+                <div className="video-card-stats-row flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px] sm:text-sm text-rose-500">verified</span>
+                    <span className="video-card-stat-value text-rose-500 font-bold">{rec.sponsor}</span>
+                  </span>
+
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">hd</span>
+                    <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">1080p HD</span>
+                  </span>
+
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">thumb_up</span>
+                    <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">100% Free</span>
+                  </span>
+                </div>
+              </div>
+            </article>
           ))}
         </div>
       )}
