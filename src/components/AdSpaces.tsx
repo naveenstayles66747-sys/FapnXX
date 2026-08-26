@@ -571,43 +571,58 @@ export const UnderPlayerBanner: React.FC<{ className?: string }> = ({ className 
   );
 };
 
+const SPONSORED_RECOMMENDATIONS = [
+  {
+    id: 'rec-1',
+    title: 'Live HD Video Chat & Private Cam Shows',
+    sponsor: 'LiveHD Cams',
+    thumbnail: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
+    tag: 'Live 1080p',
+    action: 'Watch Free',
+  },
+  {
+    id: 'rec-2',
+    title: 'Meet Local Verified Singles in Your Area',
+    sponsor: 'Flirt Finder',
+    thumbnail: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80',
+    tag: 'Hookup',
+    action: 'Chat Now',
+  },
+  {
+    id: 'rec-3',
+    title: 'Interactive 3D Virtual Adult Experiences',
+    sponsor: 'VR World',
+    thumbnail: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&auto=format&fit=crop&q=80',
+    tag: 'VR 4K',
+    action: 'Play Game',
+  },
+  {
+    id: 'rec-4',
+    title: 'Top Rated Premium Pornstar 4K Streams',
+    sponsor: 'VIP Pass',
+    thumbnail: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=600&auto=format&fit=crop&q=80',
+    tag: 'Ultra HD',
+    action: 'Join Free',
+  },
+];
+
 /**
  * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile — Zone ID: 6010176)
  * Class: eas6a97888e20
- * Formats responsive native thumbnail cards.
+ * Formats responsive native thumbnail cards with zero-latency load & graceful rich partner cards fallback.
  */
 export const NativeRecommendationAd: React.FC<{ className?: string; title?: string }> = ({
   className = '',
   title = 'Sponsored Recommendations',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [hasAdLoaded, setHasAdLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting) {
-            setIsVisible(true);
-            observer.disconnect();
-          }
-        },
-        { rootMargin: '300px' }
-      );
-      observer.observe(el);
-      return () => observer.disconnect();
-    } else {
-      setIsVisible(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible) return;
-    const el = containerRef.current;
-    if (!el) return;
+    let isMounted = true;
 
     try {
       // Ensure global ad-provider script is present in DOM
@@ -630,23 +645,57 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
-      // Trigger ExoClick AdProvider serve with microtask delay to ensure DOM attachment
-      setTimeout(() => {
+      // Detect when ExoClick injects actual ad elements (iframe, a, div, img)
+      const observer = new MutationObserver(() => {
+        if (!isMounted) return;
+        if (
+          ins.children.length > 0 ||
+          ins.querySelector('iframe, a, img, div.exo-native-widget, .exo-card')
+        ) {
+          setHasAdLoaded(true);
+        }
+      });
+      observer.observe(ins, { childList: true, subtree: true });
+
+      // Trigger ExoClick AdProvider serve across multiple frames to guarantee pickup
+      const triggerAdServe = () => {
         try {
           const win = window as any;
           win.AdProvider = win.AdProvider || [];
           win.AdProvider.push({ serve: {} });
         } catch {}
-      }, 60);
+      };
+
+      triggerAdServe();
+      const t1 = setTimeout(triggerAdServe, 100);
+      const t2 = setTimeout(triggerAdServe, 400);
+      const t3 = setTimeout(triggerAdServe, 1200);
+
+      return () => {
+        isMounted = false;
+        observer.disconnect();
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
     } catch (e) {
       console.warn('[ExoClick] Native recommendation ad error:', e);
     }
-  }, [isVisible]);
+  }, []);
+
+  const handlePartnerClick = () => {
+    // Open sponsor destination
+    try {
+      const isMobile = window.innerWidth < 1024;
+      const zoneId = isMobile ? AD_ZONES.MOBILE_POPUNDER : AD_ZONES.DESKTOP_POPUNDER;
+      window.open(`https://s.magsrv.com/v1/vast.php?idz=${zoneId}`, '_blank', 'noopener,noreferrer');
+    } catch {}
+  };
 
   return (
     <div className={`w-full my-6 p-3 sm:p-4 rounded-2xl border border-zinc-200 dark:border-white/10 bg-white/95 dark:bg-[#0f1523]/80 backdrop-blur-md shadow-sm ${className}`}>
       {/* Header bar */}
-      <div className="flex items-center justify-between pb-3 mb-2 border-b border-zinc-200 dark:border-white/10">
+      <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-200 dark:border-white/10">
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-rose-500 text-base">recommend</span>
           <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-zinc-900 dark:text-zinc-100">
@@ -658,12 +707,60 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         </span>
       </div>
 
-      {/* Native Ad Mount Target */}
+      {/* ExoClick Native Ad Mount Container */}
       <div
         ref={containerRef}
         id="exoclick-native-recommended-zone-6010176"
-        className="w-full overflow-hidden min-h-[120px] flex items-center justify-center"
+        className={`w-full overflow-hidden ${hasAdLoaded ? 'block' : 'hidden'}`}
       />
+
+      {/* Native Sponsored Recommendation Cards Grid (Always renders responsive, high-converting content) */}
+      {!hasAdLoaded && (
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {SPONSORED_RECOMMENDATIONS.map((rec) => (
+            <div
+              key={rec.id}
+              onClick={handlePartnerClick}
+              className="group flex flex-col rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-rose-500 bg-zinc-50 dark:bg-[#141d30] transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+            >
+              {/* Thumbnail Container */}
+              <div className="relative aspect-[16/9] w-full overflow-hidden bg-black">
+                <img
+                  src={rec.thumbnail}
+                  alt={rec.title}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-rose-600 text-white font-black text-[9px] uppercase tracking-wide shadow">
+                  {rec.tag}
+                </span>
+              </div>
+
+              {/* Card Meta */}
+              <div className="p-2.5 flex flex-col justify-between flex-grow gap-2">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider block">
+                    {rec.sponsor}
+                  </span>
+                  <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 line-clamp-2 leading-tight group-hover:text-rose-500 transition-colors">
+                    {rec.title}
+                  </h4>
+                </div>
+
+                <div className="pt-1 flex items-center justify-between">
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-xs text-rose-500">verified</span>
+                    <span>Promoted</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[10px] uppercase tracking-wider transition-colors shadow">
+                    {rec.action}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
