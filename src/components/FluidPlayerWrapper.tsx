@@ -186,8 +186,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                   vpaidMode: 'insecure',
                 },
               ],
-              skipButtonCaption: 'Skip in [seconds]s',
-              skipButtonClickCaption: 'Skip Ad ✕',
               allowVPAID: true,
               vastAdvanced: {
                 vastLoadedCallback: () => {
