@@ -822,6 +822,14 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     video={video}
                     onClick={() => onSelectVideo(video)}
                   />
+
+                  {/* Native Recommendation Widget in-between grid cards spanning full width (After 4th video) */}
+                  {idx === 3 && (
+                    <div key="browse-native-recommended-in-grid" className="col-span-full my-3">
+                      <NativeRecommendationAd />
+                    </div>
+                  )}
+
                   {/* Single Clean In-Feed Outstream Ad Placement after the 8th card */}
                   {idx === 7 && (
                     <OutstreamVideoCardAd key="browse-infeed-outstream-ad" />
@@ -846,9 +854,6 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 </button>
               </div>
             )}
-
-            {/* Multi-Device Native Recommendation Sponsored Widget (Zone ID: 6010176) */}
-            <NativeRecommendationAd title="Sponsored Picks & Recommendations" className="mt-8" />
           </>
         ) : (
           <div className="p-12 text-center text-zinc-600 dark:text-[#debec8] bg-zinc-50 dark:bg-[#1c1b1d] rounded-2xl border border-zinc-200 dark:border-[#353437] space-y-3 my-6">

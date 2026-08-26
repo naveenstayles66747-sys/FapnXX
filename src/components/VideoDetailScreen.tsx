@@ -382,18 +382,24 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           <span>Recommended Videos</span>
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5">
-          {(topRelatedVideos || []).map((relatedVideo) => (
-            <div key={relatedVideo.id} className="relative group">
-              <VideoCard
-                video={relatedVideo}
-                onClick={() => onSelectVideo(relatedVideo)}
-              />
-            </div>
+          {(topRelatedVideos || []).map((relatedVideo, idx) => (
+            <React.Fragment key={relatedVideo.id}>
+              <div className="relative group">
+                <VideoCard
+                  video={relatedVideo}
+                  onClick={() => onSelectVideo(relatedVideo)}
+                />
+              </div>
+
+              {/* Native Recommendation Widget in-between related videos grid (After 4th video) */}
+              {idx === 3 && (
+                <div key="detail-native-recommended-in-grid" className="col-span-full my-3">
+                  <NativeRecommendationAd />
+                </div>
+              )}
+            </React.Fragment>
           ))}
         </div>
-
-        {/* Multi-Device Native Recommendation Widget (Zone ID: 6010176) */}
-        <NativeRecommendationAd title="Sponsored Content You May Like" />
       </div>
 
       {/* ─────────────────────────────────────────────

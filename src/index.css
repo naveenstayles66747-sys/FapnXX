@@ -1372,8 +1372,37 @@ html.light .player-wrapper {
 
 /* =====================================================================
    EXOCLICK NATIVE RECOMMENDATION WIDGET (Zone 6010176 | eas6a97888e20)
-   Full 2x2 Grid Multi-Row Expansion on Mobile & 4x1 on Desktop
+   In-Grid Multi-Row Expansion & High Contrast Text in Day/Night Modes
    ===================================================================== */
+.native-ad-section {
+  border-radius: 16px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+html.light .native-ad-section {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light .native-ad-section * {
+  color: #0f172a !important;
+}
+
+html.light .native-ad-section span.bg-\[\#ec4899\] {
+  color: #ffffff !important;
+}
+
+html.dark .native-ad-section {
+  background-color: #121115 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .native-ad-section * {
+  color: #f8fafc !important;
+}
+
 #exoclick-native-recommended-zone-6010176,
 .eas6a97888e20 {
   width: 100% !important;
@@ -1383,6 +1412,7 @@ html.light .player-wrapper {
   overflow: visible !important;
   height: auto !important;
   min-height: 250px !important;
+  background: transparent !important;
 }
 
 #exoclick-native-recommended-zone-6010176 iframe,
@@ -1403,6 +1433,7 @@ html.light .player-wrapper {
   display: block !important;
   margin: 0 auto !important;
   height: auto !important;
+  background: transparent !important;
 }
 
 /* =====================================================================

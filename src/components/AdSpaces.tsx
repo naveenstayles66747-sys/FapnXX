@@ -671,17 +671,11 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
   }, []);
 
   return (
-    <section className={`w-full my-6 p-3 sm:p-4 rounded-2xl border border-zinc-200 dark:border-white/10 bg-white/95 dark:bg-[#0f1523]/80 backdrop-blur-md shadow-sm ${className}`}>
-      {/* Header bar */}
-      <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-200 dark:border-white/10">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-rose-500 text-base">recommend</span>
-          <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-zinc-900 dark:text-zinc-100">
-            {title}
-          </span>
-        </div>
-        <span className="text-[10px] font-mono font-bold text-zinc-500 dark:text-zinc-400 uppercase px-2 py-0.5 rounded bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10">
-          SPONSORED
+    <section className={`native-ad-section w-full my-4 p-3 sm:p-4 rounded-2xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#121115] shadow-sm transition-colors ${className}`}>
+      {/* Sleek Minimal "AD" Header Tag (Zero Clutter) */}
+      <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-zinc-200 dark:border-white/10">
+        <span className="px-2 py-0.5 rounded bg-[#ec4899] text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
+          AD
         </span>
       </div>
 
