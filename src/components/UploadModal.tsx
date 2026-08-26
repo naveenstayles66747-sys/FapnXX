@@ -448,7 +448,6 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         const testVideo = document.createElement('video');
         testVideo.src = extractedUrl;
         testVideo.preload = 'metadata';
-        testVideo.crossOrigin = 'anonymous';
 
         testVideo.onloadedmetadata = () => {
           if (testVideo.duration && !isNaN(testVideo.duration) && testVideo.duration > 0) {
