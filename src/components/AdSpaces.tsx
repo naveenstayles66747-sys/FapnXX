@@ -670,16 +670,15 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         </span>
       </div>
 
-      {/* ExoClick Native Ad Mount (Live dynamic feed when filled) */}
+      {/* ExoClick Native Ad Mount (Zero footprint if empty) */}
       <div
         ref={containerRef}
         id="exoclick-native-recommended-zone-6010176"
-        className={`w-full overflow-visible ${hasExoAdLoaded ? 'block' : 'hidden'}`}
+        className="w-full overflow-hidden"
       />
 
       {/* 4 Native Recommendation Cards (2x2 on Mobile, 4x1 on Desktop with High-Contrast Day/Night Text) */}
-      {!hasExoAdLoaded && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
           {SPONSORED_RECOMMENDATIONS.map((rec) => (
             <article
               key={rec.id}
@@ -744,7 +743,6 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
             </article>
           ))}
         </div>
-      )}
     </section>
   );
 };

@@ -237,6 +237,13 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
                     )}
                   </React.Fragment>
                 ))}
+
+                {/* Guaranteed in-grid placement if total videos is less than 4 */}
+                {filteredCategoryVideos.length > 0 && filteredCategoryVideos.length < 4 && (
+                  <div className="col-span-full my-3">
+                    <NativeRecommendationAd />
+                  </div>
+                )}
               </div>
             )}
           </>

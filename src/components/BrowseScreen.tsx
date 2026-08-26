@@ -836,6 +836,13 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                   )}
                 </React.Fragment>
               ))}
+
+              {/* Guaranteed in-grid placement if total videos is less than 4 */}
+              {displayedVideos.length > 0 && displayedVideos.length < 4 && (
+                <div className="col-span-full my-3">
+                  <NativeRecommendationAd />
+                </div>
+              )}
             </div>
 
             {/* Sentinel element for automatic Infinite Scroll */}
