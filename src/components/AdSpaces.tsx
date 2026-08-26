@@ -575,8 +575,6 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       ins.setAttribute('data-zoneid', AD_ZONES.NATIVE_RECOMMENDED || '6010176');
       ins.style.display = 'block';
       ins.style.width = '100%';
-      ins.style.height = 'auto';
-      ins.style.minHeight = '180px';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
@@ -604,19 +602,19 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
   }, []);
 
   return (
-    <section className={`native-ad-section w-full my-4 p-3 sm:p-4 rounded-2xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#121115] shadow-sm transition-colors ${className}`}>
+    <section className={`native-ad-section w-full my-2.5 sm:my-3 p-2.5 sm:p-3 rounded-2xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#121115] shadow-sm transition-colors ${className}`}>
       {/* Minimal Header with AD Badge */}
-      <div className="flex items-center justify-start pb-2 mb-2.5 border-b border-zinc-200 dark:border-white/10">
+      <div className="flex items-center justify-start pb-1.5 mb-1.5 border-b border-zinc-200 dark:border-white/10">
         <span className="px-2 py-0.5 rounded bg-[#ec4899] text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
           AD
         </span>
       </div>
 
-      {/* Pure ExoClick Native Recommendation Ad Container */}
+      {/* Pure ExoClick Native Recommendation Ad Container (Snug fit with zero dead whitespace) */}
       <div
         ref={containerRef}
         id="exoclick-native-recommended-zone-6010176"
-        className="w-full min-h-[180px] overflow-visible block"
+        className="w-full overflow-visible block"
       />
     </section>
   );

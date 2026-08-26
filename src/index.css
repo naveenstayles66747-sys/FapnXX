@@ -1411,7 +1411,7 @@ html.dark .native-ad-section * {
   margin: 0 auto !important;
   overflow: visible !important;
   height: auto !important;
-  min-height: 250px !important;
+  min-height: 0 !important;
   background: transparent !important;
 }
 
@@ -1419,12 +1419,11 @@ html.dark .native-ad-section * {
 .eas6a97888e20 iframe {
   width: 100% !important;
   max-width: 100% !important;
-  min-height: 320px !important;
-  height: auto !important;
   border: none !important;
   display: block !important;
   background: transparent !important;
   overflow: visible !important;
+  margin: 0 auto !important;
 }
 
 #exoclick-native-recommended-zone-6010176 ins,
@@ -1433,6 +1432,7 @@ html.dark .native-ad-section * {
   display: block !important;
   margin: 0 auto !important;
   height: auto !important;
+  min-height: 0 !important;
   background: transparent !important;
 }
 
