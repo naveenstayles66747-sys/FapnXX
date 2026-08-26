@@ -1180,8 +1180,20 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                 <img
                                   src={editingVideo.thumbnail}
                                   alt="Thumbnail preview"
+                                  referrerPolicy="no-referrer"
                                   className="w-full h-full object-cover"
-                                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=400'; }}
+                                  onError={(e) => {
+                                    const target = e.currentTarget;
+                                    const currentSrc = target.src || '';
+                                    if (currentSrc.includes('streamtape') && !currentSrc.includes('thumb.streamtape.com')) {
+                                      const match = currentSrc.match(/(?:streamtape|streamta\.pe|streamhide|shvip|streamhub)[^/]*\/(?:v|e|d)\/([a-zA-Z0-9_-]+)/i);
+                                      if (match && match[1]) {
+                                        target.src = `https://thumb.streamtape.com/${match[1]}.jpg`;
+                                        return;
+                                      }
+                                    }
+                                    target.src = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=400';
+                                  }}
                                 />
                               ) : (
                                 <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-[#a19fa6]">

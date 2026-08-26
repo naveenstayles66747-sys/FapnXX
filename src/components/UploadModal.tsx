@@ -1129,6 +1129,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 <img
                   src={thumbnailUrl}
                   alt="Thumbnail Preview"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    const currentSrc = target.src || '';
+                    if (currentSrc.includes('streamtape') && !currentSrc.includes('thumb.streamtape.com')) {
+                      const match = currentSrc.match(/(?:streamtape|streamta\.pe|streamhide|shvip|streamhub)[^/]*\/(?:v|e|d)\/([a-zA-Z0-9_-]+)/i);
+                      if (match && match[1]) {
+                        target.src = `https://thumb.streamtape.com/${match[1]}.jpg`;
+                      }
+                    }
+                  }}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
