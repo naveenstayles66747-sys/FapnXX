@@ -544,51 +544,15 @@ export const UnderPlayerBanner: React.FC<{ className?: string }> = ({ className 
   );
 };
 
-const SPONSORED_RECOMMENDATIONS = [
-  {
-    id: 'rec-1',
-    title: 'Live HD Video Chat & Private Cam Shows',
-    sponsor: 'LiveHD Cams',
-    thumbnail: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
-    tag: 'Live 1080p',
-    action: 'Watch Free',
-  },
-  {
-    id: 'rec-2',
-    title: 'Meet Local Verified Singles in Your Area',
-    sponsor: 'Flirt Finder',
-    thumbnail: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80',
-    tag: 'Hookup',
-    action: 'Chat Now',
-  },
-  {
-    id: 'rec-3',
-    title: 'Interactive 3D Virtual Adult Experiences',
-    sponsor: 'VR World',
-    thumbnail: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&auto=format&fit=crop&q=80',
-    tag: 'VR 4K',
-    action: 'Play Game',
-  },
-  {
-    id: 'rec-4',
-    title: 'Top Rated Premium Adult 4K Streams',
-    sponsor: 'VIP Pass',
-    thumbnail: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=600&auto=format&fit=crop&q=80',
-    tag: 'Ultra HD',
-    action: 'Join Free',
-  },
-];
-
 /**
  * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile — Zone ID: 6010176)
- * In-Grid Multi-Row Expansion with High Contrast Day/Night Mode Text
+ * Pure ExoClick Native Recommendation Widget Tag (Zero Fake Cards)
  */
 export const NativeRecommendationAd: React.FC<{ className?: string; title?: string }> = ({
   className = '',
   title = 'Sponsor Picks & Recommendations',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [hasExoAdLoaded, setHasExoAdLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -616,13 +580,6 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
-      const observer = new MutationObserver(() => {
-        if (ins.children.length > 0 || ins.querySelector('iframe, a, img, div.exo-native-widget, .exo-card')) {
-          setHasExoAdLoaded(true);
-        }
-      });
-      observer.observe(ins, { childList: true, subtree: true });
-
       const triggerAdServe = () => {
         try {
           const win = window as any;
@@ -637,7 +594,6 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       const t3 = setTimeout(triggerAdServe, 1200);
 
       return () => {
-        observer.disconnect();
         clearTimeout(t1);
         clearTimeout(t2);
         clearTimeout(t3);
@@ -647,17 +603,9 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
     }
   }, []);
 
-  const handlePartnerClick = () => {
-    try {
-      const isMobile = window.innerWidth < 1024;
-      const zoneId = isMobile ? (AD_ZONES.MOBILE_POPUNDER || '6010174') : (AD_ZONES.DESKTOP_POPUNDER || '6010172');
-      window.open(`https://s.pemsrv.com/splash.php?idzone=${zoneId}`, '_blank', 'noopener,noreferrer');
-    } catch {}
-  };
-
   return (
     <section className={`native-ad-section w-full my-4 p-3 sm:p-4 rounded-2xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#121115] shadow-sm transition-colors ${className}`}>
-      {/* Sponsor Picks & Recommendations Header with AD Badge */}
+      {/* Header bar with AD Badge */}
       <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-zinc-200 dark:border-white/10">
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-[#ec4899] text-base">recommend</span>
@@ -670,79 +618,12 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         </span>
       </div>
 
-      {/* ExoClick Native Ad Mount (Zero footprint if empty) */}
+      {/* Pure ExoClick Native Recommendation Ad Container */}
       <div
         ref={containerRef}
         id="exoclick-native-recommended-zone-6010176"
-        className="w-full overflow-hidden"
+        className="w-full min-h-[180px] overflow-visible block"
       />
-
-      {/* 4 Native Recommendation Cards (2x2 on Mobile, 4x1 on Desktop with High-Contrast Day/Night Text) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-          {SPONSORED_RECOMMENDATIONS.map((rec) => (
-            <article
-              key={rec.id}
-              onClick={handlePartnerClick}
-              className="group cursor-pointer flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300"
-            >
-              {/* 16:9 Full-Width Thumbnail Container */}
-              <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-zinc-100 dark:bg-[#09090b]">
-                <img
-                  src={rec.thumbnail}
-                  alt={rec.title}
-                  loading="lazy"
-                  decoding="async"
-                  className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-                />
-
-                {/* Top-Right Badge: Tag */}
-                <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
-                  <span className="thumb-hd-badge bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
-                    {rec.tag}
-                  </span>
-                </div>
-
-                {/* Bottom-Left Badge: AD */}
-                <div className="thumb-duration-badge absolute bottom-2 left-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400 z-20 shadow-md">
-                  AD
-                </div>
-
-                {/* Bottom-Right Action Button */}
-                <div className="absolute bottom-2 right-2 z-20">
-                  <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[9px] sm:text-[11px] uppercase tracking-wider transition-transform active:scale-95 shadow-xl flex items-center gap-1">
-                    <span>{rec.action}</span>
-                    <span className="material-symbols-outlined text-[10px] sm:text-xs">open_in_new</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* High Contrast Day & Night Mode Text Meta Box */}
-              <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
-                <h3 className="video-card-meta-title font-bold text-xs sm:text-sm text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight group-hover:text-[#ec4899]">
-                  {rec.title}
-                </h3>
-
-                {/* Stats Row */}
-                <div className="video-card-stats-row flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[12px] sm:text-sm text-[#ec4899]">verified</span>
-                    <span className="video-card-stat-value text-[#ec4899] font-bold">{rec.sponsor}</span>
-                  </span>
-
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[12px] sm:text-sm text-zinc-500 dark:text-zinc-400">hd</span>
-                    <span className="video-card-stat-value text-zinc-800 dark:text-zinc-200 font-bold">1080p</span>
-                  </span>
-
-                  <span className="hidden sm:flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[12px] sm:text-sm text-zinc-500 dark:text-zinc-400">thumb_up</span>
-                    <span className="video-card-stat-value text-zinc-800 dark:text-zinc-200 font-bold">Free</span>
-                  </span>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
     </section>
   );
 };
