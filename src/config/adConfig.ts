@@ -20,7 +20,7 @@ export const AD_ZONES = {
 
 export const AD_CONFIG = {
   VAST_TAG_URL: AD_ZONES.IN_STREAM_VAST,
-  INTERSTITIAL_COOLDOWN_MS: 3 * 60 * 1000, // 3 minutes between interstitials
-  INTERSTITIAL_MIN_TRANSITIONS: 2,         // At least 2 eligible navigation transitions
-  OUTSTREAM_FEED_FREQUENCY: 6,             // Every 6 cards in feed
+  INTERSTITIAL_COOLDOWN_MS: 0,            // Managed directly by ExoClick server frequency capping
+  INTERSTITIAL_MIN_TRANSITIONS: 1,        // Triggers on every eligible video click/navigation
+  OUTSTREAM_FEED_FREQUENCY: 6,            // Every 6 cards in feed
 } as const;

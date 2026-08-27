@@ -60,6 +60,10 @@ class AdManager {
    * 2. At least AD_CONFIG.INTERSTITIAL_COOLDOWN_MS (3 mins) elapsed since last interstitial.
    */
   public canShowInterstitial(): boolean {
+    if (AD_CONFIG.INTERSTITIAL_MIN_TRANSITIONS <= 1 && AD_CONFIG.INTERSTITIAL_COOLDOWN_MS <= 0) {
+      return true;
+    }
+
     const transitions = this.getEligibleTransitions();
     if (transitions < AD_CONFIG.INTERSTITIAL_MIN_TRANSITIONS) {
       return false;

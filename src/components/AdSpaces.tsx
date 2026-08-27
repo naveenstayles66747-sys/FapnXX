@@ -179,7 +179,7 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
             sdk.id = 'exoclick-global-ad-provider';
             sdk.type = 'application/javascript';
             sdk.async = true;
-            sdk.src = 'https://a.pemsrv.com/ad-provider.js';
+            sdk.src = 'https://a.magsrv.com/ad-provider.js';
             document.head.appendChild(sdk);
           }
 
@@ -188,19 +188,27 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
           ins.id = 'exoclick-native-desktop-interstitial';
           ins.className = `eas${siteHash}35`;
           ins.setAttribute('data-zoneid', zoneId);
+
+          const triggerScript = document.createElement('script');
+          triggerScript.type = 'application/javascript';
+          triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+          ins.appendChild(triggerScript);
+
           document.body.appendChild(ins);
 
-          // 3. Trigger AdProvider
-          const win = window as any;
-          win.AdProvider = win.AdProvider || [];
-          win.AdProvider.push({ serve: {} });
-
-          setTimeout(() => {
+          // 3. Multi-burst trigger AdProvider
+          const triggerAdServe = () => {
             try {
+              const win = window as any;
               win.AdProvider = win.AdProvider || [];
               win.AdProvider.push({ serve: {} });
             } catch {}
-          }, 100);
+          };
+
+          triggerAdServe();
+          setTimeout(triggerAdServe, 50);
+          setTimeout(triggerAdServe, 200);
+          setTimeout(triggerAdServe, 500);
 
           adManager.commitInterstitialSuccess();
           if (onDismiss) onDismiss();
@@ -240,7 +248,7 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
             sdk.id = 'exoclick-global-ad-provider';
             sdk.type = 'application/javascript';
             sdk.async = true;
-            sdk.src = 'https://a.pemsrv.com/ad-provider.js';
+            sdk.src = 'https://a.magsrv.com/ad-provider.js';
             document.head.appendChild(sdk);
           }
 
@@ -249,19 +257,27 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
           ins.id = 'exoclick-native-mobile-interstitial';
           ins.className = `eas${siteHash}33`;
           ins.setAttribute('data-zoneid', zoneId);
+
+          const triggerScript = document.createElement('script');
+          triggerScript.type = 'application/javascript';
+          triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+          ins.appendChild(triggerScript);
+
           document.body.appendChild(ins);
 
-          // 3. Trigger AdProvider
-          const win = window as any;
-          win.AdProvider = win.AdProvider || [];
-          win.AdProvider.push({ serve: {} });
-
-          setTimeout(() => {
+          // 3. Multi-burst trigger AdProvider
+          const triggerAdServe = () => {
             try {
+              const win = window as any;
               win.AdProvider = win.AdProvider || [];
               win.AdProvider.push({ serve: {} });
             } catch {}
-          }, 100);
+          };
+
+          triggerAdServe();
+          setTimeout(triggerAdServe, 50);
+          setTimeout(triggerAdServe, 200);
+          setTimeout(triggerAdServe, 500);
 
           adManager.commitInterstitialSuccess();
           if (onDismiss) onDismiss();
