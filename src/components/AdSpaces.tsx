@@ -140,72 +140,91 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
     try {
       el.innerHTML = '';
 
-      // 1. Create Native Tag
-      const ins = document.createElement('ins');
-      ins.className = `eas${AD_ZONES.SITE_HASH}35`; // eas6a97888e35
-      ins.setAttribute('data-zoneid', AD_ZONES.DESKTOP_INTERSTITIAL || '6003174');
-      ins.style.display = 'block';
-      ins.style.margin = '0 auto';
-      ins.style.minHeight = '400px';
-      el.appendChild(ins);
+      const zoneId = AD_ZONES.DESKTOP_INTERSTITIAL || '6003174';
+      const siteHash = AD_ZONES.SITE_HASH || '6a97888e';
 
-      // 2. Ensure Provider SDK is loaded
-      if (!document.getElementById('exoclick-global-ad-provider')) {
-        const sdk = document.createElement('script');
-        sdk.id = 'exoclick-global-ad-provider';
-        sdk.type = 'application/javascript';
-        sdk.async = true;
-        sdk.src = 'https://a.magsrv.com/ad-provider.js';
-        document.head.appendChild(sdk);
-      }
+      // 1. Create Isolated Sandboxed iframe for 100% Reliable Execution in SPA
+      const frame = document.createElement('iframe');
+      frame.setAttribute('scrolling', 'no');
+      frame.setAttribute('frameborder', '0');
+      frame.setAttribute('allowtransparency', 'true');
+      frame.setAttribute('allow', 'autoplay; fullscreen');
+      frame.style.width = '100%';
+      frame.style.height = '100%';
+      frame.style.minHeight = '420px';
+      frame.style.border = 'none';
+      frame.style.display = 'block';
 
-      // 3. Inject inline trigger script
-      const triggerScript = document.createElement('script');
-      triggerScript.type = 'application/javascript';
-      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
-      el.appendChild(triggerScript);
+      frame.srcdoc = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    ins {
+      display: block !important;
+      margin: 0 auto !important;
+      max-width: 100% !important;
+      min-height: 350px !important;
+    }
+  </style>
+</head>
+<body>
+  <ins class="eas${siteHash}35" data-zoneid="${zoneId}"></ins>
+  <script async type="application/javascript" src="https://a.pemsrv.com/ad-provider.js"></script>
+  <script>(window.AdProvider = window.AdProvider || []).push({"serve": {}});</script>
+</body>
+</html>`;
 
-      const triggerAdServe = () => {
-        if (!isMounted) return;
-        try {
-          const win = window as any;
-          win.AdProvider = win.AdProvider || [];
-          win.AdProvider.push({ serve: {} });
-        } catch {}
-      };
-
-      triggerAdServe();
-      timers.push(setTimeout(triggerAdServe, 50));
-      timers.push(setTimeout(triggerAdServe, 200));
-      timers.push(setTimeout(triggerAdServe, 600));
-      timers.push(setTimeout(triggerAdServe, 1500));
-
+      el.appendChild(frame);
       adManager.commitInterstitialSuccess();
 
-      const checkIframeTimer = setInterval(() => {
-        if (el.querySelector('iframe')) {
-          setIsLoading(false);
-          clearInterval(checkIframeTimer);
-        }
-      }, 200);
+      frame.onload = () => {
+        if (!isMounted) return;
+        setTimeout(() => {
+          if (isMounted) setIsLoading(false);
+        }, 800);
+      };
+
+      const checkAdTimer = setInterval(() => {
+        try {
+          const doc = frame.contentDocument || frame.contentWindow?.document;
+          if (doc) {
+            const ins = doc.querySelector('ins');
+            if (ins && (ins.children.length > 0 || ins.innerHTML.length > 20 || ins.clientHeight > 40)) {
+              setIsLoading(false);
+              clearInterval(checkAdTimer);
+            }
+          }
+        } catch {}
+      }, 300);
 
       timers.push(
         setTimeout(() => {
-          if (!el.querySelector('iframe')) {
-            handleDismiss();
-          }
-        }, 10000)
+          if (isMounted) setIsLoading(false);
+        }, 2200)
       );
 
       timers.push(
         setTimeout(() => {
           handleDismiss();
-        }, 40000)
+        }, 45000)
       );
 
       return () => {
         isMounted = false;
-        clearInterval(checkIframeTimer);
+        clearInterval(checkAdTimer);
         timers.forEach((t) => clearTimeout(t));
       };
     } catch (e) {
@@ -229,7 +248,7 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
 
       {/* Loading state indicator */}
       {isLoading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none text-zinc-400">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none text-zinc-400 z-0">
           <div className="w-9 h-9 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
           <span className="text-xs font-mono tracking-wider uppercase text-zinc-400">Loading Sponsor Ad...</span>
         </div>
@@ -238,7 +257,7 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
       <div
         ref={containerRef}
         id="exoclick-desktop-interstitial"
-        className="z-[99999] max-w-full max-h-full flex items-center justify-center min-h-[400px] relative z-10"
+        className="z-[99999] w-full max-w-2xl flex items-center justify-center min-h-[420px] relative z-10"
         aria-label="Sponsored Interstitial"
       />
     </div>
@@ -283,66 +302,85 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
     try {
       el.innerHTML = '';
 
-      // 1. Create Native Tag for Zone 6003180
-      const ins = document.createElement('ins');
-      ins.className = `eas${AD_ZONES.SITE_HASH}33`; // eas6a97888e33
-      ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INTERSTITIAL || '6003180');
-      ins.style.display = 'block';
-      ins.style.margin = '0 auto';
-      ins.style.minHeight = '300px';
-      el.appendChild(ins);
+      const zoneId = AD_ZONES.MOBILE_INTERSTITIAL || '6003180';
+      const siteHash = AD_ZONES.SITE_HASH || '6a97888e';
 
-      // 2. Ensure Provider SDK is loaded from a.magsrv.com
-      if (!document.getElementById('exoclick-global-ad-provider')) {
-        const sdk = document.createElement('script');
-        sdk.id = 'exoclick-global-ad-provider';
-        sdk.type = 'application/javascript';
-        sdk.async = true;
-        sdk.src = 'https://a.magsrv.com/ad-provider.js';
-        document.head.appendChild(sdk);
-      }
+      // 1. Create Isolated Sandboxed iframe for 100% Reliable Execution in SPA
+      const frame = document.createElement('iframe');
+      frame.setAttribute('scrolling', 'no');
+      frame.setAttribute('frameborder', '0');
+      frame.setAttribute('allowtransparency', 'true');
+      frame.setAttribute('allow', 'autoplay; fullscreen');
+      frame.style.width = '100%';
+      frame.style.height = '100%';
+      frame.style.minHeight = '320px';
+      frame.style.border = 'none';
+      frame.style.display = 'block';
 
-      // 3. Inject inline trigger script
-      const triggerScript = document.createElement('script');
-      triggerScript.type = 'application/javascript';
-      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
-      el.appendChild(triggerScript);
+      // Official snippet from ExoClick for Mobile Fullpage Interstitial (eas6a97888e33, zone 6003180)
+      frame.srcdoc = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    ins {
+      display: block !important;
+      margin: 0 auto !important;
+      max-width: 100% !important;
+      min-height: 250px !important;
+    }
+  </style>
+</head>
+<body>
+  <ins class="eas${siteHash}33" data-zoneid="${zoneId}"></ins>
+  <script async type="application/javascript" src="https://a.pemsrv.com/ad-provider.js"></script>
+  <script>(window.AdProvider = window.AdProvider || []).push({"serve": {}});</script>
+</body>
+</html>`;
 
-      // 4. Repeated trigger bursts
-      const triggerAdServe = () => {
-        if (!isMounted) return;
-        try {
-          const win = window as any;
-          win.AdProvider = win.AdProvider || [];
-          win.AdProvider.push({ serve: {} });
-        } catch {}
-      };
-
-      triggerAdServe();
-      timers.push(setTimeout(triggerAdServe, 50));
-      timers.push(setTimeout(triggerAdServe, 200));
-      timers.push(setTimeout(triggerAdServe, 600));
-      timers.push(setTimeout(triggerAdServe, 1500));
-
+      el.appendChild(frame);
       adManager.commitInterstitialSuccess();
 
-      // Check if iframe was injected to hide spinner
-      const checkIframeTimer = setInterval(() => {
-        if (el.querySelector('iframe')) {
-          setIsLoading(false);
-          clearInterval(checkIframeTimer);
-        }
-      }, 200);
+      frame.onload = () => {
+        if (!isMounted) return;
+        setTimeout(() => {
+          if (isMounted) setIsLoading(false);
+        }, 800);
+      };
 
-      // Auto safety close after 40 seconds (or 10s if completely blank zero fill)
+      const checkAdTimer = setInterval(() => {
+        try {
+          const doc = frame.contentDocument || frame.contentWindow?.document;
+          if (doc) {
+            const ins = doc.querySelector('ins');
+            if (ins && (ins.children.length > 0 || ins.innerHTML.length > 20 || ins.clientHeight > 40)) {
+              setIsLoading(false);
+              clearInterval(checkAdTimer);
+            }
+          }
+        } catch {}
+      }, 300);
+
+      // Auto-hide loading spinner after max 2.2s so it NEVER covers the ad
       timers.push(
         setTimeout(() => {
-          if (!el.querySelector('iframe')) {
-            handleDismiss();
-          }
-        }, 10000)
+          if (isMounted) setIsLoading(false);
+        }, 2200)
       );
 
+      // Auto safety close after 40 seconds
       timers.push(
         setTimeout(() => {
           handleDismiss();
@@ -351,7 +389,7 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
 
       return () => {
         isMounted = false;
-        clearInterval(checkIframeTimer);
+        clearInterval(checkAdTimer);
         timers.forEach((t) => clearTimeout(t));
       };
     } catch (e) {
@@ -375,7 +413,7 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
 
       {/* Loading state indicator */}
       {isLoading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none text-zinc-400">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none text-zinc-400 z-0">
           <div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
           <span className="text-[11px] font-mono tracking-wider uppercase text-zinc-400">Loading Sponsor Ad...</span>
         </div>
@@ -384,7 +422,7 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
       <div
         ref={containerRef}
         id="exoclick-mobile-interstitial"
-        className="w-full max-w-sm flex items-center justify-center min-h-[300px] relative z-10"
+        className="w-full max-w-sm flex items-center justify-center min-h-[320px] relative z-10"
         aria-label="Sponsored Mobile Interstitial"
       />
     </div>
