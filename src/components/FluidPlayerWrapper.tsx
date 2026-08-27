@@ -172,12 +172,23 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     let fallbackSafetyTimer: NodeJS.Timeout | null = null;
     let directVastStarted = false;
 
-    // Concurrently fetch VAST XML so if Fluid Player is slow or blocked, direct VAST plays instantly
-    fetchVastAd(VAST_TAG_URL, 3500)
+    // 1. Ensure Fluid Player CDN script is loaded
+    if (typeof window !== 'undefined' && !(window as any).fluidPlayer) {
+      const existingScript = document.getElementById('fluidplayer-cdn-script');
+      if (!existingScript) {
+        const script = document.createElement('script');
+        script.id = 'fluidplayer-cdn-script';
+        script.src = 'https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js';
+        script.async = true;
+        document.head.appendChild(script);
+      }
+    }
+
+    // 2. Concurrently fetch parsed VAST XML for fast fallback
+    fetchVastAd(VAST_TAG_URL, 4500)
       .then((parsedAd) => {
         if (!isMounted || contentStartedRef.current) return;
         if (parsedAd && parsedAd.mediaUrl) {
-          // If Fluid Player has not already started the ad video within 1.5 seconds, switch to direct VAST
           setTimeout(() => {
             if (isMounted && !contentStartedRef.current && isPrerollActive && !playerInstanceRef.current) {
               directVastStarted = true;
@@ -186,12 +197,12 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               setSkipRemainingSeconds(parsedAd.skipOffsetSeconds || 5);
               fireTrackingPixel(parsedAd.impressionUrls);
             }
-          }, 1500);
+          }, 1800);
         }
       })
       .catch(() => {});
 
-    // Try initializing Official Fluid Player VAST
+    // 3. Try initializing Official Fluid Player VAST
     let attempts = 0;
     const initFluidVast = () => {
       if (!isMounted || contentStartedRef.current || directVastStarted) return;
@@ -200,101 +211,103 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       const win = window as any;
       const targetEl = document.getElementById(prerollPlayerId) as HTMLVideoElement;
 
-      if (!targetEl) {
-        if (isMounted && attempts < 10) {
-          attempts += 1;
-          setTimeout(initFluidVast, 60);
+      if (!targetEl || typeof win.fluidPlayer !== 'function') {
+        attempts += 1;
+        if (isMounted && attempts < 30) {
+          setTimeout(initFluidVast, 150);
+        } else if (isMounted && !directVastStarted && attempts >= 30) {
+          // If fluid player CDN or video element took too long, transition to main content
+          startMainContent();
         }
         return;
       }
 
-      if (typeof win.fluidPlayer === 'function') {
-        try {
-          const instance = win.fluidPlayer(prerollPlayerId, {
-            layoutControls: {
-              primaryColor: '#ec4899',
-              posterImage: '',
-              playButtonShowing: true,
-              playPauseAnimation: true,
-              fillToContainer: true,
-              autoPlay: true,
-              allowMutedAutoplay: true,
-              mute: true, // Muted autoplay ensures 100% browser compatibility without getting blocked
-              controlBar: {
-                autoHide: true,
-                autoHideTimeout: 2,
-                animated: true,
+      try {
+        const instance = win.fluidPlayer(prerollPlayerId, {
+          layoutControls: {
+            primaryColor: '#ec4899',
+            posterImage: '',
+            playButtonShowing: true,
+            playPauseAnimation: true,
+            fillToContainer: true,
+            autoPlay: true,
+            allowMutedAutoplay: true,
+            mute: true, // Muted autoplay ensures 100% browser compatibility without getting blocked
+            controlBar: {
+              autoHide: true,
+              autoHideTimeout: 2,
+              animated: true,
+            },
+          },
+          vastOptions: {
+            adList: [
+              {
+                roll: 'preRoll',
+                vastTag: VAST_TAG_URL,
+                adClickable: true,
+                vpaidMode: 'insecure',
+              },
+            ],
+            allowVPAID: true,
+            vastAdvanced: {
+              vastLoadedCallback: () => {
+                if (isMounted) setIsAdLoading(false);
+              },
+              vastVideoStartedCallback: () => {
+                if (isMounted) {
+                  setIsAdLoading(false);
+                  if (fallbackSafetyTimer) clearTimeout(fallbackSafetyTimer);
+                }
+              },
+              noVastVideoCallback: () => {
+                if (isMounted) startMainContent();
+              },
+              vastVideoSkippedCallback: () => {
+                if (isMounted) startMainContent();
+              },
+              vastVideoEndedCallback: () => {
+                if (isMounted) startMainContent();
               },
             },
-            vastOptions: {
-              adList: [
-                {
-                  roll: 'preRoll',
-                  vastTag: VAST_TAG_URL,
-                  adClickable: true,
-                  vpaidMode: 'insecure',
-                },
-              ],
-              allowVPAID: true,
-              vastAdvanced: {
-                vastLoadedCallback: () => {
-                  if (isMounted) setIsAdLoading(false);
-                },
-                vastVideoStartedCallback: () => {
-                  if (isMounted) {
-                    setIsAdLoading(false);
-                    if (fallbackSafetyTimer) clearTimeout(fallbackSafetyTimer);
-                  }
-                },
-                noVastVideoCallback: () => {
-                  if (isMounted) startMainContent();
-                },
-                vastVideoSkippedCallback: () => {
-                  if (isMounted) startMainContent();
-                },
-                vastVideoEndedCallback: () => {
-                  if (isMounted) startMainContent();
-                },
-              },
-            },
-          });
+          },
+        });
 
-          playerInstanceRef.current = instance;
+        playerInstanceRef.current = instance;
 
-          targetEl.addEventListener('playing', () => {
-            if (isMounted) {
-              setIsAdLoading(false);
-              if (fallbackSafetyTimer) clearTimeout(fallbackSafetyTimer);
-            }
-          });
-
-          targetEl.addEventListener('ended', () => {
-            if (isMounted) startMainContent();
-          });
-        } catch (err) {
-          console.warn('[FluidPlayer] VAST initialization notice:', err);
-          if (isMounted && !directVastStarted) {
-            setTimeout(() => {
-              if (isMounted && !contentStartedRef.current) startMainContent();
-            }, 1000);
+        targetEl.addEventListener('playing', () => {
+          if (isMounted) {
+            setIsAdLoading(false);
+            if (fallbackSafetyTimer) clearTimeout(fallbackSafetyTimer);
           }
-        }
-      } else {
-        attempts += 1;
-        if (attempts <= 8) {
-          setTimeout(initFluidVast, 100);
+        });
+
+        targetEl.addEventListener('timeupdate', () => {
+          if (isMounted && targetEl.currentTime > 0.2) {
+            setIsAdLoading(false);
+          }
+        });
+
+        targetEl.addEventListener('ended', () => {
+          if (isMounted) startMainContent();
+        });
+      } catch (err) {
+        console.warn('[FluidPlayer] VAST initialization notice:', err);
+        if (isMounted && !directVastStarted) {
+          setTimeout(() => {
+            if (isMounted && !contentStartedRef.current) startMainContent();
+          }, 1500);
         }
       }
     };
 
-    const initTimer = setTimeout(initFluidVast, 40);
+    const initTimer = setTimeout(initFluidVast, 80);
 
-    // Safeguard fallback: if ad network drops or no fill occurs within 6 seconds, transition to main video
+    // Safeguard fallback: if ad network drops or no fill occurs within 12 seconds, transition to main video
     fallbackSafetyTimer = setTimeout(() => {
       if (isMounted && !contentStartedRef.current) {
         startMainContent();
       }
-    }, 6000);
+    }, 12000);
 
     return () => {
       isMounted = false;

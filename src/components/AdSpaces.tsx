@@ -150,11 +150,9 @@ export const StickyBottomLeaderboard: React.FC = () => {
 export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = ({ onDismiss }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isActive, setIsActive] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const handleDismiss = useCallback(() => {
     setIsActive(false);
-    setIsLoading(true);
     if (onDismiss) onDismiss();
   }, [onDismiss]);
 
@@ -163,7 +161,6 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
       const detail = (e as CustomEvent).detail;
       if (detail && detail.target === 'desktop' && window.innerWidth >= 1024) {
         setIsActive(true);
-        setIsLoading(true);
       }
     };
 
@@ -185,88 +182,51 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
       const zoneId = AD_ZONES.DESKTOP_INTERSTITIAL || '6003174';
       const siteHash = AD_ZONES.SITE_HASH || '6a97888e';
 
-      // 1. Create Isolated Sandboxed iframe for 100% Reliable Execution in SPA
-      const frame = document.createElement('iframe');
-      frame.setAttribute('scrolling', 'no');
-      frame.setAttribute('frameborder', '0');
-      frame.setAttribute('allowtransparency', 'true');
-      frame.setAttribute('allow', 'autoplay; fullscreen');
-      frame.style.width = '100%';
-      frame.style.height = '100%';
-      frame.style.minHeight = '420px';
-      frame.style.border = 'none';
-      frame.style.display = 'block';
+      // 1. Ensure Global Provider SDK is present
+      if (!document.getElementById('exoclick-global-ad-provider')) {
+        const sdk = document.createElement('script');
+        sdk.id = 'exoclick-global-ad-provider';
+        sdk.type = 'application/javascript';
+        sdk.async = true;
+        sdk.src = 'https://a.pemsrv.com/ad-provider.js';
+        document.head.appendChild(sdk);
+      }
 
-      frame.srcdoc = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-    }
-    ins {
-      display: block !important;
-      margin: 0 auto !important;
-      max-width: 100% !important;
-      min-height: 350px !important;
-    }
-  </style>
-</head>
-<body>
-  <ins class="eas${siteHash}35" data-zoneid="${zoneId}"></ins>
-  <script async type="application/javascript" src="https://a.pemsrv.com/ad-provider.js"></script>
-  <script>(window.AdProvider = window.AdProvider || []).push({"serve": {}});</script>
-</body>
-</html>`;
+      // 2. Direct Native Tag mount
+      const ins = document.createElement('ins');
+      ins.className = `eas${siteHash}35`;
+      ins.setAttribute('data-zoneid', zoneId);
+      ins.style.display = 'block';
+      ins.style.margin = '0 auto';
+      ins.style.minWidth = '300px';
+      ins.style.minHeight = '250px';
+      el.appendChild(ins);
 
-      el.appendChild(frame);
-      adManager.commitInterstitialSuccess();
+      // 3. Inline trigger script
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
 
-      frame.onload = () => {
+      const triggerAdServe = () => {
         if (!isMounted) return;
-        setTimeout(() => {
-          if (isMounted) setIsLoading(false);
-        }, 800);
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
       };
 
-      const checkAdTimer = setInterval(() => {
-        try {
-          const doc = frame.contentDocument || frame.contentWindow?.document;
-          if (doc) {
-            const ins = doc.querySelector('ins');
-            if (ins && (ins.children.length > 0 || ins.innerHTML.length > 20 || ins.clientHeight > 40)) {
-              setIsLoading(false);
-              clearInterval(checkAdTimer);
-            }
-          }
-        } catch {}
-      }, 300);
+      triggerAdServe();
+      timers.push(setTimeout(triggerAdServe, 50));
+      timers.push(setTimeout(triggerAdServe, 200));
+      timers.push(setTimeout(triggerAdServe, 600));
+      timers.push(setTimeout(triggerAdServe, 1500));
 
-      timers.push(
-        setTimeout(() => {
-          if (isMounted) setIsLoading(false);
-        }, 2200)
-      );
-
-      timers.push(
-        setTimeout(() => {
-          handleDismiss();
-        }, 45000)
-      );
+      adManager.commitInterstitialSuccess();
 
       return () => {
         isMounted = false;
-        clearInterval(checkAdTimer);
         timers.forEach((t) => clearTimeout(t));
       };
     } catch (e) {
@@ -278,28 +238,21 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
   if (!isActive) return null;
 
   return (
-    <div className="hidden lg:flex fixed inset-0 z-[99999] items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-200">
+    <div className="hidden lg:flex fixed inset-0 z-[99999] items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200 pointer-events-auto">
+      {/* Floating User Close Button (Only closes when user explicitly clicks ✕) */}
       <button
         type="button"
         onClick={handleDismiss}
-        className="absolute top-6 right-6 z-[100000] bg-zinc-800/90 hover:bg-zinc-700 active:scale-95 text-white rounded-full w-10 h-10 flex items-center justify-center text-base font-bold border border-white/20 shadow-2xl cursor-pointer pointer-events-auto transition-all"
+        className="absolute top-6 right-6 z-[100000] bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-white rounded-full w-10 h-10 flex items-center justify-center text-base font-bold border border-white/20 shadow-2xl cursor-pointer pointer-events-auto transition-all"
         title="Close Ad"
       >
         ✕
       </button>
 
-      {/* Loading state indicator */}
-      {isLoading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none text-zinc-400 z-0">
-          <div className="w-9 h-9 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
-          <span className="text-xs font-mono tracking-wider uppercase text-zinc-400">Loading Sponsor Ad...</span>
-        </div>
-      )}
-
       <div
         ref={containerRef}
         id="exoclick-desktop-interstitial"
-        className="z-[99999] w-full max-w-2xl flex items-center justify-center min-h-[420px] relative z-10"
+        className="z-[99999] w-full max-w-2xl flex items-center justify-center min-h-[300px] relative z-10"
         aria-label="Sponsored Interstitial"
       />
     </div>
@@ -312,11 +265,9 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
 export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = ({ onDismiss }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isActive, setIsActive] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const handleDismiss = useCallback(() => {
     setIsActive(false);
-    setIsLoading(true);
     if (onDismiss) onDismiss();
   }, [onDismiss]);
 
@@ -325,7 +276,6 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
       const detail = (e as CustomEvent).detail;
       if (detail && detail.target === 'mobile' && window.innerWidth < 1024) {
         setIsActive(true);
-        setIsLoading(true);
       }
     };
 
@@ -347,91 +297,51 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
       const zoneId = AD_ZONES.MOBILE_INTERSTITIAL || '6003180';
       const siteHash = AD_ZONES.SITE_HASH || '6a97888e';
 
-      // 1. Create Isolated Sandboxed iframe for 100% Reliable Execution in SPA
-      const frame = document.createElement('iframe');
-      frame.setAttribute('scrolling', 'no');
-      frame.setAttribute('frameborder', '0');
-      frame.setAttribute('allowtransparency', 'true');
-      frame.setAttribute('allow', 'autoplay; fullscreen');
-      frame.style.width = '100%';
-      frame.style.height = '100%';
-      frame.style.minHeight = '320px';
-      frame.style.border = 'none';
-      frame.style.display = 'block';
+      // 1. Ensure Global Provider SDK is present
+      if (!document.getElementById('exoclick-global-ad-provider')) {
+        const sdk = document.createElement('script');
+        sdk.id = 'exoclick-global-ad-provider';
+        sdk.type = 'application/javascript';
+        sdk.async = true;
+        sdk.src = 'https://a.pemsrv.com/ad-provider.js';
+        document.head.appendChild(sdk);
+      }
 
-      // Official snippet from ExoClick for Mobile Fullpage Interstitial (eas6a97888e33, zone 6003180)
-      frame.srcdoc = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-    }
-    ins {
-      display: block !important;
-      margin: 0 auto !important;
-      max-width: 100% !important;
-      min-height: 250px !important;
-    }
-  </style>
-</head>
-<body>
-  <ins class="eas${siteHash}33" data-zoneid="${zoneId}"></ins>
-  <script async type="application/javascript" src="https://a.pemsrv.com/ad-provider.js"></script>
-  <script>(window.AdProvider = window.AdProvider || []).push({"serve": {}});</script>
-</body>
-</html>`;
+      // 2. Direct Native Tag mount (eas6a97888e33, zone 6003180)
+      const ins = document.createElement('ins');
+      ins.className = `eas${siteHash}33`;
+      ins.setAttribute('data-zoneid', zoneId);
+      ins.style.display = 'block';
+      ins.style.margin = '0 auto';
+      ins.style.minWidth = '300px';
+      ins.style.minHeight = '250px';
+      el.appendChild(ins);
 
-      el.appendChild(frame);
-      adManager.commitInterstitialSuccess();
+      // 3. Inject inline trigger script
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
 
-      frame.onload = () => {
+      const triggerAdServe = () => {
         if (!isMounted) return;
-        setTimeout(() => {
-          if (isMounted) setIsLoading(false);
-        }, 800);
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
       };
 
-      const checkAdTimer = setInterval(() => {
-        try {
-          const doc = frame.contentDocument || frame.contentWindow?.document;
-          if (doc) {
-            const ins = doc.querySelector('ins');
-            if (ins && (ins.children.length > 0 || ins.innerHTML.length > 20 || ins.clientHeight > 40)) {
-              setIsLoading(false);
-              clearInterval(checkAdTimer);
-            }
-          }
-        } catch {}
-      }, 300);
+      triggerAdServe();
+      timers.push(setTimeout(triggerAdServe, 50));
+      timers.push(setTimeout(triggerAdServe, 200));
+      timers.push(setTimeout(triggerAdServe, 600));
+      timers.push(setTimeout(triggerAdServe, 1500));
 
-      // Auto-hide loading spinner after max 2.2s so it NEVER covers the ad
-      timers.push(
-        setTimeout(() => {
-          if (isMounted) setIsLoading(false);
-        }, 2200)
-      );
-
-      // Auto safety close after 40 seconds
-      timers.push(
-        setTimeout(() => {
-          handleDismiss();
-        }, 40000)
-      );
+      adManager.commitInterstitialSuccess();
 
       return () => {
         isMounted = false;
-        clearInterval(checkAdTimer);
         timers.forEach((t) => clearTimeout(t));
       };
     } catch (e) {
@@ -443,28 +353,21 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
   if (!isActive) return null;
 
   return (
-    <div className="block lg:hidden fixed inset-0 z-[99999] pointer-events-auto bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-3 animate-in fade-in duration-200">
+    <div className="block lg:hidden fixed inset-0 z-[99999] pointer-events-auto bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-3 animate-in fade-in duration-200">
+      {/* Floating User Close Button (Only closes when user explicitly clicks ✕) */}
       <button
         type="button"
         onClick={handleDismiss}
-        className="absolute top-4 right-4 z-[100000] bg-zinc-800/90 hover:bg-zinc-700 active:scale-95 text-white rounded-full w-10 h-10 flex items-center justify-center text-sm font-bold border border-white/20 shadow-2xl cursor-pointer pointer-events-auto transition-all"
+        className="absolute top-4 right-4 z-[100000] bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-white rounded-full w-10 h-10 flex items-center justify-center text-sm font-bold border border-white/20 shadow-2xl cursor-pointer pointer-events-auto transition-all"
         title="Close Ad"
       >
         ✕
       </button>
 
-      {/* Loading state indicator */}
-      {isLoading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none text-zinc-400 z-0">
-          <div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
-          <span className="text-[11px] font-mono tracking-wider uppercase text-zinc-400">Loading Sponsor Ad...</span>
-        </div>
-      )}
-
       <div
         ref={containerRef}
         id="exoclick-mobile-interstitial"
-        className="w-full max-w-sm flex items-center justify-center min-h-[320px] relative z-10"
+        className="w-full max-w-sm flex items-center justify-center min-h-[300px] relative z-10"
         aria-label="Sponsored Mobile Interstitial"
       />
     </div>
@@ -540,7 +443,6 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
   reloadKey,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [hasAdLoaded, setHasAdLoaded] = useState<boolean>(false);
 
   const renderAd = useCallback(() => {
     const el = containerRef.current;
@@ -551,7 +453,6 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
 
     try {
       el.innerHTML = '';
-      setHasAdLoaded(false);
 
       // 1. Ensure Global Provider SDK is loaded
       if (!document.getElementById('exoclick-global-ad-provider')) {
@@ -569,7 +470,6 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
       ins.setAttribute('data-zoneid', AD_ZONES.OUTSTREAM_VIDEO || '6003190');
       ins.style.display = 'block';
       ins.style.width = '100%';
-      ins.style.height = '100%';
       ins.style.minHeight = '180px';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
@@ -597,32 +497,8 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
       timers.push(setTimeout(triggerAdServe, 1200));
       timers.push(setTimeout(triggerAdServe, 2500));
 
-      // 5. Observe container for injected ExoClick elements (iframe, video, wrapper)
-      const observer = new MutationObserver(() => {
-        if (!isMounted) return;
-        const hasContent =
-          el.querySelector('iframe, video, a, [class*="exo"], [id*="exo"]') !== null ||
-          ins.children.length > 0 ||
-          ins.clientHeight > 50;
-        if (hasContent) {
-          setHasAdLoaded(true);
-        }
-      });
-      observer.observe(el, { childList: true, subtree: true, attributes: true });
-
-      // Fallback check after 1.5s
-      timers.push(
-        setTimeout(() => {
-          if (!isMounted) return;
-          if (el.querySelector('iframe, video, a, [class*="exo"]') || ins.children.length > 0) {
-            setHasAdLoaded(true);
-          }
-        }, 1500)
-      );
-
       return () => {
         isMounted = false;
-        observer.disconnect();
         timers.forEach((t) => clearTimeout(t));
       };
     } catch (e) {
@@ -652,18 +528,6 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
           id="exoclick-outstream-zone-6003190"
           className="w-full h-full min-h-[180px] flex items-center justify-center overflow-hidden z-10 pointer-events-auto relative"
         />
-
-        {/* Loading Spinner & Shimmer — automatically disappears when ad loads */}
-        {!hasAdLoaded && (
-          <div className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 bg-zinc-100 dark:bg-[#09090b] pointer-events-none transition-opacity duration-300">
-            <div className="w-10 h-10 rounded-full border-2 border-rose-500/30 border-t-rose-500 animate-spin flex items-center justify-center">
-              <span className="material-symbols-outlined text-rose-500 text-sm">play_arrow</span>
-            </div>
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Loading Video Ad...
-            </span>
-          </div>
-        )}
 
         <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
           <span className="thumb-hd-badge bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
