@@ -152,11 +152,12 @@ export const StickyBottomLeaderboard: React.FC = () => {
 
 /**
  * Sticky Bottom Banner Ad for Mobile (Zone ID: 6003172 / MOBILE_STICKY_BANNER)
- * Displays a non-intrusive sticky 300x50 / 320x50 banner on mobile devices.
+ * Displays a clean, non-intrusive sticky bottom banner with a dedicated close bar.
  */
 export const MobileStickyBanner: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDismissed, setIsDismissed] = useState<boolean>(false);
+  const [hasAdLoaded, setHasAdLoaded] = useState<boolean>(false);
 
   const renderAd = useCallback(() => {
     if (isDismissed || typeof window === 'undefined' || window.innerWidth >= 1024) return;
@@ -170,6 +171,7 @@ export const MobileStickyBanner: React.FC = () => {
       ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_STICKY_BANNER || '6003172');
       ins.style.display = 'block';
       ins.style.margin = '0 auto';
+      ins.style.maxWidth = '100%';
       el.appendChild(ins);
 
       const triggerScript = document.createElement('script');
@@ -186,14 +188,23 @@ export const MobileStickyBanner: React.FC = () => {
       };
 
       triggerAdServe();
-      setTimeout(triggerAdServe, 100);
+      setTimeout(triggerAdServe, 120);
+
+      // Check if ad actually loaded
+      const checkTimer = setTimeout(() => {
+        if (el && (el.querySelector('iframe') || (ins && ins.children.length > 1))) {
+          setHasAdLoaded(true);
+        }
+      }, 800);
+
+      return () => clearTimeout(checkTimer);
     } catch (e) {
       console.warn('[ExoClick] Mobile sticky banner error:', e);
     }
   }, [isDismissed]);
 
   useEffect(() => {
-    renderAd();
+    const cleanup = renderAd();
     const handleTrigger = () => {
       try {
         const win = window as any;
@@ -202,7 +213,10 @@ export const MobileStickyBanner: React.FC = () => {
       } catch {}
     };
     window.addEventListener('exoclick-refresh-ads', handleTrigger);
-    return () => window.removeEventListener('exoclick-refresh-ads', handleTrigger);
+    return () => {
+      window.removeEventListener('exoclick-refresh-ads', handleTrigger);
+      if (cleanup) cleanup();
+    };
   }, [renderAd]);
 
   if (isDismissed) return null;
@@ -211,21 +225,38 @@ export const MobileStickyBanner: React.FC = () => {
     <aside
       id="exoclick-mobile-sticky-banner"
       aria-label="Sponsored Mobile Advertisement"
-      className="flex lg:hidden fixed bottom-14 left-0 right-0 z-[45] flex-col items-center justify-center pointer-events-auto bg-[#09090b]/95 backdrop-blur-md border-t border-white/10 pb-0.5"
+      className="flex lg:hidden fixed bottom-[52px] left-0 right-0 z-[45] flex-col items-center justify-center pointer-events-auto px-2 pb-1"
     >
-      <div className="relative w-full max-w-sm flex items-center justify-center py-1">
-        <button
-          type="button"
-          onClick={() => setIsDismissed(true)}
-          className="absolute -top-2.5 right-2 bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 text-[10px] rounded-full w-5 h-5 flex items-center justify-center cursor-pointer border border-white/10 shadow z-10"
-          title="Close advertisement"
-        >
-          ✕
-        </button>
-        <div
-          ref={containerRef}
-          className="w-full flex items-center justify-center overflow-hidden min-h-[50px]"
-        />
+      <div className="relative w-full max-w-[360px] bg-zinc-950/95 dark:bg-[#121115]/95 border border-zinc-700/60 dark:border-white/15 rounded-t-2xl shadow-[0_-6px_25px_rgba(0,0,0,0.85)] backdrop-blur-md overflow-hidden flex flex-col items-center">
+        {/* Dedicated Control & Attribution Bar */}
+        <div className="w-full flex items-center justify-between px-3 py-1 bg-zinc-900/90 dark:bg-black/60 border-b border-white/10 select-none">
+          <div className="flex items-center gap-1.5">
+            <span className="px-1.5 py-0.5 rounded bg-[#ec4899] text-white text-[9px] font-black uppercase tracking-wider">
+              AD
+            </span>
+            <span className="text-[10px] text-zinc-400 font-medium tracking-wide">
+              Sponsored
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsDismissed(true)}
+            className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-800 hover:bg-rose-600 active:scale-95 text-zinc-300 hover:text-white text-[10px] font-bold border border-white/10 shadow cursor-pointer transition-all"
+            title="Close advertisement"
+          >
+            <span>Close</span>
+            <span className="font-extrabold text-[11px]">✕</span>
+          </button>
+        </div>
+
+        {/* Ad Container with Responsive Scale */}
+        <div className="w-full flex items-center justify-center p-1 overflow-hidden min-h-[50px] max-h-[120px]">
+          <div
+            ref={containerRef}
+            className="w-full flex items-center justify-center overflow-hidden"
+          />
+        </div>
       </div>
     </aside>
   );

@@ -1452,10 +1452,25 @@ ins[data-zoneid="6003190"]:empty {
   height: 0 !important;
   min-height: 0 !important;
   padding: 0 !important;
-  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+/* =====================================================================
+   EXOCLICK MOBILE STICKY BOTTOM BANNER STYLING
+   ===================================================================== */
+#exoclick-mobile-sticky-banner ins,
+#exoclick-mobile-sticky-banner iframe {
+  max-width: 100% !important;
+  max-height: 100px !important;
+  object-fit: contain !important;
+  margin: 0 auto !important;
+  display: block !important;
   border: none !important;
   background: transparent !important;
-  box-shadow: none !important;
+}
+
+#exoclick-mobile-sticky-banner:empty {
+  display: none !important;
 }
 
 /* =====================================================================
