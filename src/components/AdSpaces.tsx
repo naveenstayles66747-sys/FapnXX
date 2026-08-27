@@ -271,7 +271,7 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
 
           document.body.appendChild(ins);
 
-          // 3. Trigger AdProvider
+          // 3. Trigger AdProvider with real DOM verification
           const triggerAdServe = () => {
             try {
               const win = window as any;
@@ -281,10 +281,35 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
           };
 
           triggerAdServe();
-          setTimeout(triggerAdServe, 120);
 
-          adManager.commitInterstitialSuccess();
-          if (onDismiss) onDismiss();
+          // Verify actual ad injection into DOM before committing success
+          let isConfirmed = false;
+          const observer = new MutationObserver(() => {
+            if (ins && (ins.children.length > 1 || ins.querySelector('iframe, div, a, img, svg'))) {
+              if (!isConfirmed) {
+                isConfirmed = true;
+                observer.disconnect();
+                adManager.commitInterstitialSuccess();
+              }
+            }
+          });
+
+          observer.observe(ins, { childList: true, subtree: true });
+
+          // Verification timeout fallback (1.8s)
+          setTimeout(() => {
+            if (!isConfirmed) {
+              if (ins && (ins.children.length > 1 || ins.querySelector('iframe, div, a, img, svg'))) {
+                isConfirmed = true;
+                observer.disconnect();
+                adManager.commitInterstitialSuccess();
+              } else {
+                // No fill / blocked -> remove tag without setting false cooldown
+                observer.disconnect();
+                if (ins && ins.parentNode) ins.remove();
+              }
+            }
+          }, 1800);
         } catch (err) {
           console.warn('[ExoClick] Desktop native interstitial trigger notice:', err);
         }
@@ -300,7 +325,7 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
 
 /**
  * Mobile Fullpage Interstitial Ad (Zone ID: 6003180)
- * Pure Native ExoClick Fullpage Interstitial — No artificial modal wrapper or blocking box
+ * Pure Native ExoClick Fullpage Interstitial with Verified DOM Mount
  */
 export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = ({ onDismiss }) => {
   useEffect(() => {
@@ -338,7 +363,7 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
 
           document.body.appendChild(ins);
 
-          // 3. Trigger AdProvider
+          // 3. Trigger AdProvider with real DOM verification
           const triggerAdServe = () => {
             try {
               const win = window as any;
@@ -348,10 +373,35 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
           };
 
           triggerAdServe();
-          setTimeout(triggerAdServe, 120);
 
-          adManager.commitInterstitialSuccess();
-          if (onDismiss) onDismiss();
+          // Verify actual ad injection into DOM before committing success
+          let isConfirmed = false;
+          const observer = new MutationObserver(() => {
+            if (ins && (ins.children.length > 1 || ins.querySelector('iframe, div, a, img, svg'))) {
+              if (!isConfirmed) {
+                isConfirmed = true;
+                observer.disconnect();
+                adManager.commitInterstitialSuccess();
+              }
+            }
+          });
+
+          observer.observe(ins, { childList: true, subtree: true });
+
+          // Verification timeout fallback (1.8s)
+          setTimeout(() => {
+            if (!isConfirmed) {
+              if (ins && (ins.children.length > 1 || ins.querySelector('iframe, div, a, img, svg'))) {
+                isConfirmed = true;
+                observer.disconnect();
+                adManager.commitInterstitialSuccess();
+              } else {
+                // No fill / blocked -> remove tag without setting false cooldown
+                observer.disconnect();
+                if (ins && ins.parentNode) ins.remove();
+              }
+            }
+          }, 1800);
         } catch (err) {
           console.warn('[ExoClick] Mobile native interstitial trigger notice:', err);
         }
