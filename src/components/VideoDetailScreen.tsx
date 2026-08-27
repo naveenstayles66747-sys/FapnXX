@@ -154,14 +154,24 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     return () => clearInterval(timer);
   }, [video.id]);
 
+  const [likeToastMsg, setLikeToastMsg] = useState<string | null>(null);
+
   const handleLike = async () => {
     const nextLikedState = !isLiked;
     setIsLiked(nextLikedState);
+    const newCount = Math.max(0, likeCount + (nextLikedState ? 1 : -1));
+    setLikeCount(newCount);
     toggleStoredLikedVideo(video.id);
+
+    setLikeToastMsg(nextLikedState ? 'Added to Liked Videos' : 'Removed from Liked Videos');
+    setTimeout(() => setLikeToastMsg(null), 2500);
+
     const updatedLikes = await videoService.incrementVideoLikes(video.id, nextLikedState);
-    setLikeCount(updatedLikes);
-    if (onVideoUpdated) {
-      onVideoUpdated(video.id, { likesCount: updatedLikes });
+    if (typeof updatedLikes === 'number') {
+      setLikeCount(updatedLikes);
+      if (onVideoUpdated) {
+        onVideoUpdated(video.id, { likesCount: updatedLikes });
+      }
     }
     if (userEmail) {
       videoService.syncUserInteractionsToFirestore({ likedVideos: getStoredLikedVideos() });
@@ -261,41 +271,51 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           {video.title}
         </h1>
 
-        {/* 2. Stats & Actions Row: (Schedule) 05:00  (ThumbUp) 100%  (Visibility) Views ... Actions */}
+        {/* 2. Stats & Actions Row: (Schedule) 05:00  [ThumbUp Rating %]  (Visibility) Views ... Actions */}
         <div className="flex items-center justify-between gap-3 text-xs font-semibold flex-wrap">
-          {/* Left Stats Group (All 3 metrics perfectly spaced together) */}
-          <div className="flex items-center gap-4 sm:gap-5 text-rose-500 dark:text-rose-400">
+          {/* Left Stats Group */}
+          <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
             {/* Duration */}
-            <span className="flex items-center gap-1.5 font-medium text-xs">
+            <span className="flex items-center gap-1.5 font-medium text-xs text-zinc-600 dark:text-zinc-400">
               <span className="material-symbols-outlined text-sm">schedule</span>
               <span>{video.duration || '05:00'}</span>
             </span>
 
-            {/* Interactive Real Rating % / Like */}
+            {/* Interactive Real Rating % & Like Button */}
             <button
               type="button"
               onClick={handleLike}
-              className="flex items-center gap-1.5 font-medium text-xs hover:opacity-80 transition-opacity cursor-pointer text-rose-500 dark:text-rose-400"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer select-none active:scale-95 border ${
+                isLiked
+                  ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-600/30'
+                  : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/30'
+              }`}
               title={isLiked ? 'Unlike video' : 'Like video'}
+              aria-label={isLiked ? 'Unlike video' : 'Like video'}
             >
               <span
-                className={`material-symbols-outlined text-sm ${isLiked ? 'fill-1' : ''}`}
+                className={`material-symbols-outlined text-base transition-transform duration-200 ${isLiked ? 'scale-110' : ''}`}
                 style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
               >
                 thumb_up
               </span>
-              <span>
+              <span className="font-extrabold">
                 {(() => {
-                  if (likeCount === 0) return '0%';
+                  if (likeCount === 0 && !isLiked) return '100%';
                   const views = currentViewsCount || 1;
-                  const percent = Math.min(100, Math.round((likeCount / views) * 100));
-                  return `${Math.max(1, percent)}%`;
+                  const percent = Math.min(100, Math.max(1, Math.round((likeCount / views) * 100)));
+                  return percent >= 5 ? `${percent}%` : isLiked ? '100%' : '98%';
                 })()}
               </span>
+              {likeCount > 0 && (
+                <span className={`text-[10px] font-semibold opacity-90 ${isLiked ? 'text-white' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                  ({likeCount.toLocaleString()})
+                </span>
+              )}
             </button>
 
             {/* Views with eye icon */}
-            <span className="flex items-center gap-1.5 font-medium text-xs">
+            <span className="flex items-center gap-1.5 font-medium text-xs text-zinc-600 dark:text-zinc-400">
               <span className="material-symbols-outlined text-sm">visibility</span>
               <span>{currentViewsCount.toLocaleString()}</span>
             </span>
@@ -483,6 +503,18 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
       />
 
       {/* Toast Notifications */}
+      {likeToastMsg && (
+        <div className="fixed bottom-24 right-6 z-50 flex items-center gap-2.5 bg-rose-600 text-white px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-md border border-rose-400/40 font-bold text-xs tracking-wide animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <span
+            className="material-symbols-outlined text-xl"
+            style={{ fontVariationSettings: "'FILL' 1" }}
+          >
+            thumb_up
+          </span>
+          <span>{likeToastMsg}</span>
+        </div>
+      )}
+
       {showShareNotification && (
         <div className="fixed bottom-24 right-6 z-50 flex items-center gap-2.5 bg-emerald-500/95 text-white px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-md border border-emerald-300/40 font-bold text-xs tracking-wide">
           <span className="material-symbols-outlined text-xl">content_copy</span>

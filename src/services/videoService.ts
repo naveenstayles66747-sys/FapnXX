@@ -665,6 +665,20 @@ export class VideoService {
 
         console.log(`👍 [Firestore Realtime] Video ${videoId} likes updated -> ${newLikes}`);
         return newLikes;
+      } else {
+        // Doc doesn't exist yet: create with initial like state
+        const initialLikes = isLike ? 1 : 0;
+        await setDoc(
+          videoRef,
+          {
+            id: videoId,
+            likesCount: initialLikes,
+            rating: isLike ? '100%' : '95%',
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+        return initialLikes;
       }
     } catch (firestoreErr: any) {
       console.warn('⚠️ [Firestore Client] Direct like update notice:', firestoreErr?.message || firestoreErr);
