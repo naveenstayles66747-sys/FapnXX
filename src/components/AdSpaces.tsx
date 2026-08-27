@@ -440,15 +440,15 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
 
   return (
     <article
-      className={`group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
+      className={`video-card group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
       aria-label="Sponsored Video Advertisement"
     >
-      <div className="video-card-container relative w-full aspect-[16/9] min-h-[180px] rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-zinc-950 flex items-center justify-center">
-        {/* Native ExoClick Outstream Tag Container */}
+      <div className="relative w-full rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-transparent flex items-center justify-center">
+        {/* Ad Wrapper (Forces size and prevents distortion) */}
         <div
           ref={containerRef}
           id="exoclick-outstream-zone-6003190"
-          className="w-full h-full min-h-[180px] flex items-center justify-center overflow-visible z-10 pointer-events-auto relative"
+          className="outstream-ad-wrapper w-full aspect-[16/9] z-10 pointer-events-auto"
         />
 
         <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
@@ -462,10 +462,11 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
         </div>
       </div>
 
-      <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
-        <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight">
+      {/* The rest of your video card details (Title, Views, etc.) */}
+      <div className="video-info pt-2 px-0.5 space-y-1">
+        <h4 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight">
           Sponsored Outstream Video
-        </h3>
+        </h4>
         <div className="video-card-stats-row flex items-center justify-between gap-3 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
           <div className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] sm:text-sm text-rose-500">verified</span>
