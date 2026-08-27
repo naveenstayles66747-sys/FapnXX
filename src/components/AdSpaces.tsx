@@ -53,6 +53,15 @@ export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey
 
   useEffect(() => {
     renderAd();
+    const handleTrigger = () => {
+      try {
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+      } catch {}
+    };
+    window.addEventListener('exoclick-refresh-ads', handleTrigger);
+    return () => window.removeEventListener('exoclick-refresh-ads', handleTrigger);
   }, [renderAd, reloadKey]);
 
   return (
@@ -110,6 +119,15 @@ export const StickyBottomLeaderboard: React.FC = () => {
 
   useEffect(() => {
     renderAd();
+    const handleTrigger = () => {
+      try {
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+      } catch {}
+    };
+    window.addEventListener('exoclick-refresh-ads', handleTrigger);
+    return () => window.removeEventListener('exoclick-refresh-ads', handleTrigger);
   }, [renderAd]);
 
   if (isDismissed) return null;
@@ -394,7 +412,16 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
 
   useEffect(() => {
     const cleanup = renderAd();
+    const handleTrigger = () => {
+      try {
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+      } catch {}
+    };
+    window.addEventListener('exoclick-refresh-ads', handleTrigger);
     return () => {
+      window.removeEventListener('exoclick-refresh-ads', handleTrigger);
       if (cleanup) cleanup();
     };
   }, [renderAd, reloadKey]);
@@ -575,6 +602,15 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
 
   useEffect(() => {
     renderAd();
+    const handleTrigger = () => {
+      try {
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+      } catch {}
+    };
+    window.addEventListener('exoclick-refresh-ads', handleTrigger);
+    return () => window.removeEventListener('exoclick-refresh-ads', handleTrigger);
   }, [renderAd, reloadKey]);
 
   return (
@@ -669,7 +705,16 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
 
   useEffect(() => {
     const cleanup = renderAd();
+    const handleTrigger = () => {
+      try {
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+      } catch {}
+    };
+    window.addEventListener('exoclick-refresh-ads', handleTrigger);
     return () => {
+      window.removeEventListener('exoclick-refresh-ads', handleTrigger);
       if (cleanup) cleanup();
     };
   }, [renderAd, reloadKey]);

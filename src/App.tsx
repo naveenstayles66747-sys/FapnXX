@@ -509,6 +509,7 @@ export default function App() {
       if (screen === 'browse') {
         setSelectedCategoryId('all');
         setSearchQuery('');
+        setSelectedVideo(null);
       }
       setCurrentScreen(screen);
     });
@@ -662,6 +663,7 @@ export default function App() {
             {/* Screen Router */}
             {currentScreen === 'browse' && (
               <BrowseScreen
+                key={`browse-screen-${currentScreen}-${selectedCategoryId}-${searchQuery || 'all'}`}
                 onSelectVideo={handleSelectVideo}
                 onSelectCategory={handleSelectCategory}
                 selectedCategory={selectedCategoryId}
