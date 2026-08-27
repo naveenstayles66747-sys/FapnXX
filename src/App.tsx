@@ -352,6 +352,22 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Automated ExoClick Ad Refresh on every Screen / Video / Category transition (Post-DOM Mount)
+  useEffect(() => {
+    const t1 = setTimeout(() => {
+      refreshExoClickAds(`screen_${currentScreen}_${selectedVideo?.id || selectedCategoryId}`);
+    }, 60);
+
+    const t2 = setTimeout(() => {
+      refreshExoClickAds(`screen_burst_${currentScreen}`);
+    }, 300);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [currentScreen, selectedVideo?.id, selectedCategoryId]);
+
   const handleOpenSoftLogin = (featureName?: string) => {
     if (featureName) setSoftLoginFeatureName(featureName);
     setIsSoftLoginModalOpen(true);

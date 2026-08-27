@@ -226,22 +226,22 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
 
                     {/* Native Recommendation Widget in-between grid cards spanning full width (After 4th video) */}
                     {idx === 3 && (
-                      <div key="category-native-recommended-in-grid" className="col-span-full my-3">
-                        <NativeRecommendationAd />
+                      <div key={`category-native-recommended-in-grid-${categoryId}`} className="col-span-full my-3">
+                        <NativeRecommendationAd key={`cat-native-${categoryId}`} reloadKey={categoryId} />
                       </div>
                     )}
 
                     {/* Single Clean Outstream Video Placement after the 8th card */}
                     {idx === 7 && (
-                      <OutstreamVideoCardAd key="category-infeed-outstream-ad" />
+                      <OutstreamVideoCardAd key={`category-outstream-${categoryId}`} reloadKey={categoryId} />
                     )}
                   </React.Fragment>
                 ))}
 
                 {/* Guaranteed in-grid placement if total videos is less than 4 */}
                 {filteredCategoryVideos.length > 0 && filteredCategoryVideos.length < 4 && (
-                  <div className="col-span-full my-3">
-                    <NativeRecommendationAd />
+                  <div key={`category-native-recommended-fallback-${categoryId}`} className="col-span-full my-3">
+                    <NativeRecommendationAd key={`cat-native-fallback-${categoryId}`} reloadKey={categoryId} />
                   </div>
                 )}
               </div>

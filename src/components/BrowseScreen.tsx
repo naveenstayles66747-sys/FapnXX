@@ -832,7 +832,10 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
                   {/* Single Clean In-Feed Outstream Ad Placement after the 8th card */}
                   {idx === 7 && (
-                    <OutstreamVideoCardAd key="browse-infeed-outstream-ad" />
+                    <OutstreamVideoCardAd
+                      key={`browse-outstream-${selectedCategory}`}
+                      reloadKey={selectedCategory}
+                    />
                   )}
                 </React.Fragment>
               ))}
