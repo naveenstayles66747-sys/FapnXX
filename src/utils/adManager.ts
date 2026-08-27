@@ -124,3 +124,41 @@ export const adManager = new AdManager();
 export const triggerInterstitial = (action?: string) => {
   return adManager.requestInterstitial(action);
 };
+
+/**
+ * Global ExoClick Ad Refresh Trigger across all SPA navigation events:
+ * - Back button (popstate)
+ * - Logo click (Home navigation)
+ * - Internal link clicks & Category/Video changes
+ */
+export const refreshExoClickAds = (context: string = 'navigation'): void => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    // 1. Dispatch custom refresh event for active React ad components
+    window.dispatchEvent(
+      new CustomEvent('exoclick-refresh-ads', {
+        detail: { context, timestamp: Date.now() },
+      })
+    );
+
+    // 2. Multi-burst trigger for ExoClick global AdProvider
+    const triggerBurst = () => {
+      try {
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+      } catch {}
+    };
+
+    triggerBurst();
+    setTimeout(triggerBurst, 50);
+    setTimeout(triggerBurst, 150);
+    setTimeout(triggerBurst, 350);
+    setTimeout(triggerBurst, 700);
+    setTimeout(triggerBurst, 1500);
+    setTimeout(triggerBurst, 3000);
+  } catch (e) {
+    console.warn('[ExoClick] Ad refresh notice:', e);
+  }
+};

@@ -6,7 +6,7 @@ import { Sidebar } from './components/Sidebar';
 import { MobileDrawer } from './components/MobileDrawer';
 import { AgeGateModal } from './components/AgeGateModal';
 import { StickyBottomLeaderboard, MobileInstantMessage, DesktopFullpageInterstitial, MobileFullpageInterstitial, PopunderAd } from './components/AdSpaces';
-import { adManager } from './utils/adManager';
+import { adManager, refreshExoClickAds } from './utils/adManager';
 import { BrowseScreen } from './components/BrowseScreen';
 import { CategoriesScreen } from './components/CategoriesScreen';
 import { CategoryDetailScreen } from './components/CategoryDetailScreen';
@@ -323,12 +323,14 @@ export default function App() {
     }
   }, [videosList, syncUrlWithState]);
 
-  // On Initial Mount & Popstate Listener
+  // On Initial Mount & Popstate Listener (Browser Back / Forward button)
   useEffect(() => {
     parseUrlRoute();
 
     const handlePopState = () => {
       parseUrlRoute();
+      adManager.recordEligibleTransition('popstate_back');
+      refreshExoClickAds('browser_back_button');
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -432,6 +434,7 @@ export default function App() {
 
     // Force stop any currently playing ad audio/video
     stopAllBackgroundMedia();
+    refreshExoClickAds(`video_${video.id}`);
 
     startTransition(() => {
       setSelectedVideo(video);
@@ -447,6 +450,7 @@ export default function App() {
 
     // Force stop any currently playing ad audio/video
     stopAllBackgroundMedia();
+    refreshExoClickAds(`category_${id}`);
 
     startTransition(() => {
       setSelectedCategoryId(id);
@@ -467,6 +471,8 @@ export default function App() {
   const handleNavigateToSearch = (query: string) => {
     // Force stop any currently playing ad audio/video
     stopAllBackgroundMedia();
+    adManager.recordEligibleTransition('search_query');
+    refreshExoClickAds('search_navigation');
 
     startTransition(() => {
       setSelectedCategoryId('all');
@@ -480,6 +486,8 @@ export default function App() {
   const handleNavigate = (screen: ScreenId) => {
     // Force stop any currently playing ad audio/video
     stopAllBackgroundMedia();
+    adManager.recordEligibleTransition(screen, currentScreen);
+    refreshExoClickAds(`navigate_${screen}`);
 
     startTransition(() => {
       if (screen === 'browse') {

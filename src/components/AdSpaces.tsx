@@ -7,15 +7,16 @@ export { triggerInterstitial };
 /**
  * Standard Native ExoClick Banner Slot
  */
-export const AdBanner: React.FC<{ zoneId?: string; className?: string }> = ({
+export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey?: string | number }> = ({
   zoneId = AD_ZONES.IN_PAGE_BANNER,
   className = '',
+  reloadKey,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const renderAd = useCallback(() => {
     const el = containerRef.current;
-    if (!el || el.dataset.adInitialized === 'true') return;
+    if (!el) return;
 
     try {
       el.innerHTML = '';
@@ -26,15 +27,36 @@ export const AdBanner: React.FC<{ zoneId?: string; className?: string }> = ({
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
-      const win = window as any;
-      win.AdProvider = win.AdProvider || [];
-      win.AdProvider.push({ serve: {} });
+      // Trigger script adjacent
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
 
-      el.dataset.adInitialized = 'true';
+      const triggerAdServe = () => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      };
+
+      triggerAdServe();
+      setTimeout(triggerAdServe, 50);
+      setTimeout(triggerAdServe, 200);
+      setTimeout(triggerAdServe, 600);
+      setTimeout(triggerAdServe, 1200);
     } catch (e) {
       console.warn('[ExoClick] AdBanner mount error:', e);
     }
   }, [zoneId]);
+
+  useEffect(() => {
+    renderAd();
+    const handleRefresh = () => renderAd();
+    window.addEventListener('exoclick-refresh-ads', handleRefresh);
+    return () => window.removeEventListener('exoclick-refresh-ads', handleRefresh);
+  }, [renderAd, reloadKey]);
 
   return (
     <div
@@ -52,10 +74,10 @@ export const StickyBottomLeaderboard: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDismissed, setIsDismissed] = useState<boolean>(false);
 
-  useEffect(() => {
+  const renderAd = useCallback(() => {
     if (isDismissed || typeof window === 'undefined' || window.innerWidth < 1024) return;
     const el = containerRef.current;
-    if (!el || el.dataset.adInitialized === 'true') return;
+    if (!el) return;
 
     try {
       el.innerHTML = '';
@@ -66,15 +88,35 @@ export const StickyBottomLeaderboard: React.FC = () => {
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
-      const win = window as any;
-      win.AdProvider = win.AdProvider || [];
-      win.AdProvider.push({ serve: {} });
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
 
-      el.dataset.adInitialized = 'true';
+      const triggerAdServe = () => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      };
+
+      triggerAdServe();
+      setTimeout(triggerAdServe, 50);
+      setTimeout(triggerAdServe, 200);
+      setTimeout(triggerAdServe, 600);
+      setTimeout(triggerAdServe, 1200);
     } catch (e) {
       console.warn('[ExoClick] Sticky leaderboard error:', e);
     }
   }, [isDismissed]);
+
+  useEffect(() => {
+    renderAd();
+    const handleRefresh = () => renderAd();
+    window.addEventListener('exoclick-refresh-ads', handleRefresh);
+    return () => window.removeEventListener('exoclick-refresh-ads', handleRefresh);
+  }, [renderAd]);
 
   if (isDismissed) return null;
 
@@ -435,10 +477,10 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
 export const MobileInstantMessage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const renderAd = useCallback(() => {
     if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
     const el = containerRef.current;
-    if (!el || el.dataset.adInitialized === 'true') return;
+    if (!el) return;
 
     try {
       el.innerHTML = '';
@@ -447,15 +489,35 @@ export const MobileInstantMessage: React.FC = () => {
       ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INSTANT_MESSAGE);
       el.appendChild(ins);
 
-      const win = window as any;
-      win.AdProvider = win.AdProvider || [];
-      win.AdProvider.push({ serve: {} });
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
 
-      el.dataset.adInitialized = 'true';
+      const triggerAdServe = () => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      };
+
+      triggerAdServe();
+      setTimeout(triggerAdServe, 50);
+      setTimeout(triggerAdServe, 200);
+      setTimeout(triggerAdServe, 600);
+      setTimeout(triggerAdServe, 1200);
     } catch (e) {
       console.warn('[ExoClick] Mobile instant message error:', e);
     }
   }, []);
+
+  useEffect(() => {
+    renderAd();
+    const handleRefresh = () => renderAd();
+    window.addEventListener('exoclick-refresh-ads', handleRefresh);
+    return () => window.removeEventListener('exoclick-refresh-ads', handleRefresh);
+  }, [renderAd]);
 
   return (
     <div
@@ -473,11 +535,14 @@ export const MobileInstantMessage: React.FC = () => {
  * <ins class="eas6a97888e37" data-zoneid="6003190"></ins>
  * <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
  */
-export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: string | number }> = ({
+  className = '',
+  reloadKey,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hasAdLoaded, setHasAdLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
+  const renderAd = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
 
@@ -486,6 +551,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
 
     try {
       el.innerHTML = '';
+      setHasAdLoaded(false);
 
       // 1. Ensure Global Provider SDK is loaded
       if (!document.getElementById('exoclick-global-ad-provider')) {
@@ -564,6 +630,16 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
     }
   }, []);
 
+  useEffect(() => {
+    const cleanup = renderAd();
+    const handleRefresh = () => renderAd();
+    window.addEventListener('exoclick-refresh-ads', handleRefresh);
+    return () => {
+      window.removeEventListener('exoclick-refresh-ads', handleRefresh);
+      if (cleanup) cleanup();
+    };
+  }, [renderAd, reloadKey]);
+
   return (
     <article
       className={`group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
@@ -631,10 +707,10 @@ export const OnStreamVideoBanner: React.FC<{
   const containerRef = useRef<HTMLDivElement>(null);
   const [dismissed, setDismissed] = useState<boolean>(false);
 
-  useEffect(() => {
+  const renderAd = useCallback(() => {
     if (!isVisible || dismissed) return;
     const el = containerRef.current;
-    if (!el || el.dataset.adInitialized === 'true') return;
+    if (!el) return;
 
     try {
       el.innerHTML = '';
@@ -651,15 +727,29 @@ export const OnStreamVideoBanner: React.FC<{
       triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
       el.appendChild(triggerScript);
 
-      const win = window as any;
-      win.AdProvider = win.AdProvider || [];
-      win.AdProvider.push({ serve: {} });
+      const triggerAdServe = () => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      };
 
-      el.dataset.adInitialized = 'true';
+      triggerAdServe();
+      setTimeout(triggerAdServe, 50);
+      setTimeout(triggerAdServe, 200);
+      setTimeout(triggerAdServe, 600);
     } catch (e) {
       console.warn('[ExoClick] On-stream banner mount error:', e);
     }
   }, [isVisible, dismissed]);
+
+  useEffect(() => {
+    renderAd();
+    const handleRefresh = () => renderAd();
+    window.addEventListener('exoclick-refresh-ads', handleRefresh);
+    return () => window.removeEventListener('exoclick-refresh-ads', handleRefresh);
+  }, [renderAd]);
 
   if (!isVisible || dismissed) return null;
 
@@ -693,7 +783,7 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
   const desktopContainerRef = useRef<HTMLDivElement>(null);
   const mobileContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const renderAd = useCallback(() => {
     if (typeof window === 'undefined') return;
 
     const isMobile = window.innerWidth < 1024;
@@ -721,14 +811,30 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
       triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
       el.appendChild(triggerScript);
 
-      const win = window as any;
-      win.AdProvider = win.AdProvider || [];
-      win.AdProvider.push({ serve: {} });
+      const triggerAdServe = () => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      };
 
+      triggerAdServe();
+      setTimeout(triggerAdServe, 50);
+      setTimeout(triggerAdServe, 200);
+      setTimeout(triggerAdServe, 600);
+      setTimeout(triggerAdServe, 1200);
     } catch (e) {
       console.warn('[ExoClick] Under-Player banner error:', e);
     }
-  }, [reloadKey]);
+  }, []);
+
+  useEffect(() => {
+    renderAd();
+    const handleRefresh = () => renderAd();
+    window.addEventListener('exoclick-refresh-ads', handleRefresh);
+    return () => window.removeEventListener('exoclick-refresh-ads', handleRefresh);
+  }, [renderAd, reloadKey]);
 
   return (
     <div className={`w-full my-4 flex flex-col items-center justify-center ${className}`}>
@@ -758,7 +864,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
   const containerRef = useRef<HTMLDivElement>(null);
   const instanceId = useRef(`exo_native_${Math.random().toString(36).substring(2, 9)}`);
 
-  useEffect(() => {
+  const renderAd = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
 
@@ -818,7 +924,17 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       isMounted = false;
       timers.forEach((t) => clearTimeout(t));
     };
-  }, [reloadKey]);
+  }, []);
+
+  useEffect(() => {
+    const cleanup = renderAd();
+    const handleRefresh = () => renderAd();
+    window.addEventListener('exoclick-refresh-ads', handleRefresh);
+    return () => {
+      window.removeEventListener('exoclick-refresh-ads', handleRefresh);
+      if (cleanup) cleanup();
+    };
+  }, [renderAd, reloadKey]);
 
   return (
     <section className={`native-ad-section w-full my-2.5 sm:my-3 p-2.5 sm:p-3 rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-[#121115] shadow-sm transition-colors ${className}`}>
