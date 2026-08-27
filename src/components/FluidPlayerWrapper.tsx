@@ -184,8 +184,10 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       }
     }
 
-    // 2. Concurrently fetch parsed VAST XML for fast fallback
-    fetchVastAd(VAST_TAG_URL, 4500)
+    // 2. Concurrently fetch parsed VAST XML for fast fallback with unique cache-buster
+    const dynamicVastTag = `${VAST_TAG_URL}${VAST_TAG_URL.includes('?') ? '&' : '?'}cb=${Date.now()}_${Math.random().toString(36).substring(2, 8)}&v=${encodeURIComponent(video.id)}`;
+
+    fetchVastAd(dynamicVastTag, 4500)
       .then((parsedAd) => {
         if (!isMounted || contentStartedRef.current) return;
         if (parsedAd && parsedAd.mediaUrl) {
@@ -243,7 +245,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             adList: [
               {
                 roll: 'preRoll',
-                vastTag: VAST_TAG_URL,
+                vastTag: dynamicVastTag,
                 adClickable: true,
                 vpaidMode: 'insecure',
               },

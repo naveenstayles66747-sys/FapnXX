@@ -683,6 +683,7 @@ export default function App() {
             {currentScreen === 'video-detail' && (
               selectedVideo ? (
                 <VideoDetailScreen
+                  key={`video-screen-${selectedVideo.id}`}
                   video={selectedVideo}
                   onBack={() => handleNavigate('browse')}
                   onSelectVideo={handleSelectVideo}

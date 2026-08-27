@@ -248,7 +248,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
       ═══════════════════════════════════════════════ */}
       <section className="w-full px-2 sm:px-4 md:px-6 py-1.5 sm:py-2">
         <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 flex items-center justify-center">
-          <FluidPlayerWrapper video={video} autoPlay={true} />
+          <FluidPlayerWrapper key={`fluid-player-${video.id}`} video={video} autoPlay={true} />
         </div>
       </section>
 
