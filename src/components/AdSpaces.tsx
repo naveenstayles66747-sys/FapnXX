@@ -42,10 +42,7 @@ export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey
       };
 
       triggerAdServe();
-      setTimeout(triggerAdServe, 50);
-      setTimeout(triggerAdServe, 200);
-      setTimeout(triggerAdServe, 600);
-      setTimeout(triggerAdServe, 1200);
+      setTimeout(triggerAdServe, 100);
     } catch (e) {
       console.warn('[ExoClick] AdBanner mount error:', e);
     }
@@ -108,10 +105,7 @@ export const StickyBottomLeaderboard: React.FC = () => {
       };
 
       triggerAdServe();
-      setTimeout(triggerAdServe, 50);
-      setTimeout(triggerAdServe, 200);
-      setTimeout(triggerAdServe, 600);
-      setTimeout(triggerAdServe, 1200);
+      setTimeout(triggerAdServe, 100);
     } catch (e) {
       console.warn('[ExoClick] Sticky leaderboard error:', e);
     }
@@ -143,6 +137,87 @@ export const StickyBottomLeaderboard: React.FC = () => {
           type="button"
           onClick={() => setIsDismissed(true)}
           className="absolute -top-3 right-2 bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 text-[10px] rounded-full w-5 h-5 flex items-center justify-center cursor-pointer border border-white/10 shadow z-10"
+          title="Close advertisement"
+        >
+          ✕
+        </button>
+        <div
+          ref={containerRef}
+          className="w-full flex items-center justify-center overflow-hidden min-h-[50px]"
+        />
+      </div>
+    </aside>
+  );
+};
+
+/**
+ * Sticky Bottom Banner Ad for Mobile (Zone ID: 6003172 / MOBILE_STICKY_BANNER)
+ * Displays a non-intrusive sticky 300x50 / 320x50 banner on mobile devices.
+ */
+export const MobileStickyBanner: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDismissed, setIsDismissed] = useState<boolean>(false);
+
+  const renderAd = useCallback(() => {
+    if (isDismissed || typeof window === 'undefined' || window.innerWidth >= 1024) return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    try {
+      el.innerHTML = '';
+      const ins = document.createElement('ins');
+      ins.className = `eas${AD_ZONES.SITE_HASH}17`;
+      ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_STICKY_BANNER || '6003172');
+      ins.style.display = 'block';
+      ins.style.margin = '0 auto';
+      el.appendChild(ins);
+
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
+
+      const triggerAdServe = () => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      };
+
+      triggerAdServe();
+      setTimeout(triggerAdServe, 100);
+    } catch (e) {
+      console.warn('[ExoClick] Mobile sticky banner error:', e);
+    }
+  }, [isDismissed]);
+
+  useEffect(() => {
+    renderAd();
+    const handleTrigger = () => {
+      try {
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+      } catch {}
+    };
+    window.addEventListener('exoclick-refresh-ads', handleTrigger);
+    return () => window.removeEventListener('exoclick-refresh-ads', handleTrigger);
+  }, [renderAd]);
+
+  if (isDismissed) return null;
+
+  return (
+    <aside
+      id="exoclick-mobile-sticky-banner"
+      aria-label="Sponsored Mobile Advertisement"
+      className="flex lg:hidden fixed bottom-14 left-0 right-0 z-[45] flex-col items-center justify-center pointer-events-auto bg-[#09090b]/95 backdrop-blur-md border-t border-white/10 pb-0.5"
+    >
+      <div className="relative w-full max-w-sm flex items-center justify-center py-1">
+        <button
+          type="button"
+          onClick={() => setIsDismissed(true)}
+          className="absolute -top-2.5 right-2 bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 text-[10px] rounded-full w-5 h-5 flex items-center justify-center cursor-pointer border border-white/10 shadow z-10"
           title="Close advertisement"
         >
           ✕
@@ -196,7 +271,7 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
 
           document.body.appendChild(ins);
 
-          // 3. Multi-burst trigger AdProvider
+          // 3. Trigger AdProvider
           const triggerAdServe = () => {
             try {
               const win = window as any;
@@ -206,9 +281,7 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
           };
 
           triggerAdServe();
-          setTimeout(triggerAdServe, 50);
-          setTimeout(triggerAdServe, 200);
-          setTimeout(triggerAdServe, 500);
+          setTimeout(triggerAdServe, 120);
 
           adManager.commitInterstitialSuccess();
           if (onDismiss) onDismiss();
@@ -265,7 +338,7 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
 
           document.body.appendChild(ins);
 
-          // 3. Multi-burst trigger AdProvider
+          // 3. Trigger AdProvider
           const triggerAdServe = () => {
             try {
               const win = window as any;
@@ -275,9 +348,7 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
           };
 
           triggerAdServe();
-          setTimeout(triggerAdServe, 50);
-          setTimeout(triggerAdServe, 200);
-          setTimeout(triggerAdServe, 500);
+          setTimeout(triggerAdServe, 120);
 
           adManager.commitInterstitialSuccess();
           if (onDismiss) onDismiss();
@@ -326,10 +397,7 @@ export const MobileInstantMessage: React.FC = () => {
       };
 
       triggerAdServe();
-      setTimeout(triggerAdServe, 50);
-      setTimeout(triggerAdServe, 200);
-      setTimeout(triggerAdServe, 600);
-      setTimeout(triggerAdServe, 1200);
+      setTimeout(triggerAdServe, 100);
     } catch (e) {
       console.warn('[ExoClick] Mobile instant message error:', e);
     }
@@ -366,7 +434,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
     if (!el) return;
 
     let isMounted = true;
-    const timers: NodeJS.Timeout[] = [];
+    let timer: NodeJS.Timeout | null = null;
 
     try {
       el.innerHTML = '';
@@ -397,7 +465,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
       triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
       el.appendChild(triggerScript);
 
-      // 4. Trigger AdProvider bursts to ensure ExoClick receives request
+      // 4. Trigger AdProvider
       const triggerAdServe = () => {
         if (!isMounted) return;
         try {
@@ -408,14 +476,11 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
       };
 
       triggerAdServe();
-      timers.push(setTimeout(triggerAdServe, 50));
-      timers.push(setTimeout(triggerAdServe, 200));
-      timers.push(setTimeout(triggerAdServe, 600));
-      timers.push(setTimeout(triggerAdServe, 1200));
+      timer = setTimeout(triggerAdServe, 120);
 
       return () => {
         isMounted = false;
-        timers.forEach((t) => clearTimeout(t));
+        if (timer) clearTimeout(timer);
       };
     } catch (e) {
       console.warn('[ExoClick] Outstream ad mount error:', e);
@@ -523,9 +588,7 @@ export const OnStreamVideoBanner: React.FC<{
       };
 
       triggerAdServe();
-      setTimeout(triggerAdServe, 50);
-      setTimeout(triggerAdServe, 200);
-      setTimeout(triggerAdServe, 600);
+      setTimeout(triggerAdServe, 100);
     } catch (e) {
       console.warn('[ExoClick] On-stream banner mount error:', e);
     }
@@ -604,10 +667,7 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
       };
 
       triggerAdServe();
-      setTimeout(triggerAdServe, 50);
-      setTimeout(triggerAdServe, 200);
-      setTimeout(triggerAdServe, 600);
-      setTimeout(triggerAdServe, 1200);
+      setTimeout(triggerAdServe, 100);
     } catch (e) {
       console.warn('[ExoClick] Under-Player banner error:', e);
     }
@@ -659,7 +719,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
     if (!el) return;
 
     let isMounted = true;
-    const timers: NodeJS.Timeout[] = [];
+    let timer: NodeJS.Timeout | null = null;
 
     try {
       el.innerHTML = '';
@@ -690,7 +750,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         document.head.appendChild(sdk);
       }
 
-      // 4. Repeated trigger bursts to guarantee ExoClick serves on SPA transitions
+      // 4. Single-pass AdProvider trigger
       const triggerAdServe = () => {
         if (!isMounted) return;
         try {
@@ -701,18 +761,14 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       };
 
       triggerAdServe();
-      timers.push(setTimeout(triggerAdServe, 50));
-      timers.push(setTimeout(triggerAdServe, 200));
-      timers.push(setTimeout(triggerAdServe, 600));
-      timers.push(setTimeout(triggerAdServe, 1200));
-      timers.push(setTimeout(triggerAdServe, 2500));
+      timer = setTimeout(triggerAdServe, 120);
     } catch (e) {
       console.warn('[ExoClick] Native recommendation ad mount error:', e);
     }
 
     return () => {
       isMounted = false;
-      timers.forEach((t) => clearTimeout(t));
+      if (timer) clearTimeout(timer);
     };
   }, []);
 

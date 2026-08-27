@@ -4,7 +4,7 @@ import { VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { ReportModal } from './ReportModal';
 import { FluidPlayerWrapper } from './FluidPlayerWrapper';
-import { OutstreamVideoCardAd, UnderPlayerBanner, NativeRecommendationAd } from './AdSpaces';
+import { OnStreamVideoBanner, OutstreamVideoCardAd, UnderPlayerBanner, NativeRecommendationAd } from './AdSpaces';
 import { CommentsSection } from './CommentsSection';
 import { useLanguage } from '../i18n/LanguageContext';
 import { videoService } from '../services/videoService';
@@ -52,6 +52,9 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   // DMCA Report Modal State
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportSuccessToast, setReportSuccessToast] = useState(false);
+
+  // In-Video Player Overlay Banner State
+  const [showOnStreamBanner, setShowOnStreamBanner] = useState(true);
 
   // Real-time Views Counter
   const [currentViewsCount, setCurrentViewsCount] = useState<number>(() => video.viewsCount || 1);
@@ -259,6 +262,12 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
       <section className="w-full px-2 sm:px-4 md:px-6 py-1.5 sm:py-2">
         <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 flex items-center justify-center">
           <FluidPlayerWrapper key={`fluid-player-${video.id}`} video={video} autoPlay={true} />
+
+          {/* On-Stream In-Video Player Overlay Banner (Zone ID: 6003172) */}
+          <OnStreamVideoBanner
+            isVisible={showOnStreamBanner}
+            onClose={() => setShowOnStreamBanner(false)}
+          />
         </div>
       </section>
 

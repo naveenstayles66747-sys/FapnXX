@@ -5,18 +5,12 @@ import { LanguageProvider } from './i18n/LanguageContext.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import './index.css';
 
-// Safe mobile gesture prevention without blocking touch responsiveness
+// Safe passive mobile viewport responsiveness without blocking main thread compositor
 if (typeof window !== 'undefined') {
   try {
-    document.addEventListener('gesturestart', (e) => {
-      try { e.preventDefault(); } catch {}
-    }, { passive: false });
-    document.addEventListener('gesturechange', (e) => {
-      try { e.preventDefault(); } catch {}
-    }, { passive: false });
-    document.addEventListener('gestureend', (e) => {
-      try { e.preventDefault(); } catch {}
-    }, { passive: false });
+    document.addEventListener('gesturestart', () => {}, { passive: true });
+    document.addEventListener('gesturechange', () => {}, { passive: true });
+    document.addEventListener('gestureend', () => {}, { passive: true });
   } catch {}
 }
 

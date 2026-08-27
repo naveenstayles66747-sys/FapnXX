@@ -2,7 +2,7 @@ import React from 'react';
 import { CategoryId, CategoryInfo, Video } from '../types';
 import { CATEGORIES, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
-import { OutstreamVideoCardAd, NativeRecommendationAd } from './AdSpaces';
+import { AdBanner, OutstreamVideoCardAd, NativeRecommendationAd } from './AdSpaces';
 import { AD_CONFIG } from '../config/adConfig';
 import {
   getCategoryHeroImage,
@@ -178,6 +178,13 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
               {tag === 'All' ? `All ${category.name}` : tag}
             </button>
           ))}
+        </div>
+      </section>
+
+      {/* In-Page 728x90 / 300x250 Banner Slot (Zone ID: 6003172) */}
+      <section className="max-w-7xl mx-auto px-6 md:px-12 pt-6">
+        <div className="w-full flex items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-1.5 shadow-sm">
+          <AdBanner key={`category-banner-${categoryId}`} reloadKey={categoryId} />
         </div>
       </section>
 

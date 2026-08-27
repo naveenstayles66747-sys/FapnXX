@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Performer, Video } from '../types';
+import { AdBanner } from './AdSpaces';
 
 interface PerformersScreenProps {
   videos?: Video[];
@@ -83,7 +84,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({ videos = [] 
       </section>
 
       {/* Filter Tabs */}
-      <div className="flex gap-3 overflow-x-auto pb-4 mb-8 hide-scrollbar scroll-smooth">
+      <div className="flex gap-3 overflow-x-auto pb-4 mb-6 hide-scrollbar scroll-smooth">
         {['All', 'Trending', 'New Arrivals', 'Exclusive', 'POV', 'MILF', 'Amateur'].map((tag) => (
           <button
             key={tag}
@@ -102,6 +103,11 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({ videos = [] 
             {tag}
           </button>
         ))}
+      </div>
+
+      {/* In-Page Banner Slot */}
+      <div className="mb-8 w-full flex items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-1.5 shadow-sm">
+        <AdBanner key={`performers-banner-${filterTag}`} reloadKey={filterTag} />
       </div>
 
       {/* Performer Grid */}

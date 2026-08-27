@@ -135,6 +135,8 @@ export const triggerInterstitial = (action?: string) => {
  * - Logo click (Home navigation)
  * - Internal link clicks & Category/Video changes
  */
+let adRefreshTimer: NodeJS.Timeout | null = null;
+
 export const refreshExoClickAds = (context: string = 'navigation'): void => {
   if (typeof window === 'undefined') return;
 
@@ -146,22 +148,16 @@ export const refreshExoClickAds = (context: string = 'navigation'): void => {
       })
     );
 
-    // 2. Multi-burst trigger for ExoClick global AdProvider
-    const triggerBurst = () => {
+    // 2. Debounced gentle trigger for ExoClick global AdProvider (eliminating main thread thrashing)
+    if (adRefreshTimer) clearTimeout(adRefreshTimer);
+    adRefreshTimer = setTimeout(() => {
+      if (typeof window === 'undefined') return;
       try {
         const win = window as any;
         win.AdProvider = win.AdProvider || [];
         win.AdProvider.push({ serve: {} });
       } catch {}
-    };
-
-    triggerBurst();
-    setTimeout(triggerBurst, 50);
-    setTimeout(triggerBurst, 150);
-    setTimeout(triggerBurst, 350);
-    setTimeout(triggerBurst, 700);
-    setTimeout(triggerBurst, 1500);
-    setTimeout(triggerBurst, 3000);
+    }, 150);
   } catch (e) {
     console.warn('[ExoClick] Ad refresh notice:', e);
   }

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { CategoryId, CategoryInfo, LandingBanner, Video } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
-import { OutstreamVideoCardAd, NativeRecommendationAd } from './AdSpaces';
+import { AdBanner, OutstreamVideoCardAd, NativeRecommendationAd } from './AdSpaces';
 import { AD_CONFIG } from '../config/adConfig';
 import { useLanguage } from '../i18n/LanguageContext';
 import {
@@ -631,6 +631,11 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
           </div>
         </section>
       )}
+
+      {/* In-Page 728x90 / 300x250 Banner Slot (Zone ID: 6003172) */}
+      <section className="mb-6 w-full flex items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-1.5 shadow-sm">
+        <AdBanner key={`browse-banner-${selectedCategory}`} reloadKey={selectedCategory} />
+      </section>
 
       {/* Video Grid Section */}
       <section className="w-full">

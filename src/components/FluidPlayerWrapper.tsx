@@ -172,10 +172,17 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     let fallbackSafetyTimer: NodeJS.Timeout | null = null;
     let directVastStarted = false;
 
-    // 1. Ensure Fluid Player CDN script is loaded
-    if (typeof window !== 'undefined' && !(window as any).fluidPlayer) {
-      const existingScript = document.getElementById('fluidplayer-cdn-script');
-      if (!existingScript) {
+    // 1. Ensure Fluid Player CDN script and CSS are loaded dynamically on demand
+    if (typeof window !== 'undefined') {
+      if (!document.getElementById('fluidplayer-cdn-css')) {
+        const link = document.createElement('link');
+        link.id = 'fluidplayer-cdn-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css';
+        link.type = 'text/css';
+        document.head.appendChild(link);
+      }
+      if (!(window as any).fluidPlayer && !document.getElementById('fluidplayer-cdn-script')) {
         const script = document.createElement('script');
         script.id = 'fluidplayer-cdn-script';
         script.src = 'https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js';

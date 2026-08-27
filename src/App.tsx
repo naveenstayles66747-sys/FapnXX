@@ -5,16 +5,23 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { MobileDrawer } from './components/MobileDrawer';
 import { AgeGateModal } from './components/AgeGateModal';
-import { StickyBottomLeaderboard, MobileInstantMessage, DesktopFullpageInterstitial, MobileFullpageInterstitial, PopunderAd } from './components/AdSpaces';
+import {
+  StickyBottomLeaderboard,
+  MobileStickyBanner,
+  MobileInstantMessage,
+  DesktopFullpageInterstitial,
+  MobileFullpageInterstitial,
+} from './components/AdSpaces';
 import { adManager, refreshExoClickAds } from './utils/adManager';
 import { BrowseScreen } from './components/BrowseScreen';
-import { CategoriesScreen } from './components/CategoriesScreen';
-import { CategoryDetailScreen } from './components/CategoryDetailScreen';
-import { PerformersScreen } from './components/PerformersScreen';
-import { VideoDetailScreen } from './components/VideoDetailScreen';
-import { SignInScreen } from './components/SignInScreen';
 
-// Code-split heavy modals to reduce initial mobile JS parsing and optimize INP
+// Code-split heavy secondary screens & modals to minimize initial JS payload and optimize FCP/LCP/INP
+const CategoriesScreen = lazy(() => import('./components/CategoriesScreen').then(m => ({ default: m.CategoriesScreen })));
+const CategoryDetailScreen = lazy(() => import('./components/CategoryDetailScreen').then(m => ({ default: m.CategoryDetailScreen })));
+const PerformersScreen = lazy(() => import('./components/PerformersScreen').then(m => ({ default: m.PerformersScreen })));
+const VideoDetailScreen = lazy(() => import('./components/VideoDetailScreen').then(m => ({ default: m.VideoDetailScreen })));
+const SignInScreen = lazy(() => import('./components/SignInScreen').then(m => ({ default: m.SignInScreen })));
+
 const UploadModal = lazy(() => import('./components/UploadModal').then(m => ({ default: m.UploadModal })));
 const AdManagementModal = lazy(() => import('./components/AdManagementModal').then(m => ({ default: m.AdManagementModal })));
 const AdminPanelModal = lazy(() => import('./components/AdminPanelModal').then(m => ({ default: m.AdminPanelModal })));
@@ -354,17 +361,12 @@ export default function App() {
 
   // Automated ExoClick Ad Refresh on every Screen / Video / Category transition (Post-DOM Mount)
   useEffect(() => {
-    const t1 = setTimeout(() => {
+    const t = setTimeout(() => {
       refreshExoClickAds(`screen_${currentScreen}_${selectedVideo?.id || selectedCategoryId}`);
-    }, 60);
-
-    const t2 = setTimeout(() => {
-      refreshExoClickAds(`screen_burst_${currentScreen}`);
-    }, 300);
+    }, 100);
 
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
+      clearTimeout(t);
     };
   }, [currentScreen, selectedVideo?.id, selectedCategoryId]);
 
@@ -678,39 +680,49 @@ export default function App() {
             )}
 
             {currentScreen === 'categories' && (
-              <CategoriesScreen
-                onSelectCategory={handleSelectCategory}
-                onNavigate={handleNavigate}
-                categories={categories}
-              />
+              <Suspense fallback={<div className="flex-1 p-8 flex items-center justify-center min-h-[50vh]"><div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" /></div>}>
+                <CategoriesScreen
+                  onSelectCategory={handleSelectCategory}
+                  onNavigate={handleNavigate}
+                  categories={categories}
+                />
+              </Suspense>
             )}
 
             {currentScreen === 'category-detail' && (
-              <CategoryDetailScreen
-                categoryId={selectedCategoryId}
-                onSelectVideo={handleSelectVideo}
-                onSelectCategory={handleSelectCategory}
-                videos={filteredVideosList}
-                categories={categories}
-                userEmail={userEmail}
-              />
+              <Suspense fallback={<div className="flex-1 p-8 flex items-center justify-center min-h-[50vh]"><div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" /></div>}>
+                <CategoryDetailScreen
+                  categoryId={selectedCategoryId}
+                  onSelectVideo={handleSelectVideo}
+                  onSelectCategory={handleSelectCategory}
+                  videos={filteredVideosList}
+                  categories={categories}
+                  userEmail={userEmail}
+                />
+              </Suspense>
             )}
 
-            {currentScreen === 'performers' && <PerformersScreen videos={filteredVideosList} />}
+            {currentScreen === 'performers' && (
+              <Suspense fallback={<div className="flex-1 p-8 flex items-center justify-center min-h-[50vh]"><div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" /></div>}>
+                <PerformersScreen videos={filteredVideosList} />
+              </Suspense>
+            )}
 
             {currentScreen === 'video-detail' && (
               selectedVideo ? (
-                <VideoDetailScreen
-                  key={`video-screen-${selectedVideo.id}`}
-                  video={selectedVideo}
-                  onBack={() => handleNavigate('browse')}
-                  onSelectVideo={handleSelectVideo}
-                  onNavigateToSearch={handleNavigateToSearch}
-                  userEmail={userEmail}
-                  onOpenSoftLogin={handleOpenSoftLogin}
-                  videos={filteredVideosList}
-                  onVideoUpdated={handleVideoUpdated}
-                />
+                <Suspense fallback={<div className="flex-1 p-8 flex items-center justify-center min-h-[50vh]"><div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" /></div>}>
+                  <VideoDetailScreen
+                    key={`video-screen-${selectedVideo.id}`}
+                    video={selectedVideo}
+                    onBack={() => handleNavigate('browse')}
+                    onSelectVideo={handleSelectVideo}
+                    onNavigateToSearch={handleNavigateToSearch}
+                    userEmail={userEmail}
+                    onOpenSoftLogin={handleOpenSoftLogin}
+                    videos={filteredVideosList}
+                    onVideoUpdated={handleVideoUpdated}
+                  />
+                </Suspense>
               ) : (
                 <BrowseScreen
                   onSelectVideo={handleSelectVideo}
@@ -729,6 +741,9 @@ export default function App() {
           {/* ExoClick 728x90 Smart Sticky Bottom Leaderboard Ad (Desktop) */}
           <StickyBottomLeaderboard />
 
+          {/* ExoClick Mobile Sticky Bottom Banner Ad (Zone ID: 6003172) */}
+          <MobileStickyBanner />
+
           {/* ExoClick Desktop Fullpage Interstitial Ad (Zone ID: 6003174) */}
           <DesktopFullpageInterstitial />
 
@@ -741,13 +756,15 @@ export default function App() {
       )}
 
       {currentScreen === 'signin' && (
-        <SignInScreen
-          onSuccess={(email) => {
-            setUserEmail(email);
-            handleNavigate('browse');
-          }}
-          onBack={() => handleNavigate('browse')}
-        />
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#09090b]"><div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" /></div>}>
+          <SignInScreen
+            onSuccess={(email) => {
+              setUserEmail(email);
+              handleNavigate('browse');
+            }}
+            onBack={() => handleNavigate('browse')}
+          />
+        </Suspense>
       )}
       
       <SpeedInsights />
