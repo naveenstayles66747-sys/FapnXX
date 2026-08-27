@@ -243,6 +243,23 @@ export const categoryService = {
 
     try {
       await adminDb.collection('category_requests').doc(id).set({ status }, { merge: true });
+
+      if (status === 'approved') {
+        const catSlug = req.categoryName.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        const catId = catSlug || `cat-${Date.now()}`;
+        const newCategory: CategoryRecord = {
+          id: catId,
+          name: req.categoryName.trim(),
+          icon: 'auto_awesome',
+          heroImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop',
+          description: `Curated collection: ${req.categoryName.trim()}`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        categories.set(catId, newCategory);
+        await adminDb.collection('categories').doc(catId).set(newCategory, { merge: true });
+        console.log(`✅ [CategoryService] Auto-created approved category [${catId}]: ${req.categoryName}`);
+      }
     } catch (err: any) {
       console.warn(`[Firestore CategoryRequest] Status update error:`, err.message);
     }

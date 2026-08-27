@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CategoryId, CategoryInfo, Video } from '../types';
+import { CategoryId, CategoryInfo, ContentPreference, Video } from '../types';
 import { CATEGORIES } from '../data';
 import { videoService } from '../services/videoService';
 import { streamtapeService } from '../services/streamtapeService';
@@ -29,6 +29,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   isAdminAuthenticated = false,
   categories = CATEGORIES,
 }) => {
+  const [modalCategories, setModalCategories] = useState<CategoryInfo[]>(categories || CATEGORIES);
+  const [contentPreferenceInput, setContentPreferenceInput] = useState<ContentPreference>('straight');
   const [activeTab, setActiveTab] = useState<'embed' | 'file'>('embed');
   const [selectedProvider, setSelectedProvider] = useState<'streamtape' | 'seekstream' | 'universal'>('streamtape');
   const [isPublishing, setIsPublishing] = useState(false);
@@ -122,6 +124,23 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       }
     };
   }, [filePreviewUrl]);
+
+  // Keep modal categories in sync with parent props and fetch latest on open
+  useEffect(() => {
+    if (categories && categories.length > 0) {
+      setModalCategories(categories);
+    }
+  }, [categories]);
+
+  useEffect(() => {
+    if (isOpen) {
+      videoService.fetchCategories().then((cats) => {
+        if (cats && cats.length > 0) {
+          setModalCategories(cats);
+        }
+      });
+    }
+  }, [isOpen]);
 
   // Video metadata form fields
   const [title, setTitle] = useState('');
@@ -694,19 +713,24 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         return;
       }
 
+      const finalTagsWithPref = contentPreferenceInput !== 'straight'
+        ? Array.from(new Set([...finalTags, contentPreferenceInput === 'lesbian' ? 'Lesbian' : 'Gay']))
+        : finalTags;
+
       const generatedId = `vid-user-${Date.now()}`;
       const newVideo: Video = {
         id: generatedId,
         title: title.trim(),
         category: isRequestingCategory ? 'trending' : category,
         categoryLabel:
-          categories.find((c) => c.id === category)?.name ||
+          modalCategories.find((c) => c.id === category)?.name ||
           (isRequestingCategory ? requestedCategoryName.trim() : 'Trending'),
         categories: selectedCategoryIds.length > 0 ? selectedCategoryIds : [category],
-        tags: finalTags,
+        tags: finalTagsWithPref,
         models_actors: parsedModels.length > 0 ? parsedModels : undefined,
         modelsActors: parsedModels.length > 0 ? parsedModels : undefined,
         orientation: orientationInput,
+        contentPreference: contentPreferenceInput,
         vttUrl: vttUrlInput.trim() || undefined,
         spriteUrl: vttUrlInput.trim() || finalPreviewWebp || undefined,
         thumbnail: finalThumbnail,
@@ -768,6 +792,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setPreviewWebpUrl('');
     setModelsActorsInput('');
     setOrientationInput('horizontal');
+    setContentPreferenceInput('straight');
     setVttUrlInput('');
     setSelectedCategoryIds(['trending']);
     setIsRequestingCategory(false);
@@ -1081,7 +1106,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   }}
                   className="w-full upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500"
                 >
-                  {categories.map((c) => (
+                  {modalCategories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -1149,8 +1174,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             </div>
           </div>
 
-          {/* Extended Taxonomy: Models/Actors & Orientation */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Extended Taxonomy: Models/Actors, Orientation & Content Filter (Straight / Lesbian / Gay) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-bold opacity-80 mb-1">
                 Models / Actors (Comma separated)
@@ -1176,6 +1201,25 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 <option value="horizontal">Horizontal (Standard 16:9)</option>
                 <option value="vertical">Vertical (Shorts / Reel 9:16)</option>
                 <option value="vr">VR (360° / 180°)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold opacity-80 mb-1 flex items-center justify-between">
+                <span className="flex items-center gap-1 text-rose-500 font-bold">
+                  <span className="material-symbols-outlined text-xs">tune</span>
+                  <span>Content Filter</span>
+                </span>
+                <span className="text-[10px] text-zinc-400 font-normal">(Default: Straight)</span>
+              </label>
+              <select
+                value={contentPreferenceInput}
+                onChange={(e) => setContentPreferenceInput(e.target.value as ContentPreference)}
+                className="w-full upload-modal-input border border-rose-500/40 rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500 font-semibold"
+              >
+                <option value="straight">Straight (Default - All Hetero)</option>
+                <option value="lesbian">Lesbian (Lesbian Filter)</option>
+                <option value="gay">Gay (Gay Filter)</option>
               </select>
             </div>
           </div>

@@ -97,16 +97,27 @@ export default function App() {
   const preferredVideos = (videosList || []).filter((v) => {
     if (!v || typeof v !== 'object') return false;
     const ori = (v.orientation || '').toLowerCase();
+    const pref = ((v as any).contentPreference || '').toLowerCase();
     const cat = (v.category || '').toLowerCase();
-    const tags = Array.isArray(v.tags) ? v.tags : [];
+    const tags = Array.isArray(v.tags) ? v.tags.map((t) => (typeof t === 'string' ? t.toLowerCase() : '')) : [];
+
     if (contentPreference === 'straight') {
-      return ori !== 'gay' && ori !== 'lesbian' && cat !== 'gay' && cat !== 'lesbian';
+      return (
+        ori !== 'gay' &&
+        ori !== 'lesbian' &&
+        pref !== 'gay' &&
+        pref !== 'lesbian' &&
+        cat !== 'gay' &&
+        cat !== 'lesbian' &&
+        !tags.includes('gay') &&
+        !tags.includes('lesbian')
+      );
     }
     if (contentPreference === 'gay') {
-      return ori === 'gay' || cat === 'gay' || tags.some((t) => typeof t === 'string' && t.toLowerCase() === 'gay');
+      return ori === 'gay' || pref === 'gay' || cat === 'gay' || tags.includes('gay');
     }
     if (contentPreference === 'lesbian') {
-      return ori === 'lesbian' || cat === 'lesbian' || tags.some((t) => typeof t === 'string' && t.toLowerCase() === 'lesbian');
+      return ori === 'lesbian' || pref === 'lesbian' || cat === 'lesbian' || tags.includes('lesbian');
     }
     return true;
   });
@@ -204,6 +215,12 @@ export default function App() {
       }
     });
 
+    const unsubscribeCategories = videoService.subscribeToCategories((updatedCats) => {
+      if (updatedCats && updatedCats.length > 0) {
+        setCategories(updatedCats);
+      }
+    });
+
     videoService.fetchCategories().then((c) => {
       if (c && c.length > 0) setCategories(c);
     });
@@ -232,6 +249,7 @@ export default function App() {
     return () => {
       unsubscribe();
       unsubscribeBanners();
+      if (unsubscribeCategories) unsubscribeCategories();
       unregisterSync();
     };
   }, [isAgeVerified]);

@@ -30,6 +30,7 @@ export interface Video {
   performerAvatar?: string;
   description: string;
   orientation?: ContentPreference | 'horizontal' | 'vertical' | 'vr' | string;
+  contentPreference?: ContentPreference;
   isExclusive?: boolean;
   isNew?: boolean;
   isOriginal?: boolean;

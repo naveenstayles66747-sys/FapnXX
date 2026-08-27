@@ -3,6 +3,7 @@ import { Video } from '../types';
 import { videoService } from '../services/videoService';
 import { AD_CONFIG } from '../config/adConfig';
 import { stopAllBackgroundMedia } from '../utils/mediaHelper';
+import { fetchVastAd, fireTrackingPixel, VastAd } from '../utils/vastEngine';
 
 interface FluidPlayerWrapperProps {
   video: Video;
@@ -20,14 +21,26 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const playerInstanceRef = useRef<any>(null);
   const contentStartedRef = useRef<boolean>(false);
+  const adVideoRef = useRef<HTMLVideoElement>(null);
 
   const [playerMode, setPlayerMode] = useState<'embed' | 'video'>('embed');
   const [currentVideoSrc, setCurrentVideoSrc] = useState<string>('');
   const [videoMountKey, setVideoMountKey] = useState<number>(0);
+
+  // VAST In-Stream State
   const [isPrerollActive, setIsPrerollActive] = useState<boolean>(true);
+  const [isAdLoading, setIsAdLoading] = useState<boolean>(true);
+  const [directVastAd, setDirectVastAd] = useState<VastAd | null>(null);
+  const [adCurrentTime, setAdCurrentTime] = useState<number>(0);
+  const [adDuration, setAdDuration] = useState<number>(15);
+  const [isAdMuted, setIsAdMuted] = useState<boolean>(true);
+  const [canSkipAd, setCanSkipAd] = useState<boolean>(false);
+  const [skipRemainingSeconds, setSkipRemainingSeconds] = useState<number>(5);
 
   const prerollPlayerId = `fluid_preroll_${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
   const directPlayerId = `fluid_direct_${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+
+  const VAST_TAG_URL = AD_CONFIG.VAST_TAG_URL || 'https://s.magsrv.com/v1/vast.php?idz=6003184';
 
   // ── Helper: Extract clean URL & detect direct MP4 vs Embed ──────────────
   const extractEmbedUrl = (rawInput?: string): { cleanUrl: string; isDirectVideo: boolean } => {
@@ -57,7 +70,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   // ── Global Unmount / Navigation Media Killer ─────────────────────────────
   useEffect(() => {
     return () => {
-      // When leaving player / navigating back, kill all audio and video streams immediately
       stopAllBackgroundMedia();
     };
   }, []);
@@ -67,6 +79,11 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     setVideoMountKey((k) => k + 1);
     contentStartedRef.current = false;
     setIsPrerollActive(true);
+    setIsAdLoading(true);
+    setDirectVastAd(null);
+    setAdCurrentTime(0);
+    setCanSkipAd(false);
+    setSkipRemainingSeconds(5);
 
     const rawEmbed = (
       video.embedUrl ||
@@ -92,6 +109,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       setPlayerMode('embed');
       setCurrentVideoSrc('');
       setIsPrerollActive(false);
+      setIsAdLoading(false);
       contentStartedRef.current = true;
     }
   }, [video.id, video.embedUrl, video.previewMp4Url]);
@@ -99,19 +117,28 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   // ── Helper: Kill all playing ad videos & destroy Fluid Player instance ───
   const cleanupInstance = () => {
     try {
+      if (adVideoRef.current) {
+        adVideoRef.current.pause();
+        adVideoRef.current.muted = true;
+        adVideoRef.current.src = '';
+      }
       const prerollEl = document.getElementById(prerollPlayerId) as HTMLVideoElement;
       if (prerollEl) {
         prerollEl.pause();
         prerollEl.muted = true;
         prerollEl.src = '';
       }
-      document.querySelectorAll('.fluid_ad_video, .fluid_video_wrapper video, .fluid_vpaid_container video').forEach((el: any) => {
-        try {
-          el.pause();
-          el.muted = true;
-          el.src = '';
-        } catch {}
-      });
+      document
+        .querySelectorAll(
+          '.fluid_ad_video, .fluid_video_wrapper video, .fluid_vpaid_container video'
+        )
+        .forEach((el: any) => {
+          try {
+            el.pause();
+            el.muted = true;
+            el.src = '';
+          } catch {}
+        });
     } catch {}
 
     if (playerInstanceRef.current) {
@@ -129,38 +156,60 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     if (contentStartedRef.current) return;
     contentStartedRef.current = true;
 
-    // Call internal cleanup to kill ad players
     cleanupInstance();
-    // Also use global media helper to ensure audio elements are silenced
     stopAllBackgroundMedia();
 
+    setIsAdLoading(false);
     setIsPrerollActive(false);
+    setDirectVastAd(null);
   };
 
-  // ── Effect: Fluid Player Native VAST In-Stream Engine Initialization ────
+  // ── Effect: Fluid Player Native VAST + Direct VAST Fallback Engine ───────
   useEffect(() => {
     if (!isPrerollActive || !currentVideoSrc) return;
 
     let isMounted = true;
-    let fallbackTimer: NodeJS.Timeout | null = null;
+    let fallbackSafetyTimer: NodeJS.Timeout | null = null;
+    let directVastStarted = false;
 
+    // Concurrently fetch VAST XML so if Fluid Player is slow or blocked, direct VAST plays instantly
+    fetchVastAd(VAST_TAG_URL, 3500)
+      .then((parsedAd) => {
+        if (!isMounted || contentStartedRef.current) return;
+        if (parsedAd && parsedAd.mediaUrl) {
+          // If Fluid Player has not already started the ad video within 1.5 seconds, switch to direct VAST
+          setTimeout(() => {
+            if (isMounted && !contentStartedRef.current && isPrerollActive && !playerInstanceRef.current) {
+              directVastStarted = true;
+              setDirectVastAd(parsedAd);
+              setAdDuration(parsedAd.durationSeconds || 15);
+              setSkipRemainingSeconds(parsedAd.skipOffsetSeconds || 5);
+              fireTrackingPixel(parsedAd.impressionUrls);
+            }
+          }, 1500);
+        }
+      })
+      .catch(() => {});
+
+    // Try initializing Official Fluid Player VAST
     let attempts = 0;
-    const initNativeFluidVast = () => {
-      if (!isMounted || contentStartedRef.current) return;
+    const initFluidVast = () => {
+      if (!isMounted || contentStartedRef.current || directVastStarted) return;
       cleanupInstance();
 
       const win = window as any;
       const targetEl = document.getElementById(prerollPlayerId) as HTMLVideoElement;
 
       if (!targetEl) {
-        if (isMounted) setTimeout(initNativeFluidVast, 50);
+        if (isMounted && attempts < 10) {
+          attempts += 1;
+          setTimeout(initFluidVast, 60);
+        }
         return;
       }
 
       if (typeof win.fluidPlayer === 'function') {
         try {
-          const vastTagUrl = AD_CONFIG.VAST_TAG_URL || 'https://s.magsrv.com/v1/vast.php?idz=6003184';
-
           const instance = win.fluidPlayer(prerollPlayerId, {
             layoutControls: {
               primaryColor: '#ec4899',
@@ -170,7 +219,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               fillToContainer: true,
               autoPlay: true,
               allowMutedAutoplay: true,
-              mute: false,
+              mute: true, // Muted autoplay ensures 100% browser compatibility without getting blocked
               controlBar: {
                 autoHide: true,
                 autoHideTimeout: 2,
@@ -181,7 +230,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               adList: [
                 {
                   roll: 'preRoll',
-                  vastTag: vastTagUrl,
+                  vastTag: VAST_TAG_URL,
                   adClickable: true,
                   vpaidMode: 'insecure',
                 },
@@ -189,10 +238,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               allowVPAID: true,
               vastAdvanced: {
                 vastLoadedCallback: () => {
-                  if (fallbackTimer) clearTimeout(fallbackTimer);
+                  if (isMounted) setIsAdLoading(false);
                 },
                 vastVideoStartedCallback: () => {
-                  if (fallbackTimer) clearTimeout(fallbackTimer);
+                  if (isMounted) {
+                    setIsAdLoading(false);
+                    if (fallbackSafetyTimer) clearTimeout(fallbackSafetyTimer);
+                  }
                 },
                 noVastVideoCallback: () => {
                   if (isMounted) startMainContent();
@@ -209,71 +261,225 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
           playerInstanceRef.current = instance;
 
-          // Backup native end trigger
-          if (targetEl) {
-            targetEl.onplay = () => {
-              if (fallbackTimer) clearTimeout(fallbackTimer);
-            };
-            targetEl.onended = () => {
-              if (isMounted) startMainContent();
-            };
-          }
+          targetEl.addEventListener('playing', () => {
+            if (isMounted) {
+              setIsAdLoading(false);
+              if (fallbackSafetyTimer) clearTimeout(fallbackSafetyTimer);
+            }
+          });
+
+          targetEl.addEventListener('ended', () => {
+            if (isMounted) startMainContent();
+          });
         } catch (err) {
-          console.warn('[FluidPlayer] VAST engine warning:', err);
-          if (isMounted) startMainContent();
+          console.warn('[FluidPlayer] VAST initialization notice:', err);
+          if (isMounted && !directVastStarted) {
+            setTimeout(() => {
+              if (isMounted && !contentStartedRef.current) startMainContent();
+            }, 1000);
+          }
         }
       } else {
         attempts += 1;
-        if (attempts > 6) {
-          if (isMounted) startMainContent();
-        } else {
-          setTimeout(initNativeFluidVast, 80);
+        if (attempts <= 8) {
+          setTimeout(initFluidVast, 100);
         }
       }
     };
 
-    const timer = setTimeout(initNativeFluidVast, 30);
+    const initTimer = setTimeout(initFluidVast, 40);
 
-    // Safeguard timeout (8s) in case network drops or zero fill occurs
-    fallbackTimer = setTimeout(() => {
+    // Safeguard fallback: if ad network drops or no fill occurs within 6 seconds, transition to main video
+    fallbackSafetyTimer = setTimeout(() => {
       if (isMounted && !contentStartedRef.current) {
         startMainContent();
       }
-    }, 8000);
+    }, 6000);
 
     return () => {
       isMounted = false;
-      clearTimeout(timer);
-      if (fallbackTimer) clearTimeout(fallbackTimer);
+      clearTimeout(initTimer);
+      if (fallbackSafetyTimer) clearTimeout(fallbackSafetyTimer);
       cleanupInstance();
     };
   }, [isPrerollActive, currentVideoSrc, video.id, videoMountKey, prerollPlayerId]);
+
+  // Handle direct VAST ad time updates and skip countdown
+  const handleDirectAdTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const v = e.currentTarget;
+    if (isAdLoading && v.currentTime > 0.1) {
+      setIsAdLoading(false);
+    }
+    setAdCurrentTime(v.currentTime);
+    if (v.duration && !isNaN(v.duration) && v.duration > 0) {
+      setAdDuration(v.duration);
+    }
+
+    const skipOffset = directVastAd?.skipOffsetSeconds || 5;
+    const remaining = Math.max(0, Math.ceil(skipOffset - v.currentTime));
+    setSkipRemainingSeconds(remaining);
+    if (remaining === 0 && !canSkipAd) {
+      setCanSkipAd(true);
+    }
+  };
+
+  const handleSkipAdClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (directVastAd) {
+      fireTrackingPixel(directVastAd.trackingEvents?.skip);
+    }
+    startMainContent();
+  };
+
+  const handleAdClickThrough = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (directVastAd) {
+      fireTrackingPixel(directVastAd.clickTrackingUrls);
+      const targetUrl = directVastAd.clickThroughUrl || 'https://go.marzaent.com/smartpop/165aea9bcdd7aabac45f72d02f58fd24b8416bc57cfc540b1b4409ac823564af';
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
     <div
       ref={containerRef}
       className={`relative w-full h-full bg-black overflow-hidden flex items-center justify-center select-none ${className}`}
     >
-      {/* ── STAGE 1: Official Native Fluid Player VAST PreRoll (Zero Custom Overlays) ── */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          STAGE 1: VAST IN-STREAM AD PREROLL WITH LOADING OVERLAY
+      ══════════════════════════════════════════════════════════════════════ */}
       {isPrerollActive && (
-        <div className="absolute inset-0 z-30 w-full h-full bg-black flex items-center justify-center">
-          <video
-            key={`preroll-${videoMountKey}`}
-            id={prerollPlayerId}
-            playsInline
-            preload="auto"
-            className="w-full h-full object-contain block bg-black"
-          >
-            {playerMode === 'video' && currentVideoSrc ? (
-              <source src={currentVideoSrc} type="video/mp4" />
-            ) : (
-              <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4" />
-            )}
-          </video>
+        <div className="absolute inset-0 z-30 w-full h-full bg-black flex items-center justify-center overflow-hidden">
+          
+          {/* Direct VAST Player UI (Active when direct VAST is engaged) */}
+          {directVastAd ? (
+            <div className="relative w-full h-full flex items-center justify-center bg-black">
+              <video
+                ref={adVideoRef}
+                src={directVastAd.mediaUrl}
+                autoPlay
+                playsInline
+                muted={isAdMuted}
+                onTimeUpdate={handleDirectAdTimeUpdate}
+                onPlaying={() => setIsAdLoading(false)}
+                onEnded={() => {
+                  if (directVastAd) {
+                    fireTrackingPixel(directVastAd.trackingEvents?.complete);
+                  }
+                  startMainContent();
+                }}
+                className="w-full h-full object-contain block bg-black cursor-pointer"
+                onClick={handleAdClickThrough}
+              />
+
+              {/* Direct Ad Top Bar: Badge & Unmute Button */}
+              <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-40 pointer-events-auto">
+                <div className="flex items-center gap-2 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-yellow-500/40 shadow-lg">
+                  <span className="bg-yellow-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded">
+                    AD
+                  </span>
+                  <span className="text-white text-xs font-mono">
+                    Ad ends in {Math.max(0, Math.ceil(adDuration - adCurrentTime))}s
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsAdMuted(!isAdMuted);
+                    if (adVideoRef.current) {
+                      adVideoRef.current.muted = !isAdMuted;
+                    }
+                  }}
+                  className="bg-black/80 hover:bg-black text-white px-3 py-1.5 rounded-full border border-white/20 text-xs font-semibold flex items-center gap-1.5 shadow-lg transition-transform active:scale-95 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm text-rose-500">
+                    {isAdMuted ? 'volume_off' : 'volume_up'}
+                  </span>
+                  <span>{isAdMuted ? 'Unmute' : 'Mute'}</span>
+                </button>
+              </div>
+
+              {/* Direct Ad Bottom Bar: CTA Link, Progress Bar & Skip Button */}
+              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-3 z-40 pointer-events-auto">
+                <button
+                  type="button"
+                  onClick={handleAdClickThrough}
+                  className="bg-rose-600 hover:bg-rose-500 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 shadow-xl transition-all transform hover:scale-105 active:scale-95 border border-rose-400/40 cursor-pointer"
+                >
+                  <span>{directVastAd.ctaText || 'Visit Sponsor'}</span>
+                  <span className="material-symbols-outlined text-xs">open_in_new</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  {canSkipAd ? (
+                    <button
+                      type="button"
+                      onClick={handleSkipAdClick}
+                      className="bg-white/90 hover:bg-white text-black font-extrabold px-4 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-2xl transition-all active:scale-95 border border-white/50 cursor-pointer"
+                    >
+                      <span>Skip Ad</span>
+                      <span className="material-symbols-outlined text-xs">skip_next</span>
+                    </button>
+                  ) : (
+                    <div className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 text-zinc-300 text-xs font-mono">
+                      Skip in {skipRemainingSeconds}s
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Ad Progress Bar */}
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-40">
+                <div
+                  className="h-full bg-rose-500 transition-all duration-150"
+                  style={{ width: `${Math.min(100, (adCurrentTime / (adDuration || 1)) * 100)}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            /* Fluid Player Native VAST PreRoll Element */
+            <video
+              key={`preroll-${videoMountKey}`}
+              id={prerollPlayerId}
+              playsInline
+              preload="auto"
+              muted
+              className="w-full h-full object-contain block bg-black"
+            >
+              <source
+                src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+                type="video/mp4"
+              />
+            </video>
+          )}
+
+          {/* ── LOADING SPINNER OVERLAY (Visible until VAST Ad Starts Playing) ── */}
+          {isAdLoading && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 gap-3 transition-opacity duration-300 pointer-events-none">
+              <div className="relative w-12 h-12 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full border-3 border-rose-500/20 border-t-rose-500 animate-spin" />
+                <span className="material-symbols-outlined text-rose-500 text-sm absolute">
+                  play_arrow
+                </span>
+              </div>
+              <div className="flex flex-col items-center gap-0.5 text-center px-4">
+                <span className="text-xs font-mono font-bold tracking-wider text-zinc-200 uppercase">
+                  Loading In-Stream Ad...
+                </span>
+                <span className="text-[10px] text-zinc-500">
+                  Video will start automatically after sponsor
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* ── STAGE 2: Main Video Player (Streamtape / Embed or Direct Video) ── */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          STAGE 2: MAIN EMBEDDED VIDEO PLAYER (Streamtape / Embed or Direct MP4)
+      ══════════════════════════════════════════════════════════════════════ */}
       {playerMode === 'embed' ? (
         <div className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center">
           {currentVideoSrc ? (

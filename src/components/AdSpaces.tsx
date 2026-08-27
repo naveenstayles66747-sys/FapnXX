@@ -150,12 +150,12 @@ export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> =
       el.appendChild(ins);
 
       // 2. Ensure Provider SDK is loaded
-      if (!document.getElementById('exoclick-pemsrv-sdk')) {
+      if (!document.getElementById('exoclick-global-ad-provider')) {
         const sdk = document.createElement('script');
-        sdk.id = 'exoclick-pemsrv-sdk';
+        sdk.id = 'exoclick-global-ad-provider';
         sdk.type = 'application/javascript';
         sdk.async = true;
-        sdk.src = 'https://a.pemsrv.com/ad-provider.js';
+        sdk.src = 'https://a.magsrv.com/ad-provider.js';
         document.head.appendChild(sdk);
       }
 
@@ -292,13 +292,13 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
       ins.style.minHeight = '300px';
       el.appendChild(ins);
 
-      // 2. Ensure Provider SDK is loaded from a.pemsrv.com
-      if (!document.getElementById('exoclick-pemsrv-sdk')) {
+      // 2. Ensure Provider SDK is loaded from a.magsrv.com
+      if (!document.getElementById('exoclick-global-ad-provider')) {
         const sdk = document.createElement('script');
-        sdk.id = 'exoclick-pemsrv-sdk';
+        sdk.id = 'exoclick-global-ad-provider';
         sdk.type = 'application/javascript';
         sdk.async = true;
-        sdk.src = 'https://a.pemsrv.com/ad-provider.js';
+        sdk.src = 'https://a.magsrv.com/ad-provider.js';
         document.head.appendChild(sdk);
       }
 
@@ -430,53 +430,39 @@ export const MobileInstantMessage: React.FC = () => {
 
 /**
  * In-Feed Outstream Video Card Ad (Zone ID: 6003190)
+ * Official ExoClick Format:
+ * <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script>
+ * <ins class="eas6a97888e37" data-zoneid="6003190"></ins>
+ * <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
  */
 export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ className = '' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState<boolean>(false);
   const [hasAdLoaded, setHasAdLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting) {
-            setIsVisible(true);
-            observer.disconnect();
-          }
-        },
-        { rootMargin: '300px' }
-      );
-      observer.observe(el);
-      return () => observer.disconnect();
-    } else {
-      setIsVisible(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible) return;
-    const el = containerRef.current;
-    if (!el) return;
+    let isMounted = true;
+    const timers: NodeJS.Timeout[] = [];
 
     try {
-      const scriptId = 'exoclick-ad-provider-script';
-      if (!document.getElementById(scriptId)) {
-        const script = document.createElement('script');
-        script.id = scriptId;
-        script.type = 'application/javascript';
-        script.async = true;
-        script.src = 'https://a.magsrv.com/ad-provider.js';
-        document.head.appendChild(script);
+      el.innerHTML = '';
+
+      // 1. Ensure Global Provider SDK is loaded
+      if (!document.getElementById('exoclick-global-ad-provider')) {
+        const sdk = document.createElement('script');
+        sdk.id = 'exoclick-global-ad-provider';
+        sdk.type = 'application/javascript';
+        sdk.async = true;
+        sdk.src = 'https://a.magsrv.com/ad-provider.js';
+        document.head.appendChild(sdk);
       }
 
-      el.innerHTML = '';
+      // 2. Create Native ExoClick Outstream <ins> element
       const ins = document.createElement('ins');
       ins.className = `eas${AD_ZONES.SITE_HASH}37`;
-      ins.setAttribute('data-zoneid', AD_ZONES.OUTSTREAM_VIDEO);
+      ins.setAttribute('data-zoneid', AD_ZONES.OUTSTREAM_VIDEO || '6003190');
       ins.style.display = 'block';
       ins.style.width = '100%';
       ins.style.height = '100%';
@@ -484,28 +470,61 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
-      const observer = new MutationObserver(() => {
-        if (ins.children.length > 0 || ins.querySelector('iframe, video, a')) {
-          setHasAdLoaded(true);
-        }
-      });
-      observer.observe(ins, { childList: true, subtree: true });
+      // 3. Inject inline script trigger adjacent to ins tag
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
 
-      setTimeout(() => {
+      // 4. Repeated trigger bursts to guarantee ExoClick serves on SPA transitions & Lazy loading
+      const triggerAdServe = () => {
+        if (!isMounted) return;
         try {
           const win = window as any;
           win.AdProvider = win.AdProvider || [];
           win.AdProvider.push({ serve: {} });
         } catch {}
-      }, 80);
+      };
+
+      triggerAdServe();
+      timers.push(setTimeout(triggerAdServe, 50));
+      timers.push(setTimeout(triggerAdServe, 200));
+      timers.push(setTimeout(triggerAdServe, 600));
+      timers.push(setTimeout(triggerAdServe, 1200));
+      timers.push(setTimeout(triggerAdServe, 2500));
+
+      // 5. Observe container for injected ExoClick elements (iframe, video, wrapper)
+      const observer = new MutationObserver(() => {
+        if (!isMounted) return;
+        const hasContent =
+          el.querySelector('iframe, video, a, [class*="exo"], [id*="exo"]') !== null ||
+          ins.children.length > 0 ||
+          ins.clientHeight > 50;
+        if (hasContent) {
+          setHasAdLoaded(true);
+        }
+      });
+      observer.observe(el, { childList: true, subtree: true, attributes: true });
+
+      // Fallback check after 1.5s
+      timers.push(
+        setTimeout(() => {
+          if (!isMounted) return;
+          if (el.querySelector('iframe, video, a, [class*="exo"]') || ins.children.length > 0) {
+            setHasAdLoaded(true);
+          }
+        }, 1500)
+      );
 
       return () => {
+        isMounted = false;
         observer.disconnect();
+        timers.forEach((t) => clearTimeout(t));
       };
     } catch (e) {
       console.warn('[ExoClick] Outstream ad mount error:', e);
     }
-  }, [isVisible]);
+  }, []);
 
   return (
     <article
@@ -513,19 +532,21 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
       aria-label="Sponsored Video Advertisement"
     >
       <div className="video-card-container relative w-full aspect-[16/9] min-h-[180px] rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-zinc-100 dark:bg-[#09090b] flex items-center justify-center">
+        {/* Outstream Ad Container */}
         <div
           ref={containerRef}
           id="exoclick-outstream-zone-6003190"
-          className="w-full h-full min-h-[180px] flex items-center justify-center overflow-hidden z-10"
+          className="w-full h-full min-h-[180px] flex items-center justify-center overflow-hidden z-10 pointer-events-auto relative"
         />
 
+        {/* Loading Spinner & Shimmer — automatically disappears when ad loads */}
         {!hasAdLoaded && (
-          <div className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 bg-zinc-100 dark:bg-[#09090b] pointer-events-none animate-pulse">
+          <div className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 bg-zinc-100 dark:bg-[#09090b] pointer-events-none transition-opacity duration-300">
             <div className="w-10 h-10 rounded-full border-2 border-rose-500/30 border-t-rose-500 animate-spin flex items-center justify-center">
               <span className="material-symbols-outlined text-rose-500 text-sm">play_arrow</span>
             </div>
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Sponsored Video
+              Loading Video Ad...
             </span>
           </div>
         )}
@@ -537,22 +558,22 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string }> = ({ classNa
         </div>
 
         <div className="thumb-duration-badge absolute bottom-2 left-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400 z-20 shadow-md pointer-events-none">
-          AD
+          SPONSORED
         </div>
       </div>
 
       <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
         <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight">
-          Featured Partner Video
+          Sponsored Outstream Video
         </h3>
         <div className="video-card-stats-row flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] sm:text-sm text-rose-500">verified</span>
-            <span className="video-card-stat-value text-rose-500 font-bold">Promoted</span>
+            <span className="video-card-stat-value text-rose-500 font-bold">Partner Ad</span>
           </span>
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">hd</span>
-            <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">1080p HD</span>
+            <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">HD Video</span>
           </span>
         </div>
       </div>
@@ -585,6 +606,12 @@ export const OnStreamVideoBanner: React.FC<{
       ins.style.display = 'block';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
+
+      // Inject inline trigger script
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
 
       const win = window as any;
       win.AdProvider = win.AdProvider || [];
@@ -725,7 +752,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         sdk.id = 'exoclick-global-ad-provider';
         sdk.type = 'application/javascript';
         sdk.async = true;
-        sdk.src = 'https://a.pemsrv.com/ad-provider.js';
+        sdk.src = 'https://a.magsrv.com/ad-provider.js';
         document.head.appendChild(sdk);
       }
 

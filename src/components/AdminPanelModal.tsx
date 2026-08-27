@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CategoryInfo, DMCAReport, LandingBanner, ReportStatus, Video } from '../types';
+import { CategoryInfo, ContentPreference, DMCAReport, LandingBanner, ReportStatus, Video } from '../types';
 import { videoService } from '../services/videoService';
 import { auth } from '../services/firebaseConfig';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -149,6 +149,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [upDuration, setUpDuration] = useState('18:45');
   const [upDesc, setUpDesc] = useState('');
   const [upIsExclusive, setUpIsExclusive] = useState(true);
+  const [upContentPreference, setUpContentPreference] = useState<ContentPreference>('straight');
   const [isCapturingAdminFrame, setIsCapturingAdminFrame] = useState(false);
 
   const handleAdminCaptureFrame = async () => {
@@ -576,12 +577,16 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     const categoryObj = categories.find((c) => c.id === upCategory) || categories[0];
     const parsedEmbed = upEmbedUrl ? cleanAdminEmbedUrl(upEmbedUrl) : undefined;
 
+    const finalTagsWithPref = upContentPreference !== 'straight'
+      ? Array.from(new Set([...upTags.split(',').map((t) => t.trim()).filter(Boolean), upContentPreference === 'lesbian' ? 'Lesbian' : 'Gay']))
+      : upTags.split(',').map((t) => t.trim()).filter(Boolean);
+
     const newVideo: Video = {
       id: `admin-video-${Date.now()}`,
       title: upTitle.trim(),
       category: upCategory,
       categoryLabel: categoryObj?.name || 'Exclusive',
-      tags: upTags.split(',').map((t) => t.trim()).filter(Boolean),
+      tags: finalTagsWithPref,
       thumbnail: upThumbnail.trim(),
       duration: upDuration || '15:00',
       quality: upQuality,
@@ -599,6 +604,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       embedUrl: parsedEmbed,
       previewMp4Url: upPreviewMp4Url.trim() || undefined,
       isEmbed: Boolean(parsedEmbed),
+      orientation: upContentPreference,
+      contentPreference: upContentPreference,
     };
 
     onUploadVideoSuccess(newVideo);
@@ -1833,7 +1840,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-[#a19fa6] mb-1">Target Category</label>
                       <select
@@ -1859,6 +1866,22 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         <option value="4K">4K Ultra-HD</option>
                         <option value="UHD">UHD Cinema</option>
                         <option value="HD">1080p HD</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#a19fa6] mb-1 flex items-center justify-between">
+                        <span className="text-[#ec4899] font-bold">Content Filter</span>
+                        <span className="text-[10px] text-zinc-500 font-normal">(Default: Straight)</span>
+                      </label>
+                      <select
+                        value={upContentPreference}
+                        onChange={(e) => setUpContentPreference(e.target.value as ContentPreference)}
+                        className="w-full bg-[#0d0c0e] border border-[#ec4899]/50 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#ec4899] font-semibold"
+                      >
+                        <option value="straight">Straight (Default - Hetero)</option>
+                        <option value="lesbian">Lesbian (Lesbian Filter)</option>
+                        <option value="gay">Gay (Gay Filter)</option>
                       </select>
                     </div>
                   </div>

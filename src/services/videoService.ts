@@ -699,7 +699,10 @@ export class VideoService {
           firestoreCats.push({ ...(d.data() as CategoryInfo), id: d.id });
         });
         if (firestoreCats.length > 0) {
-          return firestoreCats;
+          const mergedMap = new Map<string, CategoryInfo>();
+          CATEGORIES.forEach((c) => mergedMap.set(c.id, c));
+          firestoreCats.forEach((c) => mergedMap.set(c.id, c));
+          return Array.from(mergedMap.values());
         }
       }
     } catch (err: any) {
@@ -707,6 +710,41 @@ export class VideoService {
     }
 
     return CATEGORIES;
+  }
+
+  /**
+   * Subscribe to categories (live updates across all worldwide devices with Firestore Realtime & Visibility-Aware fallback)
+   */
+  subscribeToCategories(callback: (categories: CategoryInfo[]) => void) {
+    try {
+      const q = query(collection(db, 'categories'));
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const list: CategoryInfo[] = [];
+            snapshot.forEach((d) => {
+              const data = d.data() as CategoryInfo;
+              list.push({ ...data, id: d.id });
+            });
+            if (list.length > 0) {
+              const mergedMap = new Map<string, CategoryInfo>();
+              CATEGORIES.forEach((c) => mergedMap.set(c.id, c));
+              list.forEach((c) => mergedMap.set(c.id, c));
+              const finalList = Array.from(mergedMap.values());
+              callback(finalList);
+            }
+          }
+        },
+        (err) => {
+          console.warn('⚠️ [Firestore] Realtime categories subscription fallback:', err.message);
+          this.setupVisibilityAwareFallback(() => this.fetchCategories(), callback, 60000);
+        }
+      );
+      return unsubscribe;
+    } catch {
+      return this.setupVisibilityAwareFallback(() => this.fetchCategories(), callback, 60000);
+    }
   }
 
   /**
