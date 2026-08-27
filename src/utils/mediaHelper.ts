@@ -480,46 +480,21 @@ export function compressImageFile(
 }
 
 /**
- * Global Hard Media & Audio Stopper:
- * Completely silences and resets all playing HTML5 video/audio elements,
- * destroying any orphaned Fluid Player VAST ad overlays and VPAID iframes.
+ * Global Non-Destructive Media & Audio Silencer:
+ * Safely pauses and mutes all playing background video/audio elements across transitions
+ * without destructively wiping active React DOM structures.
  */
 export function stopAllBackgroundMedia(): void {
   try {
-    // 1. Pause and zero-out all video and audio elements on the page
     const mediaNodes = document.querySelectorAll('video, audio');
     mediaNodes.forEach((node: any) => {
       try {
         if (typeof node.pause === 'function') node.pause();
         node.muted = true;
-        node.volume = 0;
-        node.currentTime = 0;
-        // If it's an ad video or fluid player child, wipe its source
-        if (
-          node.classList.contains('fluid_ad_video') ||
-          (node.id && node.id.includes('fluid_')) ||
-          node.closest('.fluid_video_wrapper')
-        ) {
-          node.src = '';
-          node.removeAttribute('src');
-          try {
-            node.load();
-          } catch {}
-        }
-      } catch {}
-    });
-
-    // 2. Remove any injected Fluid Player VAST / VPAID ad wrappers
-    const adWrappers = document.querySelectorAll(
-      '.fluid_video_wrapper, .fluid_vpaid_container, .fluid_vpaid_iframe, .fluid_ad_container'
-    );
-    adWrappers.forEach((w) => {
-      try {
-        w.remove();
       } catch {}
     });
   } catch (e) {
-    console.warn('[MediaHelper] stopAllBackgroundMedia error:', e);
+    console.warn('[MediaHelper] stopAllBackgroundMedia notice:', e);
   }
 }
 

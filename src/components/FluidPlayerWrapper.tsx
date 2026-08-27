@@ -262,7 +262,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 }
               },
               noVastVideoCallback: () => {
-                if (isMounted) startMainContent();
+                if (isMounted && !directVastStarted) {
+                  setTimeout(() => {
+                    if (isMounted && !directVastStarted && !contentStartedRef.current) {
+                      startMainContent();
+                    }
+                  }, 2500);
+                }
               },
               vastVideoSkippedCallback: () => {
                 if (isMounted) startMainContent();

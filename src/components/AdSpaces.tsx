@@ -53,9 +53,6 @@ export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey
 
   useEffect(() => {
     renderAd();
-    const handleRefresh = () => renderAd();
-    window.addEventListener('exoclick-refresh-ads', handleRefresh);
-    return () => window.removeEventListener('exoclick-refresh-ads', handleRefresh);
   }, [renderAd, reloadKey]);
 
   return (
@@ -113,9 +110,6 @@ export const StickyBottomLeaderboard: React.FC = () => {
 
   useEffect(() => {
     renderAd();
-    const handleRefresh = () => renderAd();
-    window.addEventListener('exoclick-refresh-ads', handleRefresh);
-    return () => window.removeEventListener('exoclick-refresh-ads', handleRefresh);
   }, [renderAd]);
 
   if (isDismissed) return null;
@@ -400,10 +394,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
 
   useEffect(() => {
     const cleanup = renderAd();
-    const handleRefresh = () => renderAd();
-    window.addEventListener('exoclick-refresh-ads', handleRefresh);
     return () => {
-      window.removeEventListener('exoclick-refresh-ads', handleRefresh);
       if (cleanup) cleanup();
     };
   }, [renderAd, reloadKey]);
@@ -502,9 +493,6 @@ export const OnStreamVideoBanner: React.FC<{
 
   useEffect(() => {
     renderAd();
-    const handleRefresh = () => renderAd();
-    window.addEventListener('exoclick-refresh-ads', handleRefresh);
-    return () => window.removeEventListener('exoclick-refresh-ads', handleRefresh);
   }, [renderAd]);
 
   if (!isVisible || dismissed) return null;
@@ -587,9 +575,6 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
 
   useEffect(() => {
     renderAd();
-    const handleRefresh = () => renderAd();
-    window.addEventListener('exoclick-refresh-ads', handleRefresh);
-    return () => window.removeEventListener('exoclick-refresh-ads', handleRefresh);
   }, [renderAd, reloadKey]);
 
   return (
@@ -684,10 +669,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
 
   useEffect(() => {
     const cleanup = renderAd();
-    const handleRefresh = () => renderAd();
-    window.addEventListener('exoclick-refresh-ads', handleRefresh);
     return () => {
-      window.removeEventListener('exoclick-refresh-ads', handleRefresh);
       if (cleanup) cleanup();
     };
   }, [renderAd, reloadKey]);
