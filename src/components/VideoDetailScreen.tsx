@@ -271,9 +271,19 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
               <span>{video.duration || '05:00'}</span>
             </span>
 
-            {/* Real Rating % / Likes */}
-            <span className="flex items-center gap-1.5 font-medium text-xs">
-              <span className="material-symbols-outlined text-sm">thumb_up</span>
+            {/* Interactive Real Rating % / Like */}
+            <button
+              type="button"
+              onClick={handleLike}
+              className="flex items-center gap-1.5 font-medium text-xs hover:opacity-80 transition-opacity cursor-pointer text-rose-500 dark:text-rose-400"
+              title={isLiked ? 'Unlike video' : 'Like video'}
+            >
+              <span
+                className={`material-symbols-outlined text-sm ${isLiked ? 'fill-1' : ''}`}
+                style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
+              >
+                thumb_up
+              </span>
               <span>
                 {(() => {
                   if (likeCount === 0) return '0%';
@@ -282,7 +292,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
                   return `${Math.max(1, percent)}%`;
                 })()}
               </span>
-            </span>
+            </button>
 
             {/* Views with eye icon */}
             <span className="flex items-center gap-1.5 font-medium text-xs">
@@ -291,22 +301,8 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
             </span>
           </div>
 
-          {/* Right Action Icons (Like, Share, Report) */}
+          {/* Right Action Icons (Share, Report) - removed duplicate right thumb */}
           <div className="flex items-center gap-3 sm:gap-4 text-zinc-700 dark:text-zinc-300 ml-auto">
-            <button
-              type="button"
-              onClick={handleLike}
-              className="hover:text-rose-500 transition-colors cursor-pointer p-1"
-              title="Like video"
-            >
-              <span
-                className={`material-symbols-outlined text-lg ${isLiked ? 'text-rose-500 fill-1' : ''}`}
-                style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
-              >
-                thumb_up
-              </span>
-            </button>
-
             <button
               type="button"
               onClick={handleShare}
