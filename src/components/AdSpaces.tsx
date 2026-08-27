@@ -337,16 +337,17 @@ export const MobileInstantMessage: React.FC = () => {
 
 /**
  * In-Feed Outstream Video Card Ad (Zone ID: 6003190)
- * Official ExoClick Format:
- * <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script>
- * <ins class="eas6a97888e37" data-zoneid="6003190"></ins>
- * <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
+ * Dual-Engine ExoClick Native + Resilient VAST Video Player with zero black-screen fallback
  */
 export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: string | number }> = ({
   className = '',
   reloadKey,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [directAd, setDirectAd] = useState<VastAd | null>(null);
+  const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const renderAd = useCallback(() => {
     const el = containerRef.current;
@@ -354,6 +355,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
 
     let isMounted = true;
     const timers: NodeJS.Timeout[] = [];
+    setIsLoading(true);
 
     try {
       el.innerHTML = '';
@@ -384,7 +386,19 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
       triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
       el.appendChild(triggerScript);
 
-      // 4. Repeated trigger bursts to guarantee ExoClick serves on SPA transitions & Lazy loading
+      // 4. Concurrently fetch VAST XML for outstream zone 6003190 with cache buster
+      const outstreamVastUrl = `https://s.magsrv.com/splash.php?idzone=${AD_ZONES.OUTSTREAM_VIDEO || '6003190'}&type=37&cb=${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      fetchVastAd(outstreamVastUrl, 3500)
+        .then((parsed) => {
+          if (isMounted && parsed && parsed.mediaUrl) {
+            setDirectAd(parsed);
+            setIsLoading(false);
+            fireTrackingPixel(parsed.impressionUrls);
+          }
+        })
+        .catch(() => {});
+
+      // 5. Trigger AdProvider bursts
       const triggerAdServe = () => {
         if (!isMounted) return;
         try {
@@ -399,7 +413,9 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
       timers.push(setTimeout(triggerAdServe, 200));
       timers.push(setTimeout(triggerAdServe, 600));
       timers.push(setTimeout(triggerAdServe, 1200));
-      timers.push(setTimeout(triggerAdServe, 2500));
+      timers.push(setTimeout(() => {
+        if (isMounted) setIsLoading(false);
+      }, 2500));
 
       return () => {
         isMounted = false;
@@ -426,18 +442,66 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
     };
   }, [renderAd, reloadKey]);
 
+  const handleAdClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (directAd) {
+      fireTrackingPixel(directAd.clickTrackingUrls);
+      const url = directAd.clickThroughUrl || 'https://go.marzaent.com/smartpop/165aea9bcdd7aabac45f72d02f58fd24b8416bc57cfc540b1b4409ac823564af';
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <article
       className={`group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
       aria-label="Sponsored Video Advertisement"
     >
-      <div className="video-card-container relative w-full aspect-[16/9] min-h-[180px] rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-zinc-100 dark:bg-[#09090b] flex items-center justify-center">
-        {/* Outstream Ad Container */}
-        <div
-          ref={containerRef}
-          id="exoclick-outstream-zone-6003190"
-          className="w-full h-full min-h-[180px] flex items-center justify-center overflow-hidden z-10 pointer-events-auto relative"
-        />
+      <div className="video-card-container relative w-full aspect-[16/9] min-h-[180px] rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-zinc-900 flex items-center justify-center">
+        
+        {/* Loading Spinner Circle (Visible while ad connects) */}
+        {isLoading && !directAd && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-none">
+            <div className="w-10 h-10 rounded-full border-2 border-rose-500/20 border-t-rose-500 animate-spin mb-2" />
+            <span className="text-[11px] font-semibold text-zinc-300">Loading Sponsor...</span>
+          </div>
+        )}
+
+        {/* Direct VAST Video Stream Player */}
+        {directAd ? (
+          <div className="relative w-full h-full flex items-center justify-center bg-black cursor-pointer" onClick={handleAdClick}>
+            <video
+              ref={videoRef}
+              src={directAd.mediaUrl}
+              autoPlay
+              muted={isMuted}
+              loop
+              playsInline
+              className="w-full h-full object-cover block"
+            />
+            {/* Audio Toggle Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMuted(!isMuted);
+                if (videoRef.current) videoRef.current.muted = !isMuted;
+              }}
+              className="absolute top-2 left-2 z-30 bg-black/80 hover:bg-black text-white p-1.5 rounded-full border border-white/20 shadow-md cursor-pointer transition-transform active:scale-95"
+              title={isMuted ? "Unmute sound" : "Mute sound"}
+            >
+              <span className="material-symbols-outlined text-xs text-rose-400">
+                {isMuted ? 'volume_off' : 'volume_up'}
+              </span>
+            </button>
+          </div>
+        ) : (
+          /* Native ExoClick Outstream Tag Container */
+          <div
+            ref={containerRef}
+            id="exoclick-outstream-zone-6003190"
+            className="w-full h-full min-h-[180px] flex items-center justify-center overflow-hidden z-10 pointer-events-auto relative"
+          />
+        )}
 
         <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
           <span className="thumb-hd-badge bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
@@ -452,17 +516,21 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
 
       <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
         <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight">
-          Sponsored Outstream Video
+          {directAd?.adTitle || 'Featured Sponsor Video'}
         </h3>
-        <div className="video-card-stats-row flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
-          <span className="flex items-center gap-1">
+        <div className="video-card-stats-row flex items-center justify-between gap-3 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
+          <div className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] sm:text-sm text-rose-500">verified</span>
             <span className="video-card-stat-value text-rose-500 font-bold">Partner Ad</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">hd</span>
-            <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">HD Video</span>
-          </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleAdClick}
+            className="text-[11px] text-[#ec4899] hover:underline font-bold flex items-center gap-0.5 cursor-pointer"
+          >
+            <span>{directAd?.ctaText || 'Learn More'}</span>
+            <span className="material-symbols-outlined text-xs">open_in_new</span>
+          </button>
         </div>
       </div>
     </article>
