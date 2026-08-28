@@ -160,11 +160,38 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(['trending']);
   const [isUploadingPreview, setIsUploadingPreview] = useState<boolean>(false);
   const [previewUploadStatus, setPreviewUploadStatus] = useState<string | null>(null);
+  const [performerAvatarInput, setPerformerAvatarInput] = useState<string>('');
+  const [isUploadingPerformerAvatar, setIsUploadingPerformerAvatar] = useState<boolean>(false);
   // Credit & copyright fields
   const [performersInput, setPerformersInput] = useState('');
   const [channelNameInput, setChannelNameInput] = useState('');
   const [sourceWebsiteInput, setSourceWebsiteInput] = useState('');
   const [sourceWebsiteUrlInput, setSourceWebsiteUrlInput] = useState('');
+
+  const handlePerformerAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file (JPG, PNG, WebP).');
+        return;
+      }
+      setIsUploadingPerformerAvatar(true);
+      try {
+        const compressedDataUrl = await compressImageFile(file, 400, 400, 0.85);
+        setPerformerAvatarInput(compressedDataUrl);
+        try {
+          const storageUrl = await videoService.uploadDataUrlToStorage(compressedDataUrl);
+          if (storageUrl && !storageUrl.startsWith('data:image/')) {
+            setPerformerAvatarInput(storageUrl);
+          }
+        } catch {}
+      } catch (err) {
+        console.warn('Performer avatar upload error:', err);
+      } finally {
+        setIsUploadingPerformerAvatar(false);
+      }
+    }
+  };
 
   const handleCaptureFrame = async () => {
     const src = activeTab === 'file' && selectedFile ? selectedFile : processedEmbedUrl || embedInput;
@@ -737,7 +764,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         timeAgo: 'Just now',
         createdAt: new Date().toISOString(),
         performerName: performerName.trim() || 'Anonymous',
-        performerAvatar:
+        performerAvatar: performerAvatarInput.trim() ||
           'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150&auto=format&fit=crop',
         description: description.trim() || '',
         isNew: true,
@@ -791,6 +818,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setChannelNameInput('');
     setSourceWebsiteInput('');
     setSourceWebsiteUrlInput('');
+    setPerformerAvatarInput('');
   };
 
   if (!isOpen) return null;
@@ -1253,6 +1281,78 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 placeholder="e.g. Reese Rideout, Kasey Kei, Bella Joie"
                 className="w-full upload-modal-input border rounded-xl p-2.5 text-xs focus:outline-none focus:border-rose-500"
               />
+            </div>
+
+            {/* ─── Pornstar Avatar / Photo Upload ─── */}
+            <div className="border border-rose-500/40 rounded-xl p-3 space-y-2 bg-zinc-50 dark:bg-zinc-900/40">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-rose-500 text-sm">person</span>
+                <span className="text-xs font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider">Pornstar Photo / Avatar</span>
+              </div>
+              <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                Upload a photo or paste an image URL (supports http://, https://, or data:image/ URLs).
+              </p>
+
+              <div className="flex gap-3 items-start">
+                {/* Avatar preview */}
+                <div className="w-16 h-16 rounded-full border-2 border-rose-500/40 overflow-hidden bg-zinc-200 dark:bg-zinc-800 flex-shrink-0 flex items-center justify-center">
+                  {performerAvatarInput ? (
+                    <img
+                      src={performerAvatarInput}
+                      alt="Pornstar Avatar Preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <span className="material-symbols-outlined text-zinc-400 text-2xl">person</span>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-2">
+                  {/* URL input */}
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={performerAvatarInput}
+                      onChange={(e) => setPerformerAvatarInput(e.target.value)}
+                      placeholder="Paste image URL (https://... or data:image/...)"
+                      className="flex-1 upload-modal-input border rounded-xl p-2 text-xs focus:outline-none focus:border-rose-500 font-mono"
+                    />
+                    {performerAvatarInput && (
+                      <button
+                        type="button"
+                        onClick={() => setPerformerAvatarInput('')}
+                        className="w-6 h-6 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-rose-500 hover:text-white rounded-full text-zinc-500 transition-colors cursor-pointer"
+                        title="Clear"
+                      >
+                        <span className="material-symbols-outlined text-xs">close</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* File upload button */}
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                      isUploadingPerformerAvatar
+                        ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-400 cursor-wait border-zinc-300'
+                        : 'bg-rose-500 text-white hover:bg-rose-600 border-rose-500 cursor-pointer'
+                    }`}>
+                      <span className="material-symbols-outlined text-xs">
+                        {isUploadingPerformerAvatar ? 'hourglass_empty' : 'upload'}
+                      </span>
+                      {isUploadingPerformerAvatar ? 'Uploading...' : 'Upload Photo'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isUploadingPerformerAvatar}
+                      onChange={handlePerformerAvatarUpload}
+                    />
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400">JPG, PNG, WebP</span>
+                  </label>
+                </div>
+              </div>
             </div>
 
             {/* Channel Name & Source Website */}
