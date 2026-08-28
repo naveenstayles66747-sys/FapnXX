@@ -7,7 +7,6 @@ import { MobileDrawer } from './components/MobileDrawer';
 import { AgeGateModal } from './components/AgeGateModal';
 import {
   StickyBottomLeaderboard,
-  MobileStickyBanner,
   MobileInstantMessage,
   DesktopFullpageInterstitial,
   MobileFullpageInterstitial,
@@ -740,9 +739,6 @@ export default function App() {
 
           {/* ExoClick 728x90 Smart Sticky Bottom Leaderboard Ad (Desktop) */}
           <StickyBottomLeaderboard />
-
-          {/* ExoClick Mobile Sticky Bottom Banner Ad (Zone ID: 6003172) */}
-          <MobileStickyBanner />
 
           {/* ExoClick Desktop Fullpage Interstitial Ad (Zone ID: 6003174) */}
           <DesktopFullpageInterstitial />
