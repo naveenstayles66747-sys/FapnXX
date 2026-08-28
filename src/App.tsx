@@ -7,6 +7,7 @@ import { MobileDrawer } from './components/MobileDrawer';
 import { AgeGateModal } from './components/AgeGateModal';
 import {
   StickyBottomLeaderboard,
+  MobileInstantMessage,
   DesktopFullpageInterstitial,
   MobileFullpageInterstitial,
 } from './components/AdSpaces';
@@ -744,6 +745,9 @@ export default function App() {
 
           {/* ExoClick Mobile Fullpage Interstitial Ad (Zone ID: 6003180) */}
           <MobileFullpageInterstitial />
+
+          {/* ExoClick Mobile Instant Message Notification Ad (Zone ID: 6003178) */}
+          <MobileInstantMessage />
         </>
       )}
 
