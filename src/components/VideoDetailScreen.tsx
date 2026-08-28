@@ -475,6 +475,12 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           <span className="material-symbols-outlined text-rose-500 text-lg">grid_view</span>
           <span>Recommended Videos</span>
         </h3>
+
+        {/* Guaranteed Native Recommendation Widget (Zone: 6010176) */}
+        <div className="w-full my-3">
+          <NativeRecommendationAd key={`detail-native-rec-top-${video.id}`} reloadKey={video.id} />
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5">
           {(topRelatedVideos || []).map((relatedVideo, idx) => (
             <React.Fragment key={relatedVideo.id}>
@@ -488,7 +494,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
               {/* Native Recommendation Widget in-between related videos grid (After 4th video) */}
               {idx === 3 && (
                 <div key={`detail-native-recommended-in-grid-${video.id}`} className="col-span-full my-3">
-                  <NativeRecommendationAd key={`native-rec-${video.id}`} reloadKey={video.id} />
+                  <NativeRecommendationAd key={`native-rec-grid-${video.id}`} reloadKey={video.id} />
                 </div>
               )}
 
@@ -500,13 +506,6 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
               )}
             </React.Fragment>
           ))}
-
-          {/* Guaranteed in-grid placement if fewer than 4 related videos */}
-          {(!topRelatedVideos || topRelatedVideos.length < 4) && (
-            <div key={`detail-native-recommended-fallback-${video.id}`} className="col-span-full my-3">
-              <NativeRecommendationAd key={`native-rec-fallback-${video.id}`} reloadKey={video.id} />
-            </div>
-          )}
 
           {/* Guaranteed Outstream Video placement if between 4 and 8 related videos */}
           {topRelatedVideos && topRelatedVideos.length >= 4 && topRelatedVideos.length < 8 && (

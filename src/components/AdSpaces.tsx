@@ -781,7 +781,13 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       ins.style.background = 'transparent';
       el.appendChild(ins);
 
-      // 2. Automatic Multi-burst AdProvider trigger: (window.AdProvider = window.AdProvider || []).push({"serve": {}});
+      // 2. Adjacent trigger script matching ExoClick standard specification
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
+
+      // 3. Automatic Multi-burst AdProvider trigger
       const triggerAdServe = () => {
         if (!isMounted) return;
         try {
@@ -798,7 +804,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       timers.push(setTimeout(triggerAdServe, 500));
       timers.push(setTimeout(triggerAdServe, 1200));
 
-      // 3. Fallback recovery: If still empty after 1.8s, trigger serve again
+      // 4. Fallback recovery: If still empty after 1.8s, trigger serve again
       timers.push(
         setTimeout(() => {
           if (!isMounted) return;
@@ -808,7 +814,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         }, 1800)
       );
 
-      // 4. Viewport Intersection Observer (Triggers when scrolled into view on back/forward)
+      // 5. Viewport Intersection Observer (Triggers when scrolled into view on back/forward)
       let observer: IntersectionObserver | null = null;
       if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
         observer = new IntersectionObserver(
