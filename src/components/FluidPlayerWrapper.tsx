@@ -32,6 +32,8 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const [isAdLoading, setIsAdLoading] = useState<boolean>(true);
   const [directVastAd, setDirectVastAd] = useState<VastAd | null>(null);
   const [isAdMuted] = useState<boolean>(true);
+  const [adCurrentTime, setAdCurrentTime] = useState<number>(0);
+  const [adDuration, setAdDuration] = useState<number>(15);
 
   const prerollPlayerId = `fluid_preroll_${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
   const directPlayerId = `fluid_direct_${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
@@ -77,6 +79,8 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     setIsPrerollActive(true);
     setIsAdLoading(true);
     setDirectVastAd(null);
+    setAdCurrentTime(0);
+    setAdDuration(15);
 
     const rawEmbed = (
       video.embedUrl ||
@@ -165,7 +169,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     let isMounted = true;
     let fallbackSafetyTimer: NodeJS.Timeout | null = null;
 
-    // Fetch parsed VAST XML for Direct VAST Engine (100% Stable on all devices)
     const dynamicVastTag = `${VAST_TAG_URL}${VAST_TAG_URL.includes('?') ? '&' : '?'}cb=${Date.now()}_${Math.random().toString(36).substring(2, 8)}&v=${encodeURIComponent(video.id)}`;
 
     fetchVastAd(dynamicVastTag, 4000)
@@ -173,10 +176,12 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         if (!isMounted || contentStartedRef.current) return;
         if (parsedAd && parsedAd.mediaUrl) {
           setDirectVastAd(parsedAd);
+          if (parsedAd.durationSeconds && parsedAd.durationSeconds > 0) {
+            setAdDuration(parsedAd.durationSeconds);
+          }
           setIsAdLoading(false);
           fireTrackingPixel(parsedAd.impressionUrls);
         } else {
-          // No VAST fill -> proceed to main video content
           startMainContent();
         }
       })
@@ -186,7 +191,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         }
       });
 
-    // Safeguard fallback: 45s hard ceiling to prevent getting stuck if network drops entirely
     fallbackSafetyTimer = setTimeout(() => {
       if (isMounted && !contentStartedRef.current) {
         startMainContent();
@@ -206,6 +210,10 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     if (isAdLoading && v.currentTime > 0.1) {
       setIsAdLoading(false);
     }
+    setAdCurrentTime(v.currentTime);
+    if (v.duration && !isNaN(v.duration) && v.duration > 0) {
+      setAdDuration(v.duration);
+    }
   };
 
   const handleAdClickThrough = (e: React.MouseEvent) => {
@@ -219,18 +227,21 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     }
   };
 
+  // Calculate remaining seconds for the single corner badge
+  const remainingSec = Math.max(0, Math.ceil(adDuration - adCurrentTime));
+  const formattedRemaining = `${Math.floor(remainingSec / 60)}:${(remainingSec % 60).toString().padStart(2, '0')}`;
+
   return (
     <div
       ref={containerRef}
       className={`relative w-full h-full bg-black overflow-hidden flex items-center justify-center select-none ${className}`}
     >
       {/* ══════════════════════════════════════════════════════════════════════
-          STAGE 1: VAST IN-STREAM AD PREROLL WITH LOADING OVERLAY
+          STAGE 1: VAST IN-STREAM AD PREROLL WITH SINGLE CORNER TIMER
       ══════════════════════════════════════════════════════════════════════ */}
       {isPrerollActive && (
         <div className="absolute inset-0 z-30 w-full h-full bg-black flex items-center justify-center overflow-hidden">
           
-          {/* Direct VAST Player UI (Pure Clean Video without Cluttered Overlays) */}
           {directVastAd ? (
             <div className="relative w-full h-full flex items-center justify-center bg-black">
               <video
@@ -240,7 +251,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 playsInline
                 preload="auto"
                 muted={isAdMuted}
-                onLoadedMetadata={() => setIsAdLoading(false)}
+                onLoadedMetadata={(e) => {
+                  setIsAdLoading(false);
+                  const v = e.currentTarget;
+                  if (v.duration && !isNaN(v.duration) && v.duration > 0) {
+                    setAdDuration(v.duration);
+                  }
+                }}
                 onCanPlay={() => {
                   setIsAdLoading(false);
                   if (adVideoRef.current && adVideoRef.current.paused) {
@@ -258,6 +275,14 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 className="w-full h-full object-contain block bg-black cursor-pointer"
                 onClick={handleAdClickThrough}
               />
+
+              {/* ── Single Small Corner Time Badge (Bottom-Left) ── */}
+              <div className="absolute bottom-3 left-3 z-40 pointer-events-none">
+                <div className="bg-black/85 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/15 text-zinc-100 text-[11px] sm:text-xs font-mono font-bold shadow-lg flex items-center gap-1.5">
+                  <span className="bg-[#ec4899] text-white text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow-sm">AD</span>
+                  <span>{formattedRemaining}</span>
+                </div>
+              </div>
             </div>
           ) : null}
         </div>

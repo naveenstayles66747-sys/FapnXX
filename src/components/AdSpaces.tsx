@@ -353,12 +353,14 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
 
 /**
  * Mobile Instant Message Ad (Zone ID: 6003178)
- * Active on Mobile (< 1024px) with high-contrast close button
+ * Active on Mobile (< 1024px) — Guaranteed trigger on every navigation / video selection.
+ * Close dismisses only for that single screen. Reappears on next navigation.
  */
 export const MobileInstantMessage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDismissed, setIsDismissed] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const hasRenderedRef = useRef<boolean>(false);
 
   useEffect(() => {
     const checkDevice = () => {
@@ -374,6 +376,20 @@ export const MobileInstantMessage: React.FC = () => {
     return () => window.removeEventListener('resize', checkDevice);
   }, []);
 
+  // Reset dismiss state on every SPA navigation so ad reappears on each new page/video
+  useEffect(() => {
+    const handleNavigation = () => {
+      setIsDismissed(false);
+      hasRenderedRef.current = false;
+    };
+    window.addEventListener('exoclick-refresh-ads', handleNavigation);
+    window.addEventListener('popstate', handleNavigation);
+    return () => {
+      window.removeEventListener('exoclick-refresh-ads', handleNavigation);
+      window.removeEventListener('popstate', handleNavigation);
+    };
+  }, []);
+
   const renderAd = useCallback(() => {
     if (isDismissed || !isMobile) return;
     const el = containerRef.current;
@@ -381,7 +397,9 @@ export const MobileInstantMessage: React.FC = () => {
 
     try {
       el.innerHTML = '';
+      hasRenderedRef.current = true;
 
+      // Inject SDK if missing
       if (!document.getElementById('exoclick-global-ad-provider')) {
         const sdk = document.createElement('script');
         sdk.id = 'exoclick-global-ad-provider';
@@ -391,6 +409,7 @@ export const MobileInstantMessage: React.FC = () => {
         document.head.appendChild(sdk);
       }
 
+      // <ins class="eas6a97888e14" data-zoneid="6003178"></ins>
       const ins = document.createElement('ins');
       ins.className = `eas${AD_ZONES.SITE_HASH}14`;
       ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INSTANT_MESSAGE || '6003178');
@@ -398,6 +417,7 @@ export const MobileInstantMessage: React.FC = () => {
       ins.style.width = '100%';
       el.appendChild(ins);
 
+      // Multi-burst AdProvider trigger
       const triggerAdServe = () => {
         try {
           const win = window as any;
@@ -407,21 +427,22 @@ export const MobileInstantMessage: React.FC = () => {
       };
 
       triggerAdServe();
-      setTimeout(triggerAdServe, 50);
-      setTimeout(triggerAdServe, 200);
-      setTimeout(triggerAdServe, 600);
+      setTimeout(triggerAdServe, 80);
+      setTimeout(triggerAdServe, 300);
+      setTimeout(triggerAdServe, 700);
+      setTimeout(triggerAdServe, 1500);
+      setTimeout(triggerAdServe, 3000);
     } catch (e) {
       console.warn('[ExoClick] Mobile instant message error:', e);
     }
   }, [isDismissed, isMobile]);
 
   useEffect(() => {
-    if (!isMobile) return;
-    renderAd();
-    const handleRefresh = () => renderAd();
-    window.addEventListener('exoclick-refresh-ads', handleRefresh);
-    return () => window.removeEventListener('exoclick-refresh-ads', handleRefresh);
-  }, [renderAd, isMobile]);
+    if (!isMobile || isDismissed) return;
+    // Small delay so DOM is fully settled before injecting
+    const t = setTimeout(() => renderAd(), 200);
+    return () => clearTimeout(t);
+  }, [renderAd, isMobile, isDismissed]);
 
   if (!isMobile || isDismissed) return null;
 
