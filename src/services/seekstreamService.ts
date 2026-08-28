@@ -65,9 +65,9 @@ class SeekStreamService {
     const domainMatch = str.match(/https?:\/\/([^/]+)/i);
     const domain = domainMatch ? domainMatch[1] : 'fapnxx.embedseek.com';
 
-    // Match code (e.g. j4HHdpWkhViUYmN8pgoz2Q or 12-32 char alphanumeric)
-    const codeMatch = str.match(/(?:embedseek|seekstream)[^/]*\/(?:e\/|embed\/|v\/)?([a-zA-Z0-9_-]{8,})/i)
-      || str.match(/\/([a-zA-Z0-9_-]{12,})(?:\/|\?|$)/i);
+    // Match code (e.g. 9sq8g, j4HHdpWkhViUYmN8pgoz2Q or any alphanumeric code)
+    const codeMatch = str.match(/(?:embedseek|seekstream|hornhub)[^/]*\/(?:e\/|embed\/|v\/)?([a-zA-Z0-9_-]{4,})/i)
+      || str.match(/\/([a-zA-Z0-9_-]{4,})(?:\/|\?|$)/i);
 
     if (codeMatch && codeMatch[1]) {
       return {

@@ -314,7 +314,7 @@ export class VideoService {
     const createdBy = (v.createdBy || '').toLowerCase();
 
     if (id.startsWith('vid-0') || id.startsWith('demo-') || id.startsWith('test-')) return true;
-    if (embed.includes('embedseek.com/#9sq8g') || embed.includes('example.com')) return true;
+    if (embed.includes('example.com') || embed.includes('placeholder.com')) return true;
     if (createdBy === 'system' || v.isDemo === true) return true;
     if (
       title.includes('desi bhabhi romance 4k') ||

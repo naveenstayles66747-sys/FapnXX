@@ -223,6 +223,24 @@ export function extractThumbnailFromEmbedUrl(url: string): string | null {
     }
   }
 
+  // SeekStream / EmbedSeek / HornHub
+  if (
+    trimmed.includes('embedseek') ||
+    trimmed.includes('seekstream') ||
+    trimmed.includes('hornhub')
+  ) {
+    if (trimmed.includes('preview.webp')) {
+      return trimmed;
+    }
+    const codeMatch = trimmed.match(/(?:embedseek|seekstream)[^/]*\/(?:e\/|embed\/|v\/)?([a-zA-Z0-9_-]{4,})/i)
+      || trimmed.match(/\/([a-zA-Z0-9_-]{4,})(?:\/|\?|$)/i);
+    if (codeMatch && codeMatch[1]) {
+      const domainMatch = trimmed.match(/https?:\/\/([^/]+)/i);
+      const domain = domainMatch ? domainMatch[1] : 'fapnxx.embedseek.com';
+      return `https://${domain}/${codeMatch[1]}/preview.webp`;
+    }
+  }
+
   return null;
 }
 

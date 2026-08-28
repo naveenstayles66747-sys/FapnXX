@@ -302,179 +302,169 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
     try {
       let trimmed = input.trim();
-      let extractedUrl = '';
-      let autoTitle = '';
-
-      if (trimmed.includes('<iframe')) {
-        const srcMatch = trimmed.match(/src=["']([^"']+)["']/);
+      
+      // 1. Clean <iframe> code upfront to get the pure URL
+      if (trimmed.includes('<iframe') || trimmed.includes('src=')) {
+        const srcMatch = trimmed.match(/src=["']([^"']+)["']/i);
         if (srcMatch && srcMatch[1]) {
-          extractedUrl = srcMatch[1];
-          autoTitle = 'Embedded Video';
-        } else {
-          throw new Error('Invalid <iframe> tag.');
+          trimmed = srcMatch[1].trim();
         }
-      } else {
-        // Auto-prefix https:// if protocol is missing
-        if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('blob:')) {
-          trimmed = `https://${trimmed}`;
+      }
+      trimmed = trimmed.replace(/^["']|["']$/g, '').trim();
+
+      // 2. Normalize protocol
+      if (trimmed.startsWith('//')) {
+        trimmed = `https:${trimmed}`;
+      } else if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('blob:')) {
+        trimmed = `https://${trimmed}`;
+      }
+
+      let extractedUrl = trimmed;
+      let autoTitle = 'Stream Video';
+
+      if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
+        let videoId = '';
+        if (trimmed.includes('youtu.be/')) videoId = trimmed.split('youtu.be/')[1]?.split('?')[0] || '';
+        else if (trimmed.includes('watch?v=')) videoId = trimmed.split('watch?v=')[1]?.split('&')[0] || '';
+        else if (trimmed.includes('embed/')) videoId = trimmed.split('embed/')[1]?.split('?')[0] || '';
+
+        if (videoId) {
+          extractedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+        }
+        autoTitle = 'YouTube Stream';
+      } else if (trimmed.includes('vimeo.com')) {
+        const vimeoId = trimmed.split('vimeo.com/')[1]?.split('?')[0] || '';
+        if (vimeoId) {
+          extractedUrl = `https://player.vimeo.com/video/${vimeoId}`;
+        }
+        autoTitle = 'Vimeo Stream';
+      } else if (
+        trimmed.includes('streamtape') ||
+        trimmed.includes('streamta.pe') ||
+        trimmed.includes('streamhide') ||
+        trimmed.includes('shvip') ||
+        trimmed.includes('streamhub')
+      ) {
+        const tapeId = streamtapeService.extractTapeId(trimmed) || '';
+        extractedUrl = tapeId ? `https://streamtape.com/e/${tapeId}/` : trimmed;
+        autoTitle = 'Streamtape Video';
+        if (tapeId && !thumbnailUrl) {
+          setThumbnailUrl(`https://thumb.streamtape.com/${tapeId}.jpg`);
         }
 
-        if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
-          let videoId = '';
-          if (trimmed.includes('youtu.be/')) videoId = trimmed.split('youtu.be/')[1]?.split('?')[0] || '';
-          else if (trimmed.includes('watch?v=')) videoId = trimmed.split('watch?v=')[1]?.split('&')[0] || '';
-          else if (trimmed.includes('embed/')) videoId = trimmed.split('embed/')[1]?.split('?')[0] || '';
-
-          if (videoId) {
-            extractedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-            autoTitle = 'YouTube Stream';
-          } else {
-            extractedUrl = trimmed;
-            autoTitle = 'YouTube Stream';
-          }
-        } else if (trimmed.includes('vimeo.com')) {
-          const vimeoId = trimmed.split('vimeo.com/')[1]?.split('?')[0] || '';
-          if (vimeoId) {
-            extractedUrl = `https://player.vimeo.com/video/${vimeoId}`;
-            autoTitle = 'Vimeo Stream';
-          } else {
-            extractedUrl = trimmed;
-            autoTitle = 'Vimeo Stream';
-          }
-        } else if (
-          trimmed.includes('streamtape') ||
-          trimmed.includes('streamta.pe') ||
-          trimmed.includes('streamhide') ||
-          trimmed.includes('shvip') ||
-          trimmed.includes('streamhub')
-        ) {
-          const tapeId = streamtapeService.extractTapeId(trimmed) || '';
-          extractedUrl = tapeId ? `https://streamtape.com/e/${tapeId}/` : trimmed;
-          autoTitle = 'Streamtape Video';
-          if (tapeId && !thumbnailUrl) {
-            setThumbnailUrl(`https://thumb.streamtape.com/${tapeId}.jpg`);
-          }
-
-          // Asynchronously query Streamtape API for exact title, duration & HD splash
-          if (tapeId) {
-            streamtapeService.autoExtractMetadata(tapeId).then((stMeta) => {
-              if (stMeta) {
-                if (stMeta.title && (!title || title === 'Embedded Video' || title === 'Streamtape Stream' || title === 'Streamtape Video')) {
-                  setTitle(stMeta.title);
-                }
-                if (stMeta.duration) {
-                  setDurationInput(stMeta.duration);
-                }
-                if (stMeta.thumbnailUrl && !thumbnailUrl) {
-                  setThumbnailUrl(stMeta.thumbnailUrl);
-                }
-                if (stMeta.quality) {
-                  setQuality(stMeta.quality);
-                }
-                setProcessingStatus('✓ Streamtape Synced: Title, Duration & Thumbnail auto-detected!');
+        if (tapeId) {
+          streamtapeService.autoExtractMetadata(tapeId).then((stMeta) => {
+            if (stMeta) {
+              if (stMeta.title && (!title || title === 'Embedded Video' || title === 'Streamtape Stream' || title === 'Streamtape Video' || title === 'Stream Video')) {
+                setTitle(stMeta.title);
               }
-            }).catch(() => {});
-          }
-        } else if (trimmed.includes('dood') || trimmed.includes('doodstream') || trimmed.includes('ds2play') || trimmed.includes('doods.pro')) {
-          let doodId = '';
-          const match = trimmed.match(/\/(?:e|d)\/([a-zA-Z0-9_-]+)/);
-          if (match && match[1]) {
-            doodId = match[1];
-          } else {
-            doodId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
-          }
-          extractedUrl = doodId ? `https://dood.to/e/${doodId}` : trimmed;
-          autoTitle = 'DoodStream Stream';
-        } else if (trimmed.includes('spankbang.com')) {
-          const match = trimmed.match(/spankbang\.com\/([a-zA-Z0-9]+)/i);
-          if (match && match[1]) {
-            extractedUrl = `https://spankbang.com/${match[1]}/embed/`;
-          } else {
-            extractedUrl = trimmed;
-          }
-          autoTitle = 'SpankBang Stream';
-        } else if (trimmed.includes('xvideos.com')) {
-          const match = trimmed.match(/video-?([a-zA-Z0-9_]+)|\/prof-video-click\/[^\/]+\/([0-9]+)|embedframe\/([0-9]+)/i) || trimmed.match(/([0-9]{5,})/);
-          const vidNum = match ? match[1] || match[2] || match[3] || match[0] : '';
-          if (vidNum) {
-            extractedUrl = `https://www.xvideos.com/embedframe/${vidNum}`;
-          } else {
-            extractedUrl = trimmed;
-          }
-          autoTitle = 'XVideos Stream';
-        } else if (trimmed.includes('pornhub.com')) {
-          const match = trimmed.match(/viewkey=([a-zA-Z0-9]+)/i) || trimmed.match(/embed\/([a-zA-Z0-9]+)/i);
-          if (match && match[1]) {
-            extractedUrl = `https://www.pornhub.com/embed/${match[1]}`;
-          } else {
-            extractedUrl = trimmed;
-          }
-          autoTitle = 'Pornhub Stream';
-        } else if (trimmed.includes('filemoon') || trimmed.includes('filemoon.sx') || trimmed.includes('filemoon.to')) {
-          let moonId = '';
-          const match = trimmed.match(/\/(?:e|d)\/([a-zA-Z0-9_-]+)/);
-          if (match && match[1]) {
-            moonId = match[1];
-          } else {
-            moonId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
-          }
-          extractedUrl = moonId ? `https://filemoon.sx/e/${moonId}` : trimmed;
-          autoTitle = 'Filemoon Stream';
-        } else if (trimmed.includes('mixdrop.co') || trimmed.includes('mixdrop.to') || trimmed.includes('mixdrop.sx')) {
-          let mixId = '';
-          const match = trimmed.match(/\/(?:e|f)\/([a-zA-Z0-9_-]+)/);
-          if (match && match[1]) {
-            mixId = match[1];
-          } else {
-            mixId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
-          }
-          extractedUrl = mixId ? `https://mixdrop.co/e/${mixId}` : trimmed;
-          autoTitle = 'MixDrop Stream';
-        } else if (
-          trimmed.includes('embedseek') ||
-          trimmed.includes('seekstream') ||
-          trimmed.includes('preview.webp') ||
-          trimmed.includes('preview.MP4') ||
-          trimmed.includes('preview.mp4') ||
-          trimmed.includes('hornhub')
-        ) {
-          extractedUrl = trimmed;
-          autoTitle = 'SeekStream Video';
-          // Query SeekStream helper
-          seekstreamService.autoExtractMetadata(trimmed).then((sMeta) => {
-            if (sMeta) {
-              if (sMeta.embedUrl) setProcessedEmbedUrl(sMeta.embedUrl);
-              if (sMeta.previewWebpUrl) setPreviewWebpUrl(sMeta.previewWebpUrl);
-              if (sMeta.previewMp4Url) setPreviewMp4Url(sMeta.previewMp4Url);
-              if (sMeta.thumbnailUrl && !thumbnailUrl) setThumbnailUrl(sMeta.thumbnailUrl);
-              if (sMeta.duration) setDurationInput(sMeta.duration);
-              if (sMeta.title && (!title || title === 'Embedded Video' || title === 'Stream Video' || title === 'SeekStream Video')) {
-                setTitle(sMeta.title);
+              if (stMeta.duration) {
+                setDurationInput(stMeta.duration);
               }
-              setProcessingStatus('✓ SeekStream Synced: Embed, WebP & MP4 clip auto-configured!');
+              if (stMeta.thumbnailUrl && !thumbnailUrl) {
+                setThumbnailUrl(stMeta.thumbnailUrl);
+              }
+              if (stMeta.quality) {
+                setQuality(stMeta.quality);
+              }
+              setProcessingStatus('✓ Streamtape Synced: Title, Duration & Thumbnail auto-detected!');
             }
           }).catch(() => {});
-        } else if (trimmed.match(/\.(webp)($|\?|#)/i)) {
-          extractedUrl = trimmed;
-          autoTitle = 'WebP Animated Preview';
-          if (!previewWebpUrl) {
-            setPreviewWebpUrl(trimmed);
-          }
-        } else if (trimmed.match(/\.(mp4|webm|m3u8|mov|ogg)($|\?|#)/i) || trimmed.startsWith('blob:')) {
-          extractedUrl = trimmed;
-          autoTitle = 'Direct MP4 Stream';
-        } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-          extractedUrl = trimmed;
-          autoTitle = 'Stream Video';
-        } else {
-          extractedUrl = trimmed;
-          autoTitle = 'Stream Video';
         }
+      } else if (
+        trimmed.includes('embedseek') ||
+        trimmed.includes('seekstream') ||
+        trimmed.includes('preview.webp') ||
+        trimmed.includes('preview.MP4') ||
+        trimmed.includes('preview.mp4') ||
+        trimmed.includes('hornhub')
+      ) {
+        extractedUrl = trimmed;
+        autoTitle = 'SeekStream Video';
+
+        // Auto-extract SeekStream assets
+        seekstreamService.autoExtractMetadata(trimmed).then((sMeta) => {
+          if (sMeta) {
+            if (sMeta.embedUrl) setProcessedEmbedUrl(sMeta.embedUrl);
+            if (sMeta.previewWebpUrl) setPreviewWebpUrl(sMeta.previewWebpUrl);
+            if (sMeta.previewMp4Url) setPreviewMp4Url(sMeta.previewMp4Url);
+            if (sMeta.thumbnailUrl) setThumbnailUrl((prev) => prev || sMeta.thumbnailUrl || '');
+            if (sMeta.duration) setDurationInput(sMeta.duration);
+            if (sMeta.title && (!title || title === 'Embedded Video' || title === 'Stream Video' || title === 'SeekStream Video')) {
+              setTitle(sMeta.title);
+            }
+            setProcessingStatus('✓ SeekStream Synced: Embed, WebP & MP4 clip auto-configured!');
+          }
+        }).catch(() => {});
+      } else if (trimmed.includes('dood') || trimmed.includes('doodstream') || trimmed.includes('ds2play') || trimmed.includes('doods.pro')) {
+        let doodId = '';
+        const match = trimmed.match(/\/(?:e|d)\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          doodId = match[1];
+        } else {
+          doodId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
+        }
+        extractedUrl = doodId ? `https://dood.to/e/${doodId}` : trimmed;
+        autoTitle = 'DoodStream Stream';
+      } else if (trimmed.includes('spankbang.com')) {
+        const match = trimmed.match(/spankbang\.com\/([a-zA-Z0-9]+)/i);
+        if (match && match[1]) {
+          extractedUrl = `https://spankbang.com/${match[1]}/embed/`;
+        }
+        autoTitle = 'SpankBang Stream';
+      } else if (trimmed.includes('xvideos.com')) {
+        const match = trimmed.match(/video-?([a-zA-Z0-9_]+)|\/prof-video-click\/[^\/]+\/([0-9]+)|embedframe\/([0-9]+)/i) || trimmed.match(/([0-9]{5,})/);
+        const vidNum = match ? match[1] || match[2] || match[3] || match[0] : '';
+        if (vidNum) {
+          extractedUrl = `https://www.xvideos.com/embedframe/${vidNum}`;
+        }
+        autoTitle = 'XVideos Stream';
+      } else if (trimmed.includes('pornhub.com')) {
+        const match = trimmed.match(/viewkey=([a-zA-Z0-9]+)/i) || trimmed.match(/embed\/([a-zA-Z0-9]+)/i);
+        if (match && match[1]) {
+          extractedUrl = `https://www.pornhub.com/embed/${match[1]}`;
+        }
+        autoTitle = 'Pornhub Stream';
+      } else if (trimmed.includes('filemoon') || trimmed.includes('filemoon.sx') || trimmed.includes('filemoon.to')) {
+        let moonId = '';
+        const match = trimmed.match(/\/(?:e|d)\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          moonId = match[1];
+        } else {
+          moonId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
+        }
+        extractedUrl = moonId ? `https://filemoon.sx/e/${moonId}` : trimmed;
+        autoTitle = 'Filemoon Stream';
+      } else if (trimmed.includes('mixdrop.co') || trimmed.includes('mixdrop.to') || trimmed.includes('mixdrop.sx')) {
+        let mixId = '';
+        const match = trimmed.match(/\/(?:e|f)\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          mixId = match[1];
+        } else {
+          mixId = trimmed.split('/').filter(Boolean).pop()?.split('?')[0] || '';
+        }
+        extractedUrl = mixId ? `https://mixdrop.co/e/${mixId}` : trimmed;
+        autoTitle = 'MixDrop Stream';
+      } else if (trimmed.match(/\.(webp)($|\?|#)/i)) {
+        extractedUrl = trimmed;
+        autoTitle = 'WebP Animated Preview';
+        if (!previewWebpUrl) {
+          setPreviewWebpUrl(trimmed);
+        }
+      } else if (trimmed.match(/\.(mp4|webm|m3u8|mov|ogg)($|\?|#)/i) || trimmed.startsWith('blob:')) {
+        extractedUrl = trimmed;
+        autoTitle = 'Direct MP4 Stream';
       }
 
       setProcessedEmbedUrl(extractedUrl);
       if (!title && autoTitle) {
         setTitle(autoTitle);
+      }
+
+      // Auto thumbnail extraction
+      const directThumb = extractThumbnailFromEmbedUrl(extractedUrl || trimmed);
+      if (directThumb && !thumbnailUrl) {
+        setThumbnailUrl(directThumb);
       }
 
       setProcessingStatus('⚡ Auto-detecting title, exact duration & HD thumbnail...');
