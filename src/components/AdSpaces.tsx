@@ -76,6 +76,16 @@ export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey
 export const StickyBottomLeaderboard: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDismissed, setIsDismissed] = useState<boolean>(false);
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const checkViewport = () => {
+      setIsDesktop(typeof window !== 'undefined' && window.innerWidth >= 1024);
+    };
+    checkViewport();
+    window.addEventListener('resize', checkViewport);
+    return () => window.removeEventListener('resize', checkViewport);
+  }, []);
 
   const renderAd = useCallback(() => {
     if (isDismissed || typeof window === 'undefined' || window.innerWidth < 1024) return;
@@ -90,11 +100,6 @@ export const StickyBottomLeaderboard: React.FC = () => {
       ins.style.display = 'block';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
-
-      const triggerScript = document.createElement('script');
-      triggerScript.type = 'application/javascript';
-      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
-      el.appendChild(triggerScript);
 
       const triggerAdServe = () => {
         try {
@@ -112,6 +117,7 @@ export const StickyBottomLeaderboard: React.FC = () => {
   }, [isDismissed]);
 
   useEffect(() => {
+    if (!isDesktop) return;
     renderAd();
     const handleTrigger = () => {
       try {
@@ -122,9 +128,9 @@ export const StickyBottomLeaderboard: React.FC = () => {
     };
     window.addEventListener('exoclick-refresh-ads', handleTrigger);
     return () => window.removeEventListener('exoclick-refresh-ads', handleTrigger);
-  }, [renderAd]);
+  }, [renderAd, isDesktop]);
 
-  if (isDismissed) return null;
+  if (!isDesktop || isDismissed) return null;
 
   return (
     <aside
