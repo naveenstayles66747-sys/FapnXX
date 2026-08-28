@@ -76,19 +76,24 @@ export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey
 export const StickyBottomLeaderboard: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDismissed, setIsDismissed] = useState<boolean>(false);
-  const [isDesktop, setIsDesktop] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth >= 1024);
+  const [canRenderDesktop, setCanRenderDesktop] = useState<boolean>(false);
 
   useEffect(() => {
-    const checkViewport = () => {
-      setIsDesktop(typeof window !== 'undefined' && window.innerWidth >= 1024);
+    const checkDevice = () => {
+      const isMobile =
+        typeof window === 'undefined' ||
+        window.innerWidth < 1024 ||
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setCanRenderDesktop(!isMobile);
     };
-    checkViewport();
-    window.addEventListener('resize', checkViewport);
-    return () => window.removeEventListener('resize', checkViewport);
+
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
   }, []);
 
   const renderAd = useCallback(() => {
-    if (isDismissed || typeof window === 'undefined' || window.innerWidth < 1024) return;
+    if (isDismissed || !canRenderDesktop) return;
     const el = containerRef.current;
     if (!el) return;
 
@@ -114,10 +119,10 @@ export const StickyBottomLeaderboard: React.FC = () => {
     } catch (e) {
       console.warn('[ExoClick] Sticky leaderboard error:', e);
     }
-  }, [isDismissed]);
+  }, [isDismissed, canRenderDesktop]);
 
   useEffect(() => {
-    if (!isDesktop) return;
+    if (!canRenderDesktop) return;
     renderAd();
     const handleTrigger = () => {
       try {
@@ -128,9 +133,9 @@ export const StickyBottomLeaderboard: React.FC = () => {
     };
     window.addEventListener('exoclick-refresh-ads', handleTrigger);
     return () => window.removeEventListener('exoclick-refresh-ads', handleTrigger);
-  }, [renderAd, isDesktop]);
+  }, [renderAd, canRenderDesktop]);
 
-  if (!isDesktop || isDismissed) return null;
+  if (!canRenderDesktop || isDismissed) return null;
 
   return (
     <aside
