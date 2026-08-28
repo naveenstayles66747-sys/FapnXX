@@ -342,86 +342,9 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
 
 /**
  * Mobile Instant Message Ad (Zone ID: 6003178)
+ * Removed per user request to keep mobile view 100% clean and non-intrusive
  */
-export const MobileInstantMessage: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isDismissed, setIsDismissed] = useState<boolean>(false);
-
-  const renderAd = useCallback(() => {
-    if (isDismissed || typeof window === 'undefined' || window.innerWidth >= 1024) return;
-    const el = containerRef.current;
-    if (!el) return;
-
-    try {
-      el.innerHTML = '';
-
-      if (!document.getElementById('exoclick-global-ad-provider')) {
-        const sdk = document.createElement('script');
-        sdk.id = 'exoclick-global-ad-provider';
-        sdk.type = 'application/javascript';
-        sdk.async = true;
-        sdk.src = 'https://a.magsrv.com/ad-provider.js';
-        document.head.appendChild(sdk);
-      }
-
-      const ins = document.createElement('ins');
-      ins.className = `eas${AD_ZONES.SITE_HASH}14`;
-      ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INSTANT_MESSAGE || '6003178');
-      ins.style.display = 'block';
-      ins.style.width = '100%';
-      el.appendChild(ins);
-
-      const triggerAdServe = () => {
-        try {
-          const win = window as any;
-          win.AdProvider = win.AdProvider || [];
-          win.AdProvider.push({ serve: {} });
-        } catch {}
-      };
-
-      triggerAdServe();
-      setTimeout(triggerAdServe, 50);
-      setTimeout(triggerAdServe, 200);
-      setTimeout(triggerAdServe, 600);
-    } catch (e) {
-      console.warn('[ExoClick] Mobile instant message error:', e);
-    }
-  }, [isDismissed]);
-
-  useEffect(() => {
-    renderAd();
-    const handleRefresh = () => renderAd();
-    window.addEventListener('exoclick-refresh-ads', handleRefresh);
-    return () => window.removeEventListener('exoclick-refresh-ads', handleRefresh);
-  }, [renderAd]);
-
-  if (isDismissed) return null;
-
-  return (
-    <div
-      id="exoclick-mobile-instant-message"
-      className="block lg:hidden pointer-events-auto select-none"
-    >
-      <div className="relative w-full">
-        {/* Instant Message Floating Close ✕ Button */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsDismissed(true);
-          }}
-          className="absolute -top-3.5 -right-1 z-50 bg-black/90 hover:bg-rose-600 active:scale-90 text-white w-7 h-7 rounded-full flex items-center justify-center font-extrabold text-xs shadow-2xl border-2 border-white/60 cursor-pointer transition-all"
-          title="Close notification ad"
-        >
-          ✕
-        </button>
-
-        {/* Ad Container */}
-        <div ref={containerRef} className="w-full" />
-      </div>
-    </div>
-  );
-};
+export const MobileInstantMessage: React.FC = () => null;
 
 /**
  * In-Feed Outstream Video Card Ad (Zone ID: 6003190)
