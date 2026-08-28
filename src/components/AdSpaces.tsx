@@ -152,12 +152,11 @@ export const StickyBottomLeaderboard: React.FC = () => {
 
 /**
  * Sticky Bottom Banner Ad for Mobile (Zone ID: 6003172 / MOBILE_STICKY_BANNER)
- * Displays a clean, non-intrusive sticky bottom banner with a dedicated close bar.
+ * Directly glued to the bottom of the mobile screen with flush layout and clean close bar.
  */
 export const MobileStickyBanner: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDismissed, setIsDismissed] = useState<boolean>(false);
-  const [hasAdLoaded, setHasAdLoaded] = useState<boolean>(false);
 
   const renderAd = useCallback(() => {
     if (isDismissed || typeof window === 'undefined' || window.innerWidth >= 1024) return;
@@ -188,23 +187,16 @@ export const MobileStickyBanner: React.FC = () => {
       };
 
       triggerAdServe();
-      setTimeout(triggerAdServe, 120);
-
-      // Check if ad actually loaded
-      const checkTimer = setTimeout(() => {
-        if (el && (el.querySelector('iframe') || (ins && ins.children.length > 1))) {
-          setHasAdLoaded(true);
-        }
-      }, 800);
-
-      return () => clearTimeout(checkTimer);
+      setTimeout(triggerAdServe, 50);
+      setTimeout(triggerAdServe, 200);
+      setTimeout(triggerAdServe, 600);
     } catch (e) {
       console.warn('[ExoClick] Mobile sticky banner error:', e);
     }
   }, [isDismissed]);
 
   useEffect(() => {
-    const cleanup = renderAd();
+    renderAd();
     const handleTrigger = () => {
       try {
         const win = window as any;
@@ -213,10 +205,7 @@ export const MobileStickyBanner: React.FC = () => {
       } catch {}
     };
     window.addEventListener('exoclick-refresh-ads', handleTrigger);
-    return () => {
-      window.removeEventListener('exoclick-refresh-ads', handleTrigger);
-      if (cleanup) cleanup();
-    };
+    return () => window.removeEventListener('exoclick-refresh-ads', handleTrigger);
   }, [renderAd]);
 
   if (isDismissed) return null;
@@ -225,11 +214,11 @@ export const MobileStickyBanner: React.FC = () => {
     <aside
       id="exoclick-mobile-sticky-banner"
       aria-label="Sponsored Mobile Advertisement"
-      className="flex lg:hidden fixed bottom-[52px] left-0 right-0 z-[45] flex-col items-center justify-center pointer-events-auto px-2 pb-1"
+      className="flex lg:hidden fixed bottom-0 left-0 right-0 w-full z-[60] flex-col items-center justify-center pointer-events-auto bg-[#09090b]/98 backdrop-blur-lg border-t border-white/20 shadow-[0_-8px_30px_rgba(0,0,0,0.9)] pb-safe"
     >
-      <div className="relative w-full max-w-[360px] bg-zinc-950/95 dark:bg-[#121115]/95 border border-zinc-700/60 dark:border-white/15 rounded-t-2xl shadow-[0_-6px_25px_rgba(0,0,0,0.85)] backdrop-blur-md overflow-hidden flex flex-col items-center">
-        {/* Dedicated Control & Attribution Bar */}
-        <div className="w-full flex items-center justify-between px-3 py-1 bg-zinc-900/90 dark:bg-black/60 border-b border-white/10 select-none">
+      <div className="relative w-full max-w-md flex flex-col items-center">
+        {/* Compact Header Bar */}
+        <div className="w-full flex items-center justify-between px-3 py-1 bg-black/90 border-b border-white/10 select-none">
           <div className="flex items-center gap-1.5">
             <span className="px-1.5 py-0.5 rounded bg-[#ec4899] text-white text-[9px] font-black uppercase tracking-wider">
               AD
@@ -242,16 +231,16 @@ export const MobileStickyBanner: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsDismissed(true)}
-            className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-800 hover:bg-rose-600 active:scale-95 text-zinc-300 hover:text-white text-[10px] font-bold border border-white/10 shadow cursor-pointer transition-all"
+            className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-800 hover:bg-rose-600 active:scale-95 text-zinc-200 hover:text-white text-[10px] font-bold border border-white/20 shadow-md cursor-pointer transition-all"
             title="Close advertisement"
           >
             <span>Close</span>
-            <span className="font-extrabold text-[11px]">✕</span>
+            <span className="font-black text-[11px]">✕</span>
           </button>
         </div>
 
         {/* Ad Container with Responsive Scale */}
-        <div className="w-full flex items-center justify-center p-1 overflow-hidden min-h-[50px] max-h-[120px]">
+        <div className="w-full flex items-center justify-center p-1 overflow-hidden min-h-[50px] max-h-[100px]">
           <div
             ref={containerRef}
             className="w-full flex items-center justify-center overflow-hidden"
@@ -515,7 +504,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
     if (!el) return;
 
     let isMounted = true;
-    let timer: NodeJS.Timeout | null = null;
+    const timers: NodeJS.Timeout[] = [];
 
     try {
       el.innerHTML = '';
@@ -546,7 +535,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
       triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
       el.appendChild(triggerScript);
 
-      // 4. Trigger AdProvider
+      // 4. Automatic Multi-burst AdProvider trigger (No user click required!)
       const triggerAdServe = () => {
         if (!isMounted) return;
         try {
@@ -557,11 +546,28 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
       };
 
       triggerAdServe();
-      timer = setTimeout(triggerAdServe, 120);
+      timers.push(setTimeout(triggerAdServe, 50));
+      timers.push(setTimeout(triggerAdServe, 200));
+      timers.push(setTimeout(triggerAdServe, 600));
+      timers.push(setTimeout(triggerAdServe, 1500));
+
+      // 5. Viewport Intersection Observer to auto-serve when scrolled into view
+      let intersectionObserver: IntersectionObserver | null = null;
+      if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+        intersectionObserver = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && isMounted) {
+              triggerAdServe();
+            }
+          });
+        }, { threshold: 0.1 });
+        intersectionObserver.observe(el);
+      }
 
       return () => {
         isMounted = false;
-        if (timer) clearTimeout(timer);
+        timers.forEach((t) => clearTimeout(t));
+        if (intersectionObserver) intersectionObserver.disconnect();
       };
     } catch (e) {
       console.warn('[ExoClick] Outstream ad mount error:', e);
@@ -594,7 +600,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
         <div
           ref={containerRef}
           id="exoclick-outstream-zone-6003190"
-          className="outstream-ad-wrapper w-full aspect-[16/9] z-10 pointer-events-auto"
+          className="outstream-ad-wrapper w-full aspect-[16/9] z-10 pointer-events-auto flex items-center justify-center"
         />
 
         <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
@@ -608,7 +614,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
         </div>
       </div>
 
-      {/* The rest of your video card details (Title, Views, etc.) */}
+      {/* Video card details (Title, Views, etc.) */}
       <div className="video-info pt-2 px-0.5 space-y-1">
         <h4 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight">
           Sponsored Outstream Video
@@ -800,7 +806,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
     if (!el) return;
 
     let isMounted = true;
-    let timer: NodeJS.Timeout | null = null;
+    const timers: NodeJS.Timeout[] = [];
 
     try {
       el.innerHTML = '';
@@ -831,7 +837,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         document.head.appendChild(sdk);
       }
 
-      // 4. Single-pass AdProvider trigger
+      // 4. Automatic Multi-burst AdProvider trigger (Zero click required)
       const triggerAdServe = () => {
         if (!isMounted) return;
         try {
@@ -842,15 +848,32 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       };
 
       triggerAdServe();
-      timer = setTimeout(triggerAdServe, 120);
+      timers.push(setTimeout(triggerAdServe, 50));
+      timers.push(setTimeout(triggerAdServe, 200));
+      timers.push(setTimeout(triggerAdServe, 600));
+      timers.push(setTimeout(triggerAdServe, 1500));
+
+      // 5. Viewport Intersection Observer
+      let intersectionObserver: IntersectionObserver | null = null;
+      if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+        intersectionObserver = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && isMounted) {
+              triggerAdServe();
+            }
+          });
+        }, { threshold: 0.1 });
+        intersectionObserver.observe(el);
+      }
+
+      return () => {
+        isMounted = false;
+        timers.forEach((t) => clearTimeout(t));
+        if (intersectionObserver) intersectionObserver.disconnect();
+      };
     } catch (e) {
       console.warn('[ExoClick] Native recommendation ad mount error:', e);
     }
-
-    return () => {
-      isMounted = false;
-      if (timer) clearTimeout(timer);
-    };
   }, []);
 
   useEffect(() => {
