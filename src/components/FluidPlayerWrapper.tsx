@@ -289,6 +289,21 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
         playerInstanceRef.current = instance;
 
+        // Instant DOM watcher: as soon as ad elements are rendered, hide loading overlay
+        const checkAdElements = () => {
+          if (!isMounted) return;
+          const adEls = document.querySelectorAll(
+            '.fluid_video_wrapper, .fluid_ad_video, .fluid_vpaid_container, .fluid_vpaid_iframe, .fluid_controls_container'
+          );
+          if (adEls.length > 0) {
+            setIsAdLoading(false);
+          }
+        };
+
+        checkAdElements();
+        const adDomInterval = setInterval(checkAdElements, 100);
+        setTimeout(() => clearInterval(adDomInterval), 3000);
+
         targetEl.addEventListener('playing', () => {
           if (isMounted) {
             setIsAdLoading(false);
@@ -297,9 +312,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         });
 
         targetEl.addEventListener('timeupdate', () => {
-          if (isMounted && targetEl.currentTime > 0.2) {
+          if (isMounted && targetEl.currentTime > 0.1) {
             setIsAdLoading(false);
           }
+        });
+
+        targetEl.addEventListener('play', () => {
+          if (isMounted) setIsAdLoading(false);
         });
 
         targetEl.addEventListener('ended', () => {
@@ -317,6 +336,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
     const initTimer = setTimeout(initFluidVast, 80);
 
+    // Hard cap: Loading spinner must NEVER stay visible longer than 1.5 seconds
+    const hideLoadingCapTimer = setTimeout(() => {
+      if (isMounted) {
+        setIsAdLoading(false);
+      }
+    }, 1500);
+
     // Safeguard fallback: if ad network drops or no fill occurs within 12 seconds, transition to main video
     fallbackSafetyTimer = setTimeout(() => {
       if (isMounted && !contentStartedRef.current) {
@@ -327,6 +353,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     return () => {
       isMounted = false;
       clearTimeout(initTimer);
+      clearTimeout(hideLoadingCapTimer);
       if (fallbackSafetyTimer) clearTimeout(fallbackSafetyTimer);
       cleanupInstance();
     };
