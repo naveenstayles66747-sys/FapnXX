@@ -1460,8 +1460,11 @@ ins[data-zoneid="6003190"]:empty {
    ===================================================================== */
 #exoclick-mobile-sticky-banner ins,
 #exoclick-mobile-sticky-banner iframe {
+  width: 100% !important;
   max-width: 100% !important;
-  max-height: 100px !important;
+  height: auto !important;
+  min-height: 50px !important;
+  max-height: 90px !important;
   object-fit: contain !important;
   margin: 0 auto !important;
   display: block !important;
@@ -1480,11 +1483,12 @@ ins[data-zoneid="6003190"]:empty {
 .eas6a97888e14,
 ins[data-zoneid="6003178"] {
   position: fixed !important;
-  bottom: 60px !important;
-  right: 8px !important;
-  max-width: calc(100vw - 16px) !important;
-  z-index: 46 !important;
+  bottom: 85px !important;
+  right: 10px !important;
+  max-width: calc(100vw - 20px) !important;
+  z-index: 70 !important;
   overflow: visible !important;
+  pointer-events: auto !important;
 }
 
 #exoclick-mobile-instant-message iframe,

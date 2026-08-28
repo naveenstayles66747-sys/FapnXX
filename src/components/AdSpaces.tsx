@@ -239,11 +239,11 @@ export const MobileStickyBanner: React.FC = () => {
           </button>
         </div>
 
-        {/* Ad Container with Responsive Scale */}
-        <div className="w-full flex items-center justify-center p-1 overflow-hidden min-h-[50px] max-h-[100px]">
+        {/* Ad Container with Zero-Clipping Scale */}
+        <div className="w-full flex items-center justify-center py-0.5 overflow-visible min-h-[50px]">
           <div
             ref={containerRef}
-            className="w-full flex items-center justify-center overflow-hidden"
+            className="w-full flex items-center justify-center overflow-visible"
           />
         </div>
       </div>
@@ -448,9 +448,19 @@ export const MobileInstantMessage: React.FC = () => {
 
     try {
       el.innerHTML = '';
+
+      if (!document.getElementById('exoclick-global-ad-provider')) {
+        const sdk = document.createElement('script');
+        sdk.id = 'exoclick-global-ad-provider';
+        sdk.type = 'application/javascript';
+        sdk.async = true;
+        sdk.src = 'https://a.magsrv.com/ad-provider.js';
+        document.head.appendChild(sdk);
+      }
+
       const ins = document.createElement('ins');
       ins.className = `eas${AD_ZONES.SITE_HASH}14`;
-      ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INSTANT_MESSAGE);
+      ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INSTANT_MESSAGE || '6003178');
       el.appendChild(ins);
 
       const triggerScript = document.createElement('script');
@@ -467,7 +477,9 @@ export const MobileInstantMessage: React.FC = () => {
       };
 
       triggerAdServe();
-      setTimeout(triggerAdServe, 100);
+      setTimeout(triggerAdServe, 50);
+      setTimeout(triggerAdServe, 200);
+      setTimeout(triggerAdServe, 600);
     } catch (e) {
       console.warn('[ExoClick] Mobile instant message error:', e);
     }

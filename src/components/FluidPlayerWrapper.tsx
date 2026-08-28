@@ -444,70 +444,22 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 onClick={handleAdClickThrough}
               />
 
-              {/* Direct Ad Top Bar: Badge & Unmute Button */}
-              <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-40 pointer-events-auto">
-                <div className="flex items-center gap-2 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-yellow-500/40 shadow-lg">
-                  <span className="bg-yellow-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded">
-                    AD
-                  </span>
-                  <span className="text-white text-xs font-mono">
-                    Ad ends in {Math.max(0, Math.ceil(adDuration - adCurrentTime))}s
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsAdMuted(!isAdMuted);
-                    if (adVideoRef.current) {
-                      adVideoRef.current.muted = !isAdMuted;
-                    }
-                  }}
-                  className="bg-black/80 hover:bg-black text-white px-3 py-1.5 rounded-full border border-white/20 text-xs font-semibold flex items-center gap-1.5 shadow-lg transition-transform active:scale-95 cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-sm text-rose-500">
-                    {isAdMuted ? 'volume_off' : 'volume_up'}
-                  </span>
-                  <span>{isAdMuted ? 'Unmute' : 'Mute'}</span>
-                </button>
-              </div>
-
-              {/* Direct Ad Bottom Bar: CTA Link, Progress Bar & Skip Button */}
-              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-3 z-40 pointer-events-auto">
-                <button
-                  type="button"
-                  onClick={handleAdClickThrough}
-                  className="bg-rose-600 hover:bg-rose-500 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 shadow-xl transition-all transform hover:scale-105 active:scale-95 border border-rose-400/40 cursor-pointer"
-                >
-                  <span>{directVastAd.ctaText || 'Visit Sponsor'}</span>
-                  <span className="material-symbols-outlined text-xs">open_in_new</span>
-                </button>
-
-                <div className="flex items-center gap-2">
-                  {canSkipAd ? (
-                    <button
-                      type="button"
-                      onClick={handleSkipAdClick}
-                      className="bg-white/90 hover:bg-white text-black font-extrabold px-4 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-2xl transition-all active:scale-95 border border-white/50 cursor-pointer"
-                    >
-                      <span>Skip Ad</span>
-                      <span className="material-symbols-outlined text-xs">skip_next</span>
-                    </button>
-                  ) : (
-                    <div className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 text-zinc-300 text-xs font-mono">
-                      Skip in {skipRemainingSeconds}s
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Ad Progress Bar */}
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-40">
-                <div
-                  className="h-full bg-rose-500 transition-all duration-150"
-                  style={{ width: `${Math.min(100, (adCurrentTime / (adDuration || 1)) * 100)}%` }}
-                />
+              {/* Clean Minimal Skip Button Overlay Only */}
+              <div className="absolute bottom-3 right-3 z-40 pointer-events-auto">
+                {canSkipAd ? (
+                  <button
+                    type="button"
+                    onClick={handleSkipAdClick}
+                    className="bg-white/90 hover:bg-white text-black font-extrabold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-2xl transition-all active:scale-95 border border-white/50 cursor-pointer"
+                  >
+                    <span>Skip Ad</span>
+                    <span className="material-symbols-outlined text-xs">skip_next</span>
+                  </button>
+                ) : (
+                  <div className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-lg border border-white/20 text-zinc-300 text-xs font-mono">
+                    Skip in {skipRemainingSeconds}s
+                  </div>
+                )}
               </div>
             </div>
           ) : (
