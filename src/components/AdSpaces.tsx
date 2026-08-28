@@ -353,14 +353,11 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
 
 /**
  * Mobile Instant Message Ad (Zone ID: 6003178)
- * Active on Mobile (< 1024px) — Guaranteed trigger on every navigation / video selection.
- * Close dismisses only for that single screen. Reappears on next navigation.
+ * Pure Native ExoClick Tag — active on Mobile (< 1024px)
  */
 export const MobileInstantMessage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isDismissed, setIsDismissed] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
-  const hasRenderedRef = useRef<boolean>(false);
 
   useEffect(() => {
     const checkDevice = () => {
@@ -376,28 +373,13 @@ export const MobileInstantMessage: React.FC = () => {
     return () => window.removeEventListener('resize', checkDevice);
   }, []);
 
-  // Reset dismiss state on every SPA navigation so ad reappears on each new page/video
-  useEffect(() => {
-    const handleNavigation = () => {
-      setIsDismissed(false);
-      hasRenderedRef.current = false;
-    };
-    window.addEventListener('exoclick-refresh-ads', handleNavigation);
-    window.addEventListener('popstate', handleNavigation);
-    return () => {
-      window.removeEventListener('exoclick-refresh-ads', handleNavigation);
-      window.removeEventListener('popstate', handleNavigation);
-    };
-  }, []);
-
   const renderAd = useCallback(() => {
-    if (isDismissed || !isMobile) return;
+    if (!isMobile) return;
     const el = containerRef.current;
     if (!el) return;
 
     try {
       el.innerHTML = '';
-      hasRenderedRef.current = true;
 
       // Inject SDK if missing
       if (!document.getElementById('exoclick-global-ad-provider')) {
@@ -435,39 +417,29 @@ export const MobileInstantMessage: React.FC = () => {
     } catch (e) {
       console.warn('[ExoClick] Mobile instant message error:', e);
     }
-  }, [isDismissed, isMobile]);
+  }, [isMobile]);
 
   useEffect(() => {
-    if (!isMobile || isDismissed) return;
-    // Small delay so DOM is fully settled before injecting
+    if (!isMobile) return;
     const t = setTimeout(() => renderAd(), 200);
-    return () => clearTimeout(t);
-  }, [renderAd, isMobile, isDismissed]);
+    const handleRefresh = () => renderAd();
+    window.addEventListener('exoclick-refresh-ads', handleRefresh);
+    window.addEventListener('popstate', handleRefresh);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('exoclick-refresh-ads', handleRefresh);
+      window.removeEventListener('popstate', handleRefresh);
+    };
+  }, [renderAd, isMobile]);
 
-  if (!isMobile || isDismissed) return null;
+  if (!isMobile) return null;
 
   return (
     <div
       id="exoclick-mobile-instant-message"
       className="block lg:hidden pointer-events-auto select-none"
     >
-      <div className="relative w-full">
-        {/* Instant Message Floating Close ✕ Button */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsDismissed(true);
-          }}
-          className="absolute -top-3.5 -right-1 z-50 bg-black/90 hover:bg-rose-600 active:scale-90 text-white w-7 h-7 rounded-full flex items-center justify-center font-extrabold text-xs shadow-2xl border-2 border-white/60 cursor-pointer transition-all"
-          title="Close notification ad"
-        >
-          ✕
-        </button>
-
-        {/* Ad Container */}
-        <div ref={containerRef} className="w-full" />
-      </div>
+      <div ref={containerRef} className="w-full" />
     </div>
   );
 };
