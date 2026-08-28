@@ -227,9 +227,8 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     }
   };
 
-  // Calculate remaining seconds for the single corner badge
-  const remainingSec = Math.max(0, Math.ceil(adDuration - adCurrentTime));
-  const formattedRemaining = `${Math.floor(remainingSec / 60)}:${(remainingSec % 60).toString().padStart(2, '0')}`;
+
+
 
   return (
     <div
@@ -237,13 +236,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       className={`relative w-full h-full bg-black overflow-hidden flex items-center justify-center select-none ${className}`}
     >
       {/* ══════════════════════════════════════════════════════════════════════
-          STAGE 1: VAST IN-STREAM AD PREROLL WITH SINGLE CORNER TIMER
+          STAGE 1: VAST IN-STREAM AD PREROLL (No overlays — skip from ad network)
       ══════════════════════════════════════════════════════════════════════ */}
       {isPrerollActive && (
         <div className="absolute inset-0 z-30 w-full h-full bg-black flex items-center justify-center overflow-hidden">
-          
+
           {directVastAd ? (
-            <div className="relative w-full h-full flex items-center justify-center bg-black">
+            <div className="w-full h-full flex items-center justify-center bg-black">
               <video
                 ref={adVideoRef}
                 src={directVastAd.mediaUrl}
@@ -275,14 +274,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 className="w-full h-full object-contain block bg-black cursor-pointer"
                 onClick={handleAdClickThrough}
               />
-
-              {/* ── Single Small Corner Time Badge (Bottom-Left) ── */}
-              <div className="absolute bottom-3 left-3 z-40 pointer-events-none">
-                <div className="bg-black/85 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/15 text-zinc-100 text-[11px] sm:text-xs font-mono font-bold shadow-lg flex items-center gap-1.5">
-                  <span className="bg-[#ec4899] text-white text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow-sm">AD</span>
-                  <span>{formattedRemaining}</span>
-                </div>
-              </div>
             </div>
           ) : null}
         </div>
@@ -298,9 +289,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               key={`iframe-${videoMountKey}`}
               src={currentVideoSrc}
               title={video.title || 'Video Stream'}
-              allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope; clipboard-write; web-share; xr-spatial-tracking"
+              allow="autoplay=*; fullscreen=*; picture-in-picture=*; encrypted-media=*; accelerometer=*; gyroscope=*"
               allowFullScreen
-              referrerPolicy="no-referrer-when-downgrade"
+              referrerPolicy="no-referrer"
               scrolling="no"
               frameBorder={0}
               className="w-full h-full border-none block bg-black"
