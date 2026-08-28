@@ -169,186 +169,194 @@ export const MobileStickyBanner: React.FC = () => null;
 
 /**
  * Desktop Fullpage Interstitial Ad (Zone ID: 6003174)
- * Pure Native ExoClick Fullpage Interstitial — No artificial modal wrapper or blocking box
+ * Pure Native ExoClick Fullpage Interstitial Tag (eas6a97888e35)
  */
-export const DesktopFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = ({ onDismiss }) => {
+export const DesktopFullpageInterstitial: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDesktop, setIsDesktop] = useState<boolean>(false);
+
   useEffect(() => {
-    const handleRequest = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail && detail.target === 'desktop' && window.innerWidth >= 1024) {
-        try {
-          const zoneId = AD_ZONES.DESKTOP_INTERSTITIAL || '6003174';
-          const siteHash = AD_ZONES.SITE_HASH || '6a97888e';
-
-          // Clean any previous interstitial tag
-          const prevIns = document.getElementById('exoclick-native-desktop-interstitial');
-          if (prevIns) prevIns.remove();
-
-          // 1. Ensure Global Provider SDK is present
-          if (!document.getElementById('exoclick-global-ad-provider')) {
-            const sdk = document.createElement('script');
-            sdk.id = 'exoclick-global-ad-provider';
-            sdk.type = 'application/javascript';
-            sdk.async = true;
-            sdk.src = 'https://a.magsrv.com/ad-provider.js';
-            document.head.appendChild(sdk);
-          }
-
-          // 2. Mount native ExoClick Fullpage Interstitial tag directly to body
-          const ins = document.createElement('ins');
-          ins.id = 'exoclick-native-desktop-interstitial';
-          ins.className = `eas${siteHash}35`;
-          ins.setAttribute('data-zoneid', zoneId);
-
-          const triggerScript = document.createElement('script');
-          triggerScript.type = 'application/javascript';
-          triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
-          ins.appendChild(triggerScript);
-
-          document.body.appendChild(ins);
-
-          // 3. Trigger AdProvider with real DOM verification
-          const triggerAdServe = () => {
-            try {
-              const win = window as any;
-              win.AdProvider = win.AdProvider || [];
-              win.AdProvider.push({ serve: {} });
-            } catch {}
-          };
-
-          triggerAdServe();
-
-          // Verify actual ad injection into DOM before committing success
-          let isConfirmed = false;
-          const observer = new MutationObserver(() => {
-            if (ins && (ins.children.length > 1 || ins.querySelector('iframe, div, a, img, svg'))) {
-              if (!isConfirmed) {
-                isConfirmed = true;
-                observer.disconnect();
-                adManager.commitInterstitialSuccess();
-              }
-            }
-          });
-
-          observer.observe(ins, { childList: true, subtree: true });
-
-          // Verification timeout fallback (1.8s)
-          setTimeout(() => {
-            if (!isConfirmed) {
-              if (ins && (ins.children.length > 1 || ins.querySelector('iframe, div, a, img, svg'))) {
-                isConfirmed = true;
-                observer.disconnect();
-                adManager.commitInterstitialSuccess();
-              } else {
-                // No fill / blocked -> remove tag without setting false cooldown
-                observer.disconnect();
-                if (ins && ins.parentNode) ins.remove();
-              }
-            }
-          }, 1800);
-        } catch (err) {
-          console.warn('[ExoClick] Desktop native interstitial trigger notice:', err);
-        }
-      }
+    const checkDevice = () => {
+      setIsDesktop(typeof window !== 'undefined' && window.innerWidth >= 1024);
     };
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
 
-    window.addEventListener('exoclick-interstitial-request', handleRequest);
-    return () => window.removeEventListener('exoclick-interstitial-request', handleRequest);
-  }, [onDismiss]);
+  const renderAd = useCallback(() => {
+    if (!isDesktop) return;
+    const el = containerRef.current;
+    if (!el) return;
 
-  return null;
+    try {
+      el.innerHTML = '';
+
+      if (!document.getElementById('exoclick-global-ad-provider')) {
+        const sdk = document.createElement('script');
+        sdk.id = 'exoclick-global-ad-provider';
+        sdk.type = 'application/javascript';
+        sdk.async = true;
+        sdk.src = 'https://a.pemsrv.com/ad-provider.js';
+        document.head.appendChild(sdk);
+      }
+
+      const ins = document.createElement('ins');
+      ins.className = `eas${AD_ZONES.SITE_HASH}35`;
+      ins.setAttribute('data-zoneid', AD_ZONES.DESKTOP_INTERSTITIAL || '6003174');
+      ins.style.display = 'block';
+      ins.style.width = '100%';
+      el.appendChild(ins);
+
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
+
+      const triggerAdServe = () => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      };
+
+      triggerAdServe();
+      setTimeout(triggerAdServe, 80);
+      setTimeout(triggerAdServe, 300);
+      setTimeout(triggerAdServe, 700);
+      setTimeout(triggerAdServe, 1500);
+    } catch (err) {
+      console.warn('[ExoClick] Desktop native interstitial trigger error:', err);
+    }
+  }, [isDesktop]);
+
+  useEffect(() => {
+    if (!isDesktop) return;
+    const t = setTimeout(() => renderAd(), 250);
+    const handleRefresh = () => renderAd();
+    window.addEventListener('exoclick-refresh-ads', handleRefresh);
+    window.addEventListener('popstate', handleRefresh);
+    window.addEventListener('pageshow', handleRefresh);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('exoclick-refresh-ads', handleRefresh);
+      window.removeEventListener('popstate', handleRefresh);
+      window.removeEventListener('pageshow', handleRefresh);
+    };
+  }, [renderAd, isDesktop]);
+
+  if (!isDesktop) return null;
+
+  return (
+    <div
+      id="exoclick-desktop-interstitial-container"
+      className="hidden lg:block pointer-events-auto select-none"
+    >
+      <div ref={containerRef} className="w-full" />
+    </div>
+  );
 };
 
 /**
  * Mobile Fullpage Interstitial Ad (Zone ID: 6003180)
- * Pure Native ExoClick Fullpage Interstitial with Verified DOM Mount
+ * Pure Native ExoClick Fullpage Interstitial Tag (eas6a97888e33)
  */
-export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = ({ onDismiss }) => {
+export const MobileFullpageInterstitial: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
   useEffect(() => {
-    const handleRequest = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail && detail.target === 'mobile' && window.innerWidth < 1024) {
-        try {
-          const zoneId = AD_ZONES.MOBILE_INTERSTITIAL || '6003180';
-          const siteHash = AD_ZONES.SITE_HASH || '6a97888e';
-
-          // Clean any previous interstitial tag
-          const prevIns = document.getElementById('exoclick-native-mobile-interstitial');
-          if (prevIns) prevIns.remove();
-
-          // 1. Ensure Global Provider SDK is present
-          if (!document.getElementById('exoclick-global-ad-provider')) {
-            const sdk = document.createElement('script');
-            sdk.id = 'exoclick-global-ad-provider';
-            sdk.type = 'application/javascript';
-            sdk.async = true;
-            sdk.src = 'https://a.magsrv.com/ad-provider.js';
-            document.head.appendChild(sdk);
-          }
-
-          // 2. Mount native ExoClick Fullpage Interstitial tag directly to body
-          const ins = document.createElement('ins');
-          ins.id = 'exoclick-native-mobile-interstitial';
-          ins.className = `eas${siteHash}33`;
-          ins.setAttribute('data-zoneid', zoneId);
-
-          const triggerScript = document.createElement('script');
-          triggerScript.type = 'application/javascript';
-          triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
-          ins.appendChild(triggerScript);
-
-          document.body.appendChild(ins);
-
-          // 3. Trigger AdProvider with real DOM verification
-          const triggerAdServe = () => {
-            try {
-              const win = window as any;
-              win.AdProvider = win.AdProvider || [];
-              win.AdProvider.push({ serve: {} });
-            } catch {}
-          };
-
-          triggerAdServe();
-
-          // Verify actual ad injection into DOM before committing success
-          let isConfirmed = false;
-          const observer = new MutationObserver(() => {
-            if (ins && (ins.children.length > 1 || ins.querySelector('iframe, div, a, img, svg'))) {
-              if (!isConfirmed) {
-                isConfirmed = true;
-                observer.disconnect();
-                adManager.commitInterstitialSuccess();
-              }
-            }
-          });
-
-          observer.observe(ins, { childList: true, subtree: true });
-
-          // Verification timeout fallback (1.8s)
-          setTimeout(() => {
-            if (!isConfirmed) {
-              if (ins && (ins.children.length > 1 || ins.querySelector('iframe, div, a, img, svg'))) {
-                isConfirmed = true;
-                observer.disconnect();
-                adManager.commitInterstitialSuccess();
-              } else {
-                // No fill / blocked -> remove tag without setting false cooldown
-                observer.disconnect();
-                if (ins && ins.parentNode) ins.remove();
-              }
-            }
-          }, 1800);
-        } catch (err) {
-          console.warn('[ExoClick] Mobile native interstitial trigger notice:', err);
-        }
-      }
+    const checkDevice = () => {
+      const mobile =
+        typeof window !== 'undefined' &&
+        (window.innerWidth < 1024 ||
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+      setIsMobile(mobile);
     };
 
-    window.addEventListener('exoclick-interstitial-request', handleRequest);
-    return () => window.removeEventListener('exoclick-interstitial-request', handleRequest);
-  }, [onDismiss]);
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
 
-  return null;
+  const renderAd = useCallback(() => {
+    if (!isMobile) return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    try {
+      el.innerHTML = '';
+
+      // 1. Ensure Global Provider SDK is present
+      if (!document.getElementById('exoclick-global-ad-provider')) {
+        const sdk = document.createElement('script');
+        sdk.id = 'exoclick-global-ad-provider';
+        sdk.type = 'application/javascript';
+        sdk.async = true;
+        sdk.src = 'https://a.pemsrv.com/ad-provider.js';
+        document.head.appendChild(sdk);
+      }
+
+      // 2. Mount native ExoClick Fullpage Interstitial tag: <ins class="eas6a97888e33" data-zoneid="6003180"></ins>
+      const ins = document.createElement('ins');
+      ins.className = `eas${AD_ZONES.SITE_HASH}33`;
+      ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INTERSTITIAL || '6003180');
+      ins.style.display = 'block';
+      ins.style.width = '100%';
+      el.appendChild(ins);
+
+      // 3. Adjacent trigger script
+      const triggerScript = document.createElement('script');
+      triggerScript.type = 'application/javascript';
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
+
+      // 4. Multi-burst AdProvider trigger
+      const triggerAdServe = () => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      };
+
+      triggerAdServe();
+      setTimeout(triggerAdServe, 80);
+      setTimeout(triggerAdServe, 300);
+      setTimeout(triggerAdServe, 700);
+      setTimeout(triggerAdServe, 1500);
+      setTimeout(triggerAdServe, 3000);
+    } catch (err) {
+      console.warn('[ExoClick] Mobile native interstitial trigger error:', err);
+    }
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const t = setTimeout(() => renderAd(), 250);
+    const handleRefresh = () => renderAd();
+    window.addEventListener('exoclick-refresh-ads', handleRefresh);
+    window.addEventListener('popstate', handleRefresh);
+    window.addEventListener('pageshow', handleRefresh);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('exoclick-refresh-ads', handleRefresh);
+      window.removeEventListener('popstate', handleRefresh);
+      window.removeEventListener('pageshow', handleRefresh);
+    };
+  }, [renderAd, isMobile]);
+
+  if (!isMobile) return null;
+
+  return (
+    <div
+      id="exoclick-mobile-interstitial-container"
+      className="block lg:hidden pointer-events-auto select-none"
+    >
+      <div ref={containerRef} className="w-full" />
+    </div>
+  );
 };
 
 /**
