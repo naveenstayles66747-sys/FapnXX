@@ -491,6 +491,13 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
                   <NativeRecommendationAd key={`native-rec-${video.id}`} reloadKey={video.id} />
                 </div>
               )}
+
+              {/* Outstream Video Card Ad (After 7th video) */}
+              {idx === 7 && (
+                <div key={`detail-outstream-in-grid-${video.id}`} className="col-span-1">
+                  <OutstreamVideoCardAd key={`outstream-rec-${video.id}`} reloadKey={video.id} />
+                </div>
+              )}
             </React.Fragment>
           ))}
 
@@ -498,6 +505,13 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           {(!topRelatedVideos || topRelatedVideos.length < 4) && (
             <div key={`detail-native-recommended-fallback-${video.id}`} className="col-span-full my-3">
               <NativeRecommendationAd key={`native-rec-fallback-${video.id}`} reloadKey={video.id} />
+            </div>
+          )}
+
+          {/* Guaranteed Outstream Video placement if between 4 and 8 related videos */}
+          {topRelatedVideos && topRelatedVideos.length >= 4 && topRelatedVideos.length < 8 && (
+            <div key={`detail-outstream-fallback-${video.id}`} className="col-span-1">
+              <OutstreamVideoCardAd key={`outstream-fallback-${video.id}`} reloadKey={video.id} />
             </div>
           )}
         </div>
