@@ -13,6 +13,7 @@ import {
 } from './components/AdSpaces';
 import { adManager, refreshExoClickAds } from './utils/adManager';
 import { BrowseScreen } from './components/BrowseScreen';
+import { SiteFooter } from './components/SiteFooter';
 
 // Code-split heavy secondary screens & modals to minimize initial JS payload and optimize FCP/LCP/INP
 const CategoriesScreen = lazy(() => import('./components/CategoriesScreen').then(m => ({ default: m.CategoriesScreen })));
@@ -762,7 +763,10 @@ export default function App() {
           />
         </Suspense>
       )}
-      
+
+      {/* Site Footer — DMCA, Legal, 18+ notice */}
+      {currentScreen !== 'signin' && <SiteFooter />}
+
       <SpeedInsights />
     </div>
   );
