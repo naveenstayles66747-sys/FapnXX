@@ -82,23 +82,154 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     [banners]
   );
   const displayBanners = React.useMemo(() => {
-    if (activeBanners.length > 0) {
-      return activeBanners;
+    // If admin explicitly provided custom banners and no real videos exist, use them
+    if (activeBanners.length > 0 && activeVideos.length === 0) {
+      return activeBanners.slice(0, 5);
     }
-    // If no custom banners uploaded by admin, dynamically showcase the top real uploaded videos
-    if (activeVideos.length > 0) {
-      return activeVideos.slice(0, 5).map((v) => ({
+
+    if (activeVideos.length === 0) {
+      return [];
+    }
+
+    // Helper to get numeric views
+    const getViewsNumber = (v: Video): number => {
+      if (typeof v.viewsCount === 'number' && !isNaN(v.viewsCount)) return v.viewsCount;
+      if (typeof v.views === 'string') {
+        const uppercaseV = v.views.toUpperCase();
+        if (uppercaseV.endsWith('M')) return parseFloat(uppercaseV) * 1000000;
+        if (uppercaseV.endsWith('K')) return parseFloat(uppercaseV) * 1000;
+        return parseInt(uppercaseV.replace(/[^0-9]/g, ''), 10) || 0;
+      }
+      return 0;
+    };
+
+    // Calculate score: views + likes + freshness
+    const scoredVideos = [...activeVideos].map((v) => {
+      const viewsNum = getViewsNumber(v);
+      const likesNum = typeof v.likesCount === 'number' && !isNaN(v.likesCount) ? v.likesCount : 0;
+      const score = Math.round(viewsNum * 0.5 + likesNum * 10 + (v.isNew ? 5000 : 0));
+      return { video: v, score, viewsNum };
+    });
+
+    // 1. Most watched / Trending videos (Highest score / views first)
+    const sortedByPopularity = [...scoredVideos].sort((a, b) => b.score - a.score);
+
+    // 2. Videos that need views / Fresh / Under-exposed (Lowest views / newest first)
+    const sortedByNeedsViews = [...scoredVideos].sort((a, b) => {
+      if (a.video.isNew && !b.video.isNew) return -1;
+      if (!a.video.isNew && b.video.isNew) return 1;
+      return a.viewsNum - b.viewsNum;
+    });
+
+    const usedIds = new Set<string>();
+    const slides: Array<{
+      id: string;
+      title: string;
+      subtitle: string;
+      bannerImage: string;
+      tag: string;
+      tagClass: string;
+      targetCategory?: string;
+      targetVideoId?: string;
+      targetVideo?: Video;
+      ctaText?: string;
+      isActive: boolean;
+    }> = [];
+
+    const addSlide = (
+      v: Video,
+      tag: string,
+      tagClass: string,
+      subtitlePrefix: string
+    ) => {
+      if (!v || usedIds.has(v.id)) return;
+      usedIds.add(v.id);
+
+      const viewsDisplay = v.views || `${(v.viewsCount || 500).toLocaleString()} views`;
+      const subtitle = `${subtitlePrefix} • ${viewsDisplay} • ${v.duration || '05:00'} • ${v.quality || 'HD'} Ultra-HD`;
+
+      slides.push({
         id: `hero-${v.id}`,
         title: v.title || 'Featured Video',
-        subtitle: v.description || `${v.categoryLabel || 'Exclusive'} • ${v.duration || '05:00'} • ${v.quality || 'HD'} Ultra-HD`,
+        subtitle,
         bannerImage: v.thumbnail || '',
-        tag: v.quality ? `${v.quality} Ultra-HD` : 'Featured',
+        tag,
+        tagClass,
+        targetVideoId: v.id,
+        targetVideo: v,
         targetCategory: v.category || 'trending',
         ctaText: 'Watch Now',
         isActive: true,
-      }));
+      });
+    };
+
+    // Slot 1: 🔥 #1 Most Watched Video
+    if (sortedByPopularity[0]) {
+      addSlide(
+        sortedByPopularity[0].video,
+        '🔥 #1 MOST WATCHED',
+        'bg-gradient-to-r from-rose-600 via-pink-600 to-orange-500 shadow-rose-950/50',
+        'Top Trending'
+      );
     }
-    return [];
+
+    // Slot 2: ⚡ Top Viral Hit
+    if (sortedByPopularity[1]) {
+      addSlide(
+        sortedByPopularity[1].video,
+        '⚡ TOP VIRAL HIT',
+        'bg-gradient-to-r from-amber-500 to-rose-600 shadow-amber-950/50',
+        'Trending Now'
+      );
+    }
+
+    // Slot 3: 🚀 Fresh Video (Needs Views / Promoted)
+    const needView1 = sortedByNeedsViews.find((item) => !usedIds.has(item.video.id));
+    if (needView1) {
+      addSlide(
+        needView1.video,
+        '🚀 FRESH RELEASE',
+        'bg-gradient-to-r from-emerald-500 to-teal-600 shadow-emerald-950/50',
+        'Newly Added • Discover Now'
+      );
+    }
+
+    // Slot 4: 🌟 Fan Favorite (Most Popular Pool)
+    const pop3 = sortedByPopularity.find((item) => !usedIds.has(item.video.id));
+    if (pop3) {
+      addSlide(
+        pop3.video,
+        '🌟 FAN FAVORITE',
+        'bg-gradient-to-r from-pink-500 to-purple-600 shadow-purple-950/50',
+        'Top Rated'
+      );
+    }
+
+    // Slot 5: 💎 Hidden Gem (Needs Views / Promoted)
+    const needView2 = sortedByNeedsViews.find((item) => !usedIds.has(item.video.id));
+    if (needView2) {
+      addSlide(
+        needView2.video,
+        '💎 HIDDEN GEM',
+        'bg-gradient-to-r from-cyan-500 to-blue-600 shadow-cyan-950/50',
+        'Must Watch • Recommended'
+      );
+    }
+
+    // Fallback: If less than 5 unique videos, fill from remaining active videos
+    for (const item of activeVideos) {
+      if (slides.length >= 5) break;
+      if (!usedIds.has(item.id)) {
+        addSlide(
+          item,
+          item.quality ? `${item.quality} ULTRA-HD` : 'FEATURED',
+          'bg-gradient-to-r from-rose-500 to-pink-600',
+          item.categoryLabel || 'Featured'
+        );
+      }
+    }
+
+    return slides.slice(0, 5);
   }, [activeBanners, activeVideos]);
 
   // Instant Image Pre-warming: Preload first banner image and next slide image immediately
@@ -417,7 +548,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       {/* Auto-Swiping 6-Image Hero Banner Slider (Hidden during active search so searched results show at very top) */}
       {!cleanSearch && selectedCategory === 'all' && displayBanners.length > 0 && (
         <section
-          className="hero-banner-container block mb-6 md:mb-10 relative w-full h-[220px] sm:h-[320px] md:h-[360px] xl:h-[420px] overflow-hidden rounded-2xl border border-[#27272a] shadow-2xl group/slider select-none bg-[#09090b] touch-pan-y"
+          className="hero-banner-container block mb-6 md:mb-10 relative w-full h-[240px] sm:h-[320px] md:h-[360px] xl:h-[420px] overflow-hidden rounded-2xl border border-[#27272a] shadow-2xl group/slider select-none bg-[#09090b] touch-pan-y"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -437,14 +568,17 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                   key={banner.id}
                   onClick={() => {
                     if (isSwipingRef.current) return;
-                    if (banner.targetCategory) {
+                    const targetVid = (banner as any).targetVideo || activeVideos.find((v) => v.id === (banner as any).targetVideoId);
+                    if (targetVid) {
+                      onSelectVideo(targetVid);
+                    } else if (banner.targetCategory) {
                       onSelectCategory(banner.targetCategory);
                     }
                   }}
                   className="w-full h-full flex-shrink-0 relative flex items-end p-4 pb-10 sm:p-8 xl:p-12 cursor-pointer"
                 >
                   {(() => {
-                    const rawUrl = getBannerImageUrl(banner, index);
+                    const rawUrl = banner.bannerImage || getBannerImageUrl(banner, index);
                     const optimizedUrl = getOptimizedImageUrl(rawUrl, index === 0 ? 1080 : 800, 75);
                     const srcSet = getResponsiveImageSrcSet(rawUrl, [480, 800, 1200], 75);
                     return (
@@ -469,7 +603,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                       isActive ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-90'
                     }`}
                   >
-                    <span className="hero-banner-tag inline-block px-2 py-0.5 sm:px-3 sm:py-1 bg-[#ec4899] text-white text-[9px] sm:text-[11px] font-black uppercase tracking-wider rounded-md shadow-lg">
+                    <span className={`hero-banner-tag inline-block px-2.5 py-1 sm:px-3.5 sm:py-1.5 ${(banner as any).tagClass || 'bg-[#ec4899]'} text-white text-[10px] sm:text-xs font-black uppercase tracking-wider rounded-lg shadow-lg`}>
                       {banner.tag || 'Featured Release'}
                     </span>
                     <h1 className="hero-banner-title hero-text banner-title text-base sm:text-3xl xl:text-5xl font-black text-white italic tracking-tight hover:text-[#ffb0cd] transition-colors duration-150 line-clamp-1 sm:line-clamp-none drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
@@ -479,7 +613,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                       {banner.subtitle}
                     </p>
                     <div className="pt-0.5 sm:pt-2">
-                      <span className="hero-banner-cta inline-flex items-center gap-1 px-3 py-1 sm:px-5 sm:py-2.5 rounded-full bg-black/70 hover:bg-[#ec4899] text-white font-extrabold text-[9px] sm:text-xs uppercase tracking-wider backdrop-blur-md transition-all duration-150 border border-white/30 shadow-lg hover:scale-105 active:scale-95">
+                      <span className="hero-banner-cta inline-flex items-center gap-1 px-3.5 py-1.5 sm:px-5 sm:py-2.5 rounded-full bg-black/70 hover:bg-[#ec4899] text-white font-extrabold text-[10px] sm:text-xs uppercase tracking-wider backdrop-blur-md transition-all duration-150 border border-white/30 shadow-lg hover:scale-105 active:scale-95">
                         <span className="text-white">{banner.ctaText || 'Watch Now'}</span>
                         <span className="material-symbols-outlined text-xs sm:text-sm text-white">arrow_forward</span>
                       </span>
