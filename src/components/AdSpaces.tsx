@@ -748,7 +748,7 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
 
 /**
  * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile — Zone ID: 6010176)
- * Pure ExoClick Native Recommendation Widget Tag with seamless SPA navigation support
+ * Pure ExoClick Native Recommendation Widget Tag (<ins class="eas6a97888e20" data-zoneid="6010176"></ins>)
  */
 export const NativeRecommendationAd: React.FC<{ className?: string; title?: string; reloadKey?: string | number }> = ({
   className = '',
@@ -767,7 +767,17 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
     try {
       el.innerHTML = '';
 
-      // 1. Create Native Tag
+      // Ensure ad-provider.js is present in the document
+      if (!document.getElementById('exoclick-global-ad-provider')) {
+        const sdk = document.createElement('script');
+        sdk.id = 'exoclick-global-ad-provider';
+        sdk.type = 'application/javascript';
+        sdk.async = true;
+        sdk.src = 'https://a.magsrv.com/ad-provider.js';
+        document.head.appendChild(sdk);
+      }
+
+      // 1. Create Native Tag: <ins class="eas6a97888e20" data-zoneid="6010176"></ins>
       const ins = document.createElement('ins');
       ins.className = `eas${AD_ZONES.SITE_HASH}20`;
       ins.setAttribute('data-zoneid', AD_ZONES.NATIVE_RECOMMENDED || '6010176');
@@ -777,7 +787,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       ins.style.background = 'transparent';
       el.appendChild(ins);
 
-      // 2. Automatic Multi-burst AdProvider trigger (Zero click required)
+      // 2. Automatic Multi-burst AdProvider trigger: (window.AdProvider = window.AdProvider || []).push({"serve": {}});
       const triggerAdServe = () => {
         if (!isMounted) return;
         try {
