@@ -632,11 +632,6 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         </section>
       )}
 
-      {/* In-Page 728x90 / 300x250 Banner Slot (Zone ID: 6003172) */}
-      <section className="mb-6 w-full flex items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-1.5 shadow-sm">
-        <AdBanner key={`browse-banner-${selectedCategory}`} reloadKey={selectedCategory} />
-      </section>
-
       {/* Video Grid Section */}
       <section className="w-full">
         <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
