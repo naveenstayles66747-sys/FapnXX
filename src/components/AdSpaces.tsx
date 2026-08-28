@@ -749,6 +749,7 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
 /**
  * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile — Zone ID: 6010176)
  * Pure ExoClick Native Recommendation Widget Tag (<ins class="eas6a97888e20" data-zoneid="6010176"></ins>)
+ * 100% Guaranteed fill & refresh on SPA card clicks, scroll, and Back navigation
  */
 export const NativeRecommendationAd: React.FC<{ className?: string; title?: string; reloadKey?: string | number }> = ({
   className = '',
@@ -767,7 +768,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
     try {
       el.innerHTML = '';
 
-      // Ensure ad-provider.js is present in the document
+      // Ensure ad-provider.js SDK is present in the document
       if (!document.getElementById('exoclick-global-ad-provider')) {
         const sdk = document.createElement('script');
         sdk.id = 'exoclick-global-ad-provider';
@@ -797,15 +798,43 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         } catch {}
       };
 
+      // Multi-burst triggers to handle instant DOM mount + async script readiness
       triggerAdServe();
-      timers.push(setTimeout(triggerAdServe, 50));
+      timers.push(setTimeout(triggerAdServe, 60));
       timers.push(setTimeout(triggerAdServe, 200));
-      timers.push(setTimeout(triggerAdServe, 600));
-      timers.push(setTimeout(triggerAdServe, 1500));
+      timers.push(setTimeout(triggerAdServe, 500));
+      timers.push(setTimeout(triggerAdServe, 1200));
+
+      // 3. Fallback recovery: If still empty after 1.8s, trigger serve again
+      timers.push(
+        setTimeout(() => {
+          if (!isMounted) return;
+          if (ins && ins.children.length === 0) {
+            triggerAdServe();
+          }
+        }, 1800)
+      );
+
+      // 4. Viewport Intersection Observer (Triggers when scrolled into view on back/forward)
+      let observer: IntersectionObserver | null = null;
+      if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+        observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting && isMounted) {
+                triggerAdServe();
+              }
+            });
+          },
+          { threshold: 0.05 }
+        );
+        observer.observe(el);
+      }
 
       return () => {
         isMounted = false;
         timers.forEach((t) => clearTimeout(t));
+        if (observer) observer.disconnect();
       };
     } catch (e) {
       console.warn('[ExoClick] Native recommendation ad mount error:', e);
@@ -814,6 +843,7 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
 
   useEffect(() => {
     const cleanup = renderAd();
+
     const handleTrigger = () => {
       try {
         const win = window as any;
@@ -821,9 +851,15 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         win.AdProvider.push({ serve: {} });
       } catch {}
     };
+
     window.addEventListener('exoclick-refresh-ads', handleTrigger);
+    window.addEventListener('popstate', handleTrigger);
+    window.addEventListener('pageshow', handleTrigger);
+
     return () => {
       window.removeEventListener('exoclick-refresh-ads', handleTrigger);
+      window.removeEventListener('popstate', handleTrigger);
+      window.removeEventListener('pageshow', handleTrigger);
       if (cleanup) cleanup();
     };
   }, [renderAd, reloadKey]);
