@@ -440,22 +440,14 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
       const ins = document.createElement('ins');
       ins.className = `eas${AD_ZONES.SITE_HASH}37`;
       ins.setAttribute('data-zoneid', AD_ZONES.OUTSTREAM_VIDEO || '6003190');
-      ins.style.display = 'flex';
-      ins.style.alignItems = 'center';
-      ins.style.justifyContent = 'center';
+      ins.style.display = 'block';
       ins.style.width = '100%';
       ins.style.minHeight = '220px';
       ins.style.margin = '0 auto';
       ins.style.textAlign = 'center';
       el.appendChild(ins);
 
-      // 3. Inject inline script trigger adjacent to ins tag
-      const triggerScript = document.createElement('script');
-      triggerScript.type = 'application/javascript';
-      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
-      el.appendChild(triggerScript);
-
-      // 4. Automatic Multi-burst AdProvider trigger (No user click required!)
+      // 3. Automatic Multi-burst AdProvider trigger (No raw script tag in visible DOM)
       const triggerAdServe = () => {
         if (!isMounted) return;
         try {
