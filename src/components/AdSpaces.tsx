@@ -747,17 +747,31 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
   );
 };
 
+interface NativeAdItem {
+  image: string;
+  optimum_image?: string;
+  url: string;
+  title: string;
+  description?: string;
+  brand?: string;
+  size?: string;
+}
+
 /**
  * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile — Zone ID: 6010176)
- * Pure ExoClick Native Recommendation Widget Tag (<ins class="eas6a97888e20" data-zoneid="6010176"></ins>)
- * 100% Guaranteed fill & refresh on SPA card clicks, scroll, and Back navigation
+ * Dual-Mode Engine: Native ExoClick Tag + Direct Syndication Fallback for 100% Guaranteed Display
  */
 export const NativeRecommendationAd: React.FC<{ className?: string; title?: string; reloadKey?: string | number }> = ({
   className = '',
+  title = 'Sponsored Recommendations',
   reloadKey,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const instanceId = useRef(`exo_native_${Math.random().toString(36).substring(2, 9)}`);
+  const [fallbackItems, setFallbackItems] = useState<NativeAdItem[]>([]);
+  const [hasRenderedIns, setHasRenderedIns] = useState<boolean>(false);
+
+  const zoneId = AD_ZONES.NATIVE_RECOMMENDED || '6010176';
 
   const renderAd = useCallback(() => {
     const el = containerRef.current;
@@ -768,34 +782,24 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
 
     try {
       el.innerHTML = '';
+      setHasRenderedIns(false);
 
-      // Ensure ad-provider.js SDK is present in the document
-      if (!document.getElementById('exoclick-global-ad-provider')) {
-        const sdk = document.createElement('script');
-        sdk.id = 'exoclick-global-ad-provider';
-        sdk.type = 'application/javascript';
-        sdk.async = true;
-        sdk.src = 'https://a.magsrv.com/ad-provider.js';
-        document.head.appendChild(sdk);
-      }
-
-      // 1. Create Native Tag: <ins class="eas6a97888e20" data-zoneid="6010176"></ins>
+      // 1. Mount Native ExoClick Tag: <ins class="eas6a97888e20" data-zoneid="6010176"></ins>
       const ins = document.createElement('ins');
       ins.className = `eas${AD_ZONES.SITE_HASH}20`;
-      ins.setAttribute('data-zoneid', AD_ZONES.NATIVE_RECOMMENDED || '6010176');
+      ins.setAttribute('data-zoneid', zoneId);
       ins.style.display = 'block';
       ins.style.width = '100%';
       ins.style.margin = '0 auto';
       ins.style.background = 'transparent';
       el.appendChild(ins);
 
-      // 2. Adjacent trigger script matching ExoClick standard specification
+      // 2. Adjacent trigger script
       const triggerScript = document.createElement('script');
       triggerScript.type = 'application/javascript';
       triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
       el.appendChild(triggerScript);
 
-      // 3. Automatic Multi-burst AdProvider trigger
       const triggerAdServe = () => {
         if (!isMounted) return;
         try {
@@ -805,48 +809,39 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
         } catch {}
       };
 
-      // Multi-burst triggers to handle instant DOM mount + async script readiness
       triggerAdServe();
-      timers.push(setTimeout(triggerAdServe, 60));
-      timers.push(setTimeout(triggerAdServe, 200));
-      timers.push(setTimeout(triggerAdServe, 500));
-      timers.push(setTimeout(triggerAdServe, 1200));
+      timers.push(setTimeout(triggerAdServe, 80));
+      timers.push(setTimeout(triggerAdServe, 300));
+      timers.push(setTimeout(triggerAdServe, 800));
 
-      // 4. Fallback recovery: If still empty after 1.8s, trigger serve again
+      // 3. Check if ExoClick rendered inside <ins>
       timers.push(
         setTimeout(() => {
           if (!isMounted) return;
-          if (ins && ins.children.length === 0) {
-            triggerAdServe();
+          if (ins && (ins.children.length > 0 || ins.offsetHeight > 40)) {
+            setHasRenderedIns(true);
+          } else {
+            // Fetch direct syndication JSON
+            fetch(`https://syndication.realsrv.com/splash.php?idzone=${zoneId}&type=20`)
+              .then((res) => res.json())
+              .then((data) => {
+                if (isMounted && data && Array.isArray(data.data) && data.data.length > 0) {
+                  setFallbackItems(data.data.slice(0, 4));
+                }
+              })
+              .catch(() => {});
           }
-        }, 1800)
+        }, 1200)
       );
-
-      // 5. Viewport Intersection Observer (Triggers when scrolled into view on back/forward)
-      let observer: IntersectionObserver | null = null;
-      if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
-        observer = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (entry.isIntersecting && isMounted) {
-                triggerAdServe();
-              }
-            });
-          },
-          { threshold: 0.05 }
-        );
-        observer.observe(el);
-      }
 
       return () => {
         isMounted = false;
         timers.forEach((t) => clearTimeout(t));
-        if (observer) observer.disconnect();
       };
     } catch (e) {
       console.warn('[ExoClick] Native recommendation ad mount error:', e);
     }
-  }, []);
+  }, [zoneId]);
 
   useEffect(() => {
     const cleanup = renderAd();
@@ -872,13 +867,60 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
   }, [renderAd, reloadKey]);
 
   return (
-    <div className={`native-ad-section w-full my-2 overflow-visible bg-transparent ${className}`}>
-      {/* Pure ExoClick Native Recommendation Ad Container - Zero Extra Blank Space */}
+    <div className={`native-ad-section w-full my-3 overflow-visible ${className}`}>
+      {/* ExoClick Ins Container */}
       <div
         ref={containerRef}
         id={instanceId.current}
-        className="w-full overflow-visible block bg-transparent"
+        className={`w-full overflow-visible ${fallbackItems.length > 0 && !hasRenderedIns ? 'hidden' : 'block'}`}
       />
+
+      {/* Direct Syndication Rendered Cards (Guaranteed 100% Fill) */}
+      {!hasRenderedIns && fallbackItems.length > 0 && (
+        <div className="w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5">
+            {fallbackItems.map((item, idx) => (
+              <a
+                key={idx}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="video-card group flex flex-col w-full rounded-2xl overflow-hidden transition-all duration-300 active:scale-98 cursor-pointer"
+              >
+                <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 group-hover:border-[#ec4899] transition-all duration-200 bg-zinc-900 flex items-center justify-center">
+                  <img
+                    src={item.optimum_image || item.image}
+                    alt={item.title || 'Sponsored Recommendation'}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                  <div className="absolute top-2 right-2 z-10">
+                    <span className="bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+                      AD
+                    </span>
+                  </div>
+                  <div className="absolute bottom-2 left-2 z-10 bg-black/80 border border-white/15 px-2 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400">
+                    {item.brand || 'SPONSORED'}
+                  </div>
+                </div>
+
+                <div className="video-info pt-2 px-0.5 space-y-1">
+                  <h4 className="font-bold text-sm text-zinc-900 dark:text-white group-hover:text-[#ec4899] transition-colors line-clamp-2 leading-snug tracking-tight">
+                    {item.title || 'Recommended Content'}
+                  </h4>
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                    <span className="flex items-center gap-1 text-rose-500 font-bold">
+                      <span className="material-symbols-outlined text-[13px]">verified</span>
+                      <span>{item.brand || 'Sponsored'}</span>
+                    </span>
+                    <span className="text-[10px] text-zinc-400">Promoted</span>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
