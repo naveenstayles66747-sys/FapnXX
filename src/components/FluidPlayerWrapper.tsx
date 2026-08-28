@@ -172,8 +172,14 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     let fallbackSafetyTimer: NodeJS.Timeout | null = null;
     let directVastStarted = false;
 
-    // 1. Ensure Fluid Player CDN script and CSS are loaded dynamically on demand
-    if (typeof window !== 'undefined') {
+    // Detect Mobile vs Desktop Device
+    const isMobileDevice =
+      typeof window !== 'undefined' &&
+      (window.innerWidth < 1024 ||
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+
+    // 1. Ensure Fluid Player CDN script and CSS are loaded dynamically on demand (for Desktop)
+    if (typeof window !== 'undefined' && !isMobileDevice) {
       if (!document.getElementById('fluidplayer-cdn-css')) {
         const link = document.createElement('link');
         link.id = 'fluidplayer-cdn-css';
@@ -191,30 +197,34 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       }
     }
 
-    // 2. Concurrently fetch parsed VAST XML for fast fallback with unique cache-buster
+    // 2. Fetch parsed VAST XML for Direct VAST Engine (100% Reliable on Mobile & Desktop Fallback)
     const dynamicVastTag = `${VAST_TAG_URL}${VAST_TAG_URL.includes('?') ? '&' : '?'}cb=${Date.now()}_${Math.random().toString(36).substring(2, 8)}&v=${encodeURIComponent(video.id)}`;
 
-    fetchVastAd(dynamicVastTag, 4500)
+    fetchVastAd(dynamicVastTag, 3500)
       .then((parsedAd) => {
         if (!isMounted || contentStartedRef.current) return;
         if (parsedAd && parsedAd.mediaUrl) {
-          setTimeout(() => {
-            if (isMounted && !contentStartedRef.current && isPrerollActive && !playerInstanceRef.current) {
-              directVastStarted = true;
-              setDirectVastAd(parsedAd);
-              setAdDuration(parsedAd.durationSeconds || 15);
-              setSkipRemainingSeconds(parsedAd.skipOffsetSeconds || 5);
-              fireTrackingPixel(parsedAd.impressionUrls);
-            }
-          }, 1800);
+          directVastStarted = true;
+          setDirectVastAd(parsedAd);
+          setAdDuration(parsedAd.durationSeconds || 15);
+          setSkipRemainingSeconds(parsedAd.skipOffsetSeconds || 5);
+          setIsAdLoading(false);
+          fireTrackingPixel(parsedAd.impressionUrls);
+        } else if (isMobileDevice) {
+          // If no VAST ad fill on mobile, start main video stream
+          startMainContent();
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (isMobileDevice && isMounted && !contentStartedRef.current) {
+          startMainContent();
+        }
+      });
 
-    // 3. Try initializing Official Fluid Player VAST
+    // 3. On Desktop: Initialize Fluid Player VAST with fail-safe fallback
     let attempts = 0;
     const initFluidVast = () => {
-      if (!isMounted || contentStartedRef.current || directVastStarted) return;
+      if (isMobileDevice || !isMounted || contentStartedRef.current || directVastStarted) return;
       cleanupInstance();
 
       const win = window as any;
@@ -225,7 +235,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         if (isMounted && attempts < 30) {
           setTimeout(initFluidVast, 150);
         } else if (isMounted && !directVastStarted && attempts >= 30) {
-          // If fluid player CDN or video element took too long, transition to main content
           startMainContent();
         }
         return;
@@ -241,7 +250,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             fillToContainer: true,
             autoPlay: true,
             allowMutedAutoplay: true,
-            mute: true, // Muted autoplay ensures 100% browser compatibility without getting blocked
+            mute: true,
             controlBar: {
               autoHide: true,
               autoHideTimeout: 2,
@@ -274,7 +283,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                     if (isMounted && !directVastStarted && !contentStartedRef.current) {
                       startMainContent();
                     }
-                  }, 2500);
+                  }, 1800);
                 }
               },
               vastVideoSkippedCallback: () => {
@@ -414,7 +423,15 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 src={directVastAd.mediaUrl}
                 autoPlay
                 playsInline
+                preload="auto"
                 muted={isAdMuted}
+                onCanPlay={() => {
+                  setIsAdLoading(false);
+                  if (adVideoRef.current && adVideoRef.current.paused) {
+                    adVideoRef.current.play().catch(() => {});
+                  }
+                }}
+                onLoadedData={() => setIsAdLoading(false)}
                 onTimeUpdate={handleDirectAdTimeUpdate}
                 onPlaying={() => setIsAdLoading(false)}
                 onEnded={() => {
