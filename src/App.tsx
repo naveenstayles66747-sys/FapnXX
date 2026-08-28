@@ -704,7 +704,11 @@ export default function App() {
 
             {currentScreen === 'performers' && (
               <Suspense fallback={<div className="flex-1 p-8 flex items-center justify-center min-h-[50vh]"><div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" /></div>}>
-                <PerformersScreen videos={filteredVideosList} />
+                <PerformersScreen
+                  videos={filteredVideosList}
+                  onSelectVideo={handleSelectVideo}
+                  onNavigateToSearch={handleNavigateToSearch}
+                />
               </Suspense>
             )}
 
