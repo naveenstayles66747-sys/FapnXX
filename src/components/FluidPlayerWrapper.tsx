@@ -478,26 +478,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               />
             </video>
           )}
-
-          {/* ── LOADING SPINNER OVERLAY (Visible until VAST Ad Starts Playing) ── */}
-          {isAdLoading && (
-            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 gap-3 transition-opacity duration-300 pointer-events-none">
-              <div className="relative w-12 h-12 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full border-3 border-rose-500/20 border-t-rose-500 animate-spin" />
-                <span className="material-symbols-outlined text-rose-500 text-sm absolute">
-                  play_arrow
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-0.5 text-center px-4">
-                <span className="text-xs font-mono font-bold tracking-wider text-zinc-200 uppercase">
-                  Loading In-Stream Ad...
-                </span>
-                <span className="text-[10px] text-zinc-500">
-                  Video will start automatically after sponsor
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
