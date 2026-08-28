@@ -31,7 +31,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const [isPrerollActive, setIsPrerollActive] = useState<boolean>(true);
   const [isAdLoading, setIsAdLoading] = useState<boolean>(true);
   const [directVastAd, setDirectVastAd] = useState<VastAd | null>(null);
-  const [isAdMuted] = useState<boolean>(true);
+  const [isAdMuted, setIsAdMuted] = useState<boolean>(true);
   const [adCurrentTime, setAdCurrentTime] = useState<number>(0);
   const [adDuration, setAdDuration] = useState<number>(15);
 
@@ -227,8 +227,26 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     }
   };
 
+  const handleSkipAd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (directVastAd) {
+      fireTrackingPixel(directVastAd.trackingEvents?.skip);
+    }
+    startMainContent();
+  };
 
+  const toggleAdMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (adVideoRef.current) {
+      const nextMuted = !isAdMuted;
+      adVideoRef.current.muted = nextMuted;
+      setIsAdMuted(nextMuted);
+    }
+  };
 
+  const skipOffset = directVastAd ? (directVastAd.skipOffsetSeconds ?? 5) : 5;
+  const canSkip = adCurrentTime >= skipOffset;
+  const secondsToSkip = Math.max(0, Math.ceil(skipOffset - adCurrentTime));
 
   return (
     <div
@@ -236,13 +254,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       className={`relative w-full h-full bg-black overflow-hidden flex items-center justify-center select-none ${className}`}
     >
       {/* ══════════════════════════════════════════════════════════════════════
-          STAGE 1: VAST IN-STREAM AD PREROLL (No overlays — skip from ad network)
+          STAGE 1: VAST IN-STREAM AD PREROLL WITH NATIVE SKIP AD BUTTON
       ══════════════════════════════════════════════════════════════════════ */}
       {isPrerollActive && (
         <div className="absolute inset-0 z-30 w-full h-full bg-black flex items-center justify-center overflow-hidden">
 
           {directVastAd ? (
-            <div className="w-full h-full flex items-center justify-center bg-black">
+            <div className="relative w-full h-full flex items-center justify-center bg-black">
               <video
                 ref={adVideoRef}
                 src={directVastAd.mediaUrl}
@@ -274,6 +292,39 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 className="w-full h-full object-contain block bg-black cursor-pointer"
                 onClick={handleAdClickThrough}
               />
+
+              {/* ── Sound Toggle (Bottom-Left) ── */}
+              <div className="absolute bottom-3 left-3 z-40">
+                <button
+                  type="button"
+                  onClick={toggleAdMute}
+                  className="p-2 bg-black/75 hover:bg-black/95 text-white rounded-full border border-white/20 shadow-lg transition-all cursor-pointer backdrop-blur-md flex items-center justify-center active:scale-95"
+                  title={isAdMuted ? 'Unmute' : 'Mute'}
+                >
+                  <span className="material-symbols-outlined text-sm sm:text-base">
+                    {isAdMuted ? 'volume_off' : 'volume_up'}
+                  </span>
+                </button>
+              </div>
+
+              {/* ── Skip Ad Button (Bottom-Right) ── */}
+              <div className="absolute bottom-3 right-3 z-40">
+                {canSkip ? (
+                  <button
+                    type="button"
+                    onClick={handleSkipAd}
+                    className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 bg-[#ec4899] hover:bg-[#db2777] active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/20 shadow-2xl transition-all cursor-pointer backdrop-blur-md"
+                  >
+                    <span>Skip Ad</span>
+                    <span className="material-symbols-outlined text-base">skip_next</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/80 text-zinc-300 font-semibold text-xs rounded-xl border border-white/15 backdrop-blur-md shadow-lg pointer-events-none">
+                    <span>Skip in</span>
+                    <span className="font-mono text-white font-bold">{secondsToSkip}s</span>
+                  </div>
+                )}
+              </div>
             </div>
           ) : null}
         </div>
