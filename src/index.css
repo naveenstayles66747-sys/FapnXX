@@ -1445,14 +1445,38 @@ html.dark .native-ad-section * {
 .eas6a97888e17:empty,
 .eas6a97888e37:empty,
 ins[data-zoneid="6003178"]:empty,
-ins[data-zoneid="6003172"]:empty,
-ins[data-zoneid="6003190"]:empty {
+ins[data-zoneid="6003172"]:empty {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
   min-height: 0 !important;
   padding: 0 !important;
   box-shadow: none !important;
+}
+/* =====================================================================
+   EXOCLICK OUTSTREAM VIDEO CARD (Zone: 6003190) STYLING
+   ===================================================================== */
+#exoclick-outstream-zone-6003190,
+.outstream-ad-wrapper,
+.eas6a97888e37,
+ins[data-zoneid="6003190"] {
+  width: 100% !important;
+  min-height: 220px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+#exoclick-outstream-zone-6003190 iframe,
+.eas6a97888e37 iframe,
+ins[data-zoneid="6003190"] iframe {
+  width: 100% !important;
+  min-height: 220px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  display: block !important;
 }
 
 /* =====================================================================

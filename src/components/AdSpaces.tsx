@@ -442,7 +442,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
       ins.setAttribute('data-zoneid', AD_ZONES.OUTSTREAM_VIDEO || '6003190');
       ins.style.display = 'block';
       ins.style.width = '100%';
-      ins.style.minHeight = '180px';
+      ins.style.minHeight = '220px';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
@@ -512,12 +512,12 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
       className={`video-card group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
       aria-label="Sponsored Video Advertisement"
     >
-      <div className="relative w-full rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-transparent flex items-center justify-center">
-        {/* Ad Wrapper (Forces size and prevents distortion) */}
+      <div className="relative w-full rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-transparent flex items-center justify-center min-h-[220px] sm:min-h-[240px]">
+        {/* Ad Wrapper (Expanded size for seamless video stream playback) */}
         <div
           ref={containerRef}
           id="exoclick-outstream-zone-6003190"
-          className="outstream-ad-wrapper w-full aspect-[16/9] z-10 pointer-events-auto flex items-center justify-center"
+          className="outstream-ad-wrapper w-full min-h-[220px] sm:min-h-[240px] z-10 pointer-events-auto flex items-center justify-center"
         />
 
         <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
