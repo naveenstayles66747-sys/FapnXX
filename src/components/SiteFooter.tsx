@@ -27,7 +27,7 @@ export const SiteFooter: React.FC = () => {
 
   return (
     <>
-      <footer className="w-full bg-[#0a0a0d] border-t border-white/[0.06] mt-auto">
+      <footer className="w-full lg:pl-64 bg-[#0a0a0d] border-t border-white/[0.06] mt-auto transition-all">
         <div className="w-full bg-rose-950/40 border-b border-rose-900/30 py-2.5 px-4">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-center gap-3 text-center">
             <span className="inline-flex items-center bg-rose-600 text-white text-[10px] font-black px-2.5 py-1 rounded-md tracking-widest uppercase">18+</span>
