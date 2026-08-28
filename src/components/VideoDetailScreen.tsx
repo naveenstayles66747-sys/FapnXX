@@ -203,6 +203,8 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     setTimeout(() => setReportSuccessToast(false), 4000);
   };
 
+  const [recVisibleCount, setRecVisibleCount] = useState<number>(24);
+
   // Stream buffering simulation
   const [isBufferingStream, setIsBufferingStream] = useState<boolean>(true);
   useEffect(() => {
@@ -211,19 +213,23 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     return () => clearTimeout(finish);
   }, [video.id]);
 
-  // Related videos engine
-  const relatedVideosWithScore = (videos || VIDEOS || [])
-    .filter((v) => v && v.id !== video.id && !v.isTakenDown)
-    .map((candidate) => {
-      let matchScore = 50;
-      if (candidate.category === video.category) matchScore += 35;
-      if (candidate.performerName === video.performerName) matchScore += 30;
-      const sharedTags = (candidate.tags || []).filter((tag) => (video.tags || []).includes(tag));
-      matchScore += sharedTags.length * 10;
-      return { ...candidate, relevanceScore: Math.min(matchScore, 99) };
-    });
-  relatedVideosWithScore.sort((a, b) => b.relevanceScore - a.relevanceScore);
-  const topRelatedVideos = relatedVideosWithScore.slice(0, 8);
+  // Related videos engine (surfaces all relevant videos without cutting off)
+  const relatedVideosWithScore = React.useMemo(() => {
+    const list = (videos || VIDEOS || [])
+      .filter((v) => v && v.id !== video.id && !v.isTakenDown)
+      .map((candidate) => {
+        let matchScore = 50;
+        if (candidate.category === video.category) matchScore += 35;
+        if (candidate.performerName && candidate.performerName === video.performerName) matchScore += 30;
+        const sharedTags = (candidate.tags || []).filter((tag) => (video.tags || []).includes(tag));
+        matchScore += sharedTags.length * 10;
+        return { ...candidate, relevanceScore: Math.min(matchScore, 99) };
+      });
+    list.sort((a, b) => b.relevanceScore - a.relevanceScore);
+    return list;
+  }, [videos, video.id, video.category, video.performerName, video.tags]);
+
+  const topRelatedVideos = relatedVideosWithScore.slice(0, recVisibleCount);
 
   // Derive performers list from all possible fields
   const performersList: string[] = (() => {
@@ -514,6 +520,20 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
             </div>
           )}
         </div>
+
+        {/* Load More Recommended Videos Button */}
+        {recVisibleCount < relatedVideosWithScore.length && (
+          <div className="mt-8 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setRecVisibleCount((prev) => prev + 16)}
+              className="px-6 py-3 rounded-2xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#1c1b1f] dark:hover:bg-[#27272a] text-zinc-900 dark:text-white font-extrabold text-xs uppercase tracking-wider border border-zinc-300 dark:border-white/10 hover:border-[#e0358d] transition-all cursor-pointer active:scale-95 shadow-md flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-sm text-[#e0358d]">expand_more</span>
+              <span>Load More Recommended Videos ({relatedVideosWithScore.length - recVisibleCount} Remaining)</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* DMCA Report Modal */}
