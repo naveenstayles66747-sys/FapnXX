@@ -1474,6 +1474,48 @@ ins[data-zoneid="6003190"]:empty {
 }
 
 /* =====================================================================
+   EXOCLICK MOBILE INSTANT MESSAGE (Zone: 6003178) STYLING & POSITIONING
+   ===================================================================== */
+#exoclick-mobile-instant-message,
+.eas6a97888e14,
+ins[data-zoneid="6003178"] {
+  position: fixed !important;
+  bottom: 60px !important;
+  right: 8px !important;
+  max-width: calc(100vw - 16px) !important;
+  z-index: 46 !important;
+  overflow: visible !important;
+}
+
+#exoclick-mobile-instant-message iframe,
+.eas6a97888e14 iframe,
+ins[data-zoneid="6003178"] iframe {
+  max-width: 100% !important;
+  border-radius: 12px !important;
+  border: none !important;
+  display: block !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* =====================================================================
+   ON-STREAM IN-VIDEO PLAYER OVERLAY BANNER (Desktop Only / Scaled)
+   ===================================================================== */
+.onstream-ad-container {
+  max-width: 90% !important;
+  max-height: 60px !important;
+  overflow: hidden !important;
+}
+
+.onstream-ad-container iframe,
+.onstream-ad-container ins {
+  max-height: 50px !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+  border: none !important;
+  display: block !important;
+}
+
+/* =====================================================================
    EXOCLICK FULLPAGE INTERSTITIAL STYLING (Mobile: 6003180 / Desktop: 6003174)
    ===================================================================== */
 #exoclick-mobile-interstitial,

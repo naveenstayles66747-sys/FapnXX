@@ -682,20 +682,20 @@ export const OnStreamVideoBanner: React.FC<{
   if (!isVisible || dismissed) return null;
 
   return (
-    <div className="absolute bottom-12 left-0 right-0 z-20 flex items-center justify-center pointer-events-auto px-2">
-      <div className="relative bg-black/80 backdrop-blur-sm p-1 rounded-lg border border-white/10 shadow-lg max-w-full overflow-hidden">
+    <div className="hidden lg:flex absolute bottom-6 left-0 right-0 z-20 items-center justify-center pointer-events-auto px-2">
+      <div className="onstream-ad-container relative bg-black/90 backdrop-blur-md px-3 py-1 rounded-xl border border-white/15 shadow-2xl max-w-full overflow-hidden flex items-center justify-center">
         <button
           type="button"
           onClick={() => {
             setDismissed(true);
             if (onClose) onClose();
           }}
-          className="absolute -top-2 -right-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] border border-white/20 shadow cursor-pointer"
+          className="absolute -top-1.5 -right-1.5 bg-zinc-800 hover:bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] border border-white/20 shadow-md cursor-pointer transition-colors z-10"
           title="Close overlay"
         >
           ✕
         </button>
-        <div ref={containerRef} className="min-w-[300px] min-h-[50px] flex items-center justify-center" />
+        <div ref={containerRef} className="w-full max-w-[468px] max-h-[60px] flex items-center justify-center overflow-hidden" />
       </div>
     </div>
   );
