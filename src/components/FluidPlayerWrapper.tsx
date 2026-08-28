@@ -31,9 +31,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const [isPrerollActive, setIsPrerollActive] = useState<boolean>(true);
   const [isAdLoading, setIsAdLoading] = useState<boolean>(true);
   const [directVastAd, setDirectVastAd] = useState<VastAd | null>(null);
-  const [isAdMuted, setIsAdMuted] = useState<boolean>(true);
-  const [adCurrentTime, setAdCurrentTime] = useState<number>(0);
-  const [adDuration, setAdDuration] = useState<number>(15);
+  const [isAdMuted] = useState<boolean>(true);
 
   const prerollPlayerId = `fluid_preroll_${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
   const directPlayerId = `fluid_direct_${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
@@ -79,8 +77,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     setIsPrerollActive(true);
     setIsAdLoading(true);
     setDirectVastAd(null);
-    setAdCurrentTime(0);
-    setAdDuration(15);
 
     const rawEmbed = (
       video.embedUrl ||
@@ -177,9 +173,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         if (!isMounted || contentStartedRef.current) return;
         if (parsedAd && parsedAd.mediaUrl) {
           setDirectVastAd(parsedAd);
-          if (parsedAd.durationSeconds && parsedAd.durationSeconds > 0) {
-            setAdDuration(parsedAd.durationSeconds);
-          }
           setIsAdLoading(false);
           fireTrackingPixel(parsedAd.impressionUrls);
         } else {
@@ -213,10 +206,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     if (isAdLoading && v.currentTime > 0.1) {
       setIsAdLoading(false);
     }
-    setAdCurrentTime(v.currentTime);
-    if (v.duration && !isNaN(v.duration) && v.duration > 0) {
-      setAdDuration(v.duration);
-    }
   };
 
   const handleAdClickThrough = (e: React.MouseEvent) => {
@@ -230,11 +219,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     }
   };
 
-  // Calculate remaining seconds
-  const remainingSec = Math.max(0, Math.ceil(adDuration - adCurrentTime));
-  const formattedRemaining = `${Math.floor(remainingSec / 60)}:${(remainingSec % 60).toString().padStart(2, '0')}`;
-  const adProgressPercent = adDuration > 0 ? Math.min(100, (adCurrentTime / adDuration) * 100) : 0;
-
   return (
     <div
       ref={containerRef}
@@ -246,7 +230,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       {isPrerollActive && (
         <div className="absolute inset-0 z-30 w-full h-full bg-black flex items-center justify-center overflow-hidden">
           
-          {/* Direct VAST Player UI (Active when direct VAST is engaged) */}
+          {/* Direct VAST Player UI (Pure Clean Video without Cluttered Overlays) */}
           {directVastAd ? (
             <div className="relative w-full h-full flex items-center justify-center bg-black">
               <video
@@ -256,13 +240,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 playsInline
                 preload="auto"
                 muted={isAdMuted}
-                onLoadedMetadata={(e) => {
-                  setIsAdLoading(false);
-                  const v = e.currentTarget;
-                  if (v.duration && !isNaN(v.duration) && v.duration > 0) {
-                    setAdDuration(v.duration);
-                  }
-                }}
+                onLoadedMetadata={() => setIsAdLoading(false)}
                 onCanPlay={() => {
                   setIsAdLoading(false);
                   if (adVideoRef.current && adVideoRef.current.paused) {
@@ -280,66 +258,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 className="w-full h-full object-contain block bg-black cursor-pointer"
                 onClick={handleAdClickThrough}
               />
-
-              {/* ── Top-Left: Live Ad Tag & Video Start Countdown Badge ── */}
-              <div className="absolute top-3 left-3 z-40 flex items-center gap-2 pointer-events-none">
-                <span className="bg-[#ec4899] text-white text-[10px] sm:text-xs font-black uppercase px-2 py-0.5 rounded shadow-lg tracking-wider">
-                  AD
-                </span>
-                <span className="bg-black/80 backdrop-blur-md text-white text-[11px] sm:text-xs font-bold px-2.5 py-1 rounded-md border border-white/10 shadow-lg flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#ec4899] animate-pulse" />
-                  <span>Video starts in {remainingSec}s</span>
-                </span>
-              </div>
-
-              {/* ── Top-Right: Unmute / Mute Audio Control ── */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsAdMuted((prev) => {
-                    const next = !prev;
-                    if (adVideoRef.current) {
-                      adVideoRef.current.muted = next;
-                    }
-                    return next;
-                  });
-                }}
-                className="absolute top-3 right-3 z-40 bg-black/80 hover:bg-black text-white p-2 rounded-full border border-white/20 shadow-xl cursor-pointer transition-all active:scale-90 flex items-center justify-center"
-                title={isAdMuted ? 'Unmute' : 'Mute'}
-              >
-                <span className="material-symbols-outlined text-sm sm:text-base">
-                  {isAdMuted ? 'volume_off' : 'volume_up'}
-                </span>
-              </button>
-
-              {/* ── Bottom-Left: Exact Ad Countdown Time (e.g., 0:15) ── */}
-              <div className="absolute bottom-3.5 left-3.5 z-40 pointer-events-none">
-                <div className="bg-black/85 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/10 text-zinc-200 text-[11px] sm:text-xs font-mono font-bold shadow-lg flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-xs sm:text-sm text-[#ec4899]">timer</span>
-                  <span>Ad · {formattedRemaining}</span>
-                </div>
-              </div>
-
-              {/* ── Bottom-Right: Visit Sponsor Click-through CTA ── */}
-              {directVastAd.clickThroughUrl && (
-                <button
-                  type="button"
-                  onClick={handleAdClickThrough}
-                  className="absolute bottom-3.5 right-3.5 z-40 bg-white hover:bg-zinc-100 text-black font-extrabold text-[11px] sm:text-xs px-3 py-1.5 rounded-lg shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Visit Sponsor</span>
-                  <span className="material-symbols-outlined text-xs">open_in_new</span>
-                </button>
-              )}
-
-              {/* ── Bottom: Seamless In-Stream Progress Bar ── */}
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-40 pointer-events-none">
-                <div
-                  className="h-full bg-[#ec4899] transition-all duration-150 ease-linear shadow-sm"
-                  style={{ width: `${adProgressPercent}%` }}
-                />
-              </div>
             </div>
           ) : null}
         </div>
