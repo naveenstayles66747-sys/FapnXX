@@ -440,10 +440,13 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
       const ins = document.createElement('ins');
       ins.className = `eas${AD_ZONES.SITE_HASH}37`;
       ins.setAttribute('data-zoneid', AD_ZONES.OUTSTREAM_VIDEO || '6003190');
-      ins.style.display = 'block';
+      ins.style.display = 'flex';
+      ins.style.alignItems = 'center';
+      ins.style.justifyContent = 'center';
       ins.style.width = '100%';
       ins.style.minHeight = '220px';
       ins.style.margin = '0 auto';
+      ins.style.textAlign = 'center';
       el.appendChild(ins);
 
       // 3. Inject inline script trigger adjacent to ins tag
