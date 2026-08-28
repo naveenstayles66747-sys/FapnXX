@@ -1515,26 +1515,39 @@ ins[data-zoneid="6003190"] iframe {
 /* =====================================================================
    EXOCLICK MOBILE INSTANT MESSAGE (Zone: 6003178) STYLING & POSITIONING
    ===================================================================== */
-#exoclick-mobile-instant-message,
-.eas6a97888e14,
-ins[data-zoneid="6003178"] {
+#exoclick-mobile-instant-message {
   position: fixed !important;
-  bottom: 18px !important;
-  right: 10px !important;
-  max-width: calc(100vw - 20px) !important;
-  z-index: 70 !important;
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+  left: 12px !important;
+  right: 12px !important;
+  margin: 0 auto !important;
+  max-width: 420px !important;
+  width: calc(100vw - 24px) !important;
+  z-index: 100 !important;
   overflow: visible !important;
   pointer-events: auto !important;
+}
+
+.eas6a97888e14,
+ins[data-zoneid="6003178"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  display: block !important;
 }
 
 #exoclick-mobile-instant-message iframe,
 .eas6a97888e14 iframe,
 ins[data-zoneid="6003178"] iframe {
+  width: 100% !important;
   max-width: 100% !important;
-  border-radius: 12px !important;
+  height: auto !important;
+  min-height: 80px !important;
+  border-radius: 14px !important;
   border: none !important;
   display: block !important;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8) !important;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.85) !important;
+  overflow: visible !important;
 }
 
 /* =====================================================================

@@ -345,9 +345,10 @@ export const MobileFullpageInterstitial: React.FC<{ onDismiss?: () => void }> = 
  */
 export const MobileInstantMessage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isDismissed, setIsDismissed] = useState<boolean>(false);
 
   const renderAd = useCallback(() => {
-    if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
+    if (isDismissed || typeof window === 'undefined' || window.innerWidth >= 1024) return;
     const el = containerRef.current;
     if (!el) return;
 
@@ -366,12 +367,9 @@ export const MobileInstantMessage: React.FC = () => {
       const ins = document.createElement('ins');
       ins.className = `eas${AD_ZONES.SITE_HASH}14`;
       ins.setAttribute('data-zoneid', AD_ZONES.MOBILE_INSTANT_MESSAGE || '6003178');
+      ins.style.display = 'block';
+      ins.style.width = '100%';
       el.appendChild(ins);
-
-      const triggerScript = document.createElement('script');
-      triggerScript.type = 'application/javascript';
-      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
-      el.appendChild(triggerScript);
 
       const triggerAdServe = () => {
         try {
@@ -388,7 +386,7 @@ export const MobileInstantMessage: React.FC = () => {
     } catch (e) {
       console.warn('[ExoClick] Mobile instant message error:', e);
     }
-  }, []);
+  }, [isDismissed]);
 
   useEffect(() => {
     renderAd();
@@ -397,12 +395,31 @@ export const MobileInstantMessage: React.FC = () => {
     return () => window.removeEventListener('exoclick-refresh-ads', handleRefresh);
   }, [renderAd]);
 
+  if (isDismissed) return null;
+
   return (
     <div
-      ref={containerRef}
       id="exoclick-mobile-instant-message"
-      className="block lg:hidden pointer-events-auto"
-    />
+      className="block lg:hidden pointer-events-auto select-none"
+    >
+      <div className="relative w-full">
+        {/* Instant Message Floating Close ✕ Button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsDismissed(true);
+          }}
+          className="absolute -top-3.5 -right-1 z-50 bg-black/90 hover:bg-rose-600 active:scale-90 text-white w-7 h-7 rounded-full flex items-center justify-center font-extrabold text-xs shadow-2xl border-2 border-white/60 cursor-pointer transition-all"
+          title="Close notification ad"
+        >
+          ✕
+        </button>
+
+        {/* Ad Container */}
+        <div ref={containerRef} className="w-full" />
+      </div>
+    </div>
   );
 };
 
