@@ -647,7 +647,6 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
  */
 export const NativeRecommendationAd: React.FC<{ className?: string; title?: string; reloadKey?: string | number }> = ({
   className = '',
-  title = 'Sponsor Picks & Recommendations',
   reloadKey,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -669,8 +668,8 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       ins.setAttribute('data-zoneid', AD_ZONES.NATIVE_RECOMMENDED || '6010176');
       ins.style.display = 'block';
       ins.style.width = '100%';
-      ins.style.minHeight = '180px';
       ins.style.margin = '0 auto';
+      ins.style.background = 'transparent';
       el.appendChild(ins);
 
       // 2. Automatic Multi-burst AdProvider trigger (Zero click required)
@@ -689,23 +688,9 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       timers.push(setTimeout(triggerAdServe, 600));
       timers.push(setTimeout(triggerAdServe, 1500));
 
-      // 5. Viewport Intersection Observer
-      let intersectionObserver: IntersectionObserver | null = null;
-      if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
-        intersectionObserver = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting && isMounted) {
-              triggerAdServe();
-            }
-          });
-        }, { threshold: 0.1 });
-        intersectionObserver.observe(el);
-      }
-
       return () => {
         isMounted = false;
         timers.forEach((t) => clearTimeout(t));
-        if (intersectionObserver) intersectionObserver.disconnect();
       };
     } catch (e) {
       console.warn('[ExoClick] Native recommendation ad mount error:', e);
@@ -729,21 +714,14 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
   }, [renderAd, reloadKey]);
 
   return (
-    <section className={`native-ad-section w-full my-2.5 sm:my-3 p-2.5 sm:p-3 rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-[#121115] shadow-sm transition-colors ${className}`}>
-      {/* Minimal Header with AD Badge */}
-      <div className="flex items-center justify-start pb-1.5 mb-1.5 border-b border-zinc-200 dark:border-white/10">
-        <span className="px-2 py-0.5 rounded bg-[#ec4899] text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
-          AD
-        </span>
-      </div>
-
-      {/* Pure ExoClick Native Recommendation Ad Container */}
+    <div className={`native-ad-section w-full my-2 overflow-visible bg-transparent ${className}`}>
+      {/* Pure ExoClick Native Recommendation Ad Container - Zero Extra Blank Space */}
       <div
         ref={containerRef}
         id={instanceId.current}
-        className="w-full overflow-visible block min-h-[140px]"
+        className="w-full overflow-visible block bg-transparent"
       />
-    </section>
+    </div>
   );
 };
 
