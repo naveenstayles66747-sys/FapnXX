@@ -31,11 +31,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const [isPrerollActive, setIsPrerollActive] = useState<boolean>(true);
   const [isAdLoading, setIsAdLoading] = useState<boolean>(true);
   const [directVastAd, setDirectVastAd] = useState<VastAd | null>(null);
-  const [adCurrentTime, setAdCurrentTime] = useState<number>(0);
-  const [adDuration, setAdDuration] = useState<number>(15);
-  const [isAdMuted, setIsAdMuted] = useState<boolean>(true);
-  const [canSkipAd, setCanSkipAd] = useState<boolean>(false);
-  const [skipRemainingSeconds, setSkipRemainingSeconds] = useState<number>(5);
+  const [isAdMuted] = useState<boolean>(true);
 
   const prerollPlayerId = `fluid_preroll_${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
   const directPlayerId = `fluid_direct_${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
@@ -81,9 +77,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     setIsPrerollActive(true);
     setIsAdLoading(true);
     setDirectVastAd(null);
-    setAdCurrentTime(0);
-    setCanSkipAd(false);
-    setSkipRemainingSeconds(5);
 
     const rawEmbed = (
       video.embedUrl ||
@@ -206,8 +199,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         if (parsedAd && parsedAd.mediaUrl) {
           directVastStarted = true;
           setDirectVastAd(parsedAd);
-          setAdDuration(parsedAd.durationSeconds || 15);
-          setSkipRemainingSeconds(parsedAd.skipOffsetSeconds || 5);
           setIsAdLoading(false);
           fireTrackingPixel(parsedAd.impressionUrls);
         } else if (isMobileDevice) {
@@ -368,38 +359,21 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     };
   }, [isPrerollActive, currentVideoSrc, video.id, videoMountKey, prerollPlayerId]);
 
-  // Handle direct VAST ad time updates and skip countdown
+  // Handle direct VAST ad time updates
   const handleDirectAdTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const v = e.currentTarget;
     if (isAdLoading && v.currentTime > 0.1) {
       setIsAdLoading(false);
     }
-    setAdCurrentTime(v.currentTime);
-    if (v.duration && !isNaN(v.duration) && v.duration > 0) {
-      setAdDuration(v.duration);
-    }
-
-    const skipOffset = directVastAd?.skipOffsetSeconds || 5;
-    const remaining = Math.max(0, Math.ceil(skipOffset - v.currentTime));
-    setSkipRemainingSeconds(remaining);
-    if (remaining === 0 && !canSkipAd) {
-      setCanSkipAd(true);
-    }
-  };
-
-  const handleSkipAdClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (directVastAd) {
-      fireTrackingPixel(directVastAd.trackingEvents?.skip);
-    }
-    startMainContent();
   };
 
   const handleAdClickThrough = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (directVastAd) {
       fireTrackingPixel(directVastAd.clickTrackingUrls);
-      const targetUrl = directVastAd.clickThroughUrl || 'https://go.marzaent.com/smartpop/165aea9bcdd7aabac45f72d02f58fd24b8416bc57cfc540b1b4409ac823564af';
+      const targetUrl =
+        directVastAd.clickThroughUrl ||
+        'https://go.marzaent.com/smartpop/165aea9bcdd7aabac45f72d02f58fd24b8416bc57cfc540b1b4409ac823564af';
       window.open(targetUrl, '_blank', 'noopener,noreferrer');
     }
   };
@@ -443,24 +417,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 className="w-full h-full object-contain block bg-black cursor-pointer"
                 onClick={handleAdClickThrough}
               />
-
-              {/* Clean Minimal Skip Button Overlay Only */}
-              <div className="absolute bottom-3 right-3 z-40 pointer-events-auto">
-                {canSkipAd ? (
-                  <button
-                    type="button"
-                    onClick={handleSkipAdClick}
-                    className="bg-white/90 hover:bg-white text-black font-extrabold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-2xl transition-all active:scale-95 border border-white/50 cursor-pointer"
-                  >
-                    <span>Skip Ad</span>
-                    <span className="material-symbols-outlined text-xs">skip_next</span>
-                  </button>
-                ) : (
-                  <div className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-lg border border-white/20 text-zinc-300 text-xs font-mono">
-                    Skip in {skipRemainingSeconds}s
-                  </div>
-                )}
-              </div>
             </div>
           ) : (
             /* Fluid Player Native VAST PreRoll Element */
