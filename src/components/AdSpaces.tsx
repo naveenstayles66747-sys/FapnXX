@@ -746,27 +746,11 @@ export const NativeRecommendationAd: React.FC<{ className?: string; title?: stri
       ins.setAttribute('data-zoneid', AD_ZONES.NATIVE_RECOMMENDED || '6010176');
       ins.style.display = 'block';
       ins.style.width = '100%';
-      ins.style.minHeight = '140px';
+      ins.style.minHeight = '180px';
       ins.style.margin = '0 auto';
       el.appendChild(ins);
 
-      // 2. Inject inline script trigger
-      const triggerScript = document.createElement('script');
-      triggerScript.type = 'application/javascript';
-      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
-      el.appendChild(triggerScript);
-
-      // 3. Ensure global provider SDK is present
-      if (!document.getElementById('exoclick-global-ad-provider')) {
-        const sdk = document.createElement('script');
-        sdk.id = 'exoclick-global-ad-provider';
-        sdk.type = 'application/javascript';
-        sdk.async = true;
-        sdk.src = 'https://a.magsrv.com/ad-provider.js';
-        document.head.appendChild(sdk);
-      }
-
-      // 4. Automatic Multi-burst AdProvider trigger (Zero click required)
+      // 2. Automatic Multi-burst AdProvider trigger (Zero click required)
       const triggerAdServe = () => {
         if (!isMounted) return;
         try {

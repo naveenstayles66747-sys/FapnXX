@@ -1551,6 +1551,37 @@ ins[data-zoneid="6003178"] iframe {
 }
 
 /* =====================================================================
+   EXOCLICK NATIVE RECOMMENDATION AD (Zone: 6010176) STYLING & FLOW
+   ===================================================================== */
+.native-ad-section {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+}
+
+.eas6a97888e20,
+ins[data-zoneid="6010176"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 180px !important;
+  display: block !important;
+  overflow: visible !important;
+  margin: 0 auto !important;
+}
+
+.eas6a97888e20 iframe,
+ins[data-zoneid="6010176"] iframe {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 180px !important;
+  height: auto !important;
+  border: none !important;
+  display: block !important;
+  margin: 0 auto !important;
+  overflow: visible !important;
+}
+
+/* =====================================================================
    ON-STREAM IN-VIDEO PLAYER OVERLAY BANNER (Desktop Only / Scaled)
    ===================================================================== */
 .onstream-ad-container {
