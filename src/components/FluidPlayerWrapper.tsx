@@ -157,207 +157,47 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     setDirectVastAd(null);
   };
 
-  // ── Effect: Fluid Player Native VAST + Direct VAST Fallback Engine ───────
+  // ── Effect: Direct Native HTML5 VAST In-Stream Engine (Mobile & Desktop) ───────
   useEffect(() => {
     if (!isPrerollActive || !currentVideoSrc) return;
 
     let isMounted = true;
     let fallbackSafetyTimer: NodeJS.Timeout | null = null;
-    let directVastStarted = false;
 
-    // Detect Mobile vs Desktop Device
-    const isMobileDevice =
-      typeof window !== 'undefined' &&
-      (window.innerWidth < 1024 ||
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-
-    // 1. Ensure Fluid Player CDN script and CSS are loaded dynamically on demand (for Desktop)
-    if (typeof window !== 'undefined' && !isMobileDevice) {
-      if (!document.getElementById('fluidplayer-cdn-css')) {
-        const link = document.createElement('link');
-        link.id = 'fluidplayer-cdn-css';
-        link.rel = 'stylesheet';
-        link.href = 'https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css';
-        link.type = 'text/css';
-        document.head.appendChild(link);
-      }
-      if (!(window as any).fluidPlayer && !document.getElementById('fluidplayer-cdn-script')) {
-        const script = document.createElement('script');
-        script.id = 'fluidplayer-cdn-script';
-        script.src = 'https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js';
-        script.async = true;
-        document.head.appendChild(script);
-      }
-    }
-
-    // 2. Fetch parsed VAST XML for Direct VAST Engine (100% Reliable on Mobile & Desktop Fallback)
+    // Fetch parsed VAST XML for Direct VAST Engine (100% Stable on all devices)
     const dynamicVastTag = `${VAST_TAG_URL}${VAST_TAG_URL.includes('?') ? '&' : '?'}cb=${Date.now()}_${Math.random().toString(36).substring(2, 8)}&v=${encodeURIComponent(video.id)}`;
 
-    fetchVastAd(dynamicVastTag, 3500)
+    fetchVastAd(dynamicVastTag, 4000)
       .then((parsedAd) => {
         if (!isMounted || contentStartedRef.current) return;
         if (parsedAd && parsedAd.mediaUrl) {
-          directVastStarted = true;
           setDirectVastAd(parsedAd);
           setIsAdLoading(false);
           fireTrackingPixel(parsedAd.impressionUrls);
-        } else if (isMobileDevice) {
-          // If no VAST ad fill on mobile, start main video stream
+        } else {
+          // No VAST fill -> proceed to main video content
           startMainContent();
         }
       })
       .catch(() => {
-        if (isMobileDevice && isMounted && !contentStartedRef.current) {
+        if (isMounted && !contentStartedRef.current) {
           startMainContent();
         }
       });
 
-    // 3. On Desktop: Initialize Fluid Player VAST with fail-safe fallback
-    let attempts = 0;
-    const initFluidVast = () => {
-      if (isMobileDevice || !isMounted || contentStartedRef.current || directVastStarted) return;
-      cleanupInstance();
-
-      const win = window as any;
-      const targetEl = document.getElementById(prerollPlayerId) as HTMLVideoElement;
-
-      if (!targetEl || typeof win.fluidPlayer !== 'function') {
-        attempts += 1;
-        if (isMounted && attempts < 30) {
-          setTimeout(initFluidVast, 150);
-        } else if (isMounted && !directVastStarted && attempts >= 30) {
-          startMainContent();
-        }
-        return;
-      }
-
-      try {
-        const instance = win.fluidPlayer(prerollPlayerId, {
-          layoutControls: {
-            primaryColor: '#ec4899',
-            posterImage: '',
-            playButtonShowing: true,
-            playPauseAnimation: true,
-            fillToContainer: true,
-            autoPlay: true,
-            allowMutedAutoplay: true,
-            mute: true,
-            controlBar: {
-              autoHide: true,
-              autoHideTimeout: 2,
-              animated: true,
-            },
-          },
-          vastOptions: {
-            adList: [
-              {
-                roll: 'preRoll',
-                vastTag: dynamicVastTag,
-                adClickable: true,
-                vpaidMode: 'insecure',
-              },
-            ],
-            allowVPAID: true,
-            vastAdvanced: {
-              vastLoadedCallback: () => {
-                if (isMounted) setIsAdLoading(false);
-              },
-              vastVideoStartedCallback: () => {
-                if (isMounted) {
-                  setIsAdLoading(false);
-                  if (fallbackSafetyTimer) clearTimeout(fallbackSafetyTimer);
-                }
-              },
-              noVastVideoCallback: () => {
-                if (isMounted && !directVastStarted) {
-                  setTimeout(() => {
-                    if (isMounted && !directVastStarted && !contentStartedRef.current) {
-                      startMainContent();
-                    }
-                  }, 1800);
-                }
-              },
-              vastVideoSkippedCallback: () => {
-                if (isMounted) startMainContent();
-              },
-              vastVideoEndedCallback: () => {
-                if (isMounted) startMainContent();
-              },
-            },
-          },
-        });
-
-        playerInstanceRef.current = instance;
-
-        // Instant DOM watcher: as soon as ad elements are rendered, hide loading overlay
-        const checkAdElements = () => {
-          if (!isMounted) return;
-          const adEls = document.querySelectorAll(
-            '.fluid_video_wrapper, .fluid_ad_video, .fluid_vpaid_container, .fluid_vpaid_iframe, .fluid_controls_container'
-          );
-          if (adEls.length > 0) {
-            setIsAdLoading(false);
-          }
-        };
-
-        checkAdElements();
-        const adDomInterval = setInterval(checkAdElements, 100);
-        setTimeout(() => clearInterval(adDomInterval), 3000);
-
-        targetEl.addEventListener('playing', () => {
-          if (isMounted) {
-            setIsAdLoading(false);
-            if (fallbackSafetyTimer) clearTimeout(fallbackSafetyTimer);
-          }
-        });
-
-        targetEl.addEventListener('timeupdate', () => {
-          if (isMounted && targetEl.currentTime > 0.1) {
-            setIsAdLoading(false);
-          }
-        });
-
-        targetEl.addEventListener('play', () => {
-          if (isMounted) setIsAdLoading(false);
-        });
-
-        targetEl.addEventListener('ended', () => {
-          if (isMounted) startMainContent();
-        });
-      } catch (err) {
-        console.warn('[FluidPlayer] VAST initialization notice:', err);
-        if (isMounted && !directVastStarted) {
-          setTimeout(() => {
-            if (isMounted && !contentStartedRef.current) startMainContent();
-          }, 1500);
-        }
-      }
-    };
-
-    const initTimer = setTimeout(initFluidVast, 80);
-
-    // Hard cap: Loading spinner must NEVER stay visible longer than 1.5 seconds
-    const hideLoadingCapTimer = setTimeout(() => {
-      if (isMounted) {
-        setIsAdLoading(false);
-      }
-    }, 1500);
-
-    // Safeguard fallback: if ad network drops or no fill occurs within 12 seconds, transition to main video
+    // Safeguard fallback: 45s hard ceiling to prevent getting stuck if network drops entirely
     fallbackSafetyTimer = setTimeout(() => {
       if (isMounted && !contentStartedRef.current) {
         startMainContent();
       }
-    }, 12000);
+    }, 45000);
 
     return () => {
       isMounted = false;
-      clearTimeout(initTimer);
-      clearTimeout(hideLoadingCapTimer);
       if (fallbackSafetyTimer) clearTimeout(fallbackSafetyTimer);
       cleanupInstance();
     };
-  }, [isPrerollActive, currentVideoSrc, video.id, videoMountKey, prerollPlayerId]);
+  }, [isPrerollActive, currentVideoSrc, video.id, videoMountKey]);
 
   // Handle direct VAST ad time updates
   const handleDirectAdTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
@@ -418,22 +258,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 onClick={handleAdClickThrough}
               />
             </div>
-          ) : (
-            /* Fluid Player Native VAST PreRoll Element */
-            <video
-              key={`preroll-${videoMountKey}`}
-              id={prerollPlayerId}
-              playsInline
-              preload="auto"
-              muted
-              className="w-full h-full object-contain block bg-black"
-            >
-              <source
-                src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
-                type="video/mp4"
-              />
-            </video>
-          )}
+          ) : null}
         </div>
       )}
 
