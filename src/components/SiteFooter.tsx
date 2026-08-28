@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const SITE_NAME = 'FapnXX';
