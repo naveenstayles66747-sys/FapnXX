@@ -48,7 +48,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const setSortBy = externalSetSortBy || setInternalSortBy;
   const [isDurationDropdownOpen, setIsDurationDropdownOpen] = useState(false);
   const [durationFilter, setDurationFilter] = useState<'all' | 'short' | 'medium' | 'long'>('all');
-  const [visibleCount, setVisibleCount] = useState<number>(16);
+  const PAGE_SIZE = 12;
+  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
 
   const sortDropdownRef = React.useRef<HTMLDivElement>(null);
   const durationDropdownRef = React.useRef<HTMLDivElement>(null);
@@ -69,7 +70,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
   // Reset pagination on filter or search changes
   useEffect(() => {
-    setVisibleCount(16);
+    setVisibleCount(PAGE_SIZE);
   }, [selectedCategory, searchQuery, sortBy, durationFilter]);
 
   // Filter out any videos that have been taken down
@@ -982,20 +983,58 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
               )}
             </div>
 
-            {/* Sentinel element for automatic Infinite Scroll */}
-            <div ref={loadMoreTriggerRef} className="h-6 w-full my-4" />
+            {/* Pagination & Load More Controls */}
+            {sortedVideos.length > PAGE_SIZE && (
+              <div className="mt-10 mb-6 flex flex-col items-center justify-center gap-4">
+                {visibleCount < sortedVideos.length ? (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, sortedVideos.length))}
+                    className="px-8 py-3.5 rounded-2xl bg-[#e0358d] hover:bg-[#ec4899] text-white font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 shadow-lg shadow-[#e0358d]/30 flex items-center gap-2 border border-white/20"
+                  >
+                    <span className="material-symbols-outlined text-base">expand_more</span>
+                    <span>Load More Videos ({sortedVideos.length - visibleCount} Remaining)</span>
+                  </button>
+                ) : (
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold flex items-center gap-1.5 bg-zinc-100 dark:bg-white/5 px-4 py-2 rounded-full border border-zinc-200 dark:border-white/10">
+                    <span className="material-symbols-outlined text-sm text-[#e0358d]">check_circle</span>
+                    <span>You have reached the end of the list ({sortedVideos.length} Total Videos)</span>
+                  </div>
+                )}
 
-            {/* Load More Button fallback */}
-            {visibleCount < sortedVideos.length && (
-              <div className="mt-8 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => setVisibleCount((prev) => Math.min(prev + 16, sortedVideos.length))}
-                  className="px-6 py-3 rounded-2xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#1c1b1f] dark:hover:bg-[#27272a] text-zinc-900 dark:text-white font-extrabold text-xs uppercase tracking-wider border border-zinc-300 dark:border-white/10 hover:border-[#e0358d] transition-all cursor-pointer active:scale-95 shadow-md flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-sm text-[#e0358d]">expand_more</span>
-                  <span>Load More Videos ({sortedVideos.length - visibleCount} Remaining)</span>
-                </button>
+                {/* Classic Numbered Page Selector */}
+                {(() => {
+                  const totalPages = Math.ceil(sortedVideos.length / PAGE_SIZE);
+                  if (totalPages <= 1) return null;
+                  const currentPage = Math.ceil(visibleCount / PAGE_SIZE);
+
+                  return (
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center pt-2">
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold mr-2 font-mono">
+                        Page {currentPage} of {totalPages}:
+                      </span>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                        const isCurrent = pageNum === currentPage;
+                        return (
+                          <button
+                            key={pageNum}
+                            type="button"
+                            onClick={() => {
+                              setVisibleCount(pageNum * PAGE_SIZE);
+                            }}
+                            className={`w-9 h-9 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center border ${
+                              isCurrent
+                                ? 'bg-[#e0358d] text-white border-[#e0358d] shadow-md shadow-[#e0358d]/40 scale-105'
+                                : 'bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-800 dark:text-zinc-300 border-zinc-300 dark:border-white/10 hover:border-[#e0358d]'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </>
