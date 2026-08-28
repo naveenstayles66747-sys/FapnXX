@@ -37,7 +37,13 @@ export const SiteFooter: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="col-span-2 lg:col-span-1 space-y-4">
-              <div className="text-xl font-black text-white">Fapn<span className="text-rose-500">XX</span></div>
+              <div className="flex items-center select-none">
+                <h2 className="text-2xl font-black tracking-tight whitespace-nowrap">
+                  <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
+                  <span className="brand-letter-n font-black">n</span>
+                  <span className="header-brand-nxx font-black">XX</span>
+                </h2>
+              </div>
               <p className="text-zinc-500 text-xs">Free adult video platform. All performers are 18+.</p>
               <div className="flex items-center gap-2">
                 <a href="https://www.rtalabel.org/" target="_blank" rel="noopener noreferrer" className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-[10px] font-mono font-bold text-zinc-300">RTA</a>
