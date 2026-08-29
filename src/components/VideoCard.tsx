@@ -37,8 +37,9 @@ const formatCardRating = (video: Video): string => {
   const likes = typeof video.likesCount === 'number' ? video.likesCount : 0;
   if (likes === 0) return '0%';
   const views = typeof video.viewsCount === 'number' && video.viewsCount > 0 ? video.viewsCount : 1;
-  const percent = Math.min(100, Math.round((likes / views) * 100));
-  return `${Math.max(1, percent)}%`;
+  // Use Math.max(0) — consistent with VideoDetailScreen, never inflate real percentages
+  const percent = Math.min(100, Math.max(0, Math.round((likes / views) * 100)));
+  return `${percent}%`;
 };
 
 const formatTimeAgo = (createdAt?: string, fallbackStr?: string): string => {

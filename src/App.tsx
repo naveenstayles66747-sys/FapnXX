@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, lazy, Suspense, startTransition } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense, startTransition } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { CategoryId, CategoryInfo, ContentPreference, LandingBanner, ScreenId, Video } from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { MobileDrawer } from './components/MobileDrawer';
+import { BottomNav } from './components/BottomNav';
 import { AgeGateModal } from './components/AgeGateModal';
 import {
   StickyBottomLeaderboard,
@@ -175,10 +176,8 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleAdminLogin = (email: string) => {
-    setUserEmail(email);
-    setIsAdminAuthenticated(true);
-  };
+  // NOTE: Admin auth state is managed exclusively by the onIdTokenChanged Firebase listener above.
+  // Direct email-based setIsAdminAuthenticated() bypasses Firebase claims — removed for security.
 
   const handleAdminLogout = () => {
     setUserEmail(null);
@@ -283,6 +282,12 @@ export default function App() {
     }
   }, []);
 
+  // Stable ref to always-fresh videosList — avoids stale closure without re-creating the callback on every update
+  const videosListRef = useRef(videosList);
+  useEffect(() => {
+    videosListRef.current = videosList;
+  }, [videosList]);
+
   // Parse URL search params on mount and on window popstate
   const parseUrlRoute = useCallback(() => {
     try {
@@ -292,7 +297,8 @@ export default function App() {
       const screenParam = params.get('s') as ScreenId | null;
 
       if (vId) {
-        const found = videosList.find((v) => v.id === vId);
+        // Use ref so we always read the latest list without re-creating this callback
+        const found = videosListRef.current.find((v) => v.id === vId);
         if (found) {
           setSelectedVideo(found);
           setCurrentScreen('video-detail');
@@ -328,9 +334,10 @@ export default function App() {
     } catch {
       setCurrentScreen('browse');
     }
-  }, [videosList, syncUrlWithState]);
+  // Stable: only depends on syncUrlWithState (no videosList — use ref instead)
+  }, [syncUrlWithState]);
 
-  // On Initial Mount & Popstate Listener (Browser Back / Forward button)
+  // On Initial Mount & Popstate Listener (Browser Back / Forward button) — registers only ONCE
   useEffect(() => {
     parseUrlRoute();
 
@@ -539,9 +546,9 @@ export default function App() {
             isOpen={isAdminModalOpen}
             onClose={() => setIsAdminModalOpen(false)}
             isAdminAuthenticated={isAdminAuthenticated}
-            onAdminLogin={(email) => {
-              setIsAdminAuthenticated(true);
-              setUserEmail(email);
+            onAdminLogin={() => {
+              // No-op: admin auth state is set exclusively by Firebase onIdTokenChanged observer.
+              // The modal's sign-in flow triggers a Firebase auth state change that propagates here automatically.
             }}
             onAdminLogout={() => setIsAdminAuthenticated(false)}
             categories={categories}
@@ -770,6 +777,14 @@ export default function App() {
 
       {/* Site Footer — DMCA, Legal, 18+ notice */}
       {currentScreen !== 'signin' && <SiteFooter />}
+
+      {/* Mobile Bottom Navigation Bar (lg:hidden — replaces drawer on small screens) */}
+      {currentScreen !== 'signin' && (
+        <BottomNav
+          currentScreen={currentScreen}
+          onNavigate={handleNavigate}
+        />
+      )}
 
       <SpeedInsights />
     </div>

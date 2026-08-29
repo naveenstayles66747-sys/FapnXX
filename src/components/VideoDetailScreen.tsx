@@ -164,6 +164,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     setIsLiked(nextLikedState);
     const newCount = Math.max(0, likeCount + (nextLikedState ? 1 : -1));
     setLikeCount(newCount);
+    // toggleStoredLikedVideo internally calls notifyInteractionSync → registered listener handles Firestore sync
     toggleStoredLikedVideo(video.id);
 
     setLikeToastMsg(nextLikedState ? 'Added to Liked Videos' : 'Removed from Liked Videos');
@@ -176,17 +177,15 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
         onVideoUpdated(video.id, { likesCount: updatedLikes });
       }
     }
-    if (userEmail) {
-      videoService.syncUserInteractionsToFirestore({ likedVideos: getStoredLikedVideos() });
-    }
+    // NOTE: Do NOT call syncUserInteractionsToFirestore here — toggleStoredLikedVideo already triggers
+    // notifyInteractionSync which fires the App.tsx registered sync listener. Calling it here = double write.
   };
 
   const handleSave = () => {
+    // toggleStoredSavedVideo internally calls notifyInteractionSync → registered listener handles Firestore sync
+    // NOTE: Do NOT call syncUserInteractionsToFirestore here — it's already triggered internally (double write prevention)
     toggleStoredSavedVideo(video.id);
     setIsSaved(!isSaved);
-    if (userEmail) {
-      videoService.syncUserInteractionsToFirestore({ savedVideos: getStoredSavedVideos() });
-    }
   };
 
   const handleShare = () => {
@@ -316,10 +315,11 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
               </span>
               <span className="font-extrabold">
                 {(() => {
-                  if (likeCount === 0 && !isLiked) return '100%';
+                  // Show true like-to-view ratio; 0 likes = 0%, never fake the numbers
+                  if (likeCount === 0) return '0%';
                   const views = currentViewsCount || 1;
-                  const percent = Math.min(100, Math.max(1, Math.round((likeCount / views) * 100)));
-                  return percent >= 5 ? `${percent}%` : isLiked ? '100%' : '98%';
+                  const percent = Math.min(100, Math.max(0, Math.round((likeCount / views) * 100)));
+                  return `${percent}%`;
                 })()}
               </span>
               {likeCount > 0 && (

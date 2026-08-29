@@ -53,6 +53,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
                 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop',
               subscribers: `${Math.floor(Math.random() * 20 + 2)}K`,
               videosCount: 1,
+              isFollowing: false,
               bio: `Official video channel & exclusive content for ${name}.`,
               tags: Array.isArray(v.tags) && v.tags.length > 0 ? v.tags : ['HD', 'Verified'],
             },

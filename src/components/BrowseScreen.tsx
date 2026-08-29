@@ -88,9 +88,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       return activeBanners.slice(0, 5);
     }
 
-    if (activeVideos.length === 0) {
-      return [];
-    }
+    // No videos and no banners — nothing to display
+    if (activeVideos.length === 0) return [];
 
     // Helper to get numeric views
     const getViewsNumber = (v: Video): number => {
@@ -280,6 +279,15 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       if (autoSwipeTimerRef.current) clearInterval(autoSwipeTimerRef.current);
     };
   }, [resetAutoSwipeTimer]);
+
+  // Pause auto-swipe while user is hovering the slider; resume on mouse leave
+  useEffect(() => {
+    if (isHoveredSlider) {
+      if (autoSwipeTimerRef.current) clearInterval(autoSwipeTimerRef.current);
+    } else {
+      resetAutoSwipeTimer();
+    }
+  }, [isHoveredSlider, resetAutoSwipeTimer]);
 
   const goToNextSlide = useCallback(() => {
     React.startTransition(() => {
@@ -553,6 +561,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onMouseEnter={() => setIsHoveredSlider(true)}
+          onMouseLeave={() => setIsHoveredSlider(false)}
         >
           {/* Continuous Hardware-Accelerated Sliding Track (Zero Black Gap) */}
           <div
