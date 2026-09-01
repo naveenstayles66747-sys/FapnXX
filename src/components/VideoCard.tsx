@@ -292,17 +292,9 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     }, 600);
   };
 
-  // Mobile Touch Scrubbing
+  // Mobile Touch Scrubbing: ONLY active when preview is already explicitly opened via the Eye button
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (previewType !== "frames" || frames.length <= 1 || e.touches.length === 0) return;
-    if (!isPreviewActive) {
-      setIsPreviewActive(true);
-      window.dispatchEvent(
-        new CustomEvent("active-global-video-preview", {
-          detail: video.id,
-        })
-      );
-    }
+    if (!isPreviewActive || previewType !== "frames" || frames.length <= 1 || e.touches.length === 0) return;
 
     const totalFrames = frames.length;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -332,9 +324,8 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     onClick();
   };
 
-  const togglePreview = (e: React.MouseEvent) => {
+  const togglePreview = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
-    e.preventDefault();
     const next = !isPreviewActive;
     if (next) {
       preloadCardFrames();
@@ -465,10 +456,14 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           <button
             type="button"
             onClick={togglePreview}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+              togglePreview(e);
+            }}
             className={`thumb-eye-btn absolute bottom-2 left-2 z-30 p-1.5 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-2xl flex items-center justify-center cursor-pointer ${
               isPlayingPreview
                 ? "opacity-0 pointer-events-none scale-90"
-                : "opacity-85 hover:opacity-100 bg-[#141418]/80 text-zinc-300 hover:text-white border border-white/20 hover:scale-105 active:scale-90"
+                : "opacity-90 hover:opacity-100 bg-[#141418]/90 text-zinc-200 hover:text-white border border-white/25 hover:scale-105 active:scale-90"
             }`}
             title="Play Video Preview"
           >
@@ -563,10 +558,14 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         <button
           type="button"
           onClick={togglePreview}
+          onTouchEnd={(e) => {
+            e.stopPropagation();
+            togglePreview(e);
+          }}
           className={`thumb-eye-btn absolute bottom-2 right-2 z-30 p-1.5 sm:p-2 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-2xl flex items-center justify-center cursor-pointer ${
             isPlayingPreview
               ? "opacity-0 pointer-events-none scale-90"
-              : "opacity-85 hover:opacity-100 bg-[#141418]/80 text-zinc-300 hover:text-white border border-white/20 hover:scale-105 active:scale-90"
+              : "opacity-90 hover:opacity-100 bg-[#141418]/90 text-zinc-200 hover:text-white border border-white/25 hover:scale-105 active:scale-90"
           }`}
           title="Play Video Preview"
         >
