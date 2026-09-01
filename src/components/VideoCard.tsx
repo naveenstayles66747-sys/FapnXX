@@ -74,6 +74,21 @@ const formatTimeAgo = (createdAt?: string, fallbackStr?: string): string => {
 
 const FALLBACK_THUMBNAIL = "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=800&auto=format&fit=crop";
 
+// Extract exactly 10 percentage milestone frames (0%, 10%, 20%, ... 90%/100%)
+const extract10PercentageFrames = (rawFrames: string[]): string[] => {
+  if (!Array.isArray(rawFrames) || rawFrames.length === 0) return [];
+  if (rawFrames.length <= 10) return rawFrames;
+
+  const result: string[] = [];
+  const TOTAL_STEPS = 10;
+  for (let i = 0; i < TOTAL_STEPS; i++) {
+    const pct = i / (TOTAL_STEPS - 1);
+    const targetIdx = Math.round(pct * (rawFrames.length - 1));
+    result.push(rawFrames[targetIdx]);
+  }
+  return result;
+};
+
 const extractPreviewDetails = (video: Video) => {
   const mp4Src = cleanMediaUrl(video.previewMp4Url || (video as any).mp4Url || "");
   if (mp4Src) {
@@ -90,9 +105,10 @@ const extractPreviewDetails = (video: Video) => {
     return { previewSrc: webpSrc, previewType: "webp" as const, frames: [] };
   }
 
-  // 16 authentic CDN frame URLs
+  // 10 percentage milestone frames (0%, 10%, 20% ... 90%)
   if (Array.isArray(video.previewFrames) && video.previewFrames.length > 0) {
-    return { previewSrc: video.previewFrames[0], previewType: "frames" as const, frames: video.previewFrames };
+    const tenFrames = extract10PercentageFrames(video.previewFrames);
+    return { previewSrc: tenFrames[0], previewType: "frames" as const, frames: tenFrames };
   }
 
   // Check cached frames in session
@@ -101,7 +117,8 @@ const extractPreviewDetails = (video: Video) => {
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return { previewSrc: parsed[0], previewType: "frames" as const, frames: parsed };
+        const tenFrames = extract10PercentageFrames(parsed);
+        return { previewSrc: tenFrames[0], previewType: "frames" as const, frames: tenFrames };
       }
     }
   } catch {}
