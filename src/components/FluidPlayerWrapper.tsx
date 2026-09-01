@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Video } from "../types";
 import { videoService } from "../services/videoService";
 import { AD_CONFIG } from "../config/adConfig";
@@ -81,7 +81,35 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     };
   }, []);
 
-  // -- Effect: Resolve video stream source ---------------------------------
+  // -- Helper: Kill ad videos ----------------------------------------------
+  const cleanupInstance = useCallback(() => {
+    try {
+      if (adVideoRef.current) {
+        adVideoRef.current.pause();
+        adVideoRef.current.muted = true;
+        adVideoRef.current.src = "";
+      }
+      document
+        .querySelectorAll(".fluid_ad_video, .fluid_video_wrapper video")
+        .forEach((el: any) => {
+          try {
+            el.pause();
+            el.muted = true;
+            el.src = "";
+          } catch {}
+        });
+    } catch {}
+  }, []);
+
+  // -- Transition Helper: Reveal Main Video Stream cleanly ----------------
+  const startMainContent = useCallback(() => {
+    cleanupInstance();
+    setIsAdLoading(false);
+    setIsPrerollActive(false);
+    setDirectVastAd(null);
+  }, [cleanupInstance]);
+
+  // -- Effect: Resolve video stream source and fetch VAST Ad ---------------
   useEffect(() => {
     setVideoMountKey((k) => k + 1);
     setIsPrerollActive(false);
@@ -115,11 +143,11 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       setCurrentVideoSrc("");
     }
 
-    // Optional Non-blocking VAST In-Stream Pre-roll
+    // Dynamic VAST In-Stream Pre-roll Engine (3.5s timeout for complete network fill)
     let isMounted = true;
     const dynamicVastTag = `${VAST_TAG_URL}${VAST_TAG_URL.includes("?") ? "&" : "?"}cb=${Date.now()}_${Math.random().toString(36).substring(2, 8)}&v=${encodeURIComponent(video?.id || "vid")}`;
 
-    fetchVastAd(dynamicVastTag, 1200)
+    fetchVastAd(dynamicVastTag, 3500)
       .then((parsedAd) => {
         if (!isMounted) return;
         if (parsedAd && parsedAd.mediaUrl) {
@@ -137,35 +165,25 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       isMounted = false;
       cleanupInstance();
     };
-  }, [video?.id, video?.embedUrl, video?.previewMp4Url]);
+  }, [video?.id, video?.embedUrl, video?.previewMp4Url, cleanupInstance, VAST_TAG_URL]);
 
-  // -- Helper: Kill ad videos ----------------------------------------------
-  const cleanupInstance = () => {
-    try {
-      if (adVideoRef.current) {
-        adVideoRef.current.pause();
-        adVideoRef.current.muted = true;
-        adVideoRef.current.src = "";
-      }
-      document
-        .querySelectorAll(".fluid_ad_video, .fluid_video_wrapper video")
-        .forEach((el: any) => {
-          try {
-            el.pause();
-            el.muted = true;
-            el.src = "";
-          } catch {}
+  // Autoplay handler for VAST Ad Video
+  useEffect(() => {
+    if (isPrerollActive && directVastAd && adVideoRef.current) {
+      adVideoRef.current.muted = isAdMuted;
+      const playPromise = adVideoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // If browser blocks unmuted autoplay, retry with muted
+          if (adVideoRef.current) {
+            adVideoRef.current.muted = true;
+            setIsAdMuted(true);
+            adVideoRef.current.play().catch(() => {});
+          }
         });
-    } catch {}
-  };
-
-  // -- Transition Helper: Reveal Main Video Stream cleanly ----------------
-  const startMainContent = () => {
-    cleanupInstance();
-    setIsAdLoading(false);
-    setIsPrerollActive(false);
-    setDirectVastAd(null);
-  };
+      }
+    }
+  }, [isPrerollActive, directVastAd, isAdMuted]);
 
   // Handle direct VAST ad time updates
   const handleDirectAdTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
@@ -260,6 +278,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               className="w-full h-full object-contain block bg-black cursor-pointer"
               onClick={handleAdClickThrough}
             />
+
+            {/* Top-Left Sponsor Badge */}
+            <div className="absolute top-3 left-3 z-40 flex items-center gap-2">
+              <span className="px-2.5 py-1 bg-amber-500 text-black text-[11px] font-black uppercase rounded-lg shadow-lg tracking-wider">
+                ADVERTISEMENT
+              </span>
+            </div>
 
             {/* Sound Toggle (Bottom-Left) */}
             <div className="absolute bottom-3 left-3 z-40">

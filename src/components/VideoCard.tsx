@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, memo, useMemo } from "react";
 import { Video } from "../types";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { cleanMediaUrl } from "../utils/mediaHelper";
@@ -73,8 +73,8 @@ const formatTimeAgo = (createdAt?: string, fallbackStr?: string): string => {
 
 const FALLBACK_THUMBNAIL = "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=800&auto=format&fit=crop";
 
-// Generate numbered keyframe URL for multi-frame thumbnail CDNs (Pornhub 1.jpg -> 16.jpg)
-const getFrameUrl = (baseUrl: string, frameNumber: number): string => {
+// Generate numbered frame URL fallback if explicit array is missing
+const getFrameUrlFallback = (baseUrl: string, frameNumber: number): string => {
   if (!baseUrl) return "";
   if (/(\d+)(\.jpg|\.webp|\.png)(\?.*)?$/i.test(baseUrl)) {
     return baseUrl.replace(/(\d+)(\.jpg|\.webp|\.png)(\?.*)?$/i, (_m, _n, ext, q) => `${frameNumber}${ext}${q || ""}`);
@@ -87,30 +87,30 @@ const extractPreviewDetails = (video: Video) => {
   if (mp4Src) {
     const urlPath = mp4Src.split("?")[0].split("#")[0].toLowerCase();
     const isVideo = /\.(mp4|webm|m3u8|mov|ogg)$/i.test(urlPath);
-    if (isVideo) return { previewSrc: mp4Src, previewType: "video" as const };
+    if (isVideo) return { previewSrc: mp4Src, previewType: "video" as const, frames: [] };
   }
 
   const webpSrc = cleanMediaUrl(video.previewWebpUrl || "");
   if (webpSrc) {
     const urlPath = webpSrc.split("?")[0].split("#")[0].toLowerCase();
     const isVideo = /\.(mp4|webm|m3u8|mov|ogg)$/i.test(urlPath);
-    if (isVideo) return { previewSrc: webpSrc, previewType: "video" as const };
-    return { previewSrc: webpSrc, previewType: "webp" as const };
+    if (isVideo) return { previewSrc: webpSrc, previewType: "video" as const, frames: [] };
+    return { previewSrc: webpSrc, previewType: "webp" as const, frames: [] };
+  }
+
+  // 16 authentic CDN frame URLs
+  if (Array.isArray(video.previewFrames) && video.previewFrames.length > 0) {
+    return { previewSrc: video.previewFrames[0], previewType: "frames" as const, frames: video.previewFrames };
   }
 
   const thumb = cleanMediaUrl(video.thumbnail || video.thumbnailUrl || "");
-  if (thumb && /(\d+)(\.jpg|\.webp|\.png)(\?.*)?$/i.test(thumb)) {
-    return { previewSrc: thumb, previewType: "frames" as const };
-  }
-
-  return { previewSrc: thumb, previewType: "frames" as const };
+  return { previewSrc: thumb, previewType: "frames" as const, frames: [] };
 };
 
 const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout = "grid" }) => {
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [isPreviewActive, setIsPreviewActive] = useState<boolean>(false);
-  const [currentFrame, setCurrentFrame] = useState<number>(1);
-  const [currentFrameUrl, setCurrentFrameUrl] = useState<string>("");
+  const [currentFrameIndex, setCurrentFrameIndex] = useState<number>(0);
 
   const isMobile = useIsMobile();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -118,31 +118,45 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const frameIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { previewSrc, previewType } = useMemo(() => extractPreviewDetails(video), [video]);
+  const { previewSrc, previewType, frames } = useMemo(() => extractPreviewDetails(video), [video]);
   const isPlayingPreview = isMobile ? isPreviewActive : (isHovered || isPreviewActive);
 
   const primaryThumb = cleanMediaUrl(video.thumbnail || video.thumbnailUrl || "");
   const displayThumbnail = primaryThumb || FALLBACK_THUMBNAIL;
 
+  // Active frame image URL
+  const currentFrameUrl = useMemo(() => {
+    if (frames.length > 0) {
+      return frames[currentFrameIndex % frames.length] || displayThumbnail;
+    }
+    return getFrameUrlFallback(displayThumbnail, (currentFrameIndex % 16) + 1);
+  }, [frames, currentFrameIndex, displayThumbnail]);
+
+  // Preload next frames in background when preview starts
+  useEffect(() => {
+    if (isPlayingPreview && frames.length > 0) {
+      frames.slice(0, 8).forEach((fUrl) => {
+        const img = new Image();
+        img.src = fUrl;
+      });
+    }
+  }, [isPlayingPreview, frames]);
+
   // Frame cycling engine (rotates 1..16 keyframes on hover or preview toggle)
   useEffect(() => {
-    if (isPlayingPreview && previewType === "frames" && displayThumbnail) {
-      let frame = 1;
-      setCurrentFrame(1);
-      setCurrentFrameUrl(getFrameUrl(displayThumbnail, 1));
+    if (isPlayingPreview && previewType === "frames") {
+      const totalFrames = frames.length > 0 ? frames.length : 16;
+      setCurrentFrameIndex(0);
 
       frameIntervalRef.current = setInterval(() => {
-        frame = frame >= 16 ? 1 : frame + 1;
-        setCurrentFrame(frame);
-        setCurrentFrameUrl(getFrameUrl(displayThumbnail, frame));
+        setCurrentFrameIndex((prev) => (prev + 1) % totalFrames);
       }, 250); // 250ms per keyframe creates smooth animated flipbook preview
     } else {
       if (frameIntervalRef.current) {
         clearInterval(frameIntervalRef.current);
         frameIntervalRef.current = null;
       }
-      setCurrentFrame(1);
-      setCurrentFrameUrl("");
+      setCurrentFrameIndex(0);
     }
 
     return () => {
@@ -151,7 +165,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         frameIntervalRef.current = null;
       }
     };
-  }, [isPlayingPreview, previewType, displayThumbnail]);
+  }, [isPlayingPreview, previewType, frames]);
 
   const handleMouseEnter = () => {
     if (isMobile) return;
@@ -163,7 +177,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           detail: video.id,
         })
       );
-    }, 100);
+    }, 80);
   };
 
   const handleMouseLeave = () => {
@@ -181,17 +195,17 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
 
   // Mouse scrubbing across card width
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isMobile || previewType !== "frames" || !displayThumbnail) return;
+    if (isMobile || previewType !== "frames") return;
+    const totalFrames = frames.length > 0 ? frames.length : 16;
     const rect = e.currentTarget.getBoundingClientRect();
     if (rect.width <= 0) return;
     const xPos = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
     const pct = xPos / rect.width;
-    const scrubFrame = Math.max(1, Math.min(16, Math.ceil(pct * 16)));
-    setCurrentFrame(scrubFrame);
-    setCurrentFrameUrl(getFrameUrl(displayThumbnail, scrubFrame));
+    const scrubIdx = Math.max(0, Math.min(totalFrames - 1, Math.floor(pct * totalFrames)));
+    setCurrentFrameIndex(scrubIdx);
   };
 
-  const handleCardClick = (e: React.MouseEvent) => {
+  const handleCardClick = () => {
     if (hoverTimerRef.current) {
       clearTimeout(hoverTimerRef.current);
       hoverTimerRef.current = null;
@@ -282,13 +296,15 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           decoding="async"
           referrerPolicy="no-referrer-when-downgrade"
           onError={handleImageError}
-          className="absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-200 z-10"
+          className="absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-150 z-10"
         />
       );
     }
 
     return null;
   };
+
+  const totalFramesCount = frames.length > 0 ? frames.length : 16;
 
   if (layout === "horizontal") {
     return (
@@ -369,12 +385,12 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           <>
             <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5 px-2 py-0.5 bg-rose-600/90 text-white rounded-md text-[9px] font-black uppercase tracking-wider shadow-lg animate-pulse pointer-events-none">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-              <span>PREVIEW</span>
+              <span>PREVIEW {currentFrameIndex + 1}/{totalFramesCount}</span>
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20 pointer-events-none">
               <div
                 className="h-full bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-150"
-                style={{ width: `${(currentFrame / 16) * 100}%` }}
+                style={{ width: `${((currentFrameIndex + 1) / totalFramesCount) * 100}%` }}
               />
             </div>
           </>
@@ -409,7 +425,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
               ? "bg-rose-600 text-white border border-rose-400 scale-100 opacity-100"
               : "bg-[#141418]/80 text-zinc-300 hover:text-white border border-white/20 hover:scale-105 opacity-85 hover:opacity-100"
           }`}
-          title="Toggle Video Keyframe Preview"
+          title="Toggle 16-Frame Video Preview"
         >
           <span className="material-symbols-outlined text-base sm:text-lg">
             {isPlayingPreview ? "visibility_off" : "visibility"}

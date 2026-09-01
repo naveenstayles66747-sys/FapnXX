@@ -38,6 +38,7 @@ export interface Video {
   embedUrl?: string;
   previewMp4Url?: string;
   previewWebpUrl?: string;
+  previewFrames?: string[];
   vttUrl?: string;
   spriteUrl?: string;
   vastAdTagUrl?: string;

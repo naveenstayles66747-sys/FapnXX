@@ -194,6 +194,7 @@ export async function parsePornhubDb(options = {}) {
       performerName,
       thumbnail: primaryThumb,
       thumbnailUrl: primaryThumb,
+      previewFrames: framePreviews.length > 0 ? framePreviews : undefined,
       previewMp4Url: framePreviews.length > 0 ? framePreviews[Math.min(4, framePreviews.length - 1)] : undefined,
       duration: formatDuration(durationSec),
       quality: durationSec > 600 || viewsCount > 500000 ? "4K" : "HD",
