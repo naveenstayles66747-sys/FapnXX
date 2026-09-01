@@ -5,7 +5,44 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        name: 'embed-proxy-dev',
+        configureServer(server) {
+          server.middlewares.use(async (req, res, next) => {
+            if (req.url && req.url.startsWith('/api/embed')) {
+              try {
+                const urlObj = new URL(req.url, 'http://localhost');
+                const rawId = urlObj.searchParams.get('id') || urlObj.searchParams.get('v') || '';
+                const videoId = rawId.replace(/^ph-/, '').split('?')[0].trim();
+                if (!videoId) {
+                  res.statusCode = 400;
+                  return res.end('Video ID is required.');
+                }
+                const targetUrl = `https://www.pornhub.org/embed/${videoId}`;
+                const upstream = await fetch(targetUrl, {
+                  headers: {
+                    'User-Agent':
+                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Referer': 'https://www.pornhub.org/',
+                  },
+                });
+                const html = await upstream.text();
+                res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                return res.end(html);
+              } catch {
+                res.statusCode = 500;
+                return res.end('Stream loading...');
+              }
+            }
+            next();
+          });
+        },
+      },
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
