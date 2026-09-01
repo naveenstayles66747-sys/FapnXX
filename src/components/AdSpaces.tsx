@@ -754,7 +754,8 @@ export const NativeRecommendationAd: React.FC<{
           <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white tracking-wide">{title}</h3>
         </div>
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {/* Clean 2x2 Grid on Mobile/Tablet, 4-Column on Desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {items.map((item, idx) => {
           const isHovered = hoveredIdx === idx;
           const displayImage = item.optimum_image || item.image;
@@ -766,53 +767,53 @@ export const NativeRecommendationAd: React.FC<{
               rel="noopener noreferrer"
               onMouseEnter={() => setHoveredIdx(idx)}
               onMouseLeave={() => setHoveredIdx(null)}
-              className="group video-card flex flex-col w-full rounded-2xl overflow-hidden transition-all duration-300 active:scale-95 cursor-pointer bg-zinc-900/50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 hover:border-[#ec4899] shadow-sm hover:shadow-[0_0_20px_rgba(236,72,153,0.25)]"
+              className="group flex flex-col w-full rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 active:scale-95 cursor-pointer bg-zinc-900/60 dark:bg-black/50 border border-zinc-200 dark:border-white/10 hover:border-[#ec4899] shadow-sm hover:shadow-[0_0_15px_rgba(236,72,153,0.3)]"
             >
-              <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden bg-black flex items-center justify-center">
+              <div className="relative w-full aspect-[16/9] rounded-lg sm:rounded-xl overflow-hidden bg-black flex items-center justify-center">
                 <img
                   src={displayImage}
                   alt={item.title || "Sponsored Recommendation"}
                   className={`w-full h-full object-cover transition-transform duration-500 ${
-                    isHovered ? "scale-110" : "scale-100"
+                    isHovered ? "scale-105" : "scale-100"
                   }`}
                   loading="lazy"
                   decoding="async"
                 />
 
-                {/* Live Play Overlay Indicator on Hover/Touch */}
+                {/* Pulsing Play Badge */}
                 <div
-                  className={`absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity duration-300 ${
-                    isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
+                  className={`absolute inset-0 bg-black/25 flex items-center justify-center transition-opacity duration-300 ${
+                    isHovered ? "opacity-100" : "opacity-0 sm:opacity-0"
                   }`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-[#ec4899]/90 text-white flex items-center justify-center shadow-lg transform scale-100 hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-xl">play_arrow</span>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#ec4899]/90 text-white flex items-center justify-center shadow-lg transform scale-100 hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-lg sm:text-xl">play_arrow</span>
                   </div>
                 </div>
 
                 {/* AD Badge */}
-                <div className="absolute top-2 right-2 z-10">
-                  <span className="bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+                <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-10">
+                  <span className="bg-[#ec4899] text-white px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-extrabold uppercase shadow-md tracking-wide">
                     AD
                   </span>
                 </div>
 
                 {/* Sponsor Brand Badge */}
-                <div className="absolute bottom-2 left-2 z-10 bg-black/80 backdrop-blur-xs border border-white/15 px-2 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400">
+                <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 z-10 bg-black/85 backdrop-blur-xs border border-white/15 px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold text-rose-400">
                   {item.brand || "SPONSORED"}
                 </div>
               </div>
 
-              <div className="video-info p-2.5 space-y-1">
+              <div className="video-info p-2 sm:p-2.5 space-y-1">
                 <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white group-hover:text-[#ec4899] transition-colors line-clamp-2 leading-snug">
-                  {item.title || "Recommended Video"}
+                  {item.title || "Recommended Content"}
                 </h4>
-                <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 pt-1 border-t border-zinc-100 dark:border-white/5">
-                  <span className="flex items-center gap-1 text-rose-500 font-bold">
-                    <span className="material-symbols-outlined text-[13px]">verified</span>
-                    <span>{item.brand || "Promoted"}</span>
+                <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 pt-1 border-t border-zinc-100 dark:border-white/5">
+                  <span className="flex items-center gap-1 text-rose-500 font-bold truncate max-w-[70%]">
+                    <span className="material-symbols-outlined text-[12px] sm:text-[13px]">verified</span>
+                    <span className="truncate">{item.brand || "Promoted"}</span>
                   </span>
-                  <span className="text-[10px] text-zinc-400 uppercase font-mono">Stream HD</span>
+                  <span className="text-[9px] sm:text-[10px] text-zinc-400 uppercase font-mono">HD</span>
                 </div>
               </div>
             </a>

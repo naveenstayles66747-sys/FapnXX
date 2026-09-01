@@ -244,13 +244,6 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
                     )}
                   </React.Fragment>
                 ))}
-
-                {/* Guaranteed in-grid placement if total videos is less than 4 */}
-                {filteredCategoryVideos.length > 0 && filteredCategoryVideos.length < 4 && (
-                  <div key={`category-native-recommended-fallback-${categoryId}`} className="col-span-full my-3">
-                    <NativeRecommendationAd key={`cat-native-fallback-${categoryId}`} reloadKey={categoryId} />
-                  </div>
-                )}
               </div>
             )}
           </>

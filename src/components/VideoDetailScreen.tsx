@@ -484,11 +484,6 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           <span>Recommended Videos</span>
         </h3>
 
-        {/* Guaranteed Native Recommendation Widget (Zone: 6010176) */}
-        <div className="w-full my-3">
-          <NativeRecommendationAd key={`detail-native-rec-top-${video.id}`} reloadKey={video.id} />
-        </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5">
           {(topRelatedVideos || []).map((relatedVideo, idx) => (
             <React.Fragment key={relatedVideo.id}>
