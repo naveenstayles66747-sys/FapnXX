@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Video } from '../types';
-import { videoService } from '../services/videoService';
-import { AD_CONFIG } from '../config/adConfig';
-import { stopAllBackgroundMedia } from '../utils/mediaHelper';
-import { fetchVastAd, fireTrackingPixel, VastAd } from '../utils/vastEngine';
+import React, { useState, useEffect, useRef } from "react";
+import { Video } from "../types";
+import { videoService } from "../services/videoService";
+import { AD_CONFIG } from "../config/adConfig";
+import { stopAllBackgroundMedia } from "../utils/mediaHelper";
+import { fetchVastAd, fireTrackingPixel, VastAd } from "../utils/vastEngine";
 
 interface FluidPlayerWrapperProps {
   video: Video;
@@ -16,39 +16,48 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   video,
   autoPlay = true,
   onEnded,
-  className = '',
+  className = "",
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const playerInstanceRef = useRef<any>(null);
-  const contentStartedRef = useRef<boolean>(false);
   const adVideoRef = useRef<HTMLVideoElement>(null);
 
-  const [playerMode, setPlayerMode] = useState<'embed' | 'video'>('embed');
-  const [currentVideoSrc, setCurrentVideoSrc] = useState<string>('');
+  const [playerMode, setPlayerMode] = useState<"embed" | "video">("embed");
+  const [currentVideoSrc, setCurrentVideoSrc] = useState<string>("");
   const [videoMountKey, setVideoMountKey] = useState<number>(0);
 
   // VAST In-Stream State
-  const [isPrerollActive, setIsPrerollActive] = useState<boolean>(true);
-  const [isAdLoading, setIsAdLoading] = useState<boolean>(true);
+  const [isPrerollActive, setIsPrerollActive] = useState<boolean>(false);
+  const [isAdLoading, setIsAdLoading] = useState<boolean>(false);
   const [directVastAd, setDirectVastAd] = useState<VastAd | null>(null);
   const [isAdMuted, setIsAdMuted] = useState<boolean>(true);
   const [adCurrentTime, setAdCurrentTime] = useState<number>(0);
   const [adDuration, setAdDuration] = useState<number>(15);
 
-  const prerollPlayerId = `fluid_preroll_${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-  const directPlayerId = `fluid_direct_${video.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  const directPlayerId = `fluid_direct_${(video?.id || "vid").replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+  const VAST_TAG_URL = AD_CONFIG.VAST_TAG_URL || "https://s.magsrv.com/v1/vast.php?idz=6003184";
 
-  const VAST_TAG_URL = AD_CONFIG.VAST_TAG_URL || 'https://s.magsrv.com/v1/vast.php?idz=6003184';
-
-  // ── Helper: Extract clean URL & detect direct MP4 vs Embed ──────────────
+  // -- Helper: Clean & Normalize any Embed or Video URL -----------------------
   const extractEmbedUrl = (rawInput?: string): { cleanUrl: string; isDirectVideo: boolean } => {
-    let src = (rawInput || '').trim();
-    if (src.startsWith('<iframe') || src.includes('src=')) {
+    let src = (rawInput || "").trim();
+    if (src.startsWith("<iframe") || src.includes("src=")) {
       const match = src.match(/src=["']([^"']+)["']/i);
       if (match && match[1]) src = match[1];
     }
-    src = src.replace(/^["']|["']$/g, '').trim();
-    if (src.startsWith('//')) src = 'https:' + src;
+    src = src.replace(/^["']|["']$/g, "").trim();
+    if (src.startsWith("//")) src = "https:" + src;
+
+    // Normalizations for popular hosts
+    if (src.includes("pornhub.com/view_video.php?viewkey=")) {
+      const vKey = src.split("viewkey=")[1]?.split("&")[0];
+      if (vKey) src = `https://www.pornhub.com/embed/${vKey}`;
+    } else if (src.includes("xvideos.com/video") && !src.includes("embedframe")) {
+      const vMatch = src.match(/xvideos\.com\/video(\d+)/i);
+      if (vMatch && vMatch[1]) src = `https://www.xvideos.com/embedframe/${vMatch[1]}`;
+    } else if (src.includes("streamtape.com/v/") || src.includes("streamta.pe/v/")) {
+      src = src.replace("/v/", "/e/");
+    } else if (src.includes("spankbang.com") && src.includes("/video/") && !src.includes("/embed/")) {
+      src = src.replace("/video/", "/embed/");
+    }
 
     const isKnownEmbed =
       /streamtape|streamta\.pe|dood|filemoon|spankbang|xvideos|pornhub|redtube|youporn|eporner|tube8|chaturbate|bembed|embedseek|streamhide|upstream|mixdrop|\/e\/|\/embed\//i.test(
@@ -57,152 +66,106 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
     const hasVideoExtension = Boolean(src.match(/\.(mp4|webm|m3u8|mov|ogg)(\?.*)?$/i));
     const isStorageBlob =
-      src.startsWith('blob:') ||
-      (src.includes('firebasestorage.googleapis.com') && !src.includes('placeholder'));
+      src.startsWith("blob:") ||
+      (src.includes("firebasestorage.googleapis.com") && !src.includes("placeholder"));
 
     const isDirectVideo = !isKnownEmbed && (hasVideoExtension || isStorageBlob);
 
     return { cleanUrl: src, isDirectVideo };
   };
 
-  // ── Global Unmount / Navigation Media Killer ─────────────────────────────
+  // -- Global Unmount / Navigation Media Killer -----------------------------
   useEffect(() => {
     return () => {
       stopAllBackgroundMedia();
     };
   }, []);
 
-  // ── Effect: Resolve video stream source ─────────────────────────────────
+  // -- Effect: Resolve video stream source ---------------------------------
   useEffect(() => {
     setVideoMountKey((k) => k + 1);
-    contentStartedRef.current = false;
-    setIsPrerollActive(true);
-    setIsAdLoading(true);
+    setIsPrerollActive(false);
+    setIsAdLoading(false);
     setDirectVastAd(null);
     setAdCurrentTime(0);
     setAdDuration(15);
 
     const rawEmbed = (
-      video.embedUrl ||
-      (video as any).embedCode ||
-      (video as any).videoUrl ||
-      ''
+      video?.embedUrl ||
+      (video as any)?.embedCode ||
+      (video as any)?.videoUrl ||
+      ""
     ).trim();
     const rawMp4 = (
-      video.previewMp4Url ||
-      (video as any).mp4Url ||
-      ''
+      video?.previewMp4Url ||
+      (video as any)?.mp4Url ||
+      ""
     ).trim();
 
     if (rawEmbed) {
       const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawEmbed);
-      setPlayerMode(d ? 'video' : 'embed');
+      setPlayerMode(d ? "video" : "embed");
       setCurrentVideoSrc(c);
     } else if (rawMp4) {
       const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawMp4);
-      setPlayerMode(d ? 'video' : 'embed');
+      setPlayerMode(d ? "video" : "embed");
       setCurrentVideoSrc(c);
     } else {
-      setPlayerMode('embed');
-      setCurrentVideoSrc('');
-      setIsPrerollActive(false);
-      setIsAdLoading(false);
-      contentStartedRef.current = true;
+      setPlayerMode("embed");
+      setCurrentVideoSrc("");
     }
-  }, [video.id, video.embedUrl, video.previewMp4Url]);
 
-  // ── Helper: Kill all playing ad videos & destroy Fluid Player instance ───
+    // Optional Non-blocking VAST In-Stream Pre-roll
+    let isMounted = true;
+    const dynamicVastTag = `${VAST_TAG_URL}${VAST_TAG_URL.includes("?") ? "&" : "?"}cb=${Date.now()}_${Math.random().toString(36).substring(2, 8)}&v=${encodeURIComponent(video?.id || "vid")}`;
+
+    fetchVastAd(dynamicVastTag, 1200)
+      .then((parsedAd) => {
+        if (!isMounted) return;
+        if (parsedAd && parsedAd.mediaUrl) {
+          setDirectVastAd(parsedAd);
+          setIsPrerollActive(true);
+          if (parsedAd.durationSeconds && parsedAd.durationSeconds > 0) {
+            setAdDuration(parsedAd.durationSeconds);
+          }
+          fireTrackingPixel(parsedAd.impressionUrls);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+      cleanupInstance();
+    };
+  }, [video?.id, video?.embedUrl, video?.previewMp4Url]);
+
+  // -- Helper: Kill ad videos ----------------------------------------------
   const cleanupInstance = () => {
     try {
       if (adVideoRef.current) {
         adVideoRef.current.pause();
         adVideoRef.current.muted = true;
-        adVideoRef.current.src = '';
-      }
-      const prerollEl = document.getElementById(prerollPlayerId) as HTMLVideoElement;
-      if (prerollEl) {
-        prerollEl.pause();
-        prerollEl.muted = true;
-        prerollEl.src = '';
-        prerollEl.load();
+        adVideoRef.current.src = "";
       }
       document
-        .querySelectorAll(
-          '.fluid_ad_video, .fluid_video_wrapper video, .fluid_vpaid_container video'
-        )
+        .querySelectorAll(".fluid_ad_video, .fluid_video_wrapper video")
         .forEach((el: any) => {
           try {
             el.pause();
             el.muted = true;
-            el.src = '';
+            el.src = "";
           } catch {}
         });
     } catch {}
-
-    if (playerInstanceRef.current) {
-      try {
-        if (typeof playerInstanceRef.current.destroy === 'function') {
-          playerInstanceRef.current.destroy();
-        }
-      } catch {}
-      playerInstanceRef.current = null;
-    }
   };
 
-  // ── Transition Helper: Reveal Main Video Stream cleanly ────────────────
+  // -- Transition Helper: Reveal Main Video Stream cleanly ----------------
   const startMainContent = () => {
-    if (contentStartedRef.current) return;
-    contentStartedRef.current = true;
-
     cleanupInstance();
-    stopAllBackgroundMedia();
-
     setIsAdLoading(false);
     setIsPrerollActive(false);
     setDirectVastAd(null);
   };
-
-  // ── Effect: Direct Native HTML5 VAST In-Stream Engine (Mobile & Desktop) ───────
-  useEffect(() => {
-    if (!isPrerollActive || !currentVideoSrc) return;
-
-    let isMounted = true;
-    let fallbackSafetyTimer: NodeJS.Timeout | null = null;
-
-    const dynamicVastTag = `${VAST_TAG_URL}${VAST_TAG_URL.includes('?') ? '&' : '?'}cb=${Date.now()}_${Math.random().toString(36).substring(2, 8)}&v=${encodeURIComponent(video.id)}`;
-
-    fetchVastAd(dynamicVastTag, 4000)
-      .then((parsedAd) => {
-        if (!isMounted || contentStartedRef.current) return;
-        if (parsedAd && parsedAd.mediaUrl) {
-          setDirectVastAd(parsedAd);
-          if (parsedAd.durationSeconds && parsedAd.durationSeconds > 0) {
-            setAdDuration(parsedAd.durationSeconds);
-          }
-          setIsAdLoading(false);
-          fireTrackingPixel(parsedAd.impressionUrls);
-        } else {
-          startMainContent();
-        }
-      })
-      .catch(() => {
-        if (isMounted && !contentStartedRef.current) {
-          startMainContent();
-        }
-      });
-
-    fallbackSafetyTimer = setTimeout(() => {
-      if (isMounted && !contentStartedRef.current) {
-        startMainContent();
-      }
-    }, 45000);
-
-    return () => {
-      isMounted = false;
-      if (fallbackSafetyTimer) clearTimeout(fallbackSafetyTimer);
-      cleanupInstance();
-    };
-  }, [isPrerollActive, currentVideoSrc, video.id, videoMountKey]);
 
   // Handle direct VAST ad time updates
   const handleDirectAdTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
@@ -222,8 +185,8 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       fireTrackingPixel(directVastAd.clickTrackingUrls);
       const targetUrl =
         directVastAd.clickThroughUrl ||
-        'https://go.marzaent.com/smartpop/165aea9bcdd7aabac45f72d02f58fd24b8416bc57cfc540b1b4409ac823564af';
-      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        "https://go.marzaent.com/smartpop/165aea9bcdd7aabac45f72d02f58fd24b8416bc57cfc540b1b4409ac823564af";
+      window.open(targetUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -238,115 +201,119 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const toggleAdMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (adVideoRef.current) {
-      const nextMuted = !isAdMuted;
+      const nextMuted = !adVideoRef.current.muted;
       adVideoRef.current.muted = nextMuted;
       setIsAdMuted(nextMuted);
+      if (directVastAd) {
+        fireTrackingPixel(
+          nextMuted
+            ? directVastAd.trackingEvents?.mute
+            : directVastAd.trackingEvents?.unmute
+        );
+      }
     }
   };
 
-  const skipOffset = directVastAd ? (directVastAd.skipOffsetSeconds ?? 5) : 5;
-  const canSkip = adCurrentTime >= skipOffset;
-  const secondsToSkip = Math.max(0, Math.ceil(skipOffset - adCurrentTime));
+  const skipOffsetSec = directVastAd?.skipOffsetSeconds || 5;
+  const canSkip = adCurrentTime >= skipOffsetSec;
+  const secondsToSkip = Math.max(0, Math.ceil(skipOffsetSec - adCurrentTime));
 
   return (
     <div
       ref={containerRef}
       className={`relative w-full h-full bg-black overflow-hidden flex items-center justify-center select-none ${className}`}
     >
-      {/* ══════════════════════════════════════════════════════════════════════
+      {/* ----------------------------------------------------------------------
           STAGE 1: VAST IN-STREAM AD PREROLL WITH NATIVE SKIP AD BUTTON
-      ══════════════════════════════════════════════════════════════════════ */}
-      {isPrerollActive && (
+      ---------------------------------------------------------------------- */}
+      {isPrerollActive && directVastAd && (
         <div className="absolute inset-0 z-30 w-full h-full bg-black flex items-center justify-center overflow-hidden">
+          <div className="relative w-full h-full flex items-center justify-center bg-black">
+            <video
+              ref={adVideoRef}
+              src={directVastAd.mediaUrl}
+              autoPlay
+              playsInline
+              preload="auto"
+              muted={isAdMuted}
+              onLoadedMetadata={(e) => {
+                setIsAdLoading(false);
+                const v = e.currentTarget;
+                if (v.duration && !isNaN(v.duration) && v.duration > 0) {
+                  setAdDuration(v.duration);
+                }
+              }}
+              onCanPlay={() => {
+                setIsAdLoading(false);
+                if (adVideoRef.current && adVideoRef.current.paused) {
+                  adVideoRef.current.play().catch(() => {});
+                }
+              }}
+              onTimeUpdate={handleDirectAdTimeUpdate}
+              onPlaying={() => setIsAdLoading(false)}
+              onEnded={() => {
+                if (directVastAd) {
+                  fireTrackingPixel(directVastAd.trackingEvents?.complete);
+                }
+                startMainContent();
+              }}
+              className="w-full h-full object-contain block bg-black cursor-pointer"
+              onClick={handleAdClickThrough}
+            />
 
-          {directVastAd ? (
-            <div className="relative w-full h-full flex items-center justify-center bg-black">
-              <video
-                ref={adVideoRef}
-                src={directVastAd.mediaUrl}
-                autoPlay
-                playsInline
-                preload="auto"
-                muted={isAdMuted}
-                onLoadedMetadata={(e) => {
-                  setIsAdLoading(false);
-                  const v = e.currentTarget;
-                  if (v.duration && !isNaN(v.duration) && v.duration > 0) {
-                    setAdDuration(v.duration);
-                  }
-                }}
-                onCanPlay={() => {
-                  setIsAdLoading(false);
-                  if (adVideoRef.current && adVideoRef.current.paused) {
-                    adVideoRef.current.play().catch(() => {});
-                  }
-                }}
-                onTimeUpdate={handleDirectAdTimeUpdate}
-                onPlaying={() => setIsAdLoading(false)}
-                onEnded={() => {
-                  if (directVastAd) {
-                    fireTrackingPixel(directVastAd.trackingEvents?.complete);
-                  }
-                  startMainContent();
-                }}
-                className="w-full h-full object-contain block bg-black cursor-pointer"
-                onClick={handleAdClickThrough}
-              />
+            {/* Sound Toggle (Bottom-Left) */}
+            <div className="absolute bottom-3 left-3 z-40">
+              <button
+                type="button"
+                onClick={toggleAdMute}
+                className="p-2 bg-black/75 hover:bg-black/95 text-white rounded-full border border-white/20 shadow-lg transition-all cursor-pointer backdrop-blur-md flex items-center justify-center active:scale-95"
+                title={isAdMuted ? "Unmute" : "Mute"}
+              >
+                <span className="material-symbols-outlined text-sm sm:text-base">
+                  {isAdMuted ? "volume_off" : "volume_up"}
+                </span>
+              </button>
+            </div>
 
-              {/* ── Sound Toggle (Bottom-Left) ── */}
-              <div className="absolute bottom-3 left-3 z-40">
+            {/* Skip Ad Button (Bottom-Right) */}
+            <div className="absolute bottom-3 right-3 z-40">
+              {canSkip ? (
                 <button
                   type="button"
-                  onClick={toggleAdMute}
-                  className="p-2 bg-black/75 hover:bg-black/95 text-white rounded-full border border-white/20 shadow-lg transition-all cursor-pointer backdrop-blur-md flex items-center justify-center active:scale-95"
-                  title={isAdMuted ? 'Unmute' : 'Mute'}
+                  onClick={handleSkipAd}
+                  className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 bg-[#ec4899] hover:bg-[#db2777] active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/20 shadow-2xl transition-all cursor-pointer backdrop-blur-md"
                 >
-                  <span className="material-symbols-outlined text-sm sm:text-base">
-                    {isAdMuted ? 'volume_off' : 'volume_up'}
-                  </span>
+                  <span>Skip Ad</span>
+                  <span className="material-symbols-outlined text-base">skip_next</span>
                 </button>
-              </div>
-
-              {/* ── Skip Ad Button (Bottom-Right) ── */}
-              <div className="absolute bottom-3 right-3 z-40">
-                {canSkip ? (
-                  <button
-                    type="button"
-                    onClick={handleSkipAd}
-                    className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 bg-[#ec4899] hover:bg-[#db2777] active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/20 shadow-2xl transition-all cursor-pointer backdrop-blur-md"
-                  >
-                    <span>Skip Ad</span>
-                    <span className="material-symbols-outlined text-base">skip_next</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/80 text-zinc-300 font-semibold text-xs rounded-xl border border-white/15 backdrop-blur-md shadow-lg pointer-events-none">
-                    <span>Skip in</span>
-                    <span className="font-mono text-white font-bold">{secondsToSkip}s</span>
-                  </div>
-                )}
-              </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/80 text-zinc-300 font-semibold text-xs rounded-xl border border-white/15 backdrop-blur-md shadow-lg pointer-events-none">
+                  <span>Skip in</span>
+                  <span className="font-mono text-white font-bold">{secondsToSkip}s</span>
+                </div>
+              )}
             </div>
-          ) : null}
+          </div>
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          STAGE 2: MAIN EMBEDDED VIDEO PLAYER (Streamtape / Embed or Direct MP4)
-      ══════════════════════════════════════════════════════════════════════ */}
-      {playerMode === 'embed' ? (
+      {/* ----------------------------------------------------------------------
+          STAGE 2: MAIN VIDEO STREAM (Embed Iframe or HTML5 MP4/HLS)
+      ---------------------------------------------------------------------- */}
+      {playerMode === "embed" ? (
         <div className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center">
           {currentVideoSrc ? (
             <iframe
               key={`iframe-${videoMountKey}`}
               src={currentVideoSrc}
-              title={video.title || 'Video Stream'}
-              allow="autoplay=*; fullscreen=*; picture-in-picture=*; encrypted-media=*; accelerometer=*; gyroscope=*"
+              title={video?.title || "Video Stream"}
+              allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
               allowFullScreen
-              referrerPolicy="no-referrer"
+              referrerPolicy="no-referrer-when-downgrade"
               scrolling="no"
               frameBorder={0}
               className="w-full h-full border-none block bg-black"
-              style={{ border: 'none', width: '100%', height: '100%', display: 'block' }}
+              style={{ border: "none", width: "100%", height: "100%", display: "block" }}
             />
           ) : (
             <div className="text-zinc-400 text-sm flex flex-col items-center gap-2 p-4 text-center">
@@ -365,7 +332,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             controls
             autoPlay={autoPlay}
             playsInline
-            poster={video.thumbnail || (video as any).thumbnailUrl || ''}
+            poster={video?.thumbnail || (video as any)?.thumbnailUrl || ""}
             onEnded={onEnded}
             onLoadedMetadata={(e) => {
               const v = e.currentTarget;
@@ -376,9 +343,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 const secs = totalSec % 60;
                 const formatted =
                   hrs > 0
-                    ? `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-                    : `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                if (video.duration !== formatted) {
+                    ? `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+                    : `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+                if (video?.duration !== formatted) {
                   videoService.updateVideo({ ...video, duration: formatted }).catch(() => {});
                 }
               }

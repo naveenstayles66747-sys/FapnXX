@@ -45,7 +45,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   const [isSaved, setIsSaved] = useState(false);
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
   const [likeCount, setLikeCount] = useState<number>(() =>
-    typeof video.likesCount === 'number' ? video.likesCount : 0
+    typeof video?.likesCount === 'number' ? video.likesCount : 0
   );
   const [showShareNotification, setShowShareNotification] = useState(false);
 
@@ -57,7 +57,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   const [showOnStreamBanner, setShowOnStreamBanner] = useState(true);
 
   // Real-time Views Counter
-  const [currentViewsCount, setCurrentViewsCount] = useState<number>(() => video.viewsCount || 1);
+  const [currentViewsCount, setCurrentViewsCount] = useState<number>(() => video?.viewsCount || 1);
   const [watchSeconds, setWatchSeconds] = useState<number>(0);
   const hasCountedRef = useRef<boolean>(false);
 
