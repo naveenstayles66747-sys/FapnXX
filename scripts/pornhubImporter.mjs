@@ -126,6 +126,7 @@ export async function parsePornhubDb(options = {}) {
     const endQuoteIdx = sub.indexOf(quoteChar);
     let embedUrl = endQuoteIdx !== -1 ? sub.substring(0, endQuoteIdx) : "";
     if (!embedUrl) continue;
+    embedUrl = embedUrl.replace("pornhub.com/embed/", "pornhub.org/embed/");
 
     if (atsCode) {
       embedUrl += embedUrl.includes("?") ? ("&ats=" + atsCode) : ("?ats=" + atsCode);
