@@ -20,12 +20,19 @@ const KEYS = {
   LEGACY_REPORTS: 'indianfullxx_dmca_reports',
 };
 
-// Proactively purge any legacy database content from localStorage so LocalStorage is strictly for theme/preferences/UI cache
+// Proactively purge any legacy or truncated database content from localStorage so full 1,316 catalog loads
 try {
   localStorage.removeItem(KEYS.LEGACY_CUSTOM_VIDEOS);
   localStorage.removeItem(KEYS.LEGACY_CUSTOM_CATEGORIES);
   localStorage.removeItem(KEYS.LEGACY_CUSTOM_BANNERS);
   localStorage.removeItem(KEYS.LEGACY_REPORTS);
+  const cached = localStorage.getItem(KEYS.CACHED_VIDEOS);
+  if (cached) {
+    const parsed = JSON.parse(cached);
+    if (!Array.isArray(parsed) || parsed.length < 1300) {
+      localStorage.removeItem(KEYS.CACHED_VIDEOS);
+    }
+  }
 } catch {}
 
 /**
@@ -74,7 +81,7 @@ export const getStoredCachedVideos = (): import('../types').Video[] => {
     const raw = localStorage.getItem(KEYS.CACHED_VIDEOS);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed) && parsed.length >= 1300) {
         return parsed;
       }
     }

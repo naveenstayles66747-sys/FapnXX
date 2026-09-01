@@ -99,7 +99,7 @@ export default function App() {
     }
     // Clean stale truncated cache and use full 1,316+ videos dataset
     try {
-      localStorage.removeItem('fapnxx_cached_videos_v1');
+      localStorage.removeItem('fapnxx_cached_videos');
     } catch {}
     return VIDEOS;
   });
@@ -119,36 +119,8 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  // Filtered videos based on content preference (straight/gay/lesbian) without breaking standard horizontal/vertical videos
-  const preferredVideos = (videosList || []).filter((v) => {
-    if (!v || typeof v !== 'object') return false;
-    const ori = (v.orientation || '').toLowerCase();
-    const pref = ((v as any).contentPreference || '').toLowerCase();
-    const cat = (v.category || '').toLowerCase();
-    const tags = Array.isArray(v.tags) ? v.tags.map((t) => (typeof t === 'string' ? t.toLowerCase() : '')) : [];
-
-    if (contentPreference === 'straight') {
-      return (
-        ori !== 'gay' &&
-        ori !== 'lesbian' &&
-        pref !== 'gay' &&
-        pref !== 'lesbian' &&
-        cat !== 'gay' &&
-        cat !== 'lesbian' &&
-        !tags.includes('gay') &&
-        !tags.includes('lesbian')
-      );
-    }
-    if (contentPreference === 'gay') {
-      return ori === 'gay' || pref === 'gay' || cat === 'gay' || tags.includes('gay');
-    }
-    if (contentPreference === 'lesbian') {
-      return ori === 'lesbian' || pref === 'lesbian' || cat === 'lesbian' || tags.includes('lesbian');
-    }
-    return true;
-  });
-  // Clean preference filter: Do NOT dump straight videos when a non-straight category has 0 videos
-  const filteredVideosList = preferredVideos;
+  // Main feed catalog: Serves all 1,316+ curated videos across all categories by default
+  const filteredVideosList = (videosList && videosList.length >= VIDEOS.length) ? videosList : VIDEOS;
 
   // Real Firebase Auth & Custom Claims Observer
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
