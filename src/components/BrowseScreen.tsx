@@ -48,7 +48,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const setSortBy = externalSetSortBy || setInternalSortBy;
   const [isDurationDropdownOpen, setIsDurationDropdownOpen] = useState(false);
   const [durationFilter, setDurationFilter] = useState<'all' | 'short' | 'medium' | 'long'>('all');
-  const PAGE_SIZE = 12;
+  const PAGE_SIZE = 24;
   const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
 
   const sortDropdownRef = React.useRef<HTMLDivElement>(null);
@@ -440,7 +440,12 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const justAddedVideos =
     selectedCategory === 'all'
       ? regionalVideos
-      : regionalVideos.filter((v) => v && v.category === selectedCategory);
+      : regionalVideos.filter(
+          (v) =>
+            v &&
+            (v.category === selectedCategory ||
+              (Array.isArray(v.categories) && v.categories.includes(selectedCategory)))
+        );
 
   // Helper to parse duration into seconds for precision filtering
   const parseDurationInSeconds = (durationStr?: string): number => {
@@ -509,7 +514,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && sortedVideos.length > visibleCount) {
-          setVisibleCount((prev) => Math.min(prev + 12, sortedVideos.length));
+          setVisibleCount((prev) => Math.min(prev + 24, sortedVideos.length));
         }
       },
       { rootMargin: '400px' }
@@ -572,13 +577,10 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         </section>
       )}
 
-      {/* Auto-Swiping 6-Image Hero Banner Slider (Hidden during active search so searched results show at very top) */}
+      {/* Auto-Swiping 6-Image Hero Banner Slider (Hidden on mobile devices for ultra-clean direct feed) */}
       {!cleanSearch && selectedCategory === 'all' && displayBanners.length > 0 && (
         <section
-          className="hero-banner-container block mb-6 md:mb-10 relative w-full h-[240px] sm:h-[320px] md:h-[360px] xl:h-[420px] overflow-hidden rounded-2xl border border-[#27272a] shadow-2xl group/slider select-none bg-[#09090b] touch-pan-y"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+          className="hero-banner-container hidden md:block mb-6 md:mb-10 relative w-full md:h-[360px] xl:h-[420px] overflow-hidden rounded-2xl border border-[#27272a] shadow-2xl group/slider select-none bg-[#09090b]"
           onMouseEnter={() => setIsHoveredSlider(true)}
           onMouseLeave={() => setIsHoveredSlider(false)}
         >
