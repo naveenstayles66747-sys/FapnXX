@@ -141,6 +141,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const frameIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const scrubResumeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastToggleTimeRef = useRef<number>(0);
 
   const { previewSrc, previewType, frames } = useMemo(() => extractPreviewDetails(video), [video]);
   const isPlayingPreview = isMobile ? isPreviewActive : (isHovered || isPreviewActive);
@@ -254,7 +255,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
 
   // Pornhub-Style Interactive Mouse Scrubbing Across Card Width
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (previewType !== "frames" || frames.length <= 1) return;
+    if (isMobile || previewType !== "frames" || frames.length <= 1) return;
     if (!isHovered) {
       setIsHovered(true);
       window.dispatchEvent(
@@ -310,6 +311,9 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   };
 
   const handleCardClick = () => {
+    if (Date.now() - lastToggleTimeRef.current < 450) {
+      return;
+    }
     if (hoverTimerRef.current) {
       clearTimeout(hoverTimerRef.current);
       hoverTimerRef.current = null;
@@ -332,6 +336,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         (e as any).nativeEvent.stopImmediatePropagation();
       }
     }
+    lastToggleTimeRef.current = Date.now();
     const next = !isPreviewActive;
     if (next) {
       preloadCardFrames();
@@ -458,7 +463,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
             </div>
           )}
 
-          {/* Eye Preview Trigger Button */}
+          {/* Eye Preview Trigger Button: FADES OUT / HIDES during preview */}
           <button
             type="button"
             onClick={(e) => {
@@ -479,14 +484,12 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
             }}
             className={`thumb-eye-btn absolute bottom-2 left-2 z-30 p-1.5 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-2xl flex items-center justify-center cursor-pointer ${
               isPlayingPreview
-                ? "bg-rose-600 text-white border border-rose-400 shadow-[0_0_12px_#ec4899] scale-105"
+                ? "opacity-0 pointer-events-none scale-75"
                 : "opacity-90 hover:opacity-100 bg-[#141418]/90 text-zinc-200 hover:text-white border border-white/25 hover:scale-105 active:scale-90"
             }`}
-            title={isPlayingPreview ? "Stop Preview" : "Play Video Preview"}
+            title="Play Video Preview"
           >
-            <span className="material-symbols-outlined text-base">
-              {isPlayingPreview ? "visibility_off" : "visibility"}
-            </span>
+            <span className="material-symbols-outlined text-base">visibility</span>
           </button>
         </div>
 
@@ -573,7 +576,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           </div>
         )}
 
-        {/* Eye Preview Trigger Button */}
+        {/* Eye Preview Trigger Button: FADES OUT / HIDES during preview */}
         <button
           type="button"
           onClick={(e) => {
@@ -594,13 +597,13 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           }}
           className={`thumb-eye-btn absolute bottom-2 right-2 z-30 p-1.5 sm:p-2 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-2xl flex items-center justify-center cursor-pointer ${
             isPlayingPreview
-              ? "bg-rose-600 text-white border border-rose-400 shadow-[0_0_12px_#ec4899] scale-105"
+              ? "opacity-0 pointer-events-none scale-75"
               : "opacity-90 hover:opacity-100 bg-[#141418]/90 text-zinc-200 hover:text-white border border-white/25 hover:scale-105 active:scale-90"
           }`}
-          title={isPlayingPreview ? "Stop Preview" : "Play Video Preview"}
+          title="Play Video Preview"
         >
           <span className="material-symbols-outlined text-base sm:text-lg">
-            {isPlayingPreview ? "visibility_off" : "visibility"}
+            visibility
           </span>
         </button>
       </div>
