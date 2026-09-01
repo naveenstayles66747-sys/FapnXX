@@ -696,86 +696,130 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
  * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile - Zone ID: 6010176)
  * Official ExoClick HTML5 Native Video Widget with Auto-Hover Preview & Touch Scrub
  */
+interface NativeAdItem {
+  image: string;
+  optimum_image?: string;
+  url: string;
+  title: string;
+  description?: string;
+  brand?: string;
+  size?: string;
+}
+
+/**
+ * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile - Zone ID: 6010176)
+ * Instant Live Feed with Rich Animated Thumbnails & Interactive Hover/Touch Previews
+ */
 export const NativeRecommendationAd: React.FC<{
   className?: string;
   title?: string;
   reloadKey?: string | number;
 }> = ({ className = "", title = "Sponsored Recommendations", reloadKey }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [items, setItems] = useState<NativeAdItem[]>([]);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const zoneId = AD_ZONES.NATIVE_RECOMMENDED || "6010176";
 
-  const renderOfficialWidget = useCallback(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    try {
-      el.innerHTML = "";
-
-      if (!document.getElementById("exoclick-global-ad-provider")) {
-        const sdk = document.createElement("script");
-        sdk.id = "exoclick-global-ad-provider";
-        sdk.type = "application/javascript";
-        sdk.async = true;
-        sdk.src = "https://a.magsrv.com/ad-provider.js";
-        document.head.appendChild(sdk);
-      }
-
-      const ins = document.createElement("ins");
-      ins.className = "eas" + AD_ZONES.SITE_HASH + "20";
-      ins.setAttribute("data-zoneid", AD_ZONES.NATIVE_RECOMMENDED || "6010176");
-      ins.style.display = "block";
-      ins.style.width = "100%";
-      ins.style.margin = "0 auto";
-      el.appendChild(ins);
-
-      const triggerScript = document.createElement("script");
-      triggerScript.type = "application/javascript";
-      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
-      el.appendChild(triggerScript);
-
-      const triggerAdServe = () => {
-        try {
-          const win = window as any;
-          win.AdProvider = win.AdProvider || [];
-          win.AdProvider.push({ serve: {} });
-        } catch {}
-      };
-
-      triggerAdServe();
-      setTimeout(triggerAdServe, 100);
-      setTimeout(triggerAdServe, 400);
-      setTimeout(triggerAdServe, 1000);
-    } catch (e) {
-      console.warn("[ExoClick] Native recommendation widget error:", e);
-    }
-  }, []);
+  const fetchFreshAds = useCallback(() => {
+    const cb = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    fetch(`https://syndication.realsrv.com/splash.php?idzone=${zoneId}&type=20&cb=${cb}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.data) && data.data.length > 0) {
+          setItems(data.data.slice(0, 4));
+        }
+      })
+      .catch((err) => {
+        console.warn("[ExoClick] Native recommendation fetch error:", err);
+      });
+  }, [zoneId]);
 
   useEffect(() => {
-    renderOfficialWidget();
-    const handleTrigger = () => {
-      renderOfficialWidget();
-    };
-    window.addEventListener("exoclick-refresh-ads", handleTrigger);
-    window.addEventListener("popstate", handleTrigger);
+    fetchFreshAds();
+    const handleRefresh = () => fetchFreshAds();
+    window.addEventListener("exoclick-refresh-ads", handleRefresh);
+    window.addEventListener("popstate", handleRefresh);
     return () => {
-      window.removeEventListener("exoclick-refresh-ads", handleTrigger);
-      window.removeEventListener("popstate", handleTrigger);
+      window.removeEventListener("exoclick-refresh-ads", handleRefresh);
+      window.removeEventListener("popstate", handleRefresh);
     };
-  }, [renderOfficialWidget, reloadKey]);
+  }, [fetchFreshAds, reloadKey]);
+
+  if (items.length === 0) return null;
 
   return (
-    <div className={`native-recommendation-wrapper w-full my-4 ${className}`}>
+    <section className={`native-recommendation-wrapper w-full my-4 ${className}`}>
       {title && (
         <div className="flex items-center gap-2 mb-3">
           <span className="material-symbols-outlined text-rose-500 text-lg">recommend</span>
-          <h3 className="font-bold text-base text-zinc-900 dark:text-white">{title}</h3>
+          <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white tracking-wide">{title}</h3>
         </div>
       )}
-      <div
-        ref={containerRef}
-        id="exoclick-native-recommended-zone"
-        className="w-full min-h-[160px] overflow-hidden rounded-2xl"
-      />
-    </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {items.map((item, idx) => {
+          const isHovered = hoveredIdx === idx;
+          const displayImage = item.optimum_image || item.image;
+          return (
+            <a
+              key={idx}
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onMouseEnter={() => setHoveredIdx(idx)}
+              onMouseLeave={() => setHoveredIdx(null)}
+              className="group video-card flex flex-col w-full rounded-2xl overflow-hidden transition-all duration-300 active:scale-95 cursor-pointer bg-zinc-900/50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 hover:border-[#ec4899] shadow-sm hover:shadow-[0_0_20px_rgba(236,72,153,0.25)]"
+            >
+              <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden bg-black flex items-center justify-center">
+                <img
+                  src={displayImage}
+                  alt={item.title || "Sponsored Recommendation"}
+                  className={`w-full h-full object-cover transition-transform duration-500 ${
+                    isHovered ? "scale-110" : "scale-100"
+                  }`}
+                  loading="lazy"
+                  decoding="async"
+                />
+
+                {/* Live Play Overlay Indicator on Hover/Touch */}
+                <div
+                  className={`absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity duration-300 ${
+                    isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-full bg-[#ec4899]/90 text-white flex items-center justify-center shadow-lg transform scale-100 hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-xl">play_arrow</span>
+                  </div>
+                </div>
+
+                {/* AD Badge */}
+                <div className="absolute top-2 right-2 z-10">
+                  <span className="bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+                    AD
+                  </span>
+                </div>
+
+                {/* Sponsor Brand Badge */}
+                <div className="absolute bottom-2 left-2 z-10 bg-black/80 backdrop-blur-xs border border-white/15 px-2 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400">
+                  {item.brand || "SPONSORED"}
+                </div>
+              </div>
+
+              <div className="video-info p-2.5 space-y-1">
+                <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white group-hover:text-[#ec4899] transition-colors line-clamp-2 leading-snug">
+                  {item.title || "Recommended Video"}
+                </h4>
+                <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 pt-1 border-t border-zinc-100 dark:border-white/5">
+                  <span className="flex items-center gap-1 text-rose-500 font-bold">
+                    <span className="material-symbols-outlined text-[13px]">verified</span>
+                    <span>{item.brand || "Promoted"}</span>
+                  </span>
+                  <span className="text-[10px] text-zinc-400 uppercase font-mono">Stream HD</span>
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </section>
   );
 };
 
