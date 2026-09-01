@@ -397,10 +397,10 @@ export class VideoService {
           return cleanVideos;
         }
       }
-      return [];
+      return INITIAL_VIDEOS;
     } catch (firestoreErr: any) {
       console.warn('⚠️ [Firestore Client] fetchVideos notice:', firestoreErr.message);
-      return [];
+      return INITIAL_VIDEOS;
     }
   }
 
@@ -433,6 +433,8 @@ export class VideoService {
               this.smartCache.set('videos_all', cleanList);
               callback(cleanList);
             }
+          } else {
+            callback(INITIAL_VIDEOS);
           }
         },
         (err) => {

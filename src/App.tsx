@@ -92,7 +92,7 @@ export default function App() {
   const [categories, setCategories] = useState<CategoryInfo[]>(CATEGORIES);
   const [videosList, setVideosList] = useState<Video[]>(() => {
     const cached = getStoredCachedVideos();
-    return cached.length > 0 ? cached : VIDEOS;
+    return (cached && cached.length >= VIDEOS.length) ? cached : VIDEOS;
   });
   const [banners, setBanners] = useState<LandingBanner[]>(() => {
     const cached = getStoredCachedBanners();

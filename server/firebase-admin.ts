@@ -48,8 +48,7 @@ const resolveServiceAccountCredentials = (): any | null => {
   const searchPaths = [
     path.resolve(process.cwd(), 'server', 'serviceAccountKey.json'),
     path.resolve(process.cwd(), 'serviceAccountKey.json'),
-    path.resolve(__dirname, 'serviceAccountKey.json'),
-    path.resolve(__dirname, '..', 'serviceAccountKey.json'),
+    path.resolve(process.cwd(), '..', 'serviceAccountKey.json'),
   ];
 
   for (const p of searchPaths) {
