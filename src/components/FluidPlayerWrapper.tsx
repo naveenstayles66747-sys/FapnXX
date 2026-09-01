@@ -331,6 +331,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
               allowFullScreen
               referrerPolicy="no-referrer-when-downgrade"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
               scrolling="no"
               frameBorder={0}
               className="w-full h-full border-none block bg-black"
