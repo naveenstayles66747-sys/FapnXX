@@ -330,6 +330,33 @@ export class VideoService {
   }
 
   /**
+   * Helper to merge Firestore custom uploads/edits seamlessly with the complete 1,316+ curated video library
+   */
+  private mergeWithInitialVideos(firestoreVideos: Video[], categoryFilter?: string): Video[] {
+    const map = new Map<string, Video>();
+    // 1. Seed complete 1,316 curated library
+    INITIAL_VIDEOS.forEach((v) => {
+      if (v && v.id) map.set(v.id, v);
+    });
+    // 2. Merge Firestore videos (user uploads, admin modifications, takedowns)
+    firestoreVideos.forEach((v) => {
+      if (v && v.id) {
+        if ((v as any).isTakenDown) {
+          map.delete(v.id);
+        } else {
+          map.set(v.id, v);
+        }
+      }
+    });
+    const all = Array.from(map.values());
+    if (categoryFilter && categoryFilter !== 'all') {
+      const catLower = categoryFilter.toLowerCase();
+      return all.filter((v) => v.category?.toLowerCase() === catLower || v.categories?.map((c) => c.toLowerCase()).includes(catLower));
+    }
+    return all;
+  }
+
+  /**
    * Fetch all videos via direct Firestore SDK with Backend API and CDN fallbacks with Smart Cache
    */
   async fetchVideos(category?: string): Promise<Video[]> {
@@ -388,20 +415,19 @@ export class VideoService {
           });
         });
 
-        if (firestoreVideos.length > 0) {
-          // Sort newest first, filter out taken-down, embed-less, and demo/fake videos
-          const cleanVideos = firestoreVideos.filter(
-            (v) => !(v as any).isTakenDown && (v.embedUrl || v.previewMp4Url) && !this.isDemoOrFakeVideo(v)
-          );
-          cleanVideos.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-          this.smartCache.set(cacheKey, cleanVideos);
-          return cleanVideos;
-        }
+        const cleanVideos = firestoreVideos.filter(
+          (v) => !(v as any).isTakenDown && (v.embedUrl || v.previewMp4Url) && !this.isDemoOrFakeVideo(v)
+        );
+        const merged = this.mergeWithInitialVideos(cleanVideos, category);
+        this.smartCache.set(cacheKey, merged);
+        return merged;
       }
-      return INITIAL_VIDEOS;
+      const initial = category && category !== 'all' ? this.mergeWithInitialVideos([], category) : INITIAL_VIDEOS;
+      return initial;
     } catch (firestoreErr: any) {
       console.warn('⚠️ [Firestore Client] fetchVideos notice:', firestoreErr.message);
-      return INITIAL_VIDEOS;
+      const initial = category && category !== 'all' ? this.mergeWithInitialVideos([], category) : INITIAL_VIDEOS;
+      return initial;
     }
   }
 
@@ -426,14 +452,12 @@ export class VideoService {
                 likesCount: typeof data.likesCount === 'number' ? data.likesCount : 0,
               });
             });
-            if (list.length > 0) {
-              const cleanList = list.filter(
-                (v) => !(v as any).isTakenDown && (v.embedUrl || v.previewMp4Url) && !this.isDemoOrFakeVideo(v)
-              );
-              cleanList.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-              this.smartCache.set('videos_all', cleanList);
-              callback(cleanList);
-            }
+            const cleanList = list.filter(
+              (v) => !(v as any).isTakenDown && (v.embedUrl || v.previewMp4Url) && !this.isDemoOrFakeVideo(v)
+            );
+            const merged = this.mergeWithInitialVideos(cleanList);
+            this.smartCache.set('videos_all', merged);
+            callback(merged);
           } else {
             callback(INITIAL_VIDEOS);
           }
