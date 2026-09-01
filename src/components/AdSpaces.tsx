@@ -779,29 +779,6 @@ export const NativeRecommendationAd: React.FC<{
                   loading="lazy"
                   decoding="async"
                 />
-
-                {/* Pulsing Play Badge */}
-                <div
-                  className={`absolute inset-0 bg-black/25 flex items-center justify-center transition-opacity duration-300 ${
-                    isHovered ? "opacity-100" : "opacity-0 sm:opacity-0"
-                  }`}
-                >
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#ec4899]/90 text-white flex items-center justify-center shadow-lg transform scale-100 hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-lg sm:text-xl">play_arrow</span>
-                  </div>
-                </div>
-
-                {/* AD Badge */}
-                <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-10">
-                  <span className="bg-[#ec4899] text-white px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-extrabold uppercase shadow-md tracking-wide">
-                    AD
-                  </span>
-                </div>
-
-                {/* Sponsor Brand Badge */}
-                <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 z-10 bg-black/85 backdrop-blur-xs border border-white/15 px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold text-rose-400">
-                  {item.brand || "SPONSORED"}
-                </div>
               </div>
 
               <div className="video-info p-2 sm:p-2.5 space-y-1">
