@@ -20,6 +20,7 @@ import {
   getDocs,
   getDoc,
   setDoc,
+  updateDoc,
   deleteDoc,
   onSnapshot,
   query,
@@ -513,6 +514,30 @@ export class VideoService {
         return fullVideo;
       }
     );
+  }
+
+  /**
+   * Smart Caching of Preview Frames to Firestore & Local Storage
+   */
+  private cachedFrameDocIds = new Set<string>();
+
+  async cacheVideoPreviewFrames(videoId: string, frames: string[]): Promise<void> {
+    if (!videoId || !Array.isArray(frames) || frames.length === 0) return;
+    if (this.cachedFrameDocIds.has(videoId)) return;
+    this.cachedFrameDocIds.add(videoId);
+
+    try {
+      try {
+        sessionStorage.setItem(`pv_frames_${videoId}`, JSON.stringify(frames));
+      } catch {}
+
+      await updateDoc(doc(db, 'videos', videoId), {
+        previewFrames: frames,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch {
+      // Non-blocking background persistence
+    }
   }
 
   /**

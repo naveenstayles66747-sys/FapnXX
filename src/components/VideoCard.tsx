@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, memo, useMemo } from "react";
 import { Video } from "../types";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { cleanMediaUrl } from "../utils/mediaHelper";
+import { videoService } from "../services/videoService";
 
 interface VideoCardProps {
   video: Video;
@@ -73,15 +74,6 @@ const formatTimeAgo = (createdAt?: string, fallbackStr?: string): string => {
 
 const FALLBACK_THUMBNAIL = "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=800&auto=format&fit=crop";
 
-// Generate numbered frame URL fallback if explicit array is missing
-const getFrameUrlFallback = (baseUrl: string, frameNumber: number): string => {
-  if (!baseUrl) return "";
-  if (/(\d+)(\.jpg|\.webp|\.png)(\?.*)?$/i.test(baseUrl)) {
-    return baseUrl.replace(/(\d+)(\.jpg|\.webp|\.png)(\?.*)?$/i, (_m, _n, ext, q) => `${frameNumber}${ext}${q || ""}`);
-  }
-  return baseUrl;
-};
-
 const extractPreviewDetails = (video: Video) => {
   const mp4Src = cleanMediaUrl(video.previewMp4Url || (video as any).mp4Url || "");
   if (mp4Src) {
@@ -102,6 +94,17 @@ const extractPreviewDetails = (video: Video) => {
   if (Array.isArray(video.previewFrames) && video.previewFrames.length > 0) {
     return { previewSrc: video.previewFrames[0], previewType: "frames" as const, frames: video.previewFrames };
   }
+
+  // Check cached frames in session
+  try {
+    const cached = sessionStorage.getItem(`pv_frames_${video.id}`);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return { previewSrc: parsed[0], previewType: "frames" as const, frames: parsed };
+      }
+    }
+  } catch {}
 
   const thumb = cleanMediaUrl(video.thumbnail || video.thumbnailUrl || "");
   return { previewSrc: thumb, previewType: "frames" as const, frames: [] };
@@ -129,28 +132,32 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     if (frames.length > 0) {
       return frames[currentFrameIndex % frames.length] || displayThumbnail;
     }
-    return getFrameUrlFallback(displayThumbnail, (currentFrameIndex % 16) + 1);
+    return displayThumbnail;
   }, [frames, currentFrameIndex, displayThumbnail]);
 
-  // Preload next frames in background when preview starts
+  // Smart Preload & Persistent Firestore Caching Trigger
   useEffect(() => {
     if (isPlayingPreview && frames.length > 0) {
-      frames.slice(0, 8).forEach((fUrl) => {
+      // 1. Preload keyframes for buttery smooth rendering
+      frames.forEach((fUrl) => {
         const img = new Image();
         img.src = fUrl;
       });
-    }
-  }, [isPlayingPreview, frames]);
 
-  // Frame cycling engine (rotates 1..16 keyframes on hover or preview toggle)
+      // 2. Persist to Firestore & Local Storage for future visits
+      videoService.cacheVideoPreviewFrames(video.id, frames);
+    }
+  }, [isPlayingPreview, frames, video.id]);
+
+  // Smooth frame cycling engine: 650ms per scene for crystal-clear smooth flipbook
   useEffect(() => {
-    if (isPlayingPreview && previewType === "frames") {
-      const totalFrames = frames.length > 0 ? frames.length : 16;
+    if (isPlayingPreview && previewType === "frames" && frames.length > 1) {
+      const totalFrames = frames.length;
       setCurrentFrameIndex(0);
 
       frameIntervalRef.current = setInterval(() => {
         setCurrentFrameIndex((prev) => (prev + 1) % totalFrames);
-      }, 250); // 250ms per keyframe creates smooth animated flipbook preview
+      }, 650); // 650ms provides smooth, enjoyable, clear scene pacing
     } else {
       if (frameIntervalRef.current) {
         clearInterval(frameIntervalRef.current);
@@ -177,7 +184,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           detail: video.id,
         })
       );
-    }, 80);
+    }, 100);
   };
 
   const handleMouseLeave = () => {
@@ -195,8 +202,8 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
 
   // Mouse scrubbing across card width
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isMobile || previewType !== "frames") return;
-    const totalFrames = frames.length > 0 ? frames.length : 16;
+    if (isMobile || previewType !== "frames" || frames.length <= 1) return;
+    const totalFrames = frames.length;
     const rect = e.currentTarget.getBoundingClientRect();
     if (rect.width <= 0) return;
     const xPos = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
@@ -296,15 +303,13 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           decoding="async"
           referrerPolicy="no-referrer-when-downgrade"
           onError={handleImageError}
-          className="absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-150 z-10"
+          className="absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-200 z-10"
         />
       );
     }
 
     return null;
   };
-
-  const totalFramesCount = frames.length > 0 ? frames.length : 16;
 
   if (layout === "horizontal") {
     return (
@@ -330,9 +335,11 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
 
           {renderPreviewContent()}
 
-          <div className="absolute bottom-2 right-2 bg-black/80 text-white font-mono text-xs px-2 py-0.5 rounded z-20">
-            {video.duration || "05:00"}
-          </div>
+          {!isPlayingPreview && (
+            <div className="absolute bottom-2 right-2 bg-black/80 text-white font-mono text-xs px-2 py-0.5 rounded z-20">
+              {video.duration || "05:00"}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 p-4 flex flex-col justify-between">
@@ -364,7 +371,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       className="group cursor-pointer flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300"
       style={{ contentVisibility: "auto", containIntrinsicSize: "240px" }}
     >
-      {/* 16:9 Full-Width Thumbnail Container */}
+      {/* 16:9 Full-Width Clean Thumbnail Container */}
       <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b]">
         {/* Default Static Thumbnail */}
         <img
@@ -377,38 +384,22 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
         />
 
-        {/* Live Hover / Frame Flipbook Preview Overlay */}
+        {/* Clean Live Hover / Frame Flipbook Preview */}
         {renderPreviewContent()}
 
-        {/* Previewing Glow Indicator & Mini Scrubber Bar */}
-        {isPlayingPreview && (
-          <>
-            <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5 px-2 py-0.5 bg-rose-600/90 text-white rounded-md text-[9px] font-black uppercase tracking-wider shadow-lg animate-pulse pointer-events-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-              <span>PREVIEW {currentFrameIndex + 1}/{totalFramesCount}</span>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20 pointer-events-none">
-              <div
-                className="h-full bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-150"
-                style={{ width: `${((currentFrameIndex + 1) / totalFramesCount) * 100}%` }}
-              />
-            </div>
-          </>
-        )}
-
-        {/* Top-Right: Quality Badge */}
+        {/* Top-Right: Quality Badge (Hidden during preview for 100% clean video view) */}
         {!isPlayingPreview && (
-          <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none">
+          <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none transition-opacity duration-300">
             <span className="thumb-hd-badge bg-black/85 text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
               {video.quality || "HD"}
             </span>
           </div>
         )}
 
-        {/* Duration Badge */}
+        {/* Duration Badge (Hidden during preview) */}
         {!isPlayingPreview && (
           <div
-            className={`thumb-duration-badge absolute bottom-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-white z-20 shadow-md ${
+            className={`thumb-duration-badge absolute bottom-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-white z-20 shadow-md transition-opacity duration-300 ${
               isMobile ? "left-2" : "right-2"
             }`}
           >
@@ -416,19 +407,19 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           </div>
         )}
 
-        {/* Quick Preview Eye Button (Interactive on both mobile & desktop) */}
+        {/* Eye Preview Trigger Button: Smoothly FADES OUT during preview */}
         <button
           type="button"
           onClick={togglePreview}
-          className={`thumb-eye-btn absolute bottom-2 right-2 z-30 p-1.5 sm:p-2 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-2xl flex items-center justify-center cursor-pointer active:scale-90 ${
+          className={`thumb-eye-btn absolute bottom-2 right-2 z-30 p-1.5 sm:p-2 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-2xl flex items-center justify-center cursor-pointer ${
             isPlayingPreview
-              ? "bg-rose-600 text-white border border-rose-400 scale-100 opacity-100"
-              : "bg-[#141418]/80 text-zinc-300 hover:text-white border border-white/20 hover:scale-105 opacity-85 hover:opacity-100"
+              ? "opacity-0 pointer-events-none scale-90"
+              : "opacity-85 hover:opacity-100 bg-[#141418]/80 text-zinc-300 hover:text-white border border-white/20 hover:scale-105 active:scale-90"
           }`}
-          title="Toggle 16-Frame Video Preview"
+          title="Play Video Preview"
         >
           <span className="material-symbols-outlined text-base sm:text-lg">
-            {isPlayingPreview ? "visibility_off" : "visibility"}
+            visibility
           </span>
         </button>
       </div>
