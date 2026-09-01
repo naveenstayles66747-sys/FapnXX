@@ -132,12 +132,15 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [isPreviewActive, setIsPreviewActive] = useState<boolean>(false);
   const [currentFrameIndex, setCurrentFrameIndex] = useState<number>(0);
+  const [isScrubbing, setIsScrubbing] = useState<boolean>(false);
+  const [scrubPct, setScrubPct] = useState<number>(0);
 
   const isMobile = useIsMobile();
   const cardRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const frameIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const scrubResumeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { previewSrc, previewType, frames } = useMemo(() => extractPreviewDetails(video), [video]);
   const isPlayingPreview = isMobile ? isPreviewActive : (isHovered || isPreviewActive);
@@ -181,6 +184,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         frameIntervalRef.current = null;
       }
       setCurrentFrameIndex(0);
+      setIsScrubbing(false);
     }
 
     return () => {
@@ -191,6 +195,35 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     };
   }, [isPlayingPreview, previewType, frames]);
 
+  // Global listener: Ensures ONLY ONE video previews across the whole page at any given moment
+  useEffect(() => {
+    const handleActiveChange = (e: CustomEvent<string | null>) => {
+      if (e.detail !== video.id) {
+        setIsPreviewActive(false);
+        setIsHovered(false);
+        setIsScrubbing(false);
+        if (frameIntervalRef.current) {
+          clearInterval(frameIntervalRef.current);
+          frameIntervalRef.current = null;
+        }
+        if (videoRef.current) {
+          videoRef.current.pause();
+          videoRef.current.currentTime = 0;
+        }
+      }
+    };
+
+    window.addEventListener("active-global-video-preview" as any, handleActiveChange as any, { passive: true });
+    window.addEventListener("active-desktop-hover-change" as any, handleActiveChange as any, { passive: true });
+    window.addEventListener("active-mobile-preview-change" as any, handleActiveChange as any, { passive: true });
+
+    return () => {
+      window.removeEventListener("active-global-video-preview" as any, handleActiveChange as any);
+      window.removeEventListener("active-desktop-hover-change" as any, handleActiveChange as any);
+      window.removeEventListener("active-mobile-preview-change" as any, handleActiveChange as any);
+    };
+  }, [video.id]);
+
   const handleMouseEnter = () => {
     if (isMobile) return;
     preloadCardFrames();
@@ -198,7 +231,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     hoverTimerRef.current = setTimeout(() => {
       setIsHovered(true);
       window.dispatchEvent(
-        new CustomEvent("active-desktop-hover-change", {
+        new CustomEvent("active-global-video-preview", {
           detail: video.id,
         })
       );
@@ -212,18 +245,24 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       hoverTimerRef.current = null;
     }
     setIsHovered(false);
+    setIsScrubbing(false);
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
   };
 
-  const scrubResumeTimerRef = useRef<NodeJS.Timeout | null>(null);
-
   // Pornhub-Style Interactive Mouse Scrubbing Across Card Width
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (previewType !== "frames" || frames.length <= 1) return;
-    if (!isHovered) setIsHovered(true);
+    if (!isHovered) {
+      setIsHovered(true);
+      window.dispatchEvent(
+        new CustomEvent("active-global-video-preview", {
+          detail: video.id,
+        })
+      );
+    }
 
     // Pause auto-flip timer while actively moving mouse
     if (frameIntervalRef.current) {
@@ -237,11 +276,15 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     const xPos = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
     const pct = xPos / rect.width;
     const scrubIdx = Math.max(0, Math.min(totalFrames - 1, Math.floor(pct * totalFrames)));
+
+    setIsScrubbing(true);
+    setScrubPct(pct);
     setCurrentFrameIndex(scrubIdx);
 
     // Resume auto-flip when cursor is stationary for 600ms
     if (scrubResumeTimerRef.current) clearTimeout(scrubResumeTimerRef.current);
     scrubResumeTimerRef.current = setTimeout(() => {
+      setIsScrubbing(false);
       if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
       frameIntervalRef.current = setInterval(() => {
         setCurrentFrameIndex((prev) => (prev + 1) % totalFrames);
@@ -252,7 +295,14 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   // Mobile Touch Scrubbing
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     if (previewType !== "frames" || frames.length <= 1 || e.touches.length === 0) return;
-    if (!isPreviewActive) setIsPreviewActive(true);
+    if (!isPreviewActive) {
+      setIsPreviewActive(true);
+      window.dispatchEvent(
+        new CustomEvent("active-global-video-preview", {
+          detail: video.id,
+        })
+      );
+    }
 
     const totalFrames = frames.length;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -261,6 +311,9 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     const xPos = Math.max(0, Math.min(rect.width, touchX - rect.left));
     const pct = xPos / rect.width;
     const scrubIdx = Math.max(0, Math.min(totalFrames - 1, Math.floor(pct * totalFrames)));
+
+    setIsScrubbing(true);
+    setScrubPct(pct);
     setCurrentFrameIndex(scrubIdx);
   };
 
@@ -271,6 +324,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     }
     setIsHovered(false);
     setIsPreviewActive(false);
+    setIsScrubbing(false);
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
@@ -281,31 +335,26 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   const togglePreview = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    preloadCardFrames();
     const next = !isPreviewActive;
-    setIsPreviewActive(next);
-
-    window.dispatchEvent(
-      new CustomEvent("active-mobile-preview-change", {
-        detail: next ? video.id : null,
-      })
-    );
+    if (next) {
+      preloadCardFrames();
+      setIsPreviewActive(true);
+      window.dispatchEvent(
+        new CustomEvent("active-global-video-preview", {
+          detail: video.id,
+        })
+      );
+    } else {
+      setIsPreviewActive(false);
+      setIsHovered(false);
+      setIsScrubbing(false);
+      window.dispatchEvent(
+        new CustomEvent("active-global-video-preview", {
+          detail: null,
+        })
+      );
+    }
   };
-
-  useEffect(() => {
-    const handleActiveChange = (e: CustomEvent<string | null>) => {
-      if (e.detail !== video.id) {
-        setIsPreviewActive(false);
-        setIsHovered(false);
-      }
-    };
-    window.addEventListener("active-desktop-hover-change" as any, handleActiveChange as any, { passive: true });
-    window.addEventListener("active-mobile-preview-change" as any, handleActiveChange as any, { passive: true });
-    return () => {
-      window.removeEventListener("active-desktop-hover-change" as any, handleActiveChange as any);
-      window.removeEventListener("active-mobile-preview-change" as any, handleActiveChange as any);
-    };
-  }, [video.id]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.currentTarget;
@@ -389,11 +438,42 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
 
           {renderPreviewContent()}
 
+          {/* Butter-Smooth Continuous Progress Bar */}
+          {isPlayingPreview && frames.length > 1 && (
+            <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-black/70 z-20 pointer-events-none overflow-hidden">
+              {isScrubbing ? (
+                <div
+                  className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899]"
+                  style={{ width: `${Math.min(100, Math.max(0, scrubPct * 100))}%` }}
+                />
+              ) : (
+                <div
+                  className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] card-smooth-progress"
+                  style={{ animationDuration: `${frames.length * 550}ms` }}
+                />
+              )}
+            </div>
+          )}
+
           {!isPlayingPreview && (
             <div className="absolute bottom-2 right-2 bg-black/80 text-white font-mono text-xs px-2 py-0.5 rounded z-20">
               {video.duration || "05:00"}
             </div>
           )}
+
+          {/* Eye Preview Trigger Button */}
+          <button
+            type="button"
+            onClick={togglePreview}
+            className={`thumb-eye-btn absolute bottom-2 left-2 z-30 p-1.5 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-2xl flex items-center justify-center cursor-pointer ${
+              isPlayingPreview
+                ? "opacity-0 pointer-events-none scale-90"
+                : "opacity-85 hover:opacity-100 bg-[#141418]/80 text-zinc-300 hover:text-white border border-white/20 hover:scale-105 active:scale-90"
+            }`}
+            title="Play Video Preview"
+          >
+            <span className="material-symbols-outlined text-base">visibility</span>
+          </button>
         </div>
 
         <div className="flex-1 p-4 flex flex-col justify-between">
@@ -442,13 +522,20 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         {/* Clean Live Hover / Frame Flipbook Preview */}
         {renderPreviewContent()}
 
-        {/* Pornhub-Style Glowing Scrub Timeline Bar */}
+        {/* Butter-Smooth Continuous Progress Bar */}
         {isPlayingPreview && frames.length > 1 && (
-          <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-black/60 z-20 pointer-events-none">
-            <div
-              className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] transition-all duration-100 ease-out"
-              style={{ width: `${((currentFrameIndex + 1) / frames.length) * 100}%` }}
-            />
+          <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-black/70 z-20 pointer-events-none overflow-hidden">
+            {isScrubbing ? (
+              <div
+                className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899]"
+                style={{ width: `${Math.min(100, Math.max(0, scrubPct * 100))}%` }}
+              />
+            ) : (
+              <div
+                className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] card-smooth-progress"
+                style={{ animationDuration: `${frames.length * 550}ms` }}
+              />
+            )}
           </div>
         )}
 
