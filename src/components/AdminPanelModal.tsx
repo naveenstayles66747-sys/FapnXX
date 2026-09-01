@@ -2722,14 +2722,29 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     <option value="trending">Trending</option>
                     <option value="amateur">Amateur</option>
                     <option value="milf">MILF</option>
-                    <option value="teen">Teen</option>
+                    <option value="teen">Teen (18+)</option>
                     <option value="anal">Anal</option>
                     <option value="lesbian">Lesbian</option>
+                    <option value="gay">Gay</option>
+                    <option value="transgender">Transgender / Shemale</option>
                     <option value="pov">POV</option>
+                    <option value="big-tits">Big Tits</option>
+                    <option value="big-ass">Big Ass</option>
+                    <option value="blowjob">Blowjob & Oral</option>
+                    <option value="creampie">Creampie</option>
+                    <option value="threesome">Threesome & Groups</option>
+                    <option value="interracial">Interracial</option>
+                    <option value="ebony">Ebony</option>
+                    <option value="latina">Latina</option>
                     <option value="desi">Desi</option>
                     <option value="asian">Asian</option>
                     <option value="hentai">Hentai</option>
                     <option value="vr">VR</option>
+                    <option value="hardcore">Hardcore</option>
+                    <option value="fetish">Fetish & BDSM</option>
+                    <option value="masturbation">Masturbation & Solo</option>
+                    <option value="public">Public & Outdoor</option>
+                    <option value="mature">Mature & Vintage</option>
                   </select>
                 </div>
 

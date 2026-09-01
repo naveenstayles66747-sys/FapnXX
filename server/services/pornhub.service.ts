@@ -30,14 +30,29 @@ export function mapCategory(catRaw: string, tagsRaw: string): { id: string; labe
   const combined = `${catRaw} ${tagsRaw}`.toLowerCase();
   if (combined.includes("amateur")) return { id: "amateur", label: "Amateur" };
   if (combined.includes("milf")) return { id: "milf", label: "MILF" };
-  if (combined.includes("teen") || combined.includes("18-25")) return { id: "teen", label: "Teen" };
+  if (combined.includes("teen") || combined.includes("18-25")) return { id: "teen", label: "Teen (18+)" };
   if (combined.includes("anal")) return { id: "anal", label: "Anal" };
   if (combined.includes("lesbian")) return { id: "lesbian", label: "Lesbian" };
+  if (combined.includes("gay")) return { id: "gay", label: "Gay" };
+  if (combined.includes("transgender") || combined.includes("shemale") || combined.includes("tranny")) return { id: "transgender", label: "Transgender / Shemale" };
   if (combined.includes("pov")) return { id: "pov", label: "POV" };
-  if (combined.includes("desi") || combined.includes("indian") || combined.includes("hindi")) return { id: "desi", label: "Desi" };
+  if (combined.includes("big tits") || combined.includes("big-tits") || combined.includes("tits") || combined.includes("boobs")) return { id: "big-tits", label: "Big Tits" };
+  if (combined.includes("big ass") || combined.includes("big-ass") || combined.includes("booty")) return { id: "big-ass", label: "Big Ass" };
+  if (combined.includes("blowjob") || combined.includes("deepthroat") || combined.includes("sucking")) return { id: "blowjob", label: "Blowjob & Oral" };
+  if (combined.includes("creampie") || combined.includes("cumshot") || combined.includes("jizz")) return { id: "creampie", label: "Creampie" };
+  if (combined.includes("threesome") || combined.includes("foursome") || combined.includes("orgy") || combined.includes("group")) return { id: "threesome", label: "Threesome & Groups" };
+  if (combined.includes("interracial") || combined.includes("bbc")) return { id: "interracial", label: "Interracial" };
+  if (combined.includes("ebony")) return { id: "ebony", label: "Ebony" };
+  if (combined.includes("latina") || combined.includes("brazilian")) return { id: "latina", label: "Latina" };
+  if (combined.includes("desi") || combined.includes("indian") || combined.includes("hindi") || combined.includes("bhabhi")) return { id: "desi", label: "Desi" };
   if (combined.includes("asian") || combined.includes("japanese") || combined.includes("korean")) return { id: "asian", label: "Asian" };
   if (combined.includes("hentai") || combined.includes("anime") || combined.includes("3d")) return { id: "hentai", label: "Hentai" };
   if (combined.includes("vr")) return { id: "vr", label: "VR" };
+  if (combined.includes("hardcore") || combined.includes("rough")) return { id: "hardcore", label: "Hardcore" };
+  if (combined.includes("fetish") || combined.includes("bdsm")) return { id: "fetish", label: "Fetish & BDSM" };
+  if (combined.includes("masturbation") || combined.includes("solo")) return { id: "masturbation", label: "Masturbation & Solo" };
+  if (combined.includes("public") || combined.includes("outdoor")) return { id: "public", label: "Public & Outdoor" };
+  if (combined.includes("mature") || combined.includes("vintage")) return { id: "mature", label: "Mature & Vintage" };
   return { id: "trending", label: "Trending" };
 }
 

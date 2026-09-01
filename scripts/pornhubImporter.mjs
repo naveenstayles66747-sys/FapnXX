@@ -2,6 +2,13 @@ import fs from "fs";
 import path from "path";
 import readline from "readline";
 
+export const ALL_TARGET_CATEGORIES = [
+  "trending", "amateur", "milf", "teen", "anal", "lesbian", "gay", "transgender",
+  "pov", "big-tits", "big-ass", "blowjob", "creampie", "threesome", "interracial",
+  "ebony", "latina", "desi", "asian", "hentai", "vr", "hardcore", "fetish",
+  "masturbation", "public", "mature"
+];
+
 export function formatDuration(secondsNum) {
   if (isNaN(secondsNum) || secondsNum <= 0) return "05:00";
   const mins = Math.floor(secondsNum / 60);
@@ -16,27 +23,78 @@ export function formatViews(viewsNum) {
   return String(viewsNum);
 }
 
-export function mapCategory(catRaw, tagsRaw) {
+export function extractCategories(catRaw, tagsRaw) {
   const combined = (String(catRaw) + " " + String(tagsRaw)).toLowerCase();
-  if (combined.includes("amateur")) return { id: "amateur", label: "Amateur" };
-  if (combined.includes("milf")) return { id: "milf", label: "MILF" };
-  if (combined.includes("teen") || combined.includes("18-25")) return { id: "teen", label: "Teen" };
-  if (combined.includes("anal")) return { id: "anal", label: "Anal" };
-  if (combined.includes("lesbian")) return { id: "lesbian", label: "Lesbian" };
-  if (combined.includes("pov")) return { id: "pov", label: "POV" };
-  if (combined.includes("desi") || combined.includes("indian") || combined.includes("hindi")) return { id: "desi", label: "Desi" };
-  if (combined.includes("asian") || combined.includes("japanese") || combined.includes("korean")) return { id: "asian", label: "Asian" };
-  if (combined.includes("hentai") || combined.includes("anime") || combined.includes("3d")) return { id: "hentai", label: "Hentai" };
-  if (combined.includes("vr")) return { id: "vr", label: "VR" };
-  return { id: "trending", label: "Trending" };
+  const matched = new Set();
+
+  if (combined.includes("amateur")) matched.add("amateur");
+  if (combined.includes("milf")) matched.add("milf");
+  if (combined.includes("teen") || combined.includes("18-25")) matched.add("teen");
+  if (combined.includes("anal")) matched.add("anal");
+  if (combined.includes("lesbian")) matched.add("lesbian");
+  if (combined.includes("gay")) matched.add("gay");
+  if (combined.includes("transgender") || combined.includes("shemale") || combined.includes("tranny") || combined.includes("ts")) matched.add("transgender");
+  if (combined.includes("pov")) matched.add("pov");
+  if (combined.includes("big tits") || combined.includes("big-tits") || combined.includes("tits") || combined.includes("boobs") || combined.includes("juggs")) matched.add("big-tits");
+  if (combined.includes("big ass") || combined.includes("big-ass") || combined.includes("booty") || combined.includes("pawg")) matched.add("big-ass");
+  if (combined.includes("blowjob") || combined.includes("deepthroat") || combined.includes("sucking") || combined.includes("oral")) matched.add("blowjob");
+  if (combined.includes("creampie") || combined.includes("cumshot") || combined.includes("jizz")) matched.add("creampie");
+  if (combined.includes("threesome") || combined.includes("foursome") || combined.includes("orgy") || combined.includes("gangbang") || combined.includes("group")) matched.add("threesome");
+  if (combined.includes("interracial") || combined.includes("bbc") || combined.includes("black")) matched.add("interracial");
+  if (combined.includes("ebony")) matched.add("ebony");
+  if (combined.includes("latina") || combined.includes("brazilian")) matched.add("latina");
+  if (combined.includes("desi") || combined.includes("indian") || combined.includes("hindi") || combined.includes("bhabhi")) matched.add("desi");
+  if (combined.includes("asian") || combined.includes("japanese") || combined.includes("korean") || combined.includes("jav")) matched.add("asian");
+  if (combined.includes("hentai") || combined.includes("anime") || combined.includes("3d") || combined.includes("cartoon")) matched.add("hentai");
+  if (combined.includes("vr")) matched.add("vr");
+  if (combined.includes("hardcore") || combined.includes("rough")) matched.add("hardcore");
+  if (combined.includes("fetish") || combined.includes("bdsm") || combined.includes("bondage") || combined.includes("feet")) matched.add("fetish");
+  if (combined.includes("masturbation") || combined.includes("solo") || combined.includes("dildo") || combined.includes("toy")) matched.add("masturbation");
+  if (combined.includes("public") || combined.includes("outdoor") || combined.includes("street")) matched.add("public");
+  if (combined.includes("mature") || combined.includes("vintage") || combined.includes("granny")) matched.add("mature");
+
+  matched.add("trending");
+  return Array.from(matched);
+}
+
+export function getCategoryLabel(catId) {
+  const map = {
+    "trending": "Trending",
+    "amateur": "Amateur",
+    "milf": "MILF",
+    "teen": "Teen (18+)",
+    "anal": "Anal",
+    "lesbian": "Lesbian",
+    "gay": "Gay",
+    "transgender": "Transgender",
+    "pov": "POV",
+    "big-tits": "Big Tits",
+    "big-ass": "Big Ass",
+    "blowjob": "Blowjob & Oral",
+    "creampie": "Creampie",
+    "threesome": "Threesome & Groups",
+    "interracial": "Interracial",
+    "ebony": "Ebony",
+    "latina": "Latina",
+    "desi": "Desi / Indian",
+    "asian": "Asian",
+    "hentai": "Hentai / 3D",
+    "vr": "VR",
+    "hardcore": "Hardcore",
+    "fetish": "Fetish & BDSM",
+    "masturbation": "Masturbation & Solo",
+    "public": "Public & Outdoor",
+    "mature": "Mature & Vintage"
+  };
+  return map[catId] || (catId.charAt(0).toUpperCase() + catId.slice(1));
 }
 
 export async function parsePornhubDb(options = {}) {
   const csvPath = options.csvPath || path.join(process.cwd(), "affiliate-webmaster", "pornhub.com-db", "pornhub.com-db.csv");
   const atsCode = options.atsCode || "";
   const minViews = options.minViews !== undefined ? options.minViews : 50000;
-  const maxPerCategory = options.maxPerCategory || 30;
-  const targetCategories = options.targetCategories || ["trending", "amateur", "milf", "teen", "anal", "lesbian", "pov", "desi", "asian"];
+  const maxPerCategory = options.maxPerCategory || 35;
+  const targetCategories = options.targetCategories || ALL_TARGET_CATEGORIES;
   const searchQuery = (options.searchQuery || "").toLowerCase().trim();
 
   if (!fs.existsSync(csvPath)) {
@@ -47,6 +105,7 @@ export async function parsePornhubDb(options = {}) {
   targetCategories.forEach(c => categoryCounts[c] = 0);
 
   const matchedVideos = [];
+  const seenIds = new Set();
   const fileStream = fs.createReadStream(csvPath, { encoding: "utf8" });
   const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
 
@@ -87,14 +146,23 @@ export async function parsePornhubDb(options = {}) {
       if (!fullText.includes(searchQuery)) continue;
     }
 
-    const catMapping = mapCategory(catStr, tagsStr);
-    const catId = catMapping.id;
+    const matchedCats = extractCategories(catStr, tagsStr);
+    const primaryCat = matchedCats.find(c => c !== "trending") || "trending";
 
-    if (categoryCounts[catId] !== undefined && categoryCounts[catId] >= maxPerCategory && !searchQuery) {
-      const allFilled = targetCategories.every(c => (categoryCounts[c] || 0) >= maxPerCategory);
-      if (allFilled) break;
+    // Determine if this video satisfies any category needing more videos
+    const needyCategory = matchedCats.find(c => targetCategories.includes(c) && (categoryCounts[c] || 0) < maxPerCategory);
+    if (!needyCategory && !searchQuery) {
+      const allDone = targetCategories.every(c => (categoryCounts[c] || 0) >= maxPerCategory);
+      if (allDone) break;
       continue;
     }
+
+    const lastSlash = embedUrl.lastIndexOf("/");
+    const codeSegment = lastSlash !== -1 ? embedUrl.substring(lastSlash + 1).split("?")[0] : String(Date.now());
+    const vidId = "ph-" + codeSegment;
+
+    if (seenIds.has(vidId)) continue;
+    seenIds.add(vidId);
 
     const durationSec = parseInt(cols[7], 10) || 300;
     const upvotes = parseInt(cols[9], 10) || 0;
@@ -106,19 +174,20 @@ export async function parsePornhubDb(options = {}) {
     const framePreviews = (cols[12] || cols[2] || "").split(";").filter(Boolean);
 
     const actors = pornstarsStr.split(";").map(a => a.trim()).filter(Boolean);
-    const performerName = actors.length > 0 ? actors[0] : (catMapping.label + " Creator");
+    const performerName = actors.length > 0 ? actors[0] : (getCategoryLabel(primaryCat) + " Creator");
 
-    const lastSlash = embedUrl.lastIndexOf("/");
-    const codeSegment = lastSlash !== -1 ? embedUrl.substring(lastSlash + 1).split("?")[0] : String(Date.now());
-    const vidId = "ph-" + codeSegment;
+    let pref = "straight";
+    if (matchedCats.includes("lesbian")) pref = "lesbian";
+    else if (matchedCats.includes("gay")) pref = "gay";
+    else if (matchedCats.includes("transgender")) pref = "transgender";
 
     const videoItem = {
       id: vidId,
       title,
-      category: catId,
-      categoryLabel: catMapping.label,
-      categories: [catId, ...catStr.split(";").map(c => c.trim().toLowerCase()).filter(Boolean)].slice(0, 5),
-      tags: Array.from(new Set([...tagsStr.split(";").map(t => t.trim()).filter(Boolean), catMapping.label])).slice(0, 12),
+      category: primaryCat,
+      categoryLabel: getCategoryLabel(primaryCat),
+      categories: matchedCats,
+      tags: Array.from(new Set([...tagsStr.split(";").map(t => t.trim()).filter(Boolean), ...matchedCats.map(getCategoryLabel)])).slice(0, 15),
       modelsActors: actors.length > 0 ? actors : undefined,
       models_actors: actors.length > 0 ? actors : undefined,
       performers: actors.length > 0 ? actors : undefined,
@@ -134,19 +203,23 @@ export async function parsePornhubDb(options = {}) {
       rating: ratingPct + "%",
       timeAgo: "Trending now",
       createdAt: new Date().toISOString(),
-      description: "Watch " + title + " in 4K Ultra HD on FapnXX. Featuring top verified adult creators.",
+      description: "Watch " + title + " in 4K Ultra HD on FapnXX. Featuring top verified adult performers in " + getCategoryLabel(primaryCat) + ".",
       embedUrl,
       isEmbed: true,
       isExclusive: viewsCount > 1000000,
       isNew: true,
-      orientation: catId === "lesbian" ? "lesbian" : "straight",
-      contentPreference: catId === "lesbian" ? "lesbian" : "straight",
+      orientation: pref,
+      contentPreference: pref,
       sourceWebsite: "Pornhub",
       sourceWebsiteUrl: "https://www.pornhub.com",
     };
 
     matchedVideos.push(videoItem);
-    categoryCounts[catId] = (categoryCounts[catId] || 0) + 1;
+    matchedCats.forEach(c => {
+      if (categoryCounts[c] !== undefined) {
+        categoryCounts[c] = (categoryCounts[c] || 0) + 1;
+      }
+    });
 
     if (!searchQuery && targetCategories.every(c => (categoryCounts[c] || 0) >= maxPerCategory)) {
       break;
@@ -170,15 +243,15 @@ export async function parsePornhubDb(options = {}) {
   };
 }
 
-console.log("Starting Pornhub DB Curated Importer...");
+console.log("Starting Full 26-Category Pornhub DB Curated Importer...");
 const outPath = path.join(process.cwd(), "src", "data", "pornhubCurated.json");
 parsePornhubDb({
   outputPath: outPath,
   maxPerCategory: 30,
-  minViews: 200000,
+  minViews: 50000,
 }).then((res) => {
-  console.log("? Import Complete!");
-  console.log("Category Counts:", res.categoryCounts);
+  console.log("? Multi-Category Import Complete!");
+  console.log("Category Counts:", JSON.stringify(res.categoryCounts, null, 2));
   console.log("Total Curated Videos:", res.matchedCount);
 }).catch((err) => {
   console.error("? Importer error:", err);
