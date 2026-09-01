@@ -90,6 +90,11 @@ const extract10PercentageFrames = (rawFrames: string[]): string[] => {
 };
 
 const extractPreviewDetails = (video: Video) => {
+  // Full 16-Frame Pornhub Storyboard Timeline
+  if (Array.isArray(video.previewFrames) && video.previewFrames.length > 0) {
+    return { previewSrc: video.previewFrames[0], previewType: "frames" as const, frames: video.previewFrames };
+  }
+
   const mp4Src = cleanMediaUrl(video.previewMp4Url || (video as any).mp4Url || "");
   if (mp4Src) {
     const urlPath = mp4Src.split("?")[0].split("#")[0].toLowerCase();
@@ -105,9 +110,17 @@ const extractPreviewDetails = (video: Video) => {
     return { previewSrc: webpSrc, previewType: "webp" as const, frames: [] };
   }
 
-  // Full 16-Frame Pornhub Storyboard Timeline
-  if (Array.isArray(video.previewFrames) && video.previewFrames.length > 0) {
-    return { previewSrc: video.previewFrames[0], previewType: "frames" as const, frames: video.previewFrames };
+  // Auto-construct 16-frame storyboard if thumbnail matches phncdn CDN pattern
+  const thumb = cleanMediaUrl(video.thumbnail || video.thumbnailUrl || "");
+  const fallbackFrames: string[] = [];
+  if (thumb && thumb.includes("phncdn.com") && /\d+\.jpg/i.test(thumb)) {
+    for (let i = 1; i <= 16; i++) {
+      fallbackFrames.push(thumb.replace(/\d+\.jpg/i, `${i}.jpg`));
+    }
+  }
+
+  if (fallbackFrames.length > 0) {
+    return { previewSrc: fallbackFrames[0], previewType: "frames" as const, frames: fallbackFrames };
   }
 
   // Check cached frames in session
@@ -121,8 +134,7 @@ const extractPreviewDetails = (video: Video) => {
     }
   } catch {}
 
-  const thumb = cleanMediaUrl(video.thumbnail || video.thumbnailUrl || "");
-  return { previewSrc: thumb, previewType: "frames" as const, frames: [] };
+  return { previewSrc: thumb, previewType: "frames" as const, frames: thumb ? [thumb] : [] };
 };
 
 // Global memory cache of already preloaded image URLs across session
@@ -132,15 +144,12 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [isPreviewActive, setIsPreviewActive] = useState<boolean>(false);
   const [currentFrameIndex, setCurrentFrameIndex] = useState<number>(0);
-  const [isScrubbing, setIsScrubbing] = useState<boolean>(false);
-  const [scrubPct, setScrubPct] = useState<number>(0);
 
   const isMobile = useIsMobile();
   const cardRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const frameIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const scrubResumeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastToggleTimeRef = useRef<number>(0);
 
   const { previewSrc, previewType, frames } = useMemo(() => extractPreviewDetails(video), [video]);
@@ -170,12 +179,13 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     });
   }, [frames]);
 
-  // Frame cycling engine: runs ONLY while this card's preview is active
+  // Frame cycling engine: runs continuously and smoothly while preview is active without getting stuck
   useEffect(() => {
     if (isPlayingPreview && previewType === "frames" && frames.length > 1) {
       const totalFrames = frames.length;
-      setCurrentFrameIndex(0);
-
+      if (frameIntervalRef.current) {
+        clearInterval(frameIntervalRef.current);
+      }
       frameIntervalRef.current = setInterval(() => {
         setCurrentFrameIndex((prev) => (prev + 1) % totalFrames);
       }, 850); // Natural 850ms per storyboard frame (Pornhub standard)
@@ -185,7 +195,6 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         frameIntervalRef.current = null;
       }
       setCurrentFrameIndex(0);
-      setIsScrubbing(false);
     }
 
     return () => {
@@ -202,7 +211,6 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       if (e.detail !== video.id) {
         setIsPreviewActive(false);
         setIsHovered(false);
-        setIsScrubbing(false);
         if (frameIntervalRef.current) {
           clearInterval(frameIntervalRef.current);
           frameIntervalRef.current = null;
@@ -236,7 +244,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           detail: video.id,
         })
       );
-    }, 120);
+    }, 100);
   };
 
   const handleMouseLeave = () => {
@@ -246,16 +254,14 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       hoverTimerRef.current = null;
     }
     setIsHovered(false);
-    setIsScrubbing(false);
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
   };
 
-  // Pornhub-Style Interactive Mouse Scrubbing Across Card Width
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isMobile || previewType !== "frames" || frames.length <= 1) return;
+  const handleMouseMove = () => {
+    if (isMobile) return;
     if (!isHovered) {
       setIsHovered(true);
       window.dispatchEvent(
@@ -264,50 +270,6 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         })
       );
     }
-
-    // Pause auto-flip timer while actively moving mouse
-    if (frameIntervalRef.current) {
-      clearInterval(frameIntervalRef.current);
-      frameIntervalRef.current = null;
-    }
-
-    const totalFrames = frames.length;
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const xPos = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-    const pct = xPos / rect.width;
-    const scrubIdx = Math.max(0, Math.min(totalFrames - 1, Math.floor(pct * totalFrames)));
-
-    setIsScrubbing(true);
-    setScrubPct(pct);
-    setCurrentFrameIndex(scrubIdx);
-
-    // Resume auto-flip when cursor is stationary for 600ms
-    if (scrubResumeTimerRef.current) clearTimeout(scrubResumeTimerRef.current);
-    scrubResumeTimerRef.current = setTimeout(() => {
-      setIsScrubbing(false);
-      if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
-      frameIntervalRef.current = setInterval(() => {
-        setCurrentFrameIndex((prev) => (prev + 1) % totalFrames);
-      }, 850);
-    }, 600);
-  };
-
-  // Mobile Touch Scrubbing: ONLY active when preview is already explicitly opened via the Eye button
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isPreviewActive || previewType !== "frames" || frames.length <= 1 || e.touches.length === 0) return;
-
-    const totalFrames = frames.length;
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const touchX = e.touches[0].clientX;
-    const xPos = Math.max(0, Math.min(rect.width, touchX - rect.left));
-    const pct = xPos / rect.width;
-    const scrubIdx = Math.max(0, Math.min(totalFrames - 1, Math.floor(pct * totalFrames)));
-
-    setIsScrubbing(true);
-    setScrubPct(pct);
-    setCurrentFrameIndex(scrubIdx);
   };
 
   const handleCardClick = () => {
@@ -320,7 +282,6 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     }
     setIsHovered(false);
     setIsPreviewActive(false);
-    setIsScrubbing(false);
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
@@ -349,7 +310,6 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     } else {
       setIsPreviewActive(false);
       setIsHovered(false);
-      setIsScrubbing(false);
       window.dispatchEvent(
         new CustomEvent("active-global-video-preview", {
           detail: null,
@@ -397,21 +357,20 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       );
     }
 
-    // Dynamic Multi-frame Flipbook (Seamless Zero-Glitch Render)
-    if (currentFrameUrl) {
-      return (
-        <img
-          key={currentFrameUrl}
-          src={currentFrameUrl}
-          alt={video.title}
-          loading="eager"
-          decoding="async"
-          referrerPolicy="no-referrer-when-downgrade"
-          onError={handleImageError}
-          className="absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-200 z-10 animate-fade-in"
-        />
-      );
-    }
+  // Dynamic Multi-frame Flipbook (Seamless Zero-Glitch Render)
+  if (currentFrameUrl) {
+    return (
+      <img
+        src={currentFrameUrl}
+        alt={video.title}
+        loading="eager"
+        decoding="async"
+        referrerPolicy="no-referrer-when-downgrade"
+        onError={handleImageError}
+        className="absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-150 z-10"
+      />
+    );
+  }
 
     return null;
   };
@@ -443,17 +402,10 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           {/* Butter-Smooth Continuous Progress Bar */}
           {isPlayingPreview && frames.length > 1 && (
             <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-black/70 z-20 pointer-events-none overflow-hidden">
-              {isScrubbing ? (
-                <div
-                  className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899]"
-                  style={{ width: `${Math.min(100, Math.max(0, scrubPct * 100))}%` }}
-                />
-              ) : (
-                <div
-                  className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] card-smooth-progress"
-                  style={{ animationDuration: `${frames.length * 850}ms` }}
-                />
-              )}
+              <div
+                className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] card-smooth-progress"
+                style={{ animationDuration: `${frames.length * 850}ms` }}
+              />
             </div>
           )}
 
@@ -519,7 +471,6 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
-      onTouchMove={handleTouchMove}
       className="group cursor-pointer flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300"
       style={{ contentVisibility: "auto", containIntrinsicSize: "240px" }}
     >
@@ -539,20 +490,13 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         {/* Clean Live Hover / Frame Flipbook Preview */}
         {renderPreviewContent()}
 
-        {/* Butter-Smooth Continuous Progress Bar */}
+        {/* Butter-Smooth Continuous Progress Bar: Never Freezes */}
         {isPlayingPreview && frames.length > 1 && (
           <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-black/70 z-20 pointer-events-none overflow-hidden">
-            {isScrubbing ? (
-              <div
-                className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899]"
-                style={{ width: `${Math.min(100, Math.max(0, scrubPct * 100))}%` }}
-              />
-            ) : (
-              <div
-                className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] card-smooth-progress"
-                style={{ animationDuration: `${frames.length * 850}ms` }}
-              />
-            )}
+            <div
+              className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] card-smooth-progress"
+              style={{ animationDuration: `${frames.length * 850}ms` }}
+            />
           </div>
         )}
 
