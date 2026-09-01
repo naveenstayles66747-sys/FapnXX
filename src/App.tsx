@@ -15,6 +15,8 @@ import {
 import { adManager, refreshExoClickAds } from './utils/adManager';
 import { BrowseScreen } from './components/BrowseScreen';
 import { SiteFooter } from './components/SiteFooter';
+import { TopLoadingBar } from './components/TopLoadingBar';
+import { SkeletonGrid } from './components/SkeletonGrid';
 
 // Code-split heavy secondary screens & modals to minimize initial JS payload and optimize FCP/LCP/INP
 const CategoriesScreen = lazy(() => import('./components/CategoriesScreen').then(m => ({ default: m.CategoriesScreen })));
@@ -100,6 +102,15 @@ export default function App() {
   });
 
   const [browseSortBy, setBrowseSortBy] = useState<'latest' | 'most_popular' | 'top_rated'>('latest');
+  const [isPageLoading, setIsPageLoading] = useState<boolean>(false);
+
+  const triggerPageTransition = useCallback(() => {
+    setIsPageLoading(true);
+    const t = setTimeout(() => {
+      setIsPageLoading(false);
+    }, 280);
+    return () => clearTimeout(t);
+  }, []);
 
   // Filtered videos based on content preference (straight/gay/lesbian) without breaking standard horizontal/vertical videos
   const preferredVideos = (videosList || []).filter((v) => {
@@ -460,6 +471,7 @@ export default function App() {
   }, []);
 
   const handleSelectVideo = (video: Video) => {
+    triggerPageTransition();
     // Increment transition ONLY if target is distinct from current video
     adManager.recordEligibleTransition(video.id, selectedVideo?.id);
     // Request interstitial (checks eligibility & dispatches event if ready)
@@ -478,6 +490,7 @@ export default function App() {
   };
 
   const handleSelectCategory = (id: CategoryId) => {
+    triggerPageTransition();
     adManager.recordEligibleTransition(id, selectedCategoryId);
     adManager.requestInterstitial('category_select');
 
@@ -502,6 +515,7 @@ export default function App() {
   };
 
   const handleNavigateToSearch = (query: string) => {
+    triggerPageTransition();
     // Force stop any currently playing ad audio/video
     stopAllBackgroundMedia();
     adManager.recordEligibleTransition('search_query');
@@ -517,6 +531,7 @@ export default function App() {
   };
 
   const handleNavigate = (screen: ScreenId) => {
+    triggerPageTransition();
     // Force stop any currently playing ad audio/video
     stopAllBackgroundMedia();
     adManager.recordEligibleTransition(screen, currentScreen);
@@ -546,6 +561,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full max-w-full bg-[#09090b] text-[#e5e1e4] flex flex-col font-['Inter',sans-serif] relative overflow-x-hidden">
+      {/* Sleek YouTube-Style Glowing Top Navigation Progress Bar */}
+      <TopLoadingBar isLoading={isPageLoading} />
 
       {/* Admin Panel Modal (Loaded Lazily on Demand) */}
       {isAdminModalOpen && (
@@ -678,73 +695,14 @@ export default function App() {
               onOpenSoftLogin={handleOpenSoftLogin}
             />
 
-            {/* Screen Router */}
-            {currentScreen === 'browse' && (
-              <BrowseScreen
-                key={`browse-screen-${currentScreen}-${selectedCategoryId}-${searchQuery || 'all'}`}
-                onSelectVideo={handleSelectVideo}
-                onSelectCategory={handleSelectCategory}
-                selectedCategory={selectedCategoryId}
-                videos={filteredVideosList}
-                categories={categories}
-                banners={banners}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                sortBy={browseSortBy}
-                setSortBy={setBrowseSortBy}
-              />
-            )}
-
-            {currentScreen === 'categories' && (
-              <Suspense fallback={<div className="flex-1 p-8 flex items-center justify-center min-h-[50vh]"><div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" /></div>}>
-                <CategoriesScreen
-                  onSelectCategory={handleSelectCategory}
-                  onNavigate={handleNavigate}
-                  categories={categories}
-                />
-              </Suspense>
-            )}
-
-            {currentScreen === 'category-detail' && (
-              <Suspense fallback={<div className="flex-1 p-8 flex items-center justify-center min-h-[50vh]"><div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" /></div>}>
-                <CategoryDetailScreen
-                  categoryId={selectedCategoryId}
-                  onSelectVideo={handleSelectVideo}
-                  onSelectCategory={handleSelectCategory}
-                  videos={filteredVideosList}
-                  categories={categories}
-                  userEmail={userEmail}
-                />
-              </Suspense>
-            )}
-
-            {currentScreen === 'performers' && (
-              <Suspense fallback={<div className="flex-1 p-8 flex items-center justify-center min-h-[50vh]"><div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" /></div>}>
-                <PerformersScreen
-                  videos={filteredVideosList}
-                  onSelectVideo={handleSelectVideo}
-                  onNavigateToSearch={handleNavigateToSearch}
-                />
-              </Suspense>
-            )}
-
-            {currentScreen === 'video-detail' && (
-              selectedVideo ? (
-                <Suspense fallback={<div className="flex-1 p-8 flex items-center justify-center min-h-[50vh]"><div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" /></div>}>
-                  <VideoDetailScreen
-                    key={`video-screen-${selectedVideo.id}`}
-                    video={selectedVideo}
-                    onBack={() => handleNavigate('browse')}
-                    onSelectVideo={handleSelectVideo}
-                    onNavigateToSearch={handleNavigateToSearch}
-                    userEmail={userEmail}
-                    onOpenSoftLogin={handleOpenSoftLogin}
-                    videos={filteredVideosList}
-                    onVideoUpdated={handleVideoUpdated}
-                  />
-                </Suspense>
-              ) : (
+            {/* Screen Router with Smooth Micro-Transitions */}
+            <div
+              key={`screen-${currentScreen}-${selectedVideo?.id || ''}-${selectedCategoryId || ''}`}
+              className="flex-1 flex flex-col min-w-0 page-transition-enter"
+            >
+              {currentScreen === 'browse' && (
                 <BrowseScreen
+                  key={`browse-screen-${currentScreen}-${selectedCategoryId}-${searchQuery || 'all'}`}
                   onSelectVideo={handleSelectVideo}
                   onSelectCategory={handleSelectCategory}
                   selectedCategory={selectedCategoryId}
@@ -753,9 +711,73 @@ export default function App() {
                   banners={banners}
                   searchQuery={searchQuery}
                   setSearchQuery={setSearchQuery}
+                  sortBy={browseSortBy}
+                  setSortBy={setBrowseSortBy}
                 />
-              )
-            )}
+              )}
+
+              {currentScreen === 'categories' && (
+                <Suspense fallback={<SkeletonGrid count={8} />}>
+                  <CategoriesScreen
+                    onSelectCategory={handleSelectCategory}
+                    onNavigate={handleNavigate}
+                    categories={categories}
+                  />
+                </Suspense>
+              )}
+
+              {currentScreen === 'category-detail' && (
+                <Suspense fallback={<SkeletonGrid count={8} />}>
+                  <CategoryDetailScreen
+                    categoryId={selectedCategoryId}
+                    onSelectVideo={handleSelectVideo}
+                    onSelectCategory={handleSelectCategory}
+                    videos={filteredVideosList}
+                    categories={categories}
+                    userEmail={userEmail}
+                  />
+                </Suspense>
+              )}
+
+              {currentScreen === 'performers' && (
+                <Suspense fallback={<SkeletonGrid count={8} />}>
+                  <PerformersScreen
+                    videos={filteredVideosList}
+                    onSelectVideo={handleSelectVideo}
+                    onNavigateToSearch={handleNavigateToSearch}
+                  />
+                </Suspense>
+              )}
+
+              {currentScreen === 'video-detail' && (
+                selectedVideo ? (
+                  <Suspense fallback={<div className="flex-1 p-8 flex items-center justify-center min-h-[50vh]"><div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" /></div>}>
+                    <VideoDetailScreen
+                      key={`video-screen-${selectedVideo.id}`}
+                      video={selectedVideo}
+                      onBack={() => handleNavigate('browse')}
+                      onSelectVideo={handleSelectVideo}
+                      onNavigateToSearch={handleNavigateToSearch}
+                      userEmail={userEmail}
+                      onOpenSoftLogin={handleOpenSoftLogin}
+                      videos={filteredVideosList}
+                      onVideoUpdated={handleVideoUpdated}
+                    />
+                  </Suspense>
+                ) : (
+                  <BrowseScreen
+                    onSelectVideo={handleSelectVideo}
+                    onSelectCategory={handleSelectCategory}
+                    selectedCategory={selectedCategoryId}
+                    videos={filteredVideosList}
+                    categories={categories}
+                    banners={banners}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                  />
+                )
+              )}
+            </div>
           </div>
 
           {/* ExoClick 728x90 Smart Sticky Bottom Leaderboard Ad (Desktop) */}
