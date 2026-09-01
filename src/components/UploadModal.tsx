@@ -730,6 +730,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         return;
       }
 
+      if (finalThumbnail && finalThumbnail.startsWith('blob:')) {
+        alert('Thumbnail processing failed. Please select a valid thumbnail image or capture a frame.');
+        setIsPublishing(false);
+        setIsUploadingFile(false);
+        return;
+      }
+
+      if (finalPreviewWebp && finalPreviewWebp.startsWith('blob:')) {
+        finalPreviewWebp = '';
+      }
+
       const finalTagsWithPref = contentPreferenceInput !== 'straight'
         ? Array.from(new Set([...finalTags, contentPreferenceInput === 'lesbian' ? 'Lesbian' : 'Gay']))
         : finalTags;

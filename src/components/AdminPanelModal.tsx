@@ -604,7 +604,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       embedUrl: parsedEmbed,
       previewMp4Url: upPreviewMp4Url.trim() || undefined,
       isEmbed: Boolean(parsedEmbed),
-      orientation: upContentPreference,
+      orientation: 'horizontal',
       contentPreference: upContentPreference,
     };
 

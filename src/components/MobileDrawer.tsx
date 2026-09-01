@@ -15,6 +15,7 @@ interface MobileDrawerProps {
   isAdminAuthenticated?: boolean;
   categories?: CategoryInfo[];
   userEmail?: string | null;
+  onSignOut?: () => void;
   onOpenSoftLogin?: (featureName?: string) => void;
   themeMode: ThemeMode;
   onToggleTheme: () => void;
@@ -34,6 +35,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   isAdminAuthenticated = false,
   categories = CATEGORIES,
   userEmail,
+  onSignOut,
   onOpenSoftLogin,
   themeMode,
   onToggleTheme,
@@ -289,6 +291,39 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                   )}
                 </button>
               </li>
+
+              {/* User Account / Sign In / Sign Out */}
+              {userEmail ? (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      if (onSignOut) onSignOut();
+                    }}
+                    className="w-full px-5 py-3.5 flex items-center justify-between text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors font-bold text-left cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <span className="material-symbols-outlined text-lg">logout</span>
+                      <span>Sign Out ({userEmail.split('@')[0]})</span>
+                    </div>
+                  </button>
+                </li>
+              ) : (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onNavigate('signin');
+                    }}
+                    className="w-full px-5 py-3.5 flex items-center gap-3.5 text-zinc-900 dark:text-zinc-200 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-bold text-left"
+                  >
+                    <span className="material-symbols-outlined text-lg text-emerald-500">login</span>
+                    <span>Sign In / Create Account</span>
+                  </button>
+                </li>
+              )}
 
               {/* Admin Panel Quick Link (If staff/admin) */}
               {onOpenAdminPanel && (

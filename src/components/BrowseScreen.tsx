@@ -83,13 +83,46 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     [banners]
   );
   const displayBanners = React.useMemo(() => {
-    // If admin explicitly provided custom banners and no real videos exist, use them
-    if (activeBanners.length > 0 && activeVideos.length === 0) {
-      return activeBanners.slice(0, 5);
-    }
-
     // No videos and no banners — nothing to display
-    if (activeVideos.length === 0) return [];
+    if (activeBanners.length === 0 && activeVideos.length === 0) return [];
+
+    const usedIds = new Set<string>();
+    const slides: Array<{
+      id: string;
+      title: string;
+      subtitle: string;
+      bannerImage: string;
+      tag: string;
+      tagClass: string;
+      targetCategory?: string;
+      targetVideoId?: string;
+      targetVideo?: Video;
+      ctaText?: string;
+      isActive: boolean;
+    }> = [];
+
+    // 1. Admin custom landing banners take #1 priority
+    activeBanners.forEach((b) => {
+      const matchingVideo = b.targetVideoId ? activeVideos.find((v) => v.id === b.targetVideoId) : undefined;
+      slides.push({
+        id: b.id,
+        title: b.title,
+        subtitle: b.subtitle || (matchingVideo ? `${matchingVideo.views || '1K views'} • ${matchingVideo.duration || '05:00'} • 4K UHD` : 'Exclusive Feature'),
+        bannerImage: b.bannerImage,
+        tag: b.tag || 'FEATURED',
+        tagClass: 'bg-gradient-to-r from-rose-600 via-pink-600 to-orange-500 shadow-rose-950/50',
+        targetCategory: b.targetCategory,
+        targetVideoId: b.targetVideoId,
+        targetVideo: matchingVideo,
+        ctaText: b.ctaText || 'Watch Now',
+        isActive: b.isActive,
+      });
+      if (b.targetVideoId) usedIds.add(b.targetVideoId);
+    });
+
+    if (slides.length >= 5 || activeVideos.length === 0) {
+      return slides.slice(0, 5);
+    }
 
     // Helper to get numeric views
     const getViewsNumber = (v: Video): number => {
@@ -120,21 +153,6 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       if (!a.video.isNew && b.video.isNew) return 1;
       return a.viewsNum - b.viewsNum;
     });
-
-    const usedIds = new Set<string>();
-    const slides: Array<{
-      id: string;
-      title: string;
-      subtitle: string;
-      bannerImage: string;
-      tag: string;
-      tagClass: string;
-      targetCategory?: string;
-      targetVideoId?: string;
-      targetVideo?: Video;
-      ctaText?: string;
-      isActive: boolean;
-    }> = [];
 
     const addSlide = (
       v: Video,

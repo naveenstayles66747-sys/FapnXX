@@ -358,7 +358,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           </div>
         </div>
 
-        {/* 3. Unified Pornktube-Style Collapsible Info & Comments Card (Slim & Compact) */}
+        {/* 3. Unified Collapsible Info Card (Slim & Compact) */}
         {isInfoExpanded ? (
           <div className="rounded-2xl p-3.5 sm:p-4 border border-zinc-200 dark:border-white/10 bg-[#f8fafc] dark:bg-[#131217] text-zinc-900 dark:text-zinc-100 space-y-3.5 shadow-sm transition-all animate-fadeIn">
             {/* Categories Row */}
@@ -440,13 +440,6 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
               </div>
             )}
 
-            {/* Integrated Simple Live Comments Section inside Show More */}
-            <CommentsSection
-              videoId={video.id}
-              userEmail={userEmail}
-              onOpenSoftLogin={onOpenSoftLogin}
-            />
-
             {/* Slim Show Less Button */}
             <button
               type="button"
@@ -464,10 +457,19 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
             onClick={() => setIsInfoExpanded(true)}
             className="w-full py-1.5 sm:py-2 px-3 rounded-xl bg-zinc-200/70 hover:bg-zinc-300 dark:bg-[#1a191f] dark:hover:bg-[#25242b] border border-zinc-300/60 dark:border-white/10 text-zinc-800 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
           >
-            <span>Show more</span>
+            <span>Show video details & tags</span>
             <span className="material-symbols-outlined text-base">expand_more</span>
           </button>
         )}
+
+        {/* 4. Integrated Live Realtime Comments Section (Permanently Mounted) */}
+        <div className="mt-3">
+          <CommentsSection
+            videoId={video.id}
+            userEmail={userEmail}
+            onOpenSoftLogin={onOpenSoftLogin}
+          />
+        </div>
 
         {/* Under-Player Responsive Ad Banner (Desktop 728x90: Zone 6010076 | Mobile 300x250: Zone 6010078) */}
         <UnderPlayerBanner key={`under-player-${video.id}`} reloadKey={video.id} />

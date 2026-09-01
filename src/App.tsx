@@ -30,7 +30,7 @@ const SoftLoginModal = lazy(() => import('./components/SoftLoginModal').then(m =
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from './data';
 import { videoService } from './services/videoService';
 import { auth } from './services/firebaseConfig';
-import { onAuthStateChanged, onIdTokenChanged } from 'firebase/auth';
+import { onAuthStateChanged, onIdTokenChanged, signOut } from 'firebase/auth';
 import {
   getStoredAgeVerified,
   ThemeMode,
@@ -129,7 +129,8 @@ export default function App() {
     }
     return true;
   });
-  const filteredVideosList = preferredVideos.length > 0 ? preferredVideos : (videosList || []);
+  // Clean preference filter: Do NOT dump straight videos when a non-straight category has 0 videos
+  const filteredVideosList = preferredVideos;
 
   // Real Firebase Auth & Custom Claims Observer
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
@@ -176,12 +177,19 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // NOTE: Admin auth state is managed exclusively by the onIdTokenChanged Firebase listener above.
-  // Direct email-based setIsAdminAuthenticated() bypasses Firebase claims — removed for security.
-
-  const handleAdminLogout = () => {
+  // Complete Firebase and local session sign out
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.warn('[Auth] Sign-out notice:', err);
+    }
     setUserEmail(null);
     setIsAdminAuthenticated(false);
+  };
+
+  const handleAdminLogout = async () => {
+    await handleSignOut();
   };
 
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
@@ -550,7 +558,7 @@ export default function App() {
               // No-op: admin auth state is set exclusively by Firebase onIdTokenChanged observer.
               // The modal's sign-in flow triggers a Firebase auth state change that propagates here automatically.
             }}
-            onAdminLogout={() => setIsAdminAuthenticated(false)}
+            onAdminLogout={handleAdminLogout}
             categories={categories}
             onAddCategory={handleAddCategory}
             onUpdateCategory={handleUpdateCategory}
@@ -625,7 +633,7 @@ export default function App() {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             userEmail={userEmail}
-            onSignOut={() => setUserEmail(null)}
+            onSignOut={handleSignOut}
             themeMode={themeMode}
             onToggleTheme={toggleTheme}
             contentPreference={contentPreference}
@@ -649,6 +657,7 @@ export default function App() {
             isAdminAuthenticated={isAdminAuthenticated}
             categories={categories}
             userEmail={userEmail}
+            onSignOut={handleSignOut}
             onOpenSoftLogin={handleOpenSoftLogin}
             themeMode={themeMode}
             onToggleTheme={toggleTheme}
