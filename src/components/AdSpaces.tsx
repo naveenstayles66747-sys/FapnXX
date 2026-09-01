@@ -692,109 +692,93 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
   );
 };
 
-interface NativeAdItem {
-  image: string;
-  optimum_image?: string;
-  url: string;
-  title: string;
-  description?: string;
-  brand?: string;
-  size?: string;
-}
-
 /**
- * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile — Zone ID: 6010176)
- * Dynamic Auto-Refresh & Rich Media Preview Cards
+ * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile - Zone ID: 6010176)
+ * Official ExoClick HTML5 Native Video Widget with Auto-Hover Preview & Touch Scrub
  */
-export const NativeRecommendationAd: React.FC<{ className?: string; title?: string; reloadKey?: string | number }> = ({
-  className = "",
-  title = "Sponsored Recommendations",
-  reloadKey,
-}) => {
-  const [items, setItems] = useState<NativeAdItem[]>([]);
-  const zoneId = AD_ZONES.NATIVE_RECOMMENDED || "6010176";
+export const NativeRecommendationAd: React.FC<{
+  className?: string;
+  title?: string;
+  reloadKey?: string | number;
+}> = ({ className = "", title = "Sponsored Recommendations", reloadKey }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const fetchFreshAds = useCallback(() => {
-    const cb = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    fetch(`https://syndication.realsrv.com/splash.php?idzone=${zoneId}&type=20&cb=${cb}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && Array.isArray(data.data) && data.data.length > 0) {
-          setItems(data.data.slice(0, 4));
-        }
-      })
-      .catch(() => {});
-  }, [zoneId]);
+  const renderOfficialWidget = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    try {
+      el.innerHTML = "";
+
+      if (!document.getElementById("exoclick-global-ad-provider")) {
+        const sdk = document.createElement("script");
+        sdk.id = "exoclick-global-ad-provider";
+        sdk.type = "application/javascript";
+        sdk.async = true;
+        sdk.src = "https://a.magsrv.com/ad-provider.js";
+        document.head.appendChild(sdk);
+      }
+
+      const ins = document.createElement("ins");
+      ins.className = "eas" + AD_ZONES.SITE_HASH + "20";
+      ins.setAttribute("data-zoneid", AD_ZONES.NATIVE_RECOMMENDED || "6010176");
+      ins.style.display = "block";
+      ins.style.width = "100%";
+      ins.style.margin = "0 auto";
+      el.appendChild(ins);
+
+      const triggerScript = document.createElement("script");
+      triggerScript.type = "application/javascript";
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
+
+      const triggerAdServe = () => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      };
+
+      triggerAdServe();
+      setTimeout(triggerAdServe, 100);
+      setTimeout(triggerAdServe, 400);
+      setTimeout(triggerAdServe, 1000);
+    } catch (e) {
+      console.warn("[ExoClick] Native recommendation widget error:", e);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchFreshAds();
-    const handleRefresh = () => fetchFreshAds();
-    window.addEventListener("exoclick-refresh-ads", handleRefresh);
-    window.addEventListener("popstate", handleRefresh);
-    return () => {
-      window.removeEventListener("exoclick-refresh-ads", handleRefresh);
-      window.removeEventListener("popstate", handleRefresh);
+    renderOfficialWidget();
+    const handleTrigger = () => {
+      renderOfficialWidget();
     };
-  }, [fetchFreshAds, reloadKey]);
-
-  if (items.length === 0) return null;
+    window.addEventListener("exoclick-refresh-ads", handleTrigger);
+    window.addEventListener("popstate", handleTrigger);
+    return () => {
+      window.removeEventListener("exoclick-refresh-ads", handleTrigger);
+      window.removeEventListener("popstate", handleTrigger);
+    };
+  }, [renderOfficialWidget, reloadKey]);
 
   return (
-    <div className={`native-ad-section w-full my-4 ${className}`}>
+    <div className={`native-recommendation-wrapper w-full my-4 ${className}`}>
       {title && (
         <div className="flex items-center gap-2 mb-3">
           <span className="material-symbols-outlined text-rose-500 text-lg">recommend</span>
           <h3 className="font-bold text-base text-zinc-900 dark:text-white">{title}</h3>
         </div>
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {items.map((item, idx) => (
-          <a
-            key={idx}
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="video-card group flex flex-col w-full rounded-2xl overflow-hidden transition-all duration-300 active:scale-98 cursor-pointer"
-          >
-            <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 group-hover:border-[#ec4899] transition-all duration-200 bg-zinc-900 flex items-center justify-center">
-              <img
-                src={item.optimum_image || item.image}
-                alt={item.title || "Sponsored Recommendation"}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
-              />
-              <div className="absolute top-2 right-2 z-10">
-                <span className="bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
-                  AD
-                </span>
-              </div>
-              <div className="absolute bottom-2 left-2 z-10 bg-black/80 border border-white/15 px-2 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400">
-                {item.brand || "SPONSORED"}
-              </div>
-            </div>
-
-            <div className="video-info pt-2 px-0.5 space-y-1">
-              <h4 className="font-bold text-sm text-zinc-900 dark:text-white group-hover:text-[#ec4899] transition-colors line-clamp-2 leading-snug">
-                {item.title || "Recommended Content"}
-              </h4>
-              <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-                <span className="flex items-center gap-1 text-rose-500 font-bold">
-                  <span className="material-symbols-outlined text-[13px]">verified</span>
-                  <span>{item.brand || "Sponsored"}</span>
-                </span>
-                <span className="text-[10px] text-zinc-400">Promoted</span>
-              </div>
-            </div>
-          </a>
-        ))}
-      </div>
+      <div
+        ref={containerRef}
+        id="exoclick-native-recommended-zone"
+        className="w-full min-h-[160px] overflow-hidden rounded-2xl"
+      />
     </div>
   );
 };
 
-/**
- * Global Popunder Ad Loader (Desktop Zone: 6010172 | Mobile Zone: 6010174)
- */
 export const PopunderAd: React.FC = () => {
   useEffect(() => {
     if (typeof window === "undefined") return;
