@@ -49,11 +49,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     // Direct normalizations for major adult video providers
     if (src.includes("pornhub.com/view_video.php?viewkey=") || src.includes("pornhub.org/view_video.php?viewkey=")) {
       const vKey = src.split("viewkey=")[1]?.split("&")[0];
-      if (vKey) src = `/api/embed?id=${vKey}`;
-    } else if (src.includes("pornhub.com/embed/") || src.includes("pornhub.org/embed/") || src.includes("rt.pornhub.com/embed/")) {
-      const lastSlash = src.lastIndexOf("/embed/");
-      const vKey = lastSlash !== -1 ? src.substring(lastSlash + 7).split("?")[0] : "";
-      if (vKey) src = `/api/embed?id=${vKey}`;
+      if (vKey) src = `https://www.pornhub.org/embed/${vKey}`;
+    } else if (src.includes("pornhub.com/embed/")) {
+      src = src.replace("pornhub.com/embed/", "pornhub.org/embed/");
     } else if (src.includes("xvideos.com/video") && !src.includes("embedframe")) {
       const vMatch = src.match(/xvideos\.com\/video(\d+)/i);
       if (vMatch && vMatch[1]) src = `https://www.xvideos.com/embedframe/${vMatch[1]}`;
@@ -331,7 +329,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
               allowFullScreen
               referrerPolicy="no-referrer-when-downgrade"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
               scrolling="no"
               frameBorder={0}
               className="w-full h-full border-none block bg-black"
