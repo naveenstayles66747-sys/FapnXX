@@ -232,7 +232,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     }
   };
 
-  const skipOffsetSec = directVastAd?.skipOffsetSeconds || 5;
+  const skipOffsetSec = Math.max(10, directVastAd?.skipOffsetSeconds || 10);
   const canSkip = adCurrentTime >= skipOffsetSec;
   const secondsToSkip = Math.max(0, Math.ceil(skipOffsetSec - adCurrentTime));
 

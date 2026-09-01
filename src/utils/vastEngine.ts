@@ -1,4 +1,4 @@
-﻿// Lightweight, high-performance VAST 2.0 / 3.0 / 4.0 In-Stream Ad Parser & Tracking Engine
+// Lightweight, high-performance VAST 2.0 / 3.0 / 4.0 In-Stream Ad Parser & Tracking Engine
 
 export interface VastAd {
   mediaUrl: string;
@@ -57,11 +57,11 @@ const parseVastDuration = (durationStr?: string): number => {
  * Parse skipoffset string '00:00:05' or '5' or '5%' into total seconds
  */
 const parseVastSkipOffset = (skipOffsetStr?: string, totalDuration = 15): number => {
-  if (!skipOffsetStr) return 5;
+  if (!skipOffsetStr) return 10;
   if (skipOffsetStr.includes('%')) {
     const pct = parseFloat(skipOffsetStr.replace('%', ''));
-    if (!isNaN(pct) && pct > 0) return Math.max(3, Math.round((pct / 100) * totalDuration));
-    return 5;
+    if (!isNaN(pct) && pct > 0) return Math.max(5, Math.round((pct / 100) * totalDuration));
+    return 10;
   }
   return Math.max(0, Math.min(parseVastDuration(skipOffsetStr), totalDuration));
 };
