@@ -94,7 +94,14 @@ export default function App() {
   const [categories, setCategories] = useState<CategoryInfo[]>(CATEGORIES);
   const [videosList, setVideosList] = useState<Video[]>(() => {
     const cached = getStoredCachedVideos();
-    return (cached && cached.length >= VIDEOS.length) ? cached : VIDEOS;
+    if (cached && cached.length >= VIDEOS.length) {
+      return cached;
+    }
+    // Clean stale truncated cache and use full 1,316+ videos dataset
+    try {
+      localStorage.removeItem('fapnxx_cached_videos_v1');
+    } catch {}
+    return VIDEOS;
   });
   const [banners, setBanners] = useState<LandingBanner[]>(() => {
     const cached = getStoredCachedBanners();

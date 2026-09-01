@@ -85,7 +85,7 @@ export const getStoredCachedVideos = (): import('../types').Video[] => {
 export const setStoredCachedVideos = (videos: import('../types').Video[]): void => {
   try {
     if (Array.isArray(videos) && videos.length > 0) {
-      localStorage.setItem(KEYS.CACHED_VIDEOS, JSON.stringify(videos.slice(0, 100)));
+      localStorage.setItem(KEYS.CACHED_VIDEOS, JSON.stringify(videos));
     }
   } catch {}
 };

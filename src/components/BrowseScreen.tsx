@@ -973,8 +973,11 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
             </div>
           </div>
 
-          <div className="text-xs text-zinc-600 dark:text-zinc-400 font-mono font-semibold">
-            <span>Showing {displayedVideos.length} of {sortedVideos.length} Videos</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-xs text-zinc-600 dark:text-zinc-300 font-semibold shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>
+              Loaded <strong className="text-zinc-900 dark:text-white font-bold">{displayedVideos.length}</strong> of <strong className="text-[#e0358d] font-extrabold">{sortedVideos.length.toLocaleString()} Total Videos</strong>
+            </span>
           </div>
         </div>
 
