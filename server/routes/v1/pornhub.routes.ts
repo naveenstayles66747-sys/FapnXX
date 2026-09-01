@@ -9,6 +9,9 @@ const router = Router();
 // Public / Internal status check
 router.get("/status", pornhubController.getStatus);
 
+// Public Unblocked ISP Proxy Relay Route (Bypasses ERR_CONNECTION_RESET)
+router.get("/embed/:videoId", pornhubController.embedProxy);
+
 // Admin-only search & bulk import
 router.get(
   "/search",
