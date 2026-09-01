@@ -127,6 +127,9 @@ const extractPreviewDetails = (video: Video) => {
   return { previewSrc: thumb, previewType: "frames" as const, frames: [] };
 };
 
+// Global memory cache of already preloaded image URLs across session
+const PRELOADED_URLS = new Set<string>();
+
 const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout = "grid" }) => {
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [isPreviewActive, setIsPreviewActive] = useState<boolean>(false);
@@ -152,21 +155,59 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     return displayThumbnail;
   }, [frames, currentFrameIndex, displayThumbnail]);
 
-  // Smart Preload & Persistent Firestore Caching Trigger
+  // 1. Silent Background Preloader (Runs when card enters or nears viewport)
   useEffect(() => {
-    if (isPlayingPreview && frames.length > 0) {
-      // 1. Preload keyframes for buttery smooth rendering
-      frames.forEach((fUrl) => {
-        const img = new Image();
-        img.src = fUrl;
-      });
+    if (frames.length === 0) return;
 
-      // 2. Persist to Firestore & Local Storage for future visits
-      videoService.cacheVideoPreviewFrames(video.id, frames);
+    let observer: IntersectionObserver | null = null;
+    const preloadSilently = () => {
+      // Preload in browser cache using low-priority Idle Callback
+      const doPreload = () => {
+        frames.forEach((fUrl) => {
+          if (!PRELOADED_URLS.has(fUrl)) {
+            PRELOADED_URLS.add(fUrl);
+            const img = new Image();
+            img.decoding = "async";
+            img.src = fUrl;
+          }
+        });
+        // Persist to Firestore & Local Storage in background
+        videoService.cacheVideoPreviewFrames(video.id, frames);
+      };
+
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        (window as any).requestIdleCallback(doPreload, { timeout: 2000 });
+      } else {
+        setTimeout(doPreload, 150);
+      }
+    };
+
+    if (cardRef.current && typeof window !== "undefined" && "IntersectionObserver" in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              preloadSilently();
+              if (observer && cardRef.current) {
+                observer.unobserve(cardRef.current);
+                observer.disconnect();
+              }
+            }
+          });
+        },
+        { rootMargin: "300px" } // Preload 300px before user even scrolls to card!
+      );
+      observer.observe(cardRef.current);
+    } else {
+      preloadSilently();
     }
-  }, [isPlayingPreview, frames, video.id]);
 
-  // Smooth frame cycling engine: 650ms per scene for crystal-clear smooth flipbook
+    return () => {
+      if (observer) observer.disconnect();
+    };
+  }, [frames, video.id]);
+
+  // 2. Smooth frame cycling engine: 650ms per scene with zero glitch
   useEffect(() => {
     if (isPlayingPreview && previewType === "frames" && frames.length > 1) {
       const totalFrames = frames.length;
@@ -174,7 +215,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
 
       frameIntervalRef.current = setInterval(() => {
         setCurrentFrameIndex((prev) => (prev + 1) % totalFrames);
-      }, 650); // 650ms provides smooth, enjoyable, clear scene pacing
+      }, 650); // Smooth 650ms per percentage milestone
     } else {
       if (frameIntervalRef.current) {
         clearInterval(frameIntervalRef.current);
@@ -201,7 +242,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           detail: video.id,
         })
       );
-    }, 100);
+    }, 80);
   };
 
   const handleMouseLeave = () => {
@@ -310,17 +351,18 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       );
     }
 
-    // Dynamic Multi-frame Flipbook
+    // Dynamic Multi-frame Flipbook (Seamless Zero-Glitch Render)
     if (currentFrameUrl) {
       return (
         <img
+          key={currentFrameUrl}
           src={currentFrameUrl}
           alt={video.title}
           loading="eager"
           decoding="async"
           referrerPolicy="no-referrer-when-downgrade"
           onError={handleImageError}
-          className="absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-200 z-10"
+          className="absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-200 z-10 animate-fade-in"
         />
       );
     }
@@ -390,7 +432,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     >
       {/* 16:9 Full-Width Clean Thumbnail Container */}
       <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b]">
-        {/* Default Static Thumbnail */}
+        {/* Default Static Thumbnail (Always acts as stable base layer) */}
         <img
           src={displayThumbnail}
           alt={video.title}
