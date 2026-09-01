@@ -177,7 +177,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
 
       frameIntervalRef.current = setInterval(() => {
         setCurrentFrameIndex((prev) => (prev + 1) % totalFrames);
-      }, 550);
+      }, 850); // Natural 850ms per storyboard frame (Pornhub standard)
     } else {
       if (frameIntervalRef.current) {
         clearInterval(frameIntervalRef.current);
@@ -288,7 +288,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
       frameIntervalRef.current = setInterval(() => {
         setCurrentFrameIndex((prev) => (prev + 1) % totalFrames);
-      }, 550);
+      }, 850);
     }, 600);
   };
 
@@ -449,7 +449,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
               ) : (
                 <div
                   className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] card-smooth-progress"
-                  style={{ animationDuration: `${frames.length * 550}ms` }}
+                  style={{ animationDuration: `${frames.length * 850}ms` }}
                 />
               )}
             </div>
@@ -533,7 +533,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
             ) : (
               <div
                 className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] card-smooth-progress"
-                style={{ animationDuration: `${frames.length * 550}ms` }}
+                style={{ animationDuration: `${frames.length * 850}ms` }}
               />
             )}
           </div>
