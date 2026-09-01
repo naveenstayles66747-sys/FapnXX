@@ -24,7 +24,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const [playerMode, setPlayerMode] = useState<"embed" | "video">("embed");
   const [currentVideoSrc, setCurrentVideoSrc] = useState<string>("");
   const [videoMountKey, setVideoMountKey] = useState<number>(0);
-  const [activeMirror, setActiveMirror] = useState<"proxy" | "org" | "rt" | "com">("proxy");
 
   // VAST In-Stream State
   const [isPrerollActive, setIsPrerollActive] = useState<boolean>(false);
@@ -37,8 +36,8 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const directPlayerId = `fluid_direct_${(video?.id || "vid").replace(/[^a-zA-Z0-9_-]/g, "_")}`;
   const VAST_TAG_URL = AD_CONFIG.VAST_TAG_URL || "https://s.magsrv.com/v1/vast.php?idz=6003184";
 
-  // -- Helper: Clean & Normalize Embed URL with ISP Unblocker Relay ------------
-  const extractEmbedUrl = (rawInput?: string, mirror: "proxy" | "org" | "rt" | "com" = "proxy"): { cleanUrl: string; isDirectVideo: boolean } => {
+  // -- Helper: Clean & Normalize Embed URL directly to unblocked fast mirror ---
+  const extractEmbedUrl = (rawInput?: string): { cleanUrl: string; isDirectVideo: boolean } => {
     let src = (rawInput || "").trim();
     if (src.startsWith("<iframe") || src.includes("src=")) {
       const match = src.match(/src=["']([^"']+)["']/i);
@@ -47,43 +46,12 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     src = src.replace(/^["']|["']$/g, "").trim();
     if (src.startsWith("//")) src = "https:" + src;
 
-    // Normalizations for Pornhub (supports our direct Proxy Relay & unblocked mirrors)
-    if (
-      src.includes("pornhub.com/view_video.php?viewkey=") ||
-      src.includes("pornhub.org/view_video.php?viewkey=")
-    ) {
+    // Direct normalizations for major adult video providers
+    if (src.includes("pornhub.com/view_video.php?viewkey=") || src.includes("pornhub.org/view_video.php?viewkey=")) {
       const vKey = src.split("viewkey=")[1]?.split("&")[0];
-      if (vKey) {
-        if (mirror === "proxy") {
-          src = `/api/v1/pornhub/embed/${vKey}`;
-        } else if (mirror === "org") {
-          src = `https://www.pornhub.org/embed/${vKey}`;
-        } else if (mirror === "rt") {
-          src = `https://rt.pornhub.com/embed/${vKey}`;
-        } else {
-          src = `https://www.pornhub.com/embed/${vKey}`;
-        }
-      }
-    } else if (
-      src.includes("pornhub.com/embed/") ||
-      src.includes("pornhub.org/embed/") ||
-      src.includes("rt.pornhub.com/embed/") ||
-      src.includes("/api/v1/pornhub/embed/")
-    ) {
-      const lastSlash = src.lastIndexOf("/embed/");
-      const vKey = lastSlash !== -1 ? src.substring(lastSlash + 7).split("?")[0] : "";
-      if (vKey) {
-        const atsParam = src.includes("ats=") ? `?ats=${src.split("ats=")[1].split("&")[0]}` : "";
-        if (mirror === "proxy") {
-          src = `/api/v1/pornhub/embed/${vKey}${atsParam}`;
-        } else if (mirror === "org") {
-          src = `https://www.pornhub.org/embed/${vKey}${atsParam}`;
-        } else if (mirror === "rt") {
-          src = `https://rt.pornhub.com/embed/${vKey}${atsParam}`;
-        } else {
-          src = `https://www.pornhub.com/embed/${vKey}${atsParam}`;
-        }
-      }
+      if (vKey) src = `https://www.pornhub.org/embed/${vKey}`;
+    } else if (src.includes("pornhub.com/embed/")) {
+      src = src.replace("pornhub.com/embed/", "pornhub.org/embed/");
     } else if (src.includes("xvideos.com/video") && !src.includes("embedframe")) {
       const vMatch = src.match(/xvideos\.com\/video(\d+)/i);
       if (vMatch && vMatch[1]) src = `https://www.xvideos.com/embedframe/${vMatch[1]}`;
@@ -94,7 +62,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     }
 
     const isKnownEmbed =
-      /streamtape|streamta\.pe|dood|filemoon|spankbang|xvideos|pornhub|redtube|youporn|eporner|tube8|chaturbate|bembed|embedseek|streamhide|upstream|mixdrop|\/e\/|\/embed\/|\/api\/v1\/pornhub\/embed/i.test(
+      /streamtape|streamta\.pe|dood|filemoon|spankbang|xvideos|pornhub|redtube|youporn|eporner|tube8|chaturbate|bembed|embedseek|streamhide|upstream|mixdrop|\/e\/|\/embed\//i.test(
         src
       );
 
@@ -165,11 +133,11 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     ).trim();
 
     if (rawEmbed) {
-      const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawEmbed, activeMirror);
+      const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawEmbed);
       setPlayerMode(d ? "video" : "embed");
       setCurrentVideoSrc(c);
     } else if (rawMp4) {
-      const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawMp4, activeMirror);
+      const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawMp4);
       setPlayerMode(d ? "video" : "embed");
       setCurrentVideoSrc(c);
     } else {
@@ -181,7 +149,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     let isMounted = true;
     const dynamicVastTag = `${VAST_TAG_URL}${VAST_TAG_URL.includes("?") ? "&" : "?"}cb=${Date.now()}_${Math.random().toString(36).substring(2, 8)}&v=${encodeURIComponent(video?.id || "vid")}`;
 
-    fetchVastAd(dynamicVastTag, 3500)
+    fetchVastAd(dynamicVastTag, 3000)
       .then((parsedAd) => {
         if (!isMounted) return;
         if (parsedAd && parsedAd.mediaUrl) {
@@ -199,7 +167,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       isMounted = false;
       cleanupInstance();
     };
-  }, [video?.id, video?.embedUrl, video?.previewMp4Url, cleanupInstance, VAST_TAG_URL, activeMirror]);
+  }, [video?.id, video?.embedUrl, video?.previewMp4Url, cleanupInstance, VAST_TAG_URL]);
 
   // Autoplay handler for VAST Ad Video
   useEffect(() => {
@@ -268,12 +236,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const skipOffsetSec = Math.max(10, directVastAd?.skipOffsetSeconds || 10);
   const canSkip = adCurrentTime >= skipOffsetSec;
   const secondsToSkip = Math.max(0, Math.ceil(skipOffsetSec - adCurrentTime));
-
-  const isPornhubStream = Boolean(
-    video?.embedUrl?.includes("pornhub") ||
-    video?.sourceWebsite?.toLowerCase().includes("pornhub") ||
-    currentVideoSrc.includes("pornhub")
-  );
 
   return (
     <div
@@ -355,7 +317,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       )}
 
       {/* ----------------------------------------------------------------------
-          STAGE 2: MAIN VIDEO STREAM (Embed Iframe or HTML5 MP4/HLS)
+          STAGE 2: MAIN VIDEO STREAM (100% Clean Iframe / Video Player)
       ---------------------------------------------------------------------- */}
       {playerMode === "embed" ? (
         <div className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center">
@@ -377,43 +339,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               <span className="material-symbols-outlined text-4xl text-rose-500">videocam_off</span>
               <p className="font-semibold text-white">No Stream Source Available</p>
               <p className="text-xs text-zinc-500">Please provide a valid embed URL or video stream link.</p>
-            </div>
-          )}
-
-          {/* Quick ISP Unblocker Server Switcher (Top-Right) */}
-          {isPornhubStream && (
-            <div className="absolute top-2 right-2 z-20 flex items-center gap-1 bg-black/85 backdrop-blur-md px-2 py-1 rounded-xl border border-white/15 shadow-xl text-[10px] font-bold text-zinc-300">
-              <span className="text-zinc-400 font-normal mr-0.5">Stream:</span>
-              <button
-                type="button"
-                onClick={() => setActiveMirror("proxy")}
-                className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                  activeMirror === "proxy" ? "bg-[#ec4899] text-white font-extrabold shadow" : "hover:text-white"
-                }`}
-                title="Ultra-Fast Direct Proxy Stream (100% Unblocked on all ISPs)"
-              >
-                ? Fast Stream
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveMirror("org")}
-                className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                  activeMirror === "org" ? "bg-[#ec4899] text-white font-extrabold shadow" : "hover:text-white"
-                }`}
-                title="Mirror 1 (.org)"
-              >
-                Mirror 1
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveMirror("rt")}
-                className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                  activeMirror === "rt" ? "bg-[#ec4899] text-white font-extrabold shadow" : "hover:text-white"
-                }`}
-                title="Mirror 2 (RT Server)"
-              >
-                Mirror 2
-              </button>
             </div>
           )}
         </div>
