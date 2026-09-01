@@ -49,12 +49,42 @@ export const CATEGORIES: CategoryInfo[] = [
     icon: 'visibility',
     heroImage: 'https://lh3.googleusercontent.com/aida/AP1WRLs5y8ft3CThjXzumEpc3azxLY3QKyR8aZ3p0q786H2ndH2rdcjcbpMGVerFh_bCioKAuQRfUOdkx48FNdonP0tx-OxsMFArRHUx9_QMZ2q3VzQfWAIUBUZRvK9VGHJC3MYO8-zKg1JY36tH2BC8gl54Fg4OZqAl6Hu5nnfDFy8rgLjErqdnCiXTkuhA-Z7dKwuX0Z5XdGhS8uBLxIWlygmG82L4DvNTvPVWLxnZMiLdsJspXJESERcqnj4w',
     description: 'Immerse yourself completely. Experience every scene from the most intimate perspective.'
+  },
+  {
+    id: 'desi',
+    name: 'Desi',
+    icon: 'flare',
+    heroImage: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=75&w=800&auto=format&fit=crop',
+    description: 'Authentic Indian, South Asian and Desi romance & cinematic films.'
+  },
+  {
+    id: 'asian',
+    name: 'Asian',
+    icon: 'temple_buddhist',
+    heroImage: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=75&w=800&auto=format&fit=crop',
+    description: 'Sensual Japanese, Korean, and East Asian high definition adult releases.'
+  },
+  {
+    id: 'hentai',
+    name: 'Hentai',
+    icon: 'palette',
+    heroImage: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=75&w=800&auto=format&fit=crop',
+    description: '3D animated and high-energy uncensored anime adult features.'
+  },
+  {
+    id: 'vr',
+    name: 'VR (Virtual Reality)',
+    icon: 'view_in_ar',
+    heroImage: 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?q=75&w=800&auto=format&fit=crop',
+    description: '180° and 360° fully immersive virtual reality adult experiences.'
   }
 ];
 
+import curatedDataset from './data/pornhubCurated.json';
+
 export const PERFORMERS: import('./types').Performer[] = [];
 
-export const VIDEOS: Video[] = [];
+export const VIDEOS: Video[] = (curatedDataset as any) || [];
 
 export const INITIAL_VIDEOS = VIDEOS;
 

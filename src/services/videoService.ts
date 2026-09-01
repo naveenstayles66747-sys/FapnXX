@@ -1449,6 +1449,100 @@ export class VideoService {
     }
     return null;
   }
+
+  /**
+   * Batch save multiple videos to Firestore
+   */
+  async batchSaveVideosToFirestore(videos: Video[]): Promise<number> {
+    if (!videos || videos.length === 0) return 0;
+    let savedCount = 0;
+
+    try {
+      const promises = videos.map(async (v) => {
+        try {
+          const docRef = doc(db, 'videos', v.id);
+          const cleanDoc = cleanForFirestore(v);
+          await setDoc(docRef, cleanDoc, { merge: true });
+          savedCount++;
+        } catch (e) {
+          console.warn('[VideoService] Batch save single video error:', v.id, e);
+        }
+      });
+
+      await Promise.all(promises);
+      this.smartCache.invalidate('videos_all');
+      console.log(`✅ [Firestore] Successfully batch saved ${savedCount} videos.`);
+    } catch (err) {
+      console.error('[VideoService] batchSaveVideosToFirestore failed:', err);
+    }
+
+    return savedCount;
+  }
+
+  /**
+   * Search / query Pornhub webmaster DB via backend API
+   */
+  async queryPornhubWebmaster(params: {
+    category?: string;
+    minViews?: number;
+    limit?: number;
+    searchQuery?: string;
+    atsCode?: string;
+  }): Promise<{ count: number; videos: Video[] }> {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const queryParams = new URLSearchParams();
+      if (params.category) queryParams.set('category', params.category);
+      if (params.minViews) queryParams.set('minViews', params.minViews.toString());
+      if (params.limit) queryParams.set('limit', params.limit.toString());
+      if (params.searchQuery) queryParams.set('q', params.searchQuery);
+      if (params.atsCode) queryParams.set('atsCode', params.atsCode);
+
+      const res = await fetch(`${API_BASE}/webmaster/search?${queryParams.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        return json?.data || { count: 0, videos: [] };
+      }
+    } catch (err) {
+      console.warn('[VideoService] queryPornhubWebmaster notice:', err);
+    }
+    return { count: 0, videos: [] };
+  }
+
+  /**
+   * Trigger Pornhub Webmaster Bulk Import via Backend
+   */
+  async importPornhubWebmaster(params: {
+    category?: string;
+    minViews?: number;
+    limit?: number;
+    searchQuery?: string;
+    atsCode?: string;
+  }): Promise<{ count: number; videos: Video[] }> {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`${API_BASE}/webmaster/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(params),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        this.smartCache.invalidate('videos_all');
+        return json?.data || { count: 0, videos: [] };
+      }
+    } catch (err) {
+      console.warn('[VideoService] importPornhubWebmaster notice:', err);
+    }
+    return { count: 0, videos: [] };
+  }
 }
 
 export const videoService = new VideoService();

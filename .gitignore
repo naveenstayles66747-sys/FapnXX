@@ -12,3 +12,6 @@ serviceAccountKey*.json
 server/serviceAccountKey*.json
 server/*.json
 credentials/
+affiliate-webmaster/
+*.csv
+pornhub.com-db/

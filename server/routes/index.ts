@@ -10,6 +10,7 @@ import adRoutes from './v1/ad.routes';
 import uploadRoutes from './v1/upload.routes';
 import adminRoutes from './v1/admin.routes';
 import auditRoutes from './v1/audit.routes';
+import pornhubRoutes from './v1/pornhub.routes';
 
 const router = Router();
 
@@ -27,6 +28,8 @@ v1Router.use('/ads', adRoutes);
 v1Router.use('/uploads', uploadRoutes);
 v1Router.use('/admin', adminRoutes);
 v1Router.use('/audit', auditRoutes);
+v1Router.use('/webmaster', pornhubRoutes);
+v1Router.use('/pornhub', pornhubRoutes);
 
 router.use('/v1', v1Router);
 

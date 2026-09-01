@@ -56,9 +56,26 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   onUpdateBanner,
   onDeleteBanner,
 }) => {
-  const [activeTab, setActiveTab] = useState<'auth' | 'categories' | 'videos' | 'banners' | 'upload' | 'reports' | 'usage' | 'audit' | 'streamtape'>('auth');
+  const [activeTab, setActiveTab] = useState<'auth' | 'categories' | 'videos' | 'banners' | 'upload' | 'reports' | 'usage' | 'audit' | 'streamtape' | 'webmaster'>('auth');
   const [auditLogsList, setAuditLogsList] = useState<any[]>([]);
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
+
+  // Pornhub Webmaster DB state
+  const [atsCodeInput, setAtsCodeInput] = useState<string>(() => {
+    try {
+      return localStorage.getItem('fapn_pornhub_ats_code') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [webmasterCategory, setWebmasterCategory] = useState('all');
+  const [webmasterMinViews, setWebmasterMinViews] = useState(100000);
+  const [webmasterLimit, setWebmasterLimit] = useState(25);
+  const [webmasterSearch, setWebmasterSearch] = useState('');
+  const [webmasterResults, setWebmasterResults] = useState<Video[]>([]);
+  const [isSearchingWebmaster, setIsSearchingWebmaster] = useState(false);
+  const [isImportingWebmaster, setIsImportingWebmaster] = useState(false);
+  const [webmasterStatusMsg, setWebmasterStatusMsg] = useState<string | null>(null);
 
   // Streamtape Cloud Manager state
   const [stLogin, setStLogin] = useState('');
@@ -617,6 +634,70 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     alert('Video published successfully to cloud database & catalog!');
   };
 
+  const handleSaveAtsCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      localStorage.setItem('fapn_pornhub_ats_code', atsCodeInput.trim());
+      setWebmasterStatusMsg('✓ Affiliate ATS Code saved! It will be attached to all imported video embeds.');
+      setTimeout(() => setWebmasterStatusMsg(null), 4000);
+    } catch {}
+  };
+
+  const handleSearchWebmaster = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSearchingWebmaster(true);
+    setWebmasterStatusMsg(null);
+    try {
+      const res = await videoService.queryPornhubWebmaster({
+        category: webmasterCategory === 'all' ? undefined : webmasterCategory,
+        minViews: webmasterMinViews,
+        limit: webmasterLimit,
+        searchQuery: webmasterSearch.trim() || undefined,
+        atsCode: atsCodeInput.trim() || undefined,
+      });
+      setWebmasterResults(res.videos || []);
+      setWebmasterStatusMsg(`Found ${res.count} matching videos in 18.7GB database.`);
+    } catch (err: any) {
+      setWebmasterStatusMsg(`Search notice: ${err?.message || 'Check server connection'}`);
+    } finally {
+      setIsSearchingWebmaster(false);
+    }
+  };
+
+  const handleImportWebmasterBatch = async () => {
+    setIsImportingWebmaster(true);
+    setWebmasterStatusMsg('Importing and publishing videos to cloud database...');
+    try {
+      const res = await videoService.importPornhubWebmaster({
+        category: webmasterCategory === 'all' ? undefined : webmasterCategory,
+        minViews: webmasterMinViews,
+        limit: webmasterLimit,
+        searchQuery: webmasterSearch.trim() || undefined,
+        atsCode: atsCodeInput.trim() || undefined,
+      });
+      if (res.videos && res.videos.length > 0) {
+        res.videos.forEach((v) => onUploadVideoSuccess(v));
+        setWebmasterStatusMsg(`✓ Successfully imported and published ${res.count} videos to website catalog!`);
+      } else {
+        setWebmasterStatusMsg('No new videos matched your import query.');
+      }
+    } catch (err: any) {
+      setWebmasterStatusMsg(`Import error: ${err?.message || 'Failed to complete import'}`);
+    } finally {
+      setIsImportingWebmaster(false);
+    }
+  };
+
+  const handleImportSingleWebmasterVideo = async (video: Video) => {
+    try {
+      await videoService.saveVideo(video);
+      onUploadVideoSuccess(video);
+      setWebmasterStatusMsg(`✓ Published "${video.title.slice(0, 30)}..." to website!`);
+    } catch (e: any) {
+      setWebmasterStatusMsg(`Failed to publish video: ${e?.message}`);
+    }
+  };
+
   const filteredVideos = videos.filter(
     (v) =>
       v.title.toLowerCase().includes(searchVideoQuery.toLowerCase()) ||
@@ -800,6 +881,29 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
           >
             <span className="material-symbols-outlined text-sm text-sky-400">cloud_sync</span>
             Streamtape Cloud {stFiles.length > 0 ? `(${stFiles.length})` : ''}
+          </button>
+
+          <button
+            onClick={() => {
+              if (!isAdminAuthenticated) {
+                setActiveTab('auth');
+                return;
+              }
+              setActiveTab('webmaster');
+              if (webmasterResults.length === 0) {
+                handleSearchWebmaster();
+              }
+            }}
+            className={`py-3.5 px-4 font-bold text-xs tracking-wide border-b-2 flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+              !isAdminAuthenticated ? 'opacity-50 cursor-not-allowed' : ''
+            } ${
+              activeTab === 'webmaster'
+                ? 'border-[#ec4899] text-[#ffb0cd]'
+                : 'border-transparent text-[#a19fa6] hover:text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-sm text-amber-400">hub</span>
+            Pornhub Webmaster Hub
           </button>
 
           <button
@@ -2509,6 +2613,261 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               <span className="material-symbols-outlined text-xs">add_to_photos</span>
                             )}
                             <span>Import to Website</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: PORNHUB WEBMASTER HUB (18.7GB) */}
+          {activeTab === 'webmaster' && (
+            <div className="space-y-6">
+              {/* 1. Header Banner & ATS Configuration */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 bg-gradient-to-r from-[#1f1610] to-[#161418] p-5 rounded-2xl border border-amber-500/30 shadow-xl space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                      <span className="material-symbols-outlined text-2xl">hub</span>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-white flex items-center gap-2">
+                        Pornhub Webmaster Importer & Feed Sync
+                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded text-[10px] font-mono font-bold">
+                          18.7 GB Offline Database
+                        </span>
+                      </h3>
+                      <p className="text-xs text-[#debec8]">
+                        Query millions of HD adult videos, verified performers, and auto-attach your affiliate tracking tag.
+                      </p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleSaveAtsCode} className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <div className="flex-1 relative">
+                      <span className="absolute left-3 top-2.5 material-symbols-outlined text-xs text-amber-400">
+                        monetization_on
+                      </span>
+                      <input
+                        type="text"
+                        value={atsCodeInput}
+                        onChange={(e) => setAtsCodeInput(e.target.value)}
+                        placeholder="Affiliate ATS Code / ID (e.g. 1042539)"
+                        className="w-full bg-[#141315] border border-amber-500/30 focus:border-amber-400 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none font-mono"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-sm">save</span>
+                      <span>Save ATS Tag</span>
+                    </button>
+                  </form>
+                </div>
+
+                {/* Quick 1-Click Batch Importer Card */}
+                <div className="bg-[#181719] p-5 rounded-2xl border border-[#2e2d30] shadow-lg flex flex-col justify-between space-y-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5 uppercase tracking-wider text-amber-400">
+                      <span className="material-symbols-outlined text-sm">bolt</span>
+                      1-Click Batch Import
+                    </h4>
+                    <p className="text-[11px] text-[#a19fa6] mt-1">
+                      Bulk import top-rated videos directly into Firestore database.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleImportWebmasterBatch}
+                    disabled={isImportingWebmaster}
+                    className="w-full py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:opacity-50 text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all cursor-pointer"
+                  >
+                    {isImportingWebmaster ? (
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <span className="material-symbols-outlined text-sm">cloud_upload</span>
+                    )}
+                    <span>Import {webmasterLimit} Videos to Website</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Status Message */}
+              {webmasterStatusMsg && (
+                <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                  webmasterStatusMsg.includes('✓') || webmasterStatusMsg.includes('Successfully')
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
+                }`}>
+                  <span className="material-symbols-outlined text-sm">info</span>
+                  <span>{webmasterStatusMsg}</span>
+                </div>
+              )}
+
+              {/* 2. Custom Query Filter Bar */}
+              <form onSubmit={handleSearchWebmaster} className="bg-[#181719] p-4 rounded-2xl border border-[#2e2d30] shadow-md grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#a19fa6] mb-1">Category</label>
+                  <select
+                    value={webmasterCategory}
+                    onChange={(e) => setWebmasterCategory(e.target.value)}
+                    className="w-full bg-[#141315] border border-[#3f3e42] focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="trending">Trending</option>
+                    <option value="amateur">Amateur</option>
+                    <option value="milf">MILF</option>
+                    <option value="teen">Teen</option>
+                    <option value="anal">Anal</option>
+                    <option value="lesbian">Lesbian</option>
+                    <option value="pov">POV</option>
+                    <option value="desi">Desi</option>
+                    <option value="asian">Asian</option>
+                    <option value="hentai">Hentai</option>
+                    <option value="vr">VR</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-[#a19fa6] mb-1">Min Views Threshold</label>
+                  <select
+                    value={webmasterMinViews}
+                    onChange={(e) => setWebmasterMinViews(Number(e.target.value))}
+                    className="w-full bg-[#141315] border border-[#3f3e42] focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                  >
+                    <option value="10000">10,000+ views</option>
+                    <option value="50000">50,000+ views</option>
+                    <option value="100000">100,000+ views</option>
+                    <option value="250000">250,000+ views</option>
+                    <option value="500000">500,000+ views (Top Tier)</option>
+                    <option value="1000000">1,000,000+ views (Mega Hits)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-[#a19fa6] mb-1">Batch Limit</label>
+                  <select
+                    value={webmasterLimit}
+                    onChange={(e) => setWebmasterLimit(Number(e.target.value))}
+                    className="w-full bg-[#141315] border border-[#3f3e42] focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                  >
+                    <option value="10">10 Videos</option>
+                    <option value="25">25 Videos</option>
+                    <option value="50">50 Videos</option>
+                    <option value="100">100 Videos</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-[#a19fa6] mb-1">Search Keyword / Model</label>
+                  <input
+                    type="text"
+                    value={webmasterSearch}
+                    onChange={(e) => setWebmasterSearch(e.target.value)}
+                    placeholder="e.g. Mia, Brunette, POV..."
+                    className="w-full bg-[#141315] border border-[#3f3e42] focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={isSearchingWebmaster}
+                    className="flex-1 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+                  >
+                    {isSearchingWebmaster ? (
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <span className="material-symbols-outlined text-sm">search</span>
+                    )}
+                    <span>Search DB</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* 3. Live Results Grid */}
+              <div className="bg-[#181719] rounded-2xl border border-[#2e2d30] overflow-hidden shadow-xl p-5 space-y-4">
+                <div className="flex items-center justify-between border-b border-[#2e2d30] pb-3">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span className="material-symbols-outlined text-amber-400 text-base">video_library</span>
+                    Query Results ({webmasterResults.length})
+                  </h4>
+                  {webmasterResults.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleImportWebmasterBatch}
+                      disabled={isImportingWebmaster}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
+                    >
+                      <span className="material-symbols-outlined text-xs">publish</span>
+                      <span>Publish All {webmasterResults.length}</span>
+                    </button>
+                  )}
+                </div>
+
+                {isSearchingWebmaster ? (
+                  <div className="py-12 flex flex-col items-center justify-center gap-3 text-amber-400">
+                    <span className="w-8 h-8 border-3 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs font-semibold">Scanning 18.7 GB Pornhub database stream...</span>
+                  </div>
+                ) : webmasterResults.length === 0 ? (
+                  <div className="text-center py-12 text-[#a19fa6] text-xs bg-[#141315] rounded-xl border border-white/5 space-y-2">
+                    <span className="material-symbols-outlined text-4xl block opacity-30 text-amber-400">database</span>
+                    <p className="font-semibold text-white">No query results yet.</p>
+                    <p className="text-[11px] text-zinc-400">
+                      Choose a category or click <strong>"Search DB"</strong> to preview videos from the 18.7GB database!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {webmasterResults.map((video) => (
+                      <div
+                        key={video.id}
+                        className="bg-[#141315] border border-[#2e2d30] hover:border-amber-500/50 rounded-xl overflow-hidden flex flex-col justify-between transition-all group shadow-md"
+                      >
+                        <div className="relative aspect-video bg-black">
+                          <img
+                            src={video.thumbnail}
+                            alt={video.title}
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=400';
+                            }}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-amber-600 text-white rounded text-[9px] font-bold uppercase">
+                            {video.categoryLabel || video.category}
+                          </div>
+                          <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-black/80 text-white rounded text-[9px] font-mono">
+                            {video.duration}
+                          </div>
+                          <div className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/80 text-amber-300 rounded text-[9px] font-mono">
+                            {video.views} • {video.rating}
+                          </div>
+                        </div>
+
+                        <div className="p-3 flex-1 flex flex-col justify-between gap-3">
+                          <div>
+                            <h5 className="text-xs font-bold text-white line-clamp-2" title={video.title}>
+                              {video.title}
+                            </h5>
+                            <p className="text-[10px] text-zinc-400 mt-1">
+                              Model: <span className="text-zinc-200 font-semibold">{video.performerName}</span>
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleImportSingleWebmasterVideo(video)}
+                            className="w-full py-1.5 bg-amber-600/20 hover:bg-amber-600 border border-amber-500/40 hover:border-amber-500 text-amber-300 hover:text-white font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
+                          >
+                            <span className="material-symbols-outlined text-xs">add_to_photos</span>
+                            <span>Publish to Website</span>
                           </button>
                         </div>
                       </div>
