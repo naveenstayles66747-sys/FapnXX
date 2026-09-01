@@ -105,10 +105,9 @@ const extractPreviewDetails = (video: Video) => {
     return { previewSrc: webpSrc, previewType: "webp" as const, frames: [] };
   }
 
-  // 10 percentage milestone frames (0%, 10%, 20% ... 90%)
+  // Full 16-Frame Pornhub Storyboard Timeline
   if (Array.isArray(video.previewFrames) && video.previewFrames.length > 0) {
-    const tenFrames = extract10PercentageFrames(video.previewFrames);
-    return { previewSrc: tenFrames[0], previewType: "frames" as const, frames: tenFrames };
+    return { previewSrc: video.previewFrames[0], previewType: "frames" as const, frames: video.previewFrames };
   }
 
   // Check cached frames in session
@@ -117,8 +116,7 @@ const extractPreviewDetails = (video: Video) => {
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const tenFrames = extract10PercentageFrames(parsed);
-        return { previewSrc: tenFrames[0], previewType: "frames" as const, frames: tenFrames };
+        return { previewSrc: parsed[0], previewType: "frames" as const, frames: parsed };
       }
     }
   } catch {}
@@ -258,13 +256,47 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     }
   };
 
-  // Mouse scrubbing across card width
+  const scrubResumeTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Pornhub-Style Interactive Mouse Scrubbing Across Card Width
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isMobile || previewType !== "frames" || frames.length <= 1) return;
+    if (previewType !== "frames" || frames.length <= 1) return;
+    if (!isHovered) setIsHovered(true);
+
+    // Pause auto-flip timer while actively moving mouse
+    if (frameIntervalRef.current) {
+      clearInterval(frameIntervalRef.current);
+      frameIntervalRef.current = null;
+    }
+
     const totalFrames = frames.length;
     const rect = e.currentTarget.getBoundingClientRect();
     if (rect.width <= 0) return;
     const xPos = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const pct = xPos / rect.width;
+    const scrubIdx = Math.max(0, Math.min(totalFrames - 1, Math.floor(pct * totalFrames)));
+    setCurrentFrameIndex(scrubIdx);
+
+    // Resume auto-flip when cursor is stationary for 600ms
+    if (scrubResumeTimerRef.current) clearTimeout(scrubResumeTimerRef.current);
+    scrubResumeTimerRef.current = setTimeout(() => {
+      if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+      frameIntervalRef.current = setInterval(() => {
+        setCurrentFrameIndex((prev) => (prev + 1) % totalFrames);
+      }, 550);
+    }, 600);
+  };
+
+  // Mobile Touch Scrubbing
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (previewType !== "frames" || frames.length <= 1 || e.touches.length === 0) return;
+    if (!isPreviewActive) setIsPreviewActive(true);
+
+    const totalFrames = frames.length;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const touchX = e.touches[0].clientX;
+    const xPos = Math.max(0, Math.min(rect.width, touchX - rect.left));
     const pct = xPos / rect.width;
     const scrubIdx = Math.max(0, Math.min(totalFrames - 1, Math.floor(pct * totalFrames)));
     setCurrentFrameIndex(scrubIdx);
@@ -427,6 +459,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
+      onTouchMove={handleTouchMove}
       className="group cursor-pointer flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300"
       style={{ contentVisibility: "auto", containIntrinsicSize: "240px" }}
     >
@@ -445,6 +478,16 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
 
         {/* Clean Live Hover / Frame Flipbook Preview */}
         {renderPreviewContent()}
+
+        {/* Pornhub-Style Glowing Scrub Timeline Bar */}
+        {isPlayingPreview && frames.length > 1 && (
+          <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-black/60 z-20 pointer-events-none">
+            <div
+              className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] transition-all duration-100 ease-out"
+              style={{ width: `${((currentFrameIndex + 1) / frames.length) * 100}%` }}
+            />
+          </div>
+        )}
 
         {/* Top-Right: Quality Badge (Hidden during preview for 100% clean video view) */}
         {!isPlayingPreview && (
