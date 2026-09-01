@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo, useMemo } from "react";
+import React, { useState, useEffect, useRef, memo, useMemo, useCallback } from "react";
 import { Video } from "../types";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { cleanMediaUrl } from "../utils/mediaHelper";
@@ -153,59 +153,20 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     return displayThumbnail;
   }, [frames, currentFrameIndex, displayThumbnail]);
 
-  // 1. Silent Background Preloader (Runs when card enters or nears viewport)
-  useEffect(() => {
+  // On-demand frame loader: ONLY loads when user explicitly hovers or clicks eye on this specific card
+  const preloadCardFrames = useCallback(() => {
     if (frames.length === 0) return;
-
-    let observer: IntersectionObserver | null = null;
-    const preloadSilently = () => {
-      // Preload in browser cache using low-priority Idle Callback
-      const doPreload = () => {
-        frames.forEach((fUrl) => {
-          if (!PRELOADED_URLS.has(fUrl)) {
-            PRELOADED_URLS.add(fUrl);
-            const img = new Image();
-            img.decoding = "async";
-            img.src = fUrl;
-          }
-        });
-        // Persist to Firestore & Local Storage in background
-        videoService.cacheVideoPreviewFrames(video.id, frames);
-      };
-
-      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-        (window as any).requestIdleCallback(doPreload, { timeout: 2000 });
-      } else {
-        setTimeout(doPreload, 150);
+    frames.forEach((fUrl) => {
+      if (!PRELOADED_URLS.has(fUrl)) {
+        PRELOADED_URLS.add(fUrl);
+        const img = new Image();
+        img.decoding = "async";
+        img.src = fUrl;
       }
-    };
+    });
+  }, [frames]);
 
-    if (cardRef.current && typeof window !== "undefined" && "IntersectionObserver" in window) {
-      observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              preloadSilently();
-              if (observer && cardRef.current) {
-                observer.unobserve(cardRef.current);
-                observer.disconnect();
-              }
-            }
-          });
-        },
-        { rootMargin: "300px" } // Preload 300px before user even scrolls to card!
-      );
-      observer.observe(cardRef.current);
-    } else {
-      preloadSilently();
-    }
-
-    return () => {
-      if (observer) observer.disconnect();
-    };
-  }, [frames, video.id]);
-
-  // 2. Smooth frame cycling engine: 650ms per scene with zero glitch
+  // Frame cycling engine: runs ONLY while this card's preview is active
   useEffect(() => {
     if (isPlayingPreview && previewType === "frames" && frames.length > 1) {
       const totalFrames = frames.length;
@@ -213,7 +174,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
 
       frameIntervalRef.current = setInterval(() => {
         setCurrentFrameIndex((prev) => (prev + 1) % totalFrames);
-      }, 650); // Smooth 650ms per percentage milestone
+      }, 550);
     } else {
       if (frameIntervalRef.current) {
         clearInterval(frameIntervalRef.current);
@@ -232,6 +193,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
 
   const handleMouseEnter = () => {
     if (isMobile) return;
+    preloadCardFrames();
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     hoverTimerRef.current = setTimeout(() => {
       setIsHovered(true);
@@ -240,7 +202,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           detail: video.id,
         })
       );
-    }, 80);
+    }, 120);
   };
 
   const handleMouseLeave = () => {
@@ -319,6 +281,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   const togglePreview = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    preloadCardFrames();
     const next = !isPreviewActive;
     setIsPreviewActive(next);
 
