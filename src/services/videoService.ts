@@ -658,6 +658,25 @@ export class VideoService {
 
         console.log(`👁️ [Firestore Realtime] Video ${videoId} view incremented -> ${newCount}`);
         return newCount;
+      } else {
+        // First view on a curated catalog video -> initialize Firestore record
+        const seed = INITIAL_VIDEOS.find((v) => v.id === videoId);
+        const baseViews = (seed && typeof seed.viewsCount === 'number' && seed.viewsCount > 0) ? seed.viewsCount : 500;
+        const newCount = baseViews + 1;
+        const newViewsStr = `${newCount} views`;
+
+        await setDoc(
+          videoRef,
+          {
+            ...(seed ? cleanForFirestore(seed) : { id: videoId }),
+            viewsCount: newCount,
+            views: newViewsStr,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+        console.log(`👁️ [Firestore Realtime] Curated video ${videoId} view initialized in cloud -> ${newCount}`);
+        return newCount;
       }
     } catch (firestoreErr: any) {
       console.warn('⚠️ [Firestore Client] Direct view increment notice:', firestoreErr?.message || firestoreErr);
