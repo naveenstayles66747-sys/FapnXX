@@ -247,14 +247,22 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     return deduplicateVideos(relatedVideosWithScore.slice(start, start + PAGE_SIZE));
   }, [relatedVideosWithScore, effectiveCurrentPage]);
 
+  const [isPageSwitching, setIsPageSwitching] = useState<boolean>(false);
+
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages || newPage === effectiveCurrentPage) return;
+    setIsPageSwitching(true);
+    if (relatedGridTopRef.current) {
+      relatedGridTopRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
     React.startTransition(() => {
       setCurrentPage(newPage);
     });
-    if (relatedGridTopRef.current) {
-      relatedGridTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    setTimeout(() => {
+      setIsPageSwitching(false);
+    }, 180);
   };
 
   const getPageNumbers = (current: number, total: number): (number | string)[] => {
@@ -533,39 +541,51 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5">
-          {(displayedRelatedVideos || []).map((relatedVideo, idx) => (
-            <React.Fragment key={relatedVideo.id}>
-              <div className="relative group">
-                <VideoCard
-                  video={relatedVideo}
-                  onClick={() => onSelectVideo(relatedVideo)}
-                />
+        {isPageSwitching ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5 my-2 animate-pulse">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={`rec-page-skeleton-${i}`} className="flex flex-col gap-2.5">
+                <div className="w-full aspect-video rounded-2xl bg-zinc-200 dark:bg-zinc-800/80" />
+                <div className="h-4 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800" />
+                <div className="h-3 w-1/2 rounded bg-zinc-200 dark:bg-zinc-800" />
               </div>
-
-              {/* Native Recommendation Widget in-between related videos grid (After 4th video) */}
-              {idx === 3 && (
-                <div key={`detail-native-recommended-in-grid-${video.id}`} className="col-span-full my-3">
-                  <NativeRecommendationAd key={`native-rec-grid-${video.id}`} reloadKey={video.id} />
+            ))}
+          </div>
+        ) : (
+          <div key={`rec-page-grid-${effectiveCurrentPage}`} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5 animate-in fade-in duration-200">
+            {(displayedRelatedVideos || []).map((relatedVideo, idx) => (
+              <React.Fragment key={relatedVideo.id}>
+                <div className="relative group">
+                  <VideoCard
+                    video={relatedVideo}
+                    onClick={() => onSelectVideo(relatedVideo)}
+                  />
                 </div>
-              )}
 
-              {/* Outstream Video Card Ad (After 7th video) */}
-              {idx === 7 && (
-                <div key={`detail-outstream-in-grid-${video.id}`} className="col-span-1">
-                  <OutstreamVideoCardAd key={`outstream-rec-${video.id}`} reloadKey={video.id} />
-                </div>
-              )}
-            </React.Fragment>
-          ))}
+                {/* Native Recommendation Widget in-between related videos grid (After 4th video) */}
+                {idx === 3 && (
+                  <div key={`detail-native-recommended-in-grid-${video.id}`} className="col-span-full my-3">
+                    <NativeRecommendationAd key={`native-rec-grid-${video.id}`} reloadKey={video.id} />
+                  </div>
+                )}
 
-          {/* Guaranteed Outstream Video placement if between 4 and 8 related videos */}
-          {displayedRelatedVideos && displayedRelatedVideos.length >= 4 && displayedRelatedVideos.length < 8 && (
-            <div key={`detail-outstream-fallback-${video.id}`} className="col-span-1">
-              <OutstreamVideoCardAd key={`outstream-fallback-${video.id}`} reloadKey={video.id} />
-            </div>
-          )}
-        </div>
+                {/* Outstream Video Card Ad (After 7th video) */}
+                {idx === 7 && (
+                  <div key={`detail-outstream-in-grid-${video.id}`} className="col-span-1">
+                    <OutstreamVideoCardAd key={`outstream-rec-${video.id}`} reloadKey={video.id} />
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+
+            {/* Guaranteed Outstream Video placement if between 4 and 8 related videos */}
+            {displayedRelatedVideos && displayedRelatedVideos.length >= 4 && displayedRelatedVideos.length < 8 && (
+              <div key={`detail-outstream-fallback-${video.id}`} className="col-span-1">
+                <OutstreamVideoCardAd key={`outstream-fallback-${video.id}`} reloadKey={video.id} />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Sleek, Compact & Responsive Page Navigation for Recommended Videos */}
         {totalPages > 1 && (

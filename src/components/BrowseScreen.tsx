@@ -517,6 +517,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     return deduplicateVideos(list);
   }, [durationFilteredVideos, sortBy]);
 
+  const [isPageSwitching, setIsPageSwitching] = useState<boolean>(false);
+
   // Compute total pages and effective current page
   const totalPages = Math.max(1, Math.ceil(sortedVideos.length / PAGE_SIZE));
   const effectiveCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
@@ -528,15 +530,19 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages || newPage === effectiveCurrentPage) return;
+    setIsPageSwitching(true);
+    // Instant scroll to the top of the video grid section (zero sluggish scroll lag)
+    if (videoGridTopRef.current) {
+      videoGridTopRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
     React.startTransition(() => {
       setCurrentPage(newPage);
     });
-    // Smoothly scroll back to the top of the video grid section
-    if (videoGridTopRef.current) {
-      videoGridTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    setTimeout(() => {
+      setIsPageSwitching(false);
+    }, 180);
   };
 
   const getPageNumbers = (current: number, total: number): (number | string)[] => {
@@ -1034,9 +1040,19 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
           </div>
         </div>
 
-        {displayedVideos.length > 0 ? (
+        {isPageSwitching ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-y-5 gap-x-4 sm:gap-6 my-2 animate-pulse">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={`page-skeleton-${i}`} className="flex flex-col gap-2.5">
+                <div className="w-full aspect-video rounded-2xl bg-zinc-200 dark:bg-zinc-800/80" />
+                <div className="h-4 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800" />
+                <div className="h-3 w-1/2 rounded bg-zinc-200 dark:bg-zinc-800" />
+              </div>
+            ))}
+          </div>
+        ) : displayedVideos.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-y-5 gap-x-4 sm:gap-6">
+            <div key={`page-grid-${effectiveCurrentPage}`} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-y-5 gap-x-4 sm:gap-6 animate-in fade-in duration-200">
               {displayedVideos.filter((v) => v && v.id).map((video, idx) => (
                 <React.Fragment key={video.id}>
                   <VideoCard

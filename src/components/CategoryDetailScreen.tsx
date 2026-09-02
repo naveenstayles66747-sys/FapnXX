@@ -122,16 +122,22 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
     return deduplicateVideos(filteredCategoryVideos.slice(start, start + PAGE_SIZE));
   }, [filteredCategoryVideos, effectiveCurrentPage]);
 
+  const [isPageSwitching, setIsPageSwitching] = useState<boolean>(false);
+
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages || newPage === effectiveCurrentPage) return;
+    setIsPageSwitching(true);
+    if (categoryGridTopRef.current) {
+      categoryGridTopRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
     React.startTransition(() => {
       setCurrentPage(newPage);
     });
-    if (categoryGridTopRef.current) {
-      categoryGridTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    setTimeout(() => {
+      setIsPageSwitching(false);
+    }, 180);
   };
 
   const getPageNumbers = (current: number, total: number): (number | string)[] => {
@@ -278,44 +284,56 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
         </div>
 
         {/* Video Card Layout */}
-        {displayedCategoryVideos.length > 0 ? (
-          <>
-            {categoryId === 'pov' ? (
-              <div className="flex flex-col gap-6">
-                {displayedCategoryVideos.map((video) => (
-                  <VideoCard
-                    key={video.id}
-                    video={video}
-                    onClick={() => onSelectVideo(video)}
-                    layout="horizontal"
-                  />
-                ))}
+        {isPageSwitching ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 my-2 animate-pulse">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={`cat-page-skeleton-${i}`} className="flex flex-col gap-2.5">
+                <div className="w-full aspect-video rounded-2xl bg-zinc-200 dark:bg-zinc-800/80" />
+                <div className="h-4 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800" />
+                <div className="h-3 w-1/2 rounded bg-zinc-200 dark:bg-zinc-800" />
               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {displayedCategoryVideos.map((video, idx) => (
-                  <React.Fragment key={video.id}>
+            ))}
+          </div>
+        ) : displayedCategoryVideos.length > 0 ? (
+          <>
+            <div key={`cat-grid-page-${effectiveCurrentPage}`} className="animate-in fade-in duration-200">
+              {categoryId === 'pov' ? (
+                <div className="flex flex-col gap-6">
+                  {displayedCategoryVideos.map((video) => (
                     <VideoCard
+                      key={video.id}
                       video={video}
                       onClick={() => onSelectVideo(video)}
-                      layout="grid"
+                      layout="horizontal"
                     />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                  {displayedCategoryVideos.map((video, idx) => (
+                    <React.Fragment key={video.id}>
+                      <VideoCard
+                        video={video}
+                        onClick={() => onSelectVideo(video)}
+                        layout="grid"
+                      />
 
-                    {/* Native Recommendation Widget in-between grid cards spanning full width (After 4th video) */}
-                    {idx === 3 && (
-                      <div key={`category-native-recommended-in-grid-${categoryId}`} className="col-span-full my-3">
-                        <NativeRecommendationAd key={`cat-native-${categoryId}`} reloadKey={categoryId} />
-                      </div>
-                    )}
+                      {/* Native Recommendation Widget in-between grid cards spanning full width (After 4th video) */}
+                      {idx === 3 && (
+                        <div key={`category-native-recommended-in-grid-${categoryId}`} className="col-span-full my-3">
+                          <NativeRecommendationAd key={`cat-native-${categoryId}`} reloadKey={categoryId} />
+                        </div>
+                      )}
 
-                    {/* Single Clean Outstream Video Placement after the 8th card */}
-                    {idx === 7 && (
-                      <OutstreamVideoCardAd key={`category-outstream-${categoryId}`} reloadKey={categoryId} />
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
-            )}
+                      {/* Single Clean Outstream Video Placement after the 8th card */}
+                      {idx === 7 && (
+                        <OutstreamVideoCardAd key={`category-outstream-${categoryId}`} reloadKey={categoryId} />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Sleek, Compact & Responsive Page Navigation */}
             {totalPages > 1 && (
