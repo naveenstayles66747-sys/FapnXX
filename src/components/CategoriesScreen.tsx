@@ -15,7 +15,7 @@ export const CategoriesScreen: React.FC<CategoriesScreenProps> = ({
   categories = CATEGORIES,
 }) => {
   return (
-    <main className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-[#09090b] p-6 md:p-12 pb-32 lg:ml-64 transition-colors">
+    <main className="w-full bg-zinc-50 dark:bg-[#09090b] p-4 sm:p-6 md:p-12 pb-8 lg:ml-64 transition-colors">
       <div className="mb-8">
         <h2 className="text-3xl font-extrabold text-zinc-900 dark:text-[#e5e1e4] mb-2 tracking-tight">Explore Categories</h2>
         <p className="text-base text-zinc-600 dark:text-[#debec8]">

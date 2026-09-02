@@ -176,7 +176,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack })
       <div
         className="absolute inset-0 z-0 pointer-events-none opacity-10 dark:opacity-20 bg-cover bg-center"
         style={{
-          backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuD3zkz90ny8g2Bp4iJfeVGeBA4VzYawStf6heVpcUMGd4uMCWGlzvI27EL-2u0WS5vtmSUZsVpKKuUjRms7MIGR2ZCnYvWrJZ9a0yQ-4FMD4u5lu0WI0rBOBnQ-7y1jEKq4HTabMcCvaeOewIa-YSp9VQpRnOMCcFkOE14NyUP0J7yAE2OXw3ZzMu0zIC9LXD968EnofutZGFGAwYdBrUY8UvWSLW7U9GskJdZw1IpqJBgJmMrWHuPbRQ')`,
+          backgroundImage: `url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=1200&auto=format&fit=crop')`,
         }}
       />
 

@@ -43,6 +43,8 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
 
       performerNames.forEach((name) => {
         const id = name.toLowerCase().replace(/\s+/g, '-');
+        const nameHash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const subCount = (nameHash % 45) + 5;
         if (!map.has(id)) {
           map.set(id, {
             performer: {
@@ -52,7 +54,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
                 v.performerAvatar ||
                 v.thumbnail ||
                 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop',
-              subscribers: `${Math.floor(Math.random() * 20 + 2)}K`,
+              subscribers: `${subCount}K`,
               videosCount: 1,
               isFollowing: false,
               bio: `Official video channel & exclusive content for ${name}.`,
@@ -114,7 +116,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
   // ═════════════════════════════════════════════════════════════════════════
   if (selectedPerformer) {
     return (
-      <main className="flex-grow pt-4 lg:pt-8 px-3 sm:px-6 md:px-12 max-w-7xl mx-auto w-full lg:ml-64 pb-32">
+      <main className="flex-grow pt-4 lg:pt-8 px-3 sm:px-6 md:px-12 max-w-7xl mx-auto w-full lg:ml-64 pb-10">
         {/* Back Button */}
         <button
           type="button"
@@ -205,7 +207,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
   // VIEW 1: MAIN PORNSTARS DIRECTORY GRID — Reference design (2-col)
   // ═════════════════════════════════════════════════════════════════════════
   return (
-    <main className="flex-grow pt-0 pb-32 w-full lg:ml-64">
+    <main className="flex-grow pt-0 pb-10 w-full lg:ml-64">
       {/* Page Header */}
       <div className="px-3 sm:px-6 md:px-12 max-w-7xl mx-auto pt-6 md:pt-8 mb-4">
         <h1 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">

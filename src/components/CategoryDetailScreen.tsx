@@ -16,6 +16,7 @@ interface CategoryDetailScreenProps {
   categoryId: CategoryId;
   onSelectVideo: (video: Video) => void;
   onSelectCategory?: (id: CategoryId) => void;
+  onNavigate?: (screen: ScreenId) => void;
   onSelectSubtag?: (tag: string) => void;
   videos?: Video[];
   categories?: CategoryInfo[];
@@ -26,6 +27,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
   categoryId,
   onSelectVideo,
   onSelectCategory,
+  onNavigate,
   videos = VIDEOS,
   categories = CATEGORIES,
   userEmail,
@@ -159,6 +161,18 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
 
       {/* Hero Header Banner Section */}
       <section className="hero-banner-container relative h-[360px] md:h-[450px] w-full flex items-end p-6 md:p-12 overflow-hidden border-b border-[#353437]">
+        {/* Top Floating Back Button */}
+        <div className="absolute top-4 left-4 sm:top-6 sm:left-8 z-30">
+          <button
+            type="button"
+            onClick={() => onNavigate ? onNavigate('categories') : (onSelectCategory ? onSelectCategory('all') : undefined)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 text-white text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-lg hover:border-[#e0358d]"
+          >
+            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            <span>All Categories</span>
+          </button>
+        </div>
+
         <div className="absolute inset-0 bg-gradient-to-t from-[#131315] via-[#131315]/70 to-transparent z-10" />
         <div className="absolute inset-0 z-0">
           {(() => {

@@ -265,6 +265,45 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 </button>
               </li>
 
+              {/* Content Preference Filter (Straight / Gay / Lesbian) */}
+              <li className="px-5 py-3 border-b border-zinc-200 dark:border-white/5 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  <span className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm text-[#e0358d]">tune</span>
+                    <span>Content Filter</span>
+                  </span>
+                  <span className="text-[#e0358d] font-mono text-[9px] uppercase">{contentPreference}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10">
+                  {([
+                    { id: 'straight', label: 'Straight', icon: 'wc' },
+                    { id: 'gay', label: 'Gay', icon: 'male' },
+                    { id: 'lesbian', label: 'Lesbian', icon: 'female' },
+                  ] as const).map((pref) => {
+                    const isSelected = contentPreference === pref.id;
+                    return (
+                      <button
+                        key={pref.id}
+                        type="button"
+                        onClick={() => {
+                          onChangeContentPreference(pref.id);
+                          onClose();
+                          onNavigate('browse');
+                        }}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#e0358d] text-white shadow-sm font-extrabold'
+                            : 'text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-sm">{pref.icon}</span>
+                        <span>{pref.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </li>
+
               {/* Saved Videos / Bookmarks */}
               <li>
                 <button

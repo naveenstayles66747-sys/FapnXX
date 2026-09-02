@@ -740,6 +740,7 @@ export default function App() {
                     categoryId={selectedCategoryId}
                     onSelectVideo={handleSelectVideo}
                     onSelectCategory={handleSelectCategory}
+                    onNavigate={handleNavigate}
                     videos={filteredVideosList}
                     categories={categories}
                     userEmail={userEmail}
