@@ -9,7 +9,7 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
-  const scrollThreshold = 10;
+  const accumulatedDelta = useRef(0);
 
   useEffect(() => {
     let ticking = false;
@@ -19,21 +19,30 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
 
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          // Always stay visible when at the very top of the page (< 40px)
-          if (currentScrollY <= 40) {
+          // Always stay visible when at or near the top (< 45px)
+          if (currentScrollY <= 45) {
             setIsVisible(true);
+            accumulatedDelta.current = 0;
           } else {
             const diff = currentScrollY - lastScrollY.current;
-            if (Math.abs(diff) > scrollThreshold) {
-              if (diff > 0) {
-                // Scrolling down -> Smoothly slide down & hide
-                setIsVisible(false);
-              } else {
-                // Scrolling up -> Smoothly slide up & show
-                setIsVisible(true);
-              }
+
+            // Reset accumulation if scrolling direction flipped
+            if ((diff > 0 && accumulatedDelta.current < 0) || (diff < 0 && accumulatedDelta.current > 0)) {
+              accumulatedDelta.current = 0;
+            }
+
+            accumulatedDelta.current += diff;
+
+            // Require 35px of intentional downward scroll before sliding down
+            if (accumulatedDelta.current > 35) {
+              setIsVisible(false);
+            }
+            // Require 18px of upward scroll to slide back up
+            else if (accumulatedDelta.current < -18) {
+              setIsVisible(true);
             }
           }
+
           lastScrollY.current = Math.max(0, currentScrollY);
           ticking = false;
         });
@@ -47,9 +56,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
 
   return (
     <nav
-      className={`lg:hidden fixed bottom-0 left-0 w-full z-50 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border-t border-zinc-200 dark:border-white/10 shadow-2xl flex justify-around items-center py-2.5 px-4 pb-safe transition-all duration-300 ease-in-out transform ${
-        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+      className={`lg:hidden fixed bottom-0 left-0 w-full z-50 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border-t border-zinc-200 dark:border-white/10 shadow-2xl flex justify-around items-center py-2.5 px-4 pb-safe transition-transform duration-300 will-change-transform ${
+        isVisible ? 'translate-y-0' : 'translate-y-[115%] pointer-events-none'
       }`}
+      style={{
+        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        transitionDuration: '380ms',
+      }}
     >
       <button
         onClick={() => onNavigate('browse')}
