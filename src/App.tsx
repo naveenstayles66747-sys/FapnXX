@@ -260,10 +260,7 @@ export default function App() {
   // URL Helper to keep history push state synchronized for direct sharing & back/forward buttons
   const syncUrlWithState = useCallback((screen: ScreenId, videoId?: string, catId?: CategoryId) => {
     try {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('v');
-      url.searchParams.delete('cat');
-      url.searchParams.delete('s');
+      const url = new URL(window.location.origin + window.location.pathname);
 
       if (screen === 'video-detail' && videoId) {
         url.searchParams.set('v', videoId);
@@ -273,7 +270,7 @@ export default function App() {
         url.searchParams.set('s', screen);
       }
 
-      window.history.pushState({ screen, videoId, catId }, '', url.pathname + url.search);
+      window.history.pushState({ screen, videoId, catId }, '', url.pathname + (url.search || ''));
     } catch {
       // Fallback
     }
@@ -521,6 +518,7 @@ export default function App() {
       setContentPreference('straight');
       setCurrentScreen('browse');
     });
+    setStoredContentPreference('straight');
     syncUrlWithState('browse');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -541,6 +539,9 @@ export default function App() {
       }
       setCurrentScreen(screen);
     });
+    if (screen === 'browse') {
+      setStoredContentPreference('straight');
+    }
     syncUrlWithState(screen);
     // Instant scroll to top — like a fresh page load
     window.scrollTo(0, 0);
