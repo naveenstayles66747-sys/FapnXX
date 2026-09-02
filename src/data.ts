@@ -12,7 +12,7 @@ export const CATEGORIES: CategoryInfo[] = [
     id: 'amateur',
     name: 'Amateur',
     icon: 'person',
-    heroImage: 'https://ei.phncdn.com/videos/201010/28/84145/original/(m=eaAaGwObaaamqv)(mh=IRI5_kbbXf9tT_WE)12.jpg',
+    heroImage: 'https://ei.phncdn.com/videos/200911/06/284931/original/(m=eaAaGwObaaamqv)(mh=zXH88bIuRPF-q50n)2.jpg',
     description: 'Discover the most popular community-uploaded content, real couples, and raw cuts.'
   },
   {
@@ -26,14 +26,14 @@ export const CATEGORIES: CategoryInfo[] = [
     id: 'teen',
     name: 'Teen (18+)',
     icon: 'emergency',
-    heroImage: 'https://ei.phncdn.com/videos/201010/28/84967/original/(m=eaAaGwObaaamqv)(mh=Te-lE6wRMN2m3a-U)12.jpg',
+    heroImage: 'https://ei.phncdn.com/videos/201011/01/101918/original/(m=eaAaGwObaaamqv)(mh=dBpTZeazRjYVFda2)12.jpg',
     description: 'Young adult performers and vibrant, energetic cinematic encounters (18+).'
   },
   {
     id: 'anal',
     name: 'Anal',
     icon: 'settings_input_component',
-    heroImage: 'https://ei.phncdn.com/videos/201010/28/83412/original/(m=eaAaGwObaaamqv)(mh=ojxjUqCGQysJBXQk)12.jpg',
+    heroImage: 'https://ei.phncdn.com/videos/201102/17/163221/original/(m=eaAaGwObaaamqv)(mh=TBKK2MHrWNRO7d0w)13.jpg',
     description: 'High-intensity, premium adult productions and uncensored releases.'
   },
   {
@@ -75,14 +75,14 @@ export const CATEGORIES: CategoryInfo[] = [
     id: 'big-ass',
     name: 'Big Ass',
     icon: 'radio_button_checked',
-    heroImage: 'https://ei.phncdn.com/videos/201002/11/1026872/original/(m=eaAaGwObaaamqv)(mh=pdknOc8AJpWZiSEv)6.jpg',
+    heroImage: 'https://ei.phncdn.com/videos/201011/01/93959/original/(m=eaAaGwObaaamqv)(mh=kYK1UoOdGIRIwoP1)12.jpg',
     description: 'Curvy performers, thick silhouettes, and booty-focused scenes.'
   },
   {
     id: 'blowjob',
     name: 'Blowjob & Oral',
     icon: 'record_voice_over',
-    heroImage: 'https://ei.phncdn.com/videos/201010/28/85616/original/(m=eaAaGwObaaamqv)(mh=eVysX4hqzw0mBYVH)12.jpg',
+    heroImage: 'https://ei.phncdn.com/videos/201010/28/83323/original/(m=eaAaGwObaaamqv)(mh=MT5l6U1RfnXj7a4Y)12.jpg',
     description: 'Intense oral sex, deepthroat, facial, and POV oral encounters.'
   },
   {
@@ -173,7 +173,7 @@ export const CATEGORIES: CategoryInfo[] = [
     id: 'public',
     name: 'Public & Outdoor',
     icon: 'nature_people',
-    heroImage: 'https://ei.phncdn.com/videos/201006/17/1082087/original/(m=eaAaGwObaaamqv)(mh=9XUzUqsTInCurh0Q)10.jpg',
+    heroImage: 'https://ei.phncdn.com/videos/201010/28/84963/original/(m=eaAaGwObaaamqv)(mh=_YeVmrt9qT130dFp)14.jpg',
     description: 'Thrilling outdoor encounters, risky public spots, and flashing moments.'
   },
   {

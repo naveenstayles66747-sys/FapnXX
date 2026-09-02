@@ -3,17 +3,17 @@ import React from 'react';
 // Default high-quality fallbacks for categories (Authentic category-specific scene thumbnails)
 export const DEFAULT_CATEGORY_FALLBACKS: Record<string, string> = {
   trending: 'https://ei.phncdn.com/videos/201010/28/87259/original/(m=eaAaGwObaaamqv)(mh=QdlRHBFUcAcyGu20)14.jpg',
-  amateur: 'https://ei.phncdn.com/videos/201010/28/84145/original/(m=eaAaGwObaaamqv)(mh=IRI5_kbbXf9tT_WE)12.jpg',
+  amateur: 'https://ei.phncdn.com/videos/200911/06/284931/original/(m=eaAaGwObaaamqv)(mh=zXH88bIuRPF-q50n)2.jpg',
   milf: 'https://ei.phncdn.com/videos/201010/28/84820/original/(m=eaAaGwObaaamqv)(mh=BKm_F1sExn03YSeT)10.jpg',
-  teen: 'https://ei.phncdn.com/videos/201010/28/84967/original/(m=eaAaGwObaaamqv)(mh=Te-lE6wRMN2m3a-U)12.jpg',
-  anal: 'https://ei.phncdn.com/videos/201010/28/83412/original/(m=eaAaGwObaaamqv)(mh=ojxjUqCGQysJBXQk)12.jpg',
+  teen: 'https://ei.phncdn.com/videos/201011/01/101918/original/(m=eaAaGwObaaamqv)(mh=dBpTZeazRjYVFda2)12.jpg',
+  anal: 'https://ei.phncdn.com/videos/201102/17/163221/original/(m=eaAaGwObaaamqv)(mh=TBKK2MHrWNRO7d0w)13.jpg',
   lesbian: 'https://ei.phncdn.com/videos/201010/28/85147/original/(m=eaAaGwObaaamqv)(mh=Y6sLNJvSTmvOSuW9)12.jpg',
   gay: 'https://ei.phncdn.com/videos/201603/15/71141301/original/(m=eaAaGwObaaamqv)(mh=2yFTiQZRD7JfE52w)9.jpg',
   transgender: 'https://ei.phncdn.com/videos/201011/01/101881/original/(m=eaAaGwObaaamqv)(mh=R5MS1sIVFHjwXYNq)12.jpg',
   pov: 'https://ei.phncdn.com/videos/201603/18/71405651/original/(m=eaAaGwObaaamqv)(mh=Yhij6lXFA0OzfKnN)0.jpg',
   'big-tits': 'https://ei.phncdn.com/videos/200911/27/1004131/original/(m=eaAaGwObaaamqv)(mh=i6wBhU-qrBLmnsmq)11.jpg',
-  'big-ass': 'https://ei.phncdn.com/videos/201002/11/1026872/original/(m=eaAaGwObaaamqv)(mh=pdknOc8AJpWZiSEv)6.jpg',
-  blowjob: 'https://ei.phncdn.com/videos/201010/28/85616/original/(m=eaAaGwObaaamqv)(mh=eVysX4hqzw0mBYVH)12.jpg',
+  'big-ass': 'https://ei.phncdn.com/videos/201011/01/93959/original/(m=eaAaGwObaaamqv)(mh=kYK1UoOdGIRIwoP1)12.jpg',
+  blowjob: 'https://ei.phncdn.com/videos/201010/28/83323/original/(m=eaAaGwObaaamqv)(mh=MT5l6U1RfnXj7a4Y)12.jpg',
   creampie: 'https://ei.phncdn.com/videos/201010/28/84967/original/(m=eaAaGwObaaamqv)(mh=Te-lE6wRMN2m3a-U)12.jpg',
   threesome: 'https://ei.phncdn.com/videos/201011/01/94213/original/(m=eaAaGwObaaamqv)(mh=jlkJ7rchJwvfUpoA)12.jpg',
   interracial: 'https://ei.phncdn.com/videos/201001/19/1019106/original/(m=eaAaGwObaaamqv)(mh=BKQCo8wlykSzVkl5)12.jpg',
@@ -26,7 +26,7 @@ export const DEFAULT_CATEGORY_FALLBACKS: Record<string, string> = {
   hardcore: 'https://ei.phncdn.com/videos/201010/28/84964/original/(m=eaAaGwObaaamqv)(mh=HwFSif07hZZGOiQI)3.jpg',
   fetish: 'https://ei.phncdn.com/videos/201004/01/1046275/original/(m=eaAaGwObaaamqv)(mh=QPHav7KTLl7UDVtj)12.jpg',
   masturbation: 'https://ei.phncdn.com/videos/201010/28/84839/original/(m=eaAaGwObaaamqv)(mh=7FwK3JFcJetvSbTL)12.jpg',
-  public: 'https://ei.phncdn.com/videos/201006/17/1082087/original/(m=eaAaGwObaaamqv)(mh=9XUzUqsTInCurh0Q)10.jpg',
+  public: 'https://ei.phncdn.com/videos/201010/28/84963/original/(m=eaAaGwObaaamqv)(mh=_YeVmrt9qT130dFp)14.jpg',
   mature: 'https://ei.phncdn.com/videos/201011/01/94170/original/(m=eaAaGwObaaamqv)(mh=4a_-xE70-mOVrO4t)6.jpg',
 };
 

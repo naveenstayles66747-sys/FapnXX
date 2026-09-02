@@ -166,7 +166,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
       )}
 
       {/* Hero Header Banner Section */}
-      <section className="hero-banner-container relative h-[360px] md:h-[450px] w-full flex items-end p-6 md:p-12 overflow-hidden border-b border-[#353437]">
+      <section className="hero-banner-container relative min-h-[240px] sm:min-h-[300px] md:h-[380px] lg:h-[420px] w-full flex items-end p-4 sm:p-6 md:p-12 overflow-hidden border-b border-[#353437]">
         {/* Top Floating Back Button */}
         <div className="absolute top-4 left-4 sm:top-6 sm:left-8 z-30">
           <button
@@ -179,7 +179,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
           </button>
         </div>
 
-        <div className="absolute inset-0 bg-gradient-to-t from-[#131315] via-[#131315]/70 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#131315] via-[#131315]/60 to-[#131315]/20 z-10" />
         <div className="absolute inset-0 z-0">
           {(() => {
             const rawHero = getCategoryHeroImage(category);
@@ -195,7 +195,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
                 fetchPriority="high"
                 decoding="async"
                 onError={(e) => handleCategoryImageError(e, category.id)}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-center"
               />
             );
           })()}
