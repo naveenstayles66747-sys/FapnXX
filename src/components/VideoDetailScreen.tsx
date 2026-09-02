@@ -203,7 +203,14 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     setTimeout(() => setReportSuccessToast(false), 4000);
   };
 
-  const [recVisibleCount, setRecVisibleCount] = useState<number>(24);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const PAGE_SIZE = 16;
+  const relatedGridTopRef = useRef<HTMLDivElement>(null);
+
+  // Reset page to 1 when video changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [video.id]);
 
   // Stream buffering simulation
   const [isBufferingStream, setIsBufferingStream] = useState<boolean>(true);
@@ -230,7 +237,36 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     return deduplicateVideos(list);
   }, [videos, video.id, video.category, video.performerName, video.tags]);
 
-  const topRelatedVideos = relatedVideosWithScore.slice(0, recVisibleCount);
+  const totalPages = Math.max(1, Math.ceil(relatedVideosWithScore.length / PAGE_SIZE));
+  const effectiveCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const displayedRelatedVideos = React.useMemo(() => {
+    const start = (effectiveCurrentPage - 1) * PAGE_SIZE;
+    return deduplicateVideos(relatedVideosWithScore.slice(start, start + PAGE_SIZE));
+  }, [relatedVideosWithScore, effectiveCurrentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || newPage === effectiveCurrentPage) return;
+    React.startTransition(() => {
+      setCurrentPage(newPage);
+    });
+    if (relatedGridTopRef.current) {
+      relatedGridTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const getPageNumbers = (current: number, total: number): (number | string)[] => {
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 2) {
+      return [1, 2, 3, '...', total];
+    }
+    if (current >= total - 1) {
+      return [1, '...', total - 2, total - 1, total];
+    }
+    return [1, '...', current, '...', total];
+  };
 
   // Derive performers list from all possible fields
   const performersList: string[] = (() => {
@@ -478,16 +514,25 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
       </div>
 
       {/* ─────────────────────────────────────────────
-          RECOMMENDED VIDEOS — Direct Focus Below Player
+          RECOMMENDED VIDEOS — Direct Focus Below Player with Full Page Navigation
       ───────────────────────────────────────────── */}
-      <div className="px-3 sm:px-4 md:px-6 mt-3 mb-6">
-        <h3 className="text-sm md:text-base font-extrabold text-zinc-900 dark:text-white mb-3 flex items-center gap-2">
-          <span className="material-symbols-outlined text-rose-500 text-lg">grid_view</span>
-          <span>Recommended Videos</span>
-        </h3>
+      <div ref={relatedGridTopRef} className="px-3 sm:px-4 md:px-6 mt-4 mb-6">
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <h3 className="text-sm md:text-base font-extrabold text-zinc-900 dark:text-white flex items-center gap-2">
+            <span className="material-symbols-outlined text-rose-500 text-lg">grid_view</span>
+            <span>Recommended Videos</span>
+          </h3>
+
+          <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-xs text-zinc-600 dark:text-zinc-300 font-semibold shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>
+              Page <strong className="text-[#e0358d] font-extrabold">{effectiveCurrentPage}</strong> of <strong className="text-zinc-900 dark:text-white font-bold">{totalPages}</strong> ({displayedRelatedVideos.length} on this page • {relatedVideosWithScore.length.toLocaleString()} total)
+            </span>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5">
-          {(topRelatedVideos || []).map((relatedVideo, idx) => (
+          {(displayedRelatedVideos || []).map((relatedVideo, idx) => (
             <React.Fragment key={relatedVideo.id}>
               <div className="relative group">
                 <VideoCard
@@ -513,24 +558,88 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           ))}
 
           {/* Guaranteed Outstream Video placement if between 4 and 8 related videos */}
-          {topRelatedVideos && topRelatedVideos.length >= 4 && topRelatedVideos.length < 8 && (
+          {displayedRelatedVideos && displayedRelatedVideos.length >= 4 && displayedRelatedVideos.length < 8 && (
             <div key={`detail-outstream-fallback-${video.id}`} className="col-span-1">
               <OutstreamVideoCardAd key={`outstream-fallback-${video.id}`} reloadKey={video.id} />
             </div>
           )}
         </div>
 
-        {/* Load More Recommended Videos Button */}
-        {recVisibleCount < relatedVideosWithScore.length && (
-          <div className="mt-8 flex justify-center">
-            <button
-              type="button"
-              onClick={() => setRecVisibleCount((prev) => prev + 16)}
-              className="px-6 py-3 rounded-2xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#1c1b1f] dark:hover:bg-[#27272a] text-zinc-900 dark:text-white font-extrabold text-xs uppercase tracking-wider border border-zinc-300 dark:border-white/10 hover:border-[#e0358d] transition-all cursor-pointer active:scale-95 shadow-md flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-sm text-[#e0358d]">expand_more</span>
-              <span>Load More Recommended Videos ({relatedVideosWithScore.length - recVisibleCount} Remaining)</span>
-            </button>
+        {/* Sleek, Compact & Responsive Page Navigation for Recommended Videos */}
+        {totalPages > 1 && (
+          <div className="mt-8 mb-4 flex flex-col items-center justify-center gap-3.5 w-full">
+            {/* Fast Next Page Banner Button (Page N >> Page N+1) */}
+            {effectiveCurrentPage < totalPages && (
+              <button
+                type="button"
+                onClick={() => handlePageChange(effectiveCurrentPage + 1)}
+                className="w-full max-w-md py-3 px-6 rounded-2xl bg-gradient-to-r from-[#e0358d] to-[#ec4899] hover:from-[#ec4899] hover:to-[#f43f5e] text-white font-extrabold text-sm uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95 shadow-lg shadow-[#e0358d]/30 flex items-center justify-center gap-2 border border-white/20"
+              >
+                <span>Next Page ({effectiveCurrentPage + 1})</span>
+                <span className="material-symbols-outlined text-lg">arrow_forward</span>
+              </button>
+            )}
+
+            {/* Compact Single-Row Numbers Bar */}
+            <div className="flex items-center gap-1 sm:gap-2 justify-center py-2 px-2.5 sm:px-4 rounded-2xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 shadow-sm max-w-full">
+              {/* Previous Page Button */}
+              <button
+                type="button"
+                disabled={effectiveCurrentPage === 1}
+                onClick={() => handlePageChange(effectiveCurrentPage - 1)}
+                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl font-bold text-xs flex items-center justify-center transition-all ${
+                  effectiveCurrentPage === 1
+                    ? 'opacity-40 cursor-not-allowed text-zinc-400 dark:text-zinc-600'
+                    : 'cursor-pointer hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-800 dark:text-zinc-200 active:scale-95 border border-zinc-300 dark:border-white/10'
+                }`}
+                title="Previous Page"
+              >
+                <span className="material-symbols-outlined text-base">chevron_left</span>
+              </button>
+
+              {/* Compact Page Number Chips */}
+              {getPageNumbers(effectiveCurrentPage, totalPages).map((item, idx) => {
+                if (item === '...') {
+                  return (
+                    <span key={`dots-${idx}`} className="px-1 text-zinc-400 dark:text-zinc-500 font-bold text-xs">
+                      ...
+                    </span>
+                  );
+                }
+                const pageNum = item as number;
+                const isCurrent = pageNum === effectiveCurrentPage;
+
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center border ${
+                      isCurrent
+                        ? 'bg-[#e0358d] text-white border-[#e0358d] shadow-md shadow-[#e0358d]/40 scale-105 font-extrabold'
+                        : 'bg-white dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/15 text-zinc-800 dark:text-zinc-300 border-zinc-300 dark:border-white/10 hover:border-[#e0358d]'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              {/* Next Page Arrow Button */}
+              <button
+                type="button"
+                disabled={effectiveCurrentPage === totalPages}
+                onClick={() => handlePageChange(effectiveCurrentPage + 1)}
+                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl font-bold text-xs flex items-center justify-center transition-all ${
+                  effectiveCurrentPage === totalPages
+                    ? 'opacity-40 cursor-not-allowed text-zinc-400 dark:text-zinc-600'
+                    : 'cursor-pointer hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-800 dark:text-zinc-200 active:scale-95 border border-zinc-300 dark:border-white/10'
+                }`}
+                title="Next Page"
+              >
+                <span className="material-symbols-outlined text-base">chevron_right</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
