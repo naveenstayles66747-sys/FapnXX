@@ -13,6 +13,7 @@ import {
 } from '../utils/mediaHelper';
 import { deduplicateVideos } from '../utils/videoDeduplicator';
 import { smartSearch, hasRealMatches } from '../utils/searchEngine';
+import { filterVideosByOrientation } from '../utils/orientationClassifier';
 
 interface BrowseScreenProps {
   onSelectVideo: (video: Video) => void;
@@ -384,67 +385,9 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     }
   };
 
-  // Comprehensive Gender / Orientation Filter Engine
+  // High-Precision Gender & Orientation Filter Engine (Zero False-Positive Collisions)
   const genderFilteredVideos = React.useMemo(() => {
-    if (contentPreference === 'gay') {
-      const gayKeywords = [
-        'gay', 'twink', 'bear', 'daddy', 'male', 'men', 'boy', 'bareback', 
-        'gloryhole', 'femboy', 'hunk', 'jock', 'yaoi', 'mm', 'shemale'
-      ];
-      return activeVideos.filter((video) => {
-        if (!video) return false;
-        const catLower = (video.category || '').toLowerCase();
-        const catsLower = Array.isArray(video.categories) ? video.categories.map((c) => (c || '').toLowerCase()) : [];
-        if (catLower === 'gay' || catsLower.includes('gay')) return true;
-
-        const titleLower = (video.title || '').toLowerCase();
-        const descLower = (video.description || '').toLowerCase();
-        const tagsLower = Array.isArray(video.tags)
-          ? video.tags.map((t) => (typeof t === 'string' ? t.toLowerCase() : ''))
-          : [];
-
-        return gayKeywords.some(
-          (kw) =>
-            titleLower.includes(kw) ||
-            descLower.includes(kw) ||
-            tagsLower.some((t) => t.includes(kw))
-        );
-      });
-    }
-
-    if (contentPreference === 'lesbian') {
-      const lesbianKeywords = [
-        'lesbian', 'girl on girl', 'girls', 'tribbing', 'scissoring', 
-        'pussy licking', 'femdom', 'yuri', 'strapon', 'dildo', 'lez', 'women'
-      ];
-      return activeVideos.filter((video) => {
-        if (!video) return false;
-        const catLower = (video.category || '').toLowerCase();
-        const catsLower = Array.isArray(video.categories) ? video.categories.map((c) => (c || '').toLowerCase()) : [];
-        if (catLower === 'lesbian' || catsLower.includes('lesbian')) return true;
-
-        const titleLower = (video.title || '').toLowerCase();
-        const descLower = (video.description || '').toLowerCase();
-        const tagsLower = Array.isArray(video.tags)
-          ? video.tags.map((t) => (typeof t === 'string' ? t.toLowerCase() : ''))
-          : [];
-
-        return lesbianKeywords.some(
-          (kw) =>
-            titleLower.includes(kw) ||
-            descLower.includes(kw) ||
-            tagsLower.some((t) => t.includes(kw))
-        );
-      });
-    }
-
-    // Default 'straight' preference: exclude pure gay male videos from straight feed
-    return activeVideos.filter((v) => {
-      if (!v) return false;
-      const cat = (v.category || '').toLowerCase();
-      const cats = Array.isArray(v.categories) ? v.categories.map((c) => (c || '').toLowerCase()) : [];
-      return cat !== 'gay' && !cats.includes('gay');
-    });
+    return filterVideosByOrientation(activeVideos, contentPreference);
   }, [activeVideos, contentPreference]);
 
   // Trending calculation using Cloud Firestore data / genderFilteredVideos (no 404 API calls)
