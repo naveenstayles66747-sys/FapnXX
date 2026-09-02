@@ -58,7 +58,9 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   const [showOnStreamBanner, setShowOnStreamBanner] = useState(true);
 
   // Real-time Views Counter
-  const [currentViewsCount, setCurrentViewsCount] = useState<number>(() => video?.viewsCount || 1);
+  const [currentViewsCount, setCurrentViewsCount] = useState<number>(() =>
+    typeof video?.viewsCount === 'number' ? video.viewsCount : 0
+  );
   const [watchSeconds, setWatchSeconds] = useState<number>(0);
   const hasCountedRef = useRef<boolean>(false);
 
@@ -75,7 +77,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     const saved = getStoredSavedVideos().includes(video.id);
     setIsLiked(liked);
     setIsSaved(saved);
-    setCurrentViewsCount(video.viewsCount || 1);
+    setCurrentViewsCount(typeof video.viewsCount === 'number' ? video.viewsCount : 0);
     setLikeCount(typeof video.likesCount === 'number' ? video.likesCount : 0);
     if (!isGuest) {
       addStoredWatchHistory(video.id);

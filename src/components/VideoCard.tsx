@@ -31,12 +31,12 @@ const formatCardViews = (video: Video): string => {
     if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
     return `${n}`;
   }
-  return (video.views || "1").replace(/[^0-9KMk.]/g, "") || "1";
+  return (video.views || "0").replace(/[^0-9KMk.]/g, "") || "0";
 };
 
 const formatCardRating = (video: Video): string => {
   const likes = typeof video.likesCount === "number" ? video.likesCount : 0;
-  if (likes === 0) return "98%";
+  if (likes === 0) return "0%";
   const views = typeof video.viewsCount === "number" && video.viewsCount > 0 ? video.viewsCount : 1;
   const percent = Math.min(100, Math.max(0, Math.round((likes / views) * 100)));
   return `${percent}%`;
