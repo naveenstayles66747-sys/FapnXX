@@ -776,7 +776,12 @@ export class VideoService {
         if (firestoreCats.length > 0) {
           const mergedMap = new Map<string, CategoryInfo>();
           CATEGORIES.forEach((c) => mergedMap.set(c.id, c));
-          firestoreCats.forEach((c) => mergedMap.set(c.id, c));
+          firestoreCats.forEach((c) => {
+            const base = mergedMap.get(c.id);
+            const isValidHero = c.heroImage && !c.heroImage.includes('unsplash') && !c.heroImage.includes('placeholder') && !c.heroImage.includes('lh3.googleusercontent');
+            const heroImage = isValidHero ? c.heroImage : (base?.heroImage || `/images/categories/${c.id}.jpg`);
+            mergedMap.set(c.id, { ...base, ...c, heroImage });
+          });
           return Array.from(mergedMap.values());
         }
       }
@@ -805,7 +810,12 @@ export class VideoService {
             if (list.length > 0) {
               const mergedMap = new Map<string, CategoryInfo>();
               CATEGORIES.forEach((c) => mergedMap.set(c.id, c));
-              list.forEach((c) => mergedMap.set(c.id, c));
+              list.forEach((c) => {
+                const base = mergedMap.get(c.id);
+                const isValidHero = c.heroImage && !c.heroImage.includes('unsplash') && !c.heroImage.includes('placeholder') && !c.heroImage.includes('lh3.googleusercontent');
+                const heroImage = isValidHero ? c.heroImage : (base?.heroImage || `/images/categories/${c.id}.jpg`);
+                mergedMap.set(c.id, { ...base, ...c, heroImage });
+              });
               const finalList = Array.from(mergedMap.values());
               callback(finalList);
             }

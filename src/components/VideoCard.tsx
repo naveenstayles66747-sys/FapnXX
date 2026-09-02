@@ -72,7 +72,7 @@ const formatTimeAgo = (createdAt?: string, fallbackStr?: string): string => {
   return `${diffYear}y ago`;
 };
 
-const FALLBACK_THUMBNAIL = "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=800&auto=format&fit=crop";
+const FALLBACK_THUMBNAIL = "/images/categories/trending.jpg";
 
 // Extract exactly 10 percentage milestone frames (0%, 10%, 20%, ... 90%/100%)
 const extract10PercentageFrames = (rawFrames: string[]): string[] => {
