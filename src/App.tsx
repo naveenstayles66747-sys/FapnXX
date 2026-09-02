@@ -30,6 +30,7 @@ const AdManagementModal = lazy(() => import('./components/AdManagementModal').th
 const AdminPanelModal = lazy(() => import('./components/AdminPanelModal').then(m => ({ default: m.AdminPanelModal })));
 const SoftLoginModal = lazy(() => import('./components/SoftLoginModal').then(m => ({ default: m.SoftLoginModal })));
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from './data';
+import { deduplicateVideos } from './utils/videoDeduplicator';
 import { videoService } from './services/videoService';
 import { auth } from './services/firebaseConfig';
 import { onAuthStateChanged, onIdTokenChanged, signOut } from 'firebase/auth';
@@ -95,13 +96,9 @@ export default function App() {
   const [videosList, setVideosList] = useState<Video[]>(() => {
     const cached = getStoredCachedVideos();
     if (cached && cached.length >= VIDEOS.length) {
-      return cached;
+      return deduplicateVideos(cached);
     }
-    // Clean stale truncated cache and use full 1,316+ videos dataset
-    try {
-      localStorage.removeItem('fapnxx_cached_videos');
-    } catch {}
-    return VIDEOS;
+    return deduplicateVideos(VIDEOS);
   });
   const [banners, setBanners] = useState<LandingBanner[]>(() => {
     const cached = getStoredCachedBanners();
@@ -119,8 +116,8 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  // Main feed catalog: Serves all 1,316+ curated videos across all categories by default
-  const filteredVideosList = (videosList && videosList.length >= VIDEOS.length) ? videosList : VIDEOS;
+  // Main feed catalog: Serves all 1,950+ curated videos across all categories without duplicates
+  const filteredVideosList = deduplicateVideos((videosList && videosList.length >= VIDEOS.length) ? videosList : VIDEOS);
 
   // Real Firebase Auth & Custom Claims Observer
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
@@ -194,19 +191,21 @@ export default function App() {
 
     videoService.fetchVideos().then((v) => {
       if (v && Array.isArray(v) && v.length > 0) {
-        setVideosList(v);
-        setStoredCachedVideos(v);
+        const unique = deduplicateVideos(v);
+        setVideosList(unique);
+        setStoredCachedVideos(unique);
       }
     });
 
     // Real-time listener for views, likes, and video updates across all users worldwide
     const unsubscribe = videoService.subscribeToVideos((updatedVideos) => {
       if (updatedVideos && updatedVideos.length > 0) {
-        setVideosList(updatedVideos);
-        setStoredCachedVideos(updatedVideos);
+        const unique = deduplicateVideos(updatedVideos);
+        setVideosList(unique);
+        setStoredCachedVideos(unique);
         setSelectedVideo((prev) => {
           if (!prev) return prev;
-          const matched = updatedVideos.find((v) => v.id === prev.id);
+          const matched = unique.find((v) => v.id === prev.id);
           return matched || prev;
         });
       }

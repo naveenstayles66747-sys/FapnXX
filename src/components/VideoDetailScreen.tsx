@@ -9,6 +9,7 @@ import { CommentsSection } from './CommentsSection';
 import { useLanguage } from '../i18n/LanguageContext';
 import { videoService } from '../services/videoService';
 import { stopAllBackgroundMedia } from '../utils/mediaHelper';
+import { deduplicateVideos } from '../utils/videoDeduplicator';
 import {
   addStoredWatchHistory,
   getStoredLikedVideos,
@@ -212,9 +213,10 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     return () => clearTimeout(finish);
   }, [video.id]);
 
-  // Related videos engine (surfaces all relevant videos without cutting off)
+  // Related videos engine (surfaces all relevant videos without cutting off, strictly deduplicated)
   const relatedVideosWithScore = React.useMemo(() => {
-    const list = (videos || VIDEOS || [])
+    const rawList = deduplicateVideos(videos || VIDEOS || []);
+    const list = rawList
       .filter((v) => v && v.id !== video.id && !v.isTakenDown)
       .map((candidate) => {
         let matchScore = 50;
@@ -225,7 +227,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
         return { ...candidate, relevanceScore: Math.min(matchScore, 99) };
       });
     list.sort((a, b) => b.relevanceScore - a.relevanceScore);
-    return list;
+    return deduplicateVideos(list);
   }, [videos, video.id, video.category, video.performerName, video.tags]);
 
   const topRelatedVideos = relatedVideosWithScore.slice(0, recVisibleCount);

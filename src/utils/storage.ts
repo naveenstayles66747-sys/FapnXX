@@ -1,6 +1,7 @@
 import { db, auth } from '../services/firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
 import { ContentPreference } from '../types';
+import { deduplicateVideos } from './videoDeduplicator';
 
 const KEYS = {
   AGE_VERIFIED: 'indianfullxx_age_verified',
@@ -11,17 +12,19 @@ const KEYS = {
   THEME: 'indianfullxx_theme',
   CONTENT_PREFERENCE: 'indianfullxx_content_preference',
   DEVICE_UID: 'fapnxx_device_uid',
-  CACHED_VIDEOS: 'fapnxx_cached_videos',
+  CACHED_VIDEOS: 'fapnxx_cached_videos_v2',
   CACHED_BANNERS: 'fapnxx_cached_banners',
   // Legacy keys to purge
+  LEGACY_CACHED_VIDEOS_V1: 'fapnxx_cached_videos',
   LEGACY_CUSTOM_VIDEOS: 'indianfullxx_custom_videos',
   LEGACY_CUSTOM_CATEGORIES: 'indianfullxx_custom_categories',
   LEGACY_CUSTOM_BANNERS: 'indianfullxx_custom_banners',
   LEGACY_REPORTS: 'indianfullxx_dmca_reports',
 };
 
-// Proactively purge any legacy or truncated database content from localStorage so full 1,316 catalog loads
+// Proactively purge any legacy or truncated database content from localStorage so full 1,950 catalog loads
 try {
+  localStorage.removeItem(KEYS.LEGACY_CACHED_VIDEOS_V1);
   localStorage.removeItem(KEYS.LEGACY_CUSTOM_VIDEOS);
   localStorage.removeItem(KEYS.LEGACY_CUSTOM_CATEGORIES);
   localStorage.removeItem(KEYS.LEGACY_CUSTOM_BANNERS);
@@ -29,7 +32,7 @@ try {
   const cached = localStorage.getItem(KEYS.CACHED_VIDEOS);
   if (cached) {
     const parsed = JSON.parse(cached);
-    if (!Array.isArray(parsed) || parsed.length < 1300) {
+    if (!Array.isArray(parsed) || parsed.length < 1500) {
       localStorage.removeItem(KEYS.CACHED_VIDEOS);
     }
   }
@@ -81,8 +84,8 @@ export const getStoredCachedVideos = (): import('../types').Video[] => {
     const raw = localStorage.getItem(KEYS.CACHED_VIDEOS);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length >= 1300) {
-        return parsed;
+      if (Array.isArray(parsed) && parsed.length >= 1500) {
+        return deduplicateVideos(parsed);
       }
     }
   } catch {}
@@ -92,7 +95,8 @@ export const getStoredCachedVideos = (): import('../types').Video[] => {
 export const setStoredCachedVideos = (videos: import('../types').Video[]): void => {
   try {
     if (Array.isArray(videos) && videos.length > 0) {
-      localStorage.setItem(KEYS.CACHED_VIDEOS, JSON.stringify(videos));
+      const unique = deduplicateVideos(videos);
+      localStorage.setItem(KEYS.CACHED_VIDEOS, JSON.stringify(unique));
     }
   } catch {}
 };

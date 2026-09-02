@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Performer, Video } from '../types';
 import { VideoCard } from './VideoCard';
 import { AdBanner, NativeRecommendationAd } from './AdSpaces';
+import { deduplicateVideos } from '../utils/videoDeduplicator';
 
 interface PerformersScreenProps {
   videos?: Video[];
@@ -86,8 +87,9 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
   const performerVideos = useMemo<Video[]>(() => {
     if (!selectedPerformer) return [];
     const targetName = selectedPerformer.name.toLowerCase().trim();
+    const cleanVideos = deduplicateVideos(videos || []);
 
-    return (videos || []).filter((v) => {
+    const list = cleanVideos.filter((v) => {
       if (!v || v.isTakenDown) return false;
       const matchDirect = (v.performerName || '').toLowerCase().trim() === targetName;
       const matchActors =
@@ -103,6 +105,8 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
 
       return matchDirect || matchActors || matchActorsAlt || matchTitle || matchTags;
     });
+
+    return deduplicateVideos(list);
   }, [videos, selectedPerformer]);
 
   // ═════════════════════════════════════════════════════════════════════════

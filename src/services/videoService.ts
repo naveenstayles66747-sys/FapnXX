@@ -9,6 +9,7 @@ import {
   VideoComment,
 } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, INITIAL_VIDEOS } from '../data';
+import { deduplicateVideos } from '../utils/videoDeduplicator';
 import {
   getOrCreateDeviceId,
 } from '../utils/storage';
@@ -330,30 +331,20 @@ export class VideoService {
   }
 
   /**
-   * Helper to merge Firestore custom uploads/edits seamlessly with the complete 1,316+ curated video library
+   * Helper to merge Firestore custom uploads/edits seamlessly with the complete 1,950+ curated video library
    */
   private mergeWithInitialVideos(firestoreVideos: Video[], categoryFilter?: string): Video[] {
-    const map = new Map<string, Video>();
-    // 1. Seed complete 1,316 curated library
-    INITIAL_VIDEOS.forEach((v) => {
-      if (v && v.id) map.set(v.id, v);
-    });
-    // 2. Merge Firestore videos (user uploads, admin modifications, takedowns)
-    firestoreVideos.forEach((v) => {
-      if (v && v.id) {
-        if ((v as any).isTakenDown) {
-          map.delete(v.id);
-        } else {
-          map.set(v.id, v);
-        }
-      }
-    });
-    const all = Array.from(map.values());
+    // 1. Combine firestoreVideos (highest precedence for custom edits/uploads) and INITIAL_VIDEOS
+    const combined = [...firestoreVideos, ...INITIAL_VIDEOS];
+
+    // 2. Strict multi-key deduplication (filters duplicate IDs, viewkeys, embeds, thumbnails, and normalized titles)
+    const unique = deduplicateVideos(combined);
+
     if (categoryFilter && categoryFilter !== 'all') {
       const catLower = categoryFilter.toLowerCase();
-      return all.filter((v) => v.category?.toLowerCase() === catLower || v.categories?.map((c) => c.toLowerCase()).includes(catLower));
+      return unique.filter((v) => v.category?.toLowerCase() === catLower || v.categories?.map((c) => c.toLowerCase()).includes(catLower));
     }
-    return all;
+    return unique;
   }
 
   /**

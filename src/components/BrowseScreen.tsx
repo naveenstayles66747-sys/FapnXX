@@ -11,6 +11,7 @@ import {
   getOptimizedImageUrl,
   getResponsiveImageSrcSet,
 } from '../utils/mediaHelper';
+import { deduplicateVideos } from '../utils/videoDeduplicator';
 import { smartSearch, hasRealMatches } from '../utils/searchEngine';
 
 interface BrowseScreenProps {
@@ -49,11 +50,11 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const [isDurationDropdownOpen, setIsDurationDropdownOpen] = useState(false);
   const [durationFilter, setDurationFilter] = useState<'all' | 'short' | 'medium' | 'long'>('all');
   const PAGE_SIZE = 24;
-  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const videoGridTopRef = React.useRef<HTMLDivElement>(null);
 
   const sortDropdownRef = React.useRef<HTMLDivElement>(null);
   const durationDropdownRef = React.useRef<HTMLDivElement>(null);
-  const loadMoreTriggerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -68,14 +69,14 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Reset pagination on filter or search changes
+  // Reset page to 1 on filter, category, or search changes
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
+    setCurrentPage(1);
   }, [selectedCategory, searchQuery, sortBy, durationFilter]);
 
-  // Filter out any videos that have been taken down
+  // Filter out any videos that have been taken down and strictly deduplicate
   const activeVideos = React.useMemo(
-    () => (videos || []).filter((v) => v && typeof v === 'object' && !v.isTakenDown),
+    () => deduplicateVideos(videos || []),
     [videos]
   );
   const activeBanners = React.useMemo(
@@ -503,30 +504,43 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         return interestB - interestA;
       });
     }
-    return list;
+    return deduplicateVideos(list);
   }, [durationFilteredVideos, sortBy]);
 
-  // Infinite Scroll IntersectionObserver trigger
-  useEffect(() => {
-    const trigger = loadMoreTriggerRef.current;
-    if (!trigger) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && sortedVideos.length > visibleCount) {
-          setVisibleCount((prev) => Math.min(prev + 24, sortedVideos.length));
-        }
-      },
-      { rootMargin: '400px' }
-    );
-
-    observer.observe(trigger);
-    return () => observer.disconnect();
-  }, [sortedVideos.length, visibleCount]);
+  // Compute total pages and effective current page
+  const totalPages = Math.max(1, Math.ceil(sortedVideos.length / PAGE_SIZE));
+  const effectiveCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
 
   const displayedVideos = React.useMemo(() => {
-    return sortedVideos.slice(0, visibleCount);
-  }, [sortedVideos, visibleCount]);
+    const startIndex = (effectiveCurrentPage - 1) * PAGE_SIZE;
+    return deduplicateVideos(sortedVideos.slice(startIndex, startIndex + PAGE_SIZE));
+  }, [sortedVideos, effectiveCurrentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || newPage === effectiveCurrentPage) return;
+    React.startTransition(() => {
+      setCurrentPage(newPage);
+    });
+    // Smoothly scroll back to the top of the video grid section
+    if (videoGridTopRef.current) {
+      videoGridTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const getPageNumbers = (current: number, total: number): (number | string)[] => {
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (current >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
+  };
 
   const selectedCategoryObj = categories.find((c) => c.id === selectedCategory);
 
@@ -798,7 +812,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       )}
 
       {/* Video Grid Section */}
-      <section className="w-full">
+      <section ref={videoGridTopRef} className="w-full scroll-mt-20">
         <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
           <div className="flex items-center gap-2.5 flex-wrap">
             {/* Interactive Sort Dropdown Header */}
@@ -976,7 +990,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-xs text-zinc-600 dark:text-zinc-300 font-semibold shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>
-              Loaded <strong className="text-zinc-900 dark:text-white font-bold">{displayedVideos.length}</strong> of <strong className="text-[#e0358d] font-extrabold">{sortedVideos.length.toLocaleString()} Total Videos</strong>
+              Page <strong className="text-[#e0358d] font-extrabold">{effectiveCurrentPage}</strong> of <strong className="text-zinc-900 dark:text-white font-bold">{totalPages}</strong> ({displayedVideos.length} on this page • {sortedVideos.length.toLocaleString()} total)
             </span>
           </div>
         </div>
@@ -1009,58 +1023,85 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
               ))}
             </div>
 
-            {/* Pagination & Load More Controls */}
-            {sortedVideos.length > PAGE_SIZE && (
-              <div className="mt-10 mb-6 flex flex-col items-center justify-center gap-4">
-                {visibleCount < sortedVideos.length ? (
+            {/* Sleek, Compact & Responsive Page Navigation (No massive button clump) */}
+            {totalPages > 1 && (
+              <div className="mt-12 mb-8 flex flex-col items-center justify-center gap-4 w-full">
+                {/* Fast Next Page Banner Button (Page N >> Page N+1) */}
+                {effectiveCurrentPage < totalPages && (
                   <button
                     type="button"
-                    onClick={() => setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, sortedVideos.length))}
-                    className="px-8 py-3.5 rounded-2xl bg-[#e0358d] hover:bg-[#ec4899] text-white font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 shadow-lg shadow-[#e0358d]/30 flex items-center gap-2 border border-white/20"
+                    onClick={() => handlePageChange(effectiveCurrentPage + 1)}
+                    className="w-full max-w-md py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#e0358d] to-[#ec4899] hover:from-[#ec4899] hover:to-[#f43f5e] text-white font-extrabold text-sm uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95 shadow-xl shadow-[#e0358d]/30 flex items-center justify-center gap-2 border border-white/20"
                   >
-                    <span className="material-symbols-outlined text-base">expand_more</span>
-                    <span>Load More Videos ({sortedVideos.length - visibleCount} Remaining)</span>
+                    <span>Next Page ({effectiveCurrentPage + 1})</span>
+                    <span className="material-symbols-outlined text-lg">arrow_forward</span>
                   </button>
-                ) : (
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold flex items-center gap-1.5 bg-zinc-100 dark:bg-white/5 px-4 py-2 rounded-full border border-zinc-200 dark:border-white/10">
-                    <span className="material-symbols-outlined text-sm text-[#e0358d]">check_circle</span>
-                    <span>You have reached the end of the list ({sortedVideos.length} Total Videos)</span>
-                  </div>
                 )}
 
-                {/* Classic Numbered Page Selector */}
-                {(() => {
-                  const totalPages = Math.ceil(sortedVideos.length / PAGE_SIZE);
-                  if (totalPages <= 1) return null;
-                  const currentPage = Math.ceil(visibleCount / PAGE_SIZE);
+                {/* Compact Step-by-Step Numbers Bar */}
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center py-2.5 px-3 sm:px-5 rounded-2xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 shadow-sm">
+                  {/* Previous Page Button */}
+                  <button
+                    type="button"
+                    disabled={effectiveCurrentPage === 1}
+                    onClick={() => handlePageChange(effectiveCurrentPage - 1)}
+                    className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
+                      effectiveCurrentPage === 1
+                        ? 'opacity-40 cursor-not-allowed text-zinc-400 dark:text-zinc-600'
+                        : 'cursor-pointer hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-800 dark:text-zinc-200 active:scale-95 border border-zinc-300 dark:border-white/10'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-sm">chevron_left</span>
+                    <span className="hidden sm:inline">Prev</span>
+                  </button>
 
-                  return (
-                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center pt-2">
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold mr-2 font-mono">
-                        Page {currentPage} of {totalPages}:
-                      </span>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
-                        const isCurrent = pageNum === currentPage;
-                        return (
-                          <button
-                            key={pageNum}
-                            type="button"
-                            onClick={() => {
-                              setVisibleCount(pageNum * PAGE_SIZE);
-                            }}
-                            className={`w-9 h-9 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center border ${
-                              isCurrent
-                                ? 'bg-[#e0358d] text-white border-[#e0358d] shadow-md shadow-[#e0358d]/40 scale-105'
-                                : 'bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-800 dark:text-zinc-300 border-zinc-300 dark:border-white/10 hover:border-[#e0358d]'
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
+                  {/* Compact Page Number Chips */}
+                  {getPageNumbers(effectiveCurrentPage, totalPages).map((item, idx) => {
+                    if (item === '...') {
+                      return (
+                        <span key={`dots-${idx}`} className="px-1.5 text-zinc-400 dark:text-zinc-500 font-bold text-xs">
+                          ...
+                        </span>
+                      );
+                    }
+                    const pageNum = item as number;
+                    const isCurrent = pageNum === effectiveCurrentPage;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center border ${
+                          isCurrent
+                            ? 'bg-[#e0358d] text-white border-[#e0358d] shadow-md shadow-[#e0358d]/40 scale-105 font-extrabold'
+                            : 'bg-white dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/15 text-zinc-800 dark:text-zinc-300 border-zinc-300 dark:border-white/10 hover:border-[#e0358d]'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  {/* Next Page Button */}
+                  <button
+                    type="button"
+                    disabled={effectiveCurrentPage === totalPages}
+                    onClick={() => handlePageChange(effectiveCurrentPage + 1)}
+                    className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
+                      effectiveCurrentPage === totalPages
+                        ? 'opacity-40 cursor-not-allowed text-zinc-400 dark:text-zinc-600'
+                        : 'cursor-pointer hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-800 dark:text-zinc-200 active:scale-95 border border-zinc-300 dark:border-white/10'
+                    }`}
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <span className="material-symbols-outlined text-sm">chevron_right</span>
+                  </button>
+                </div>
+
+                <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                  Showing videos {((effectiveCurrentPage - 1) * PAGE_SIZE) + 1} - {Math.min(effectiveCurrentPage * PAGE_SIZE, sortedVideos.length)} of {sortedVideos.length.toLocaleString()} total
+                </div>
               </div>
             )}
           </>

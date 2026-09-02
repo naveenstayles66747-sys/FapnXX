@@ -10,6 +10,7 @@ import {
   getOptimizedImageUrl,
   getResponsiveImageSrcSet,
 } from '../utils/mediaHelper';
+import { deduplicateVideos } from '../utils/videoDeduplicator';
 
 interface CategoryDetailScreenProps {
   categoryId: CategoryId;
@@ -31,17 +32,32 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
 }) => {
   const category = (categories || []).find((c) => c && c.id === categoryId) || (categories && categories[0]) || CATEGORIES[0];
   const activeVideos = React.useMemo(
-    () => (videos || []).filter((v) => v && typeof v === 'object' && !v.isTakenDown),
+    () => deduplicateVideos(videos || []),
     [videos]
   );
   const categoryVideos = React.useMemo(() => {
-    return activeVideos.filter((v) => v && (v.category === categoryId || categoryId === 'trending'));
+    return deduplicateVideos(
+      activeVideos.filter(
+        (v) =>
+          v &&
+          (v.category === categoryId ||
+            categoryId === 'trending' ||
+            (Array.isArray(v.categories) && v.categories.includes(categoryId)))
+      )
+    );
   }, [activeVideos, categoryId]);
 
   const [selectedSubtag, setSelectedSubtag] = React.useState<string>('All');
   const [sortBy, setSortBy] = React.useState<'newest' | 'views'>('newest');
   const [isSavedCategory, setIsSavedCategory] = React.useState<boolean>(false);
   const [toastMsg, setToastMsg] = React.useState<string | null>(null);
+  const [currentPage, setCurrentPage] = React.useState<number>(1);
+  const PAGE_SIZE = 24;
+  const categoryGridTopRef = React.useRef<HTMLElement | null>(null);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryId, selectedSubtag, sortBy]);
 
   const handleToggleMyList = () => {
     setIsSavedCategory(!isSavedCategory);
@@ -52,12 +68,14 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
   const handleSelectSubtag = (tag: string) => {
     React.startTransition(() => {
       setSelectedSubtag(tag);
+      setCurrentPage(1);
     });
   };
 
   const handleToggleSort = () => {
     React.startTransition(() => {
       setSortBy((prev) => (prev === 'newest' ? 'views' : 'newest'));
+      setCurrentPage(1);
     });
   };
 
@@ -91,8 +109,41 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
       list.sort((a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime());
     }
 
-    return list;
+    return deduplicateVideos(list);
   }, [categoryVideos, selectedSubtag, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredCategoryVideos.length / PAGE_SIZE));
+  const effectiveCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const displayedCategoryVideos = React.useMemo(() => {
+    const start = (effectiveCurrentPage - 1) * PAGE_SIZE;
+    return deduplicateVideos(filteredCategoryVideos.slice(start, start + PAGE_SIZE));
+  }, [filteredCategoryVideos, effectiveCurrentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || newPage === effectiveCurrentPage) return;
+    React.startTransition(() => {
+      setCurrentPage(newPage);
+    });
+    if (categoryGridTopRef.current) {
+      categoryGridTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const getPageNumbers = (current: number, total: number): (number | string)[] => {
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (current >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
+  };
 
   const subtags = ['All', 'Exclusive', 'POV', '4K', 'Romance', 'Sensual'];
 
@@ -189,11 +240,16 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
       </section>
 
       {/* Content Collection Header */}
-      <section className="max-w-7xl mx-auto p-6 md:p-12">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold text-zinc-900 dark:text-[#e5e1e4]">
-            {selectedSubtag === 'All' ? 'Latest Uploads' : `${selectedSubtag} Selection`}
-          </h2>
+      <section ref={categoryGridTopRef as any} className="max-w-7xl mx-auto p-6 md:p-12 scroll-mt-20">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-zinc-900 dark:text-[#e5e1e4]">
+              {selectedSubtag === 'All' ? 'Latest Uploads' : `${selectedSubtag} Selection`}
+            </h2>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+              Page {effectiveCurrentPage} of {totalPages} ({displayedCategoryVideos.length} on this page • {filteredCategoryVideos.length} total)
+            </p>
+          </div>
           <div className="flex gap-4">
             <button
               onClick={handleToggleSort}
@@ -208,11 +264,11 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
         </div>
 
         {/* Video Card Layout */}
-        {filteredCategoryVideos.length > 0 ? (
+        {displayedCategoryVideos.length > 0 ? (
           <>
             {categoryId === 'pov' ? (
               <div className="flex flex-col gap-6">
-                {filteredCategoryVideos.map((video) => (
+                {displayedCategoryVideos.map((video) => (
                   <VideoCard
                     key={video.id}
                     video={video}
@@ -223,7 +279,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {filteredCategoryVideos.map((video, idx) => (
+                {displayedCategoryVideos.map((video, idx) => (
                   <React.Fragment key={video.id}>
                     <VideoCard
                       video={video}
@@ -244,6 +300,88 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
                     )}
                   </React.Fragment>
                 ))}
+              </div>
+            )}
+
+            {/* Sleek, Compact & Responsive Page Navigation (No massive button clump) */}
+            {totalPages > 1 && (
+              <div className="mt-12 mb-8 flex flex-col items-center justify-center gap-4 w-full">
+                {/* Fast Next Page Banner Button (Page N >> Page N+1) */}
+                {effectiveCurrentPage < totalPages && (
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(effectiveCurrentPage + 1)}
+                    className="w-full max-w-md py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#e0358d] to-[#ec4899] hover:from-[#ec4899] hover:to-[#f43f5e] text-white font-extrabold text-sm uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95 shadow-xl shadow-[#e0358d]/30 flex items-center justify-center gap-2 border border-white/20"
+                  >
+                    <span>Next Page ({effectiveCurrentPage + 1})</span>
+                    <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                  </button>
+                )}
+
+                {/* Compact Step-by-Step Numbers Bar */}
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center py-2.5 px-3 sm:px-5 rounded-2xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 shadow-sm">
+                  {/* Previous Page Button */}
+                  <button
+                    type="button"
+                    disabled={effectiveCurrentPage === 1}
+                    onClick={() => handlePageChange(effectiveCurrentPage - 1)}
+                    className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
+                      effectiveCurrentPage === 1
+                        ? 'opacity-40 cursor-not-allowed text-zinc-400 dark:text-zinc-600'
+                        : 'cursor-pointer hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-800 dark:text-zinc-200 active:scale-95 border border-zinc-300 dark:border-white/10'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-sm">chevron_left</span>
+                    <span className="hidden sm:inline">Prev</span>
+                  </button>
+
+                  {/* Compact Page Number Chips */}
+                  {getPageNumbers(effectiveCurrentPage, totalPages).map((item, idx) => {
+                    if (item === '...') {
+                      return (
+                        <span key={`dots-${idx}`} className="px-1.5 text-zinc-400 dark:text-zinc-500 font-bold text-xs">
+                          ...
+                        </span>
+                      );
+                    }
+                    const pageNum = item as number;
+                    const isCurrent = pageNum === effectiveCurrentPage;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center border ${
+                          isCurrent
+                            ? 'bg-[#e0358d] text-white border-[#e0358d] shadow-md shadow-[#e0358d]/40 scale-105 font-extrabold'
+                            : 'bg-white dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/15 text-zinc-800 dark:text-zinc-300 border-zinc-300 dark:border-white/10 hover:border-[#e0358d]'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  {/* Next Page Button */}
+                  <button
+                    type="button"
+                    disabled={effectiveCurrentPage === totalPages}
+                    onClick={() => handlePageChange(effectiveCurrentPage + 1)}
+                    className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
+                      effectiveCurrentPage === totalPages
+                        ? 'opacity-40 cursor-not-allowed text-zinc-400 dark:text-zinc-600'
+                        : 'cursor-pointer hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-800 dark:text-zinc-200 active:scale-95 border border-zinc-300 dark:border-white/10'
+                    }`}
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <span className="material-symbols-outlined text-sm">chevron_right</span>
+                  </button>
+                </div>
+
+                <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                  Showing videos {((effectiveCurrentPage - 1) * PAGE_SIZE) + 1} - {Math.min(effectiveCurrentPage * PAGE_SIZE, filteredCategoryVideos.length)} of {filteredCategoryVideos.length} total
+                </div>
               </div>
             )}
           </>
