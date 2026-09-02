@@ -1,6 +1,6 @@
 import React from 'react';
-import { CategoryId, CategoryInfo, ScreenId } from '../types';
-import { CATEGORIES } from '../data';
+import { CategoryId, CategoryInfo, ScreenId, Video } from '../types';
+import { CATEGORIES, VIDEOS } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface SidebarProps {
@@ -9,6 +9,7 @@ interface SidebarProps {
   onSelectCategory: (id: CategoryId) => void;
   onNavigate: (screen: ScreenId) => void;
   categories?: CategoryInfo[];
+  videos?: Video[];
   onOpenAdminPanel?: () => void;
   isAdminAuthenticated?: boolean;
   userEmail?: string | null;
@@ -21,12 +22,34 @@ const SidebarComponent: React.FC<SidebarProps> = ({
   onSelectCategory,
   onNavigate,
   categories = CATEGORIES,
+  videos = VIDEOS,
   onOpenAdminPanel,
   isAdminAuthenticated = false,
   userEmail,
   onOpenSoftLogin,
 }) => {
   const { t } = useLanguage();
+
+  const categoryCountMap = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    const list = videos && videos.length > 0 ? videos : VIDEOS;
+
+    categories.forEach((cat) => {
+      const lowerId = cat.id.toLowerCase();
+      if (lowerId === 'trending') {
+        counts[cat.id] = list.length;
+      } else {
+        const matching = list.filter((v) => {
+          if (!v) return false;
+          if (v.category && v.category.toLowerCase() === lowerId) return true;
+          if (Array.isArray(v.categories) && v.categories.some((c) => c && c.toLowerCase() === lowerId)) return true;
+          return false;
+        });
+        counts[cat.id] = matching.length > 0 ? matching.length : 75;
+      }
+    });
+    return counts;
+  }, [categories, videos]);
 
   return (
     <nav className="hidden lg:flex flex-col justify-between w-64 bg-zinc-50 dark:bg-[#1c1b1d] border-r border-zinc-200 dark:border-white/5 shrink-0 overflow-y-auto py-6 fixed left-0 top-20 h-[calc(100vh-5rem)] z-40 transition-colors">
@@ -63,6 +86,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({
             const isActive =
               (currentScreen === 'category-detail' && selectedCategoryId === cat.id) ||
               (currentScreen === 'browse' && selectedCategoryId === cat.id);
+            const count = categoryCountMap[cat.id] ?? 75;
 
             return (
               <li key={cat.id}>
@@ -70,19 +94,13 @@ const SidebarComponent: React.FC<SidebarProps> = ({
                   onClick={() => {
                     onSelectCategory(cat.id);
                   }}
-                  className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
                     isActive
                       ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
                       : 'text-zinc-800 dark:text-[#debec8] hover:bg-zinc-200/80 dark:hover:bg-white/5 hover:text-zinc-950 dark:hover:text-white'
                   }`}
                 >
-                  <span
-                    className="material-symbols-outlined text-xl"
-                    style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
-                  >
-                    {cat.icon}
-                  </span>
-                  <span>{cat.name}</span>
+                  <span className="truncate">{cat.name} - {count} videos</span>
                 </button>
               </li>
             );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CategoryId, CategoryInfo, ContentPreference, ScreenId } from '../types';
-import { CATEGORIES } from '../data';
+import { CategoryId, CategoryInfo, ContentPreference, ScreenId, Video } from '../types';
+import { CATEGORIES, VIDEOS } from '../data';
 import { ThemeMode } from '../utils/storage';
 
 interface MobileDrawerProps {
@@ -14,6 +14,7 @@ interface MobileDrawerProps {
   onOpenAdminPanel?: () => void;
   isAdminAuthenticated?: boolean;
   categories?: CategoryInfo[];
+  videos?: Video[];
   userEmail?: string | null;
   onSignOut?: () => void;
   onOpenSoftLogin?: (featureName?: string) => void;
@@ -34,6 +35,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onOpenAdminPanel,
   isAdminAuthenticated = false,
   categories = CATEGORIES,
+  videos = VIDEOS,
   userEmail,
   onSignOut,
   onOpenSoftLogin,
@@ -53,6 +55,27 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
       setIsVideosExpanded(false);
     }
   }, [isOpen]);
+
+  const categoryCountMap = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    const list = videos && videos.length > 0 ? videos : VIDEOS;
+
+    categories.forEach((cat) => {
+      const lowerId = cat.id.toLowerCase();
+      if (lowerId === 'trending') {
+        counts[cat.id] = list.length;
+      } else {
+        const matching = list.filter((v) => {
+          if (!v) return false;
+          if (v.category && v.category.toLowerCase() === lowerId) return true;
+          if (Array.isArray(v.categories) && v.categories.some((c) => c && c.toLowerCase() === lowerId)) return true;
+          return false;
+        });
+        counts[cat.id] = matching.length > 0 ? matching.length : 75;
+      }
+    });
+    return counts;
+  }, [categories, videos]);
 
   if (!isOpen) return null;
 
@@ -422,23 +445,25 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
               {/* Scrollable Categories List (Pornktube Style Clean Rows) */}
               <ul className="divide-y divide-zinc-200 dark:divide-white/5 text-sm py-1">
-                {categories.map((cat) => (
-                  <li key={cat.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleCategoryClick(cat.id)}
-                      className="w-full px-5 py-3 flex items-center justify-between text-zinc-900 dark:text-zinc-200 hover:text-[#ec4899] dark:hover:text-[#ffb0cd] hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer text-left active:bg-zinc-200 dark:active:bg-white/10"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-base text-[#ec4899]">
-                          {cat.icon || 'folder'}
-                        </span>
-                        <span className="font-bold text-xs capitalize">{cat.name}</span>
-                      </div>
-                      <span className="material-symbols-outlined text-xs text-zinc-400 dark:text-zinc-600">chevron_right</span>
-                    </button>
-                  </li>
-                ))}
+                {categories.map((cat) => {
+                  const count = categoryCountMap[cat.id] ?? 75;
+                  return (
+                    <li key={cat.id}>
+                      <button
+                        type="button"
+                        onClick={() => handleCategoryClick(cat.id)}
+                        className="w-full px-5 py-3.5 flex items-center justify-between text-zinc-900 dark:text-zinc-200 hover:text-[#ec4899] dark:hover:text-[#ffb0cd] hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer text-left active:bg-zinc-200 dark:active:bg-white/10 group"
+                      >
+                        <div className="flex items-center">
+                          <span className="font-bold text-xs capitalize text-zinc-800 dark:text-zinc-200 group-hover:text-[#ec4899] dark:group-hover:text-[#ffb0cd] transition-colors">
+                            {cat.name} - {count} {count === 1 ? 'video' : 'videos'}
+                          </span>
+                        </div>
+                        <span className="material-symbols-outlined text-xs text-zinc-400 dark:text-zinc-600 group-hover:text-[#ec4899] dark:group-hover:text-[#ffb0cd] transition-colors">chevron_right</span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

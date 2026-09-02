@@ -1,39 +1,60 @@
 import React from 'react';
 
-// Default high-quality fallbacks for categories (Optimized WebP with compression)
+// Default high-quality fallbacks for categories (Authentic category-specific scene thumbnails)
 export const DEFAULT_CATEGORY_FALLBACKS: Record<string, string> = {
-  trending: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=75&w=800&auto=format&fit=crop',
-  amateur: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=75&w=800&auto=format&fit=crop',
-  milf: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=75&w=800&auto=format&fit=crop',
-  teen: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=75&w=800&auto=format&fit=crop',
-  desi: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=75&w=800&auto=format&fit=crop',
-  anal: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=75&w=800&auto=format&fit=crop',
-  lesbian: 'https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?q=75&w=800&auto=format&fit=crop',
-  asian: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=75&w=800&auto=format&fit=crop',
-  pov: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=75&w=800&auto=format&fit=crop',
-  hentai: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=75&w=800&auto=format&fit=crop',
-  vr: 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?q=75&w=800&auto=format&fit=crop',
+  trending: 'https://ei.phncdn.com/videos/201010/28/87259/original/(m=eaAaGwObaaamqv)(mh=QdlRHBFUcAcyGu20)14.jpg',
+  amateur: 'https://ei.phncdn.com/videos/201010/28/84145/original/(m=eaAaGwObaaamqv)(mh=IRI5_kbbXf9tT_WE)12.jpg',
+  milf: 'https://ei.phncdn.com/videos/201010/28/84820/original/(m=eaAaGwObaaamqv)(mh=BKm_F1sExn03YSeT)10.jpg',
+  teen: 'https://ei.phncdn.com/videos/201010/28/84967/original/(m=eaAaGwObaaamqv)(mh=Te-lE6wRMN2m3a-U)12.jpg',
+  anal: 'https://ei.phncdn.com/videos/201010/28/83412/original/(m=eaAaGwObaaamqv)(mh=ojxjUqCGQysJBXQk)12.jpg',
+  lesbian: 'https://ei.phncdn.com/videos/201010/28/85147/original/(m=eaAaGwObaaamqv)(mh=Y6sLNJvSTmvOSuW9)12.jpg',
+  gay: 'https://ei.phncdn.com/videos/201603/15/71141301/original/(m=eaAaGwObaaamqv)(mh=2yFTiQZRD7JfE52w)9.jpg',
+  transgender: 'https://ei.phncdn.com/videos/201011/01/101881/original/(m=eaAaGwObaaamqv)(mh=R5MS1sIVFHjwXYNq)12.jpg',
+  pov: 'https://ei.phncdn.com/videos/201603/18/71405651/original/(m=eaAaGwObaaamqv)(mh=Yhij6lXFA0OzfKnN)0.jpg',
+  'big-tits': 'https://ei.phncdn.com/videos/200911/27/1004131/original/(m=eaAaGwObaaamqv)(mh=i6wBhU-qrBLmnsmq)11.jpg',
+  'big-ass': 'https://ei.phncdn.com/videos/201002/11/1026872/original/(m=eaAaGwObaaamqv)(mh=pdknOc8AJpWZiSEv)6.jpg',
+  blowjob: 'https://ei.phncdn.com/videos/201010/28/85616/original/(m=eaAaGwObaaamqv)(mh=eVysX4hqzw0mBYVH)12.jpg',
+  creampie: 'https://ei.phncdn.com/videos/201010/28/84967/original/(m=eaAaGwObaaamqv)(mh=Te-lE6wRMN2m3a-U)12.jpg',
+  threesome: 'https://ei.phncdn.com/videos/201011/01/94213/original/(m=eaAaGwObaaamqv)(mh=jlkJ7rchJwvfUpoA)12.jpg',
+  interracial: 'https://ei.phncdn.com/videos/201001/19/1019106/original/(m=eaAaGwObaaamqv)(mh=BKQCo8wlykSzVkl5)12.jpg',
+  ebony: 'https://ei.phncdn.com/videos/201011/01/101667/original/(m=eaAaGwObaaamqv)(mh=BCAp22BraGUyRNWX)12.jpg',
+  latina: 'https://ei.phncdn.com/videos/201011/01/94253/original/(m=eaAaGwObaaamqv)(mh=SfluOcmcGe_DTn_J)16.jpg',
+  desi: 'https://ei.phncdn.com/videos/201211/12/7192091/original/(m=eaAaGwObaaamqv)(mh=2pGU2ezR1rnfidnY)0.jpg',
+  asian: 'https://ei.phncdn.com/videos/201011/02/140512/original/(m=eaAaGwObaaamqv)(mh=v-krzEZ2Wg7QOlBr)4.jpg',
+  hentai: 'https://ei.phncdn.com/videos/201406/08/27862371/original/(m=eaAaGwObaaamqv)(mh=zeFI9UhXJzEm3fOV)1.jpg',
+  vr: 'https://ei.phncdn.com/videos/201603/17/71311701/original/(m=eaAaGwObaaamqv)(mh=E0t8E-zSttpuE4c0)0.jpg',
+  hardcore: 'https://ei.phncdn.com/videos/201010/28/84964/original/(m=eaAaGwObaaamqv)(mh=HwFSif07hZZGOiQI)3.jpg',
+  fetish: 'https://ei.phncdn.com/videos/201004/01/1046275/original/(m=eaAaGwObaaamqv)(mh=QPHav7KTLl7UDVtj)12.jpg',
+  masturbation: 'https://ei.phncdn.com/videos/201010/28/84839/original/(m=eaAaGwObaaamqv)(mh=7FwK3JFcJetvSbTL)12.jpg',
+  public: 'https://ei.phncdn.com/videos/201006/17/1082087/original/(m=eaAaGwObaaamqv)(mh=9XUzUqsTInCurh0Q)10.jpg',
+  mature: 'https://ei.phncdn.com/videos/201011/01/94170/original/(m=eaAaGwObaaamqv)(mh=4a_-xE70-mOVrO4t)6.jpg',
 };
 
 // Default high-quality fallbacks for 6 Home Banners (Optimized 1600px width with quality 75 for instant LCP)
 export const DEFAULT_BANNER_FALLBACKS: string[] = [
-  'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=75&w=1600&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?q=75&w=1600&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=75&w=1600&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=75&w=1600&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?q=75&w=1600&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=75&w=1600&auto=format&fit=crop',
+  'https://ei.phncdn.com/videos/201010/28/87259/original/(m=eaAaGwObaaamqv)(mh=QdlRHBFUcAcyGu20)14.jpg',
+  'https://ei.phncdn.com/videos/201010/28/84967/original/(m=eaAaGwObaaamqv)(mh=Te-lE6wRMN2m3a-U)12.jpg',
+  'https://ei.phncdn.com/videos/201010/28/84145/original/(m=eaAaGwObaaamqv)(mh=IRI5_kbbXf9tT_WE)12.jpg',
+  'https://ei.phncdn.com/videos/201010/28/83412/original/(m=eaAaGwObaaamqv)(mh=ojxjUqCGQysJBXQk)12.jpg',
+  'https://ei.phncdn.com/videos/201010/28/85147/original/(m=eaAaGwObaaamqv)(mh=Y6sLNJvSTmvOSuW9)12.jpg',
+  'https://ei.phncdn.com/videos/201010/28/85616/original/(m=eaAaGwObaaamqv)(mh=eVysX4hqzw0mBYVH)12.jpg',
 ];
 
 /**
  * Resolves the category hero image path:
- * 1. Checks if custom valid external URL (not placeholder) is set
- * 2. Directly uses CDN fallback to prevent 404 roundtrips
+ * 1. Checks if custom valid external URL (not placeholder / not unsplash) is set
+ * 2. Directly uses authentic CDN fallback to prevent 404 roundtrips
  */
 export function getCategoryHeroImage(category: { id: string; name?: string; heroImage?: string }): string {
   const slug = (category.id || category.name || 'default').toLowerCase().trim().replace(/\s+/g, '-');
   
-  if (category.heroImage && !category.heroImage.includes('lh3.googleusercontent.com') && !category.heroImage.includes('placeholder') && category.heroImage.startsWith('http')) {
+  if (
+    category.heroImage &&
+    !category.heroImage.includes('lh3.googleusercontent.com') &&
+    !category.heroImage.includes('placeholder') &&
+    !category.heroImage.includes('images.unsplash.com') &&
+    category.heroImage.startsWith('http')
+  ) {
     return category.heroImage;
   }
 

@@ -680,6 +680,7 @@ export default function App() {
             onOpenAdminPanel={() => setIsAdminModalOpen(true)}
             isAdminAuthenticated={isAdminAuthenticated}
             categories={categories}
+            videos={filteredVideosList}
             userEmail={userEmail}
             onSignOut={handleSignOut}
             onOpenSoftLogin={handleOpenSoftLogin}
@@ -696,6 +697,7 @@ export default function App() {
               onSelectCategory={handleSelectCategory}
               onNavigate={handleNavigate}
               categories={categories}
+              videos={filteredVideosList}
               onOpenAdminPanel={() => setIsAdminModalOpen(true)}
               isAdminAuthenticated={isAdminAuthenticated}
               userEmail={userEmail}
