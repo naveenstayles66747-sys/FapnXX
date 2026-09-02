@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { CategoryId, CategoryInfo, LandingBanner, Video } from '../types';
+import { CategoryId, CategoryInfo, ContentPreference, LandingBanner, Video } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { AdBanner, OutstreamVideoCardAd, NativeRecommendationAd } from './AdSpaces';
@@ -25,6 +25,8 @@ interface BrowseScreenProps {
   setSearchQuery?: (query: string) => void;
   sortBy?: 'latest' | 'most_popular' | 'top_rated';
   setSortBy?: (sort: 'latest' | 'most_popular' | 'top_rated') => void;
+  contentPreference?: ContentPreference;
+  onChangeContentPreference?: (pref: ContentPreference) => void;
 }
 
 export const BrowseScreen: React.FC<BrowseScreenProps> = ({
@@ -38,6 +40,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   setSearchQuery,
   sortBy: externalSortBy,
   setSortBy: externalSetSortBy,
+  contentPreference = 'straight',
+  onChangeContentPreference,
 }) => {
   const { t, language, setLanguage, currentLanguageMeta } = useLanguage();
   const [rankedTrendingVideos, setRankedTrendingVideos] = useState<Video[]>([]);
@@ -69,10 +73,10 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Reset page to 1 on filter, category, or search changes
+  // Reset page to 1 on filter, category, search, or contentPreference changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, searchQuery, sortBy, durationFilter]);
+  }, [selectedCategory, searchQuery, sortBy, durationFilter, contentPreference]);
 
   // Filter out any videos that have been taken down and strictly deduplicate
   const activeVideos = React.useMemo(
@@ -380,9 +384,72 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     }
   };
 
-  // Trending calculation using Cloud Firestore data / activeVideos (no 404 API calls)
+  // Comprehensive Gender / Orientation Filter Engine
+  const genderFilteredVideos = React.useMemo(() => {
+    if (contentPreference === 'gay') {
+      const gayKeywords = [
+        'gay', 'twink', 'bear', 'daddy', 'male', 'men', 'boy', 'bareback', 
+        'gloryhole', 'femboy', 'hunk', 'jock', 'yaoi', 'mm', 'shemale'
+      ];
+      return activeVideos.filter((video) => {
+        if (!video) return false;
+        const catLower = (video.category || '').toLowerCase();
+        const catsLower = Array.isArray(video.categories) ? video.categories.map((c) => (c || '').toLowerCase()) : [];
+        if (catLower === 'gay' || catsLower.includes('gay')) return true;
+
+        const titleLower = (video.title || '').toLowerCase();
+        const descLower = (video.description || '').toLowerCase();
+        const tagsLower = Array.isArray(video.tags)
+          ? video.tags.map((t) => (typeof t === 'string' ? t.toLowerCase() : ''))
+          : [];
+
+        return gayKeywords.some(
+          (kw) =>
+            titleLower.includes(kw) ||
+            descLower.includes(kw) ||
+            tagsLower.some((t) => t.includes(kw))
+        );
+      });
+    }
+
+    if (contentPreference === 'lesbian') {
+      const lesbianKeywords = [
+        'lesbian', 'girl on girl', 'girls', 'tribbing', 'scissoring', 
+        'pussy licking', 'femdom', 'yuri', 'strapon', 'dildo', 'lez', 'women'
+      ];
+      return activeVideos.filter((video) => {
+        if (!video) return false;
+        const catLower = (video.category || '').toLowerCase();
+        const catsLower = Array.isArray(video.categories) ? video.categories.map((c) => (c || '').toLowerCase()) : [];
+        if (catLower === 'lesbian' || catsLower.includes('lesbian')) return true;
+
+        const titleLower = (video.title || '').toLowerCase();
+        const descLower = (video.description || '').toLowerCase();
+        const tagsLower = Array.isArray(video.tags)
+          ? video.tags.map((t) => (typeof t === 'string' ? t.toLowerCase() : ''))
+          : [];
+
+        return lesbianKeywords.some(
+          (kw) =>
+            titleLower.includes(kw) ||
+            descLower.includes(kw) ||
+            tagsLower.some((t) => t.includes(kw))
+        );
+      });
+    }
+
+    // Default 'straight' preference: exclude pure gay male videos from straight feed
+    return activeVideos.filter((v) => {
+      if (!v) return false;
+      const cat = (v.category || '').toLowerCase();
+      const cats = Array.isArray(v.categories) ? v.categories.map((c) => (c || '').toLowerCase()) : [];
+      return cat !== 'gay' && !cats.includes('gay');
+    });
+  }, [activeVideos, contentPreference]);
+
+  // Trending calculation using Cloud Firestore data / genderFilteredVideos (no 404 API calls)
   useEffect(() => {
-    const scored = (activeVideos || []).filter((v) => v && typeof v === 'object').map((v) => {
+    const scored = (genderFilteredVideos || []).filter((v) => v && typeof v === 'object').map((v) => {
       let viewsNum = typeof v.viewsCount === 'number' && !isNaN(v.viewsCount) ? v.viewsCount : 500;
       if (typeof v.views === 'string') {
         const uppercaseV = v.views.toUpperCase();
@@ -399,17 +466,17 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     setRankedTrendingVideos(
       scored.slice(0, 8).map((v, i) => ({ ...v, trendingRank: i + 1 }))
     );
-  }, [activeVideos]);
+  }, [genderFilteredVideos]);
 
   // Deferred search engine — keeps UI typing and clicking lightning responsive
   const deferredSearchQuery = React.useDeferredValue(searchQuery);
   const cleanSearch = (deferredSearchQuery || '').trim();
   const searchedVideos = React.useMemo(() => {
-    return cleanSearch ? smartSearch(activeVideos, cleanSearch) : activeVideos;
-  }, [activeVideos, cleanSearch]);
+    return cleanSearch ? smartSearch(genderFilteredVideos, cleanSearch) : genderFilteredVideos;
+  }, [genderFilteredVideos, cleanSearch]);
   const isRealMatch = React.useMemo(() => {
-    return cleanSearch ? hasRealMatches(activeVideos, cleanSearch) : true;
-  }, [activeVideos, cleanSearch]);
+    return cleanSearch ? hasRealMatches(genderFilteredVideos, cleanSearch) : true;
+  }, [genderFilteredVideos, cleanSearch]);
 
   // Smart Language-Based Regional Recommendation Engine
   const regionalVideos = React.useMemo(() => {
@@ -546,18 +613,47 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
   return (
     <main className="w-full bg-white dark:bg-[#09090b] p-3 sm:p-6 md:p-12 pb-4 lg:ml-64 transition-colors">
-      {/* Search Header Banner (Ultra Clean Minimalist Reference Header) */}
-      {cleanSearch && (
-        <section className="mb-4 sm:mb-6 flex items-center justify-between">
-          <h2 className="text-lg sm:text-2xl font-black uppercase tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-            <span>{cleanSearch} PORN VIDEOS</span>
+      {/* Search / Gender Orientation Header Banner */}
+      {(cleanSearch || contentPreference === 'gay' || contentPreference === 'lesbian') && (
+        <section className="mb-4 sm:mb-6 flex items-center justify-between flex-wrap gap-3 p-4 rounded-2xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 shadow-sm animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5">
             <span
-              className="text-[#e0358d] dark:text-[#ec4899] material-symbols-outlined text-xl sm:text-2xl"
+              className="text-[#e0358d] dark:text-[#ec4899] material-symbols-outlined text-2xl sm:text-3xl"
               style={{ fontVariationSettings: "'FILL' 1" }}
             >
-              stars
+              {cleanSearch ? 'search' : contentPreference === 'gay' ? 'male' : 'female'}
             </span>
-          </h2>
+            <div>
+              <h2 className="text-base sm:text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
+                <span>
+                  {cleanSearch
+                    ? `${cleanSearch} PORN VIDEOS`
+                    : contentPreference === 'gay'
+                    ? 'GAY PORN VIDEOS'
+                    : 'LESBIAN PORN VIDEOS'}
+                </span>
+              </h2>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                {cleanSearch
+                  ? `Showing top matching videos for "${cleanSearch}"`
+                  : contentPreference === 'gay'
+                  ? 'Curated male-on-male, twink, hunk & gay adult video collection'
+                  : 'Curated girl-on-girl, sensual & lesbian adult video collection'}
+              </p>
+            </div>
+          </div>
+
+          {/* Reset Filter Button if Gender Orientation is Filtered */}
+          {!cleanSearch && (contentPreference === 'gay' || contentPreference === 'lesbian') && onChangeContentPreference && (
+            <button
+              type="button"
+              onClick={() => onChangeContentPreference('straight')}
+              className="text-xs font-bold text-zinc-700 dark:text-zinc-200 hover:text-[#e0358d] dark:hover:text-[#ec4899] flex items-center gap-1.5 bg-white dark:bg-white/10 hover:bg-zinc-200 dark:hover:bg-white/20 px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-white/10 transition-all cursor-pointer active:scale-95 shadow-xs"
+            >
+              <span className="material-symbols-outlined text-sm text-[#e0358d]">restart_alt</span>
+              <span>Back to Straight Feed</span>
+            </button>
+          )}
         </section>
       )}
 

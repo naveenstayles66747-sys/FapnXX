@@ -680,7 +680,7 @@ export default function App() {
             >
               {currentScreen === 'browse' && (
                 <BrowseScreen
-                  key={`browse-screen-${currentScreen}-${selectedCategoryId}-${searchQuery || 'all'}`}
+                  key={`browse-screen-${currentScreen}-${selectedCategoryId}-${searchQuery || 'all'}-${contentPreference}`}
                   onSelectVideo={handleSelectVideo}
                   onSelectCategory={handleSelectCategory}
                   selectedCategory={selectedCategoryId}
@@ -691,6 +691,8 @@ export default function App() {
                   setSearchQuery={setSearchQuery}
                   sortBy={browseSortBy}
                   setSortBy={setBrowseSortBy}
+                  contentPreference={contentPreference}
+                  onChangeContentPreference={handleChangeContentPreference}
                 />
               )}
 
@@ -752,6 +754,8 @@ export default function App() {
                     banners={banners}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
+                    contentPreference={contentPreference}
+                    onChangeContentPreference={handleChangeContentPreference}
                   />
                 )
               )}
