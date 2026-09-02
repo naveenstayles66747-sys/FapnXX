@@ -37,7 +37,14 @@ export const SiteFooter: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="col-span-2 lg:col-span-1 space-y-4">
-              <div className="flex items-center select-none">
+              <div
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  window.dispatchEvent(new CustomEvent('fapn-reset-home'));
+                }}
+                className="flex items-center select-none cursor-pointer active:scale-95 transition-transform"
+                title="Go to Homepage"
+              >
                 <h2 className="text-2xl font-black tracking-tight whitespace-nowrap">
                   <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
                   <span className="brand-letter-n font-black">n</span>

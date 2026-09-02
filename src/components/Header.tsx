@@ -9,6 +9,7 @@ import { SearchSuggestionsDropdown } from './SearchSuggestionsDropdown';
 interface HeaderProps {
   currentScreen: ScreenId;
   onNavigate: (screen: ScreenId) => void;
+  onLogoClick?: () => void;
   isMobileDrawerOpen?: boolean;
   onToggleMobileDrawer: () => void;
   onOpenSearch: () => void;
@@ -66,6 +67,7 @@ const GlobeIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) 
 export const Header: React.FC<HeaderProps> = ({
   currentScreen,
   onNavigate,
+  onLogoClick,
   isMobileDrawerOpen = false,
   onToggleMobileDrawer,
   onOpenSearch,
@@ -220,7 +222,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Brand Logo (Visible on Left in Desktop Web View) */}
         <div
-          onClick={() => onNavigate('browse')}
+          onClick={() => (onLogoClick ? onLogoClick() : onNavigate('browse'))}
           className="hidden lg:flex items-center cursor-pointer select-none active:scale-95 transition-transform"
         >
           <h1 className="text-xl md:text-2xl font-black tracking-tight whitespace-nowrap">
@@ -254,7 +256,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* 2. Mobile Center Logo (Only on Mobile screens < lg) */}
       <div className="lg:hidden absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-10 pointer-events-auto">
         <h1
-          onClick={() => onNavigate('browse')}
+          onClick={() => (onLogoClick ? onLogoClick() : onNavigate('browse'))}
           className="text-lg sm:text-xl font-black tracking-tight cursor-pointer select-none active:scale-95 transition-transform whitespace-nowrap"
         >
           <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>

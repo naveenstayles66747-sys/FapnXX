@@ -508,6 +508,23 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
+  const handleLogoClick = () => {
+    triggerPageTransition();
+    stopAllBackgroundMedia();
+    adManager.recordEligibleTransition('browse_logo', currentScreen);
+    refreshExoClickAds('navigate_logo_home');
+
+    startTransition(() => {
+      setSelectedCategoryId('all');
+      setSearchQuery('');
+      setSelectedVideo(null);
+      setContentPreference('straight');
+      setCurrentScreen('browse');
+    });
+    syncUrlWithState('browse');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleNavigate = (screen: ScreenId) => {
     triggerPageTransition();
     // Force stop any currently playing ad audio/video
@@ -520,6 +537,7 @@ export default function App() {
         setSelectedCategoryId('all');
         setSearchQuery('');
         setSelectedVideo(null);
+        setContentPreference('straight');
       }
       setCurrentScreen(screen);
     });
@@ -527,6 +545,15 @@ export default function App() {
     // Instant scroll to top — like a fresh page load
     window.scrollTo(0, 0);
   };
+
+  // Listen for global reset-to-home events (e.g. from SiteFooter logo)
+  useEffect(() => {
+    const handleResetHomeEvent = () => {
+      handleLogoClick();
+    };
+    window.addEventListener('fapn-reset-home', handleResetHomeEvent);
+    return () => window.removeEventListener('fapn-reset-home', handleResetHomeEvent);
+  }, []);
 
   if (!isAgeVerified) {
     return (
@@ -612,6 +639,7 @@ export default function App() {
           <Header
             currentScreen={currentScreen}
             onNavigate={handleNavigate}
+            onLogoClick={handleLogoClick}
             isMobileDrawerOpen={isMobileDrawerOpen}
             onToggleMobileDrawer={() => setIsMobileDrawerOpen((prev) => !prev)}
             onOpenSearch={() => {
