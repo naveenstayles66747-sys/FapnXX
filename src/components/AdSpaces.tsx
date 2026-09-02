@@ -769,7 +769,7 @@ export const NativeRecommendationAd: React.FC<{
               onMouseLeave={() => setHoveredIdx(null)}
               className="group flex flex-col w-full rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 active:scale-95 cursor-pointer bg-zinc-900/60 dark:bg-black/50 border border-zinc-200 dark:border-white/10 hover:border-[#ec4899] shadow-sm hover:shadow-[0_0_15px_rgba(236,72,153,0.3)]"
             >
-              <div className="relative w-full aspect-[16/9] rounded-lg sm:rounded-xl overflow-hidden bg-black flex items-center justify-center">
+              <div className="relative w-full aspect-[1610/1120] lg:aspect-[16/9] rounded-lg sm:rounded-xl overflow-hidden bg-black flex items-center justify-center">
                 <img
                   src={displayImage}
                   alt={item.title || "Sponsored Recommendation"}
