@@ -59,27 +59,27 @@ export const SiteFooter: React.FC = () => {
               <ul className="space-y-2">
                 {LEGAL_LINKS.map((link) => (
                   <li key={link.key}>
-                    <button type="button" onClick={() => setModal(link.key)} className="text-zinc-500 hover:text-rose-400 text-xs transition-colors text-left">{link.label}</button>
+                    <button type="button" onClick={() => setModal(link.key)} className="text-zinc-400 hover:text-[#e0358d] text-xs transition-colors text-left">{link.label}</button>
                   </li>
                 ))}
               </ul>
             </div>
             <div className="space-y-3">
               <h4 className="text-white font-bold text-xs uppercase tracking-widest">Company</h4>
-              <ul className="space-y-2 text-xs text-zinc-500">
-                <li><a href={"mailto:hello@" + DOMAIN} className="hover:text-rose-400">About Us</a></li>
-                <li><a href={"mailto:contact@" + DOMAIN} className="hover:text-rose-400">Contact</a></li>
-                <li><a href={"mailto:ads@" + DOMAIN} className="hover:text-rose-400">Advertise</a></li>
-                <li><a href={"mailto:abuse@" + DOMAIN} className="hover:text-rose-400">Report Abuse</a></li>
+              <ul className="space-y-2 text-xs text-zinc-400">
+                <li><a href={"mailto:hello@" + DOMAIN} className="hover:text-[#e0358d]">About Us</a></li>
+                <li><a href={"mailto:contact@" + DOMAIN} className="hover:text-[#e0358d]">Contact</a></li>
+                <li><a href={"mailto:ads@" + DOMAIN} className="hover:text-[#e0358d]">Advertise</a></li>
+                <li><a href={"mailto:abuse@" + DOMAIN} className="hover:text-[#e0358d]">Report Abuse</a></li>
               </ul>
             </div>
             <div className="space-y-3">
               <h4 className="text-white font-bold text-xs uppercase tracking-widest">Safety</h4>
-              <ul className="space-y-2 text-xs text-zinc-500">
-                <li><button type="button" onClick={() => setModal("removal")} className="hover:text-rose-400 text-left">Remove My Content</button></li>
-                <li><a href={"mailto:abuse@" + DOMAIN} className="hover:text-rose-400">Report Abuse</a></li>
-                <li><button type="button" onClick={() => setModal("dmca")} className="hover:text-rose-400 text-left">Copyright DMCA</button></li>
-                <li><a href="https://www.missingkids.org/gethelpnow/cybertipline" target="_blank" rel="noopener noreferrer" className="hover:text-rose-400">Report CSAM</a></li>
+              <ul className="space-y-2 text-xs text-zinc-400">
+                <li><button type="button" onClick={() => setModal("removal")} className="hover:text-[#e0358d] text-left">Remove My Content</button></li>
+                <li><a href={"mailto:abuse@" + DOMAIN} className="hover:text-[#e0358d]">Report Abuse</a></li>
+                <li><button type="button" onClick={() => setModal("dmca")} className="hover:text-[#e0358d] text-left">Copyright DMCA</button></li>
+                <li><a href="https://www.missingkids.org/gethelpnow/cybertipline" target="_blank" rel="noopener noreferrer" className="hover:text-[#e0358d]">Report CSAM</a></li>
               </ul>
               <div className="mt-3 pt-3 border-t border-white/[0.05]">
                 <p className="text-[10px] text-zinc-600 mb-1">Parental Controls:</p>

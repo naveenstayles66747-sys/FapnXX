@@ -32,7 +32,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({
     <nav className="hidden lg:flex flex-col justify-between w-64 bg-zinc-50 dark:bg-[#1c1b1d] border-r border-zinc-200 dark:border-white/5 shrink-0 overflow-y-auto py-6 fixed left-0 top-20 h-[calc(100vh-5rem)] z-40 transition-colors">
       <div className="space-y-2">
         <div className="px-6 mb-2">
-          <h2 className="text-xs font-semibold text-zinc-500 dark:text-[#debec8] uppercase tracking-widest">
+          <h2 className="text-xs font-bold text-zinc-700 dark:text-[#debec8] uppercase tracking-widest">
             {t.categories}
           </h2>
         </div>
@@ -46,7 +46,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({
               className={`sidebar-link-interactive w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide cursor-pointer transition-all ${
                 currentScreen === 'browse' && selectedCategoryId === 'all'
                   ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
-                  : 'text-zinc-600 dark:text-[#debec8] hover:bg-zinc-200/60 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white'
+                  : 'text-zinc-800 dark:text-[#debec8] hover:bg-zinc-200/80 dark:hover:bg-white/5 hover:text-zinc-950 dark:hover:text-white'
               }`}
             >
               <span
@@ -73,7 +73,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({
                   className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
                     isActive
                       ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
-                      : 'text-zinc-600 dark:text-[#debec8] hover:bg-zinc-200/60 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white'
+                      : 'text-zinc-800 dark:text-[#debec8] hover:bg-zinc-200/80 dark:hover:bg-white/5 hover:text-zinc-950 dark:hover:text-white'
                   }`}
                 >
                   <span
@@ -94,7 +94,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({
               className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
                 currentScreen === 'performers'
                   ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
-                  : 'text-zinc-600 dark:text-[#debec8] hover:bg-zinc-200/60 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white'
+                  : 'text-zinc-800 dark:text-[#debec8] hover:bg-zinc-200/80 dark:hover:bg-white/5 hover:text-zinc-950 dark:hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-xl">
