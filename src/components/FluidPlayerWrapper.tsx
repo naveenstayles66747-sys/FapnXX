@@ -326,6 +326,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               key={`iframe-${videoMountKey}`}
               src={currentVideoSrc}
               title={video?.title || "Video Stream"}
+              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
               allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
               allowFullScreen
               referrerPolicy="no-referrer-when-downgrade"
