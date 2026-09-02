@@ -2,32 +2,32 @@ import React from 'react';
 
 // Default high-quality fallbacks for categories (Authentic category-specific scene thumbnails)
 export const DEFAULT_CATEGORY_FALLBACKS: Record<string, string> = {
-  trending: 'https://ei.phncdn.com/videos/201010/28/87259/original/(m=eaAaGwObaaamqv)(mh=QdlRHBFUcAcyGu20)14.jpg',
-  amateur: 'https://ei.phncdn.com/videos/200911/06/284931/original/(m=eaAaGwObaaamqv)(mh=zXH88bIuRPF-q50n)2.jpg',
-  milf: 'https://ei.phncdn.com/videos/201010/28/84820/original/(m=eaAaGwObaaamqv)(mh=BKm_F1sExn03YSeT)10.jpg',
-  teen: 'https://ei.phncdn.com/videos/201011/01/101918/original/(m=eaAaGwObaaamqv)(mh=dBpTZeazRjYVFda2)12.jpg',
-  anal: 'https://ei.phncdn.com/videos/201102/17/163221/original/(m=eaAaGwObaaamqv)(mh=TBKK2MHrWNRO7d0w)13.jpg',
-  lesbian: 'https://ei.phncdn.com/videos/201010/28/85147/original/(m=eaAaGwObaaamqv)(mh=Y6sLNJvSTmvOSuW9)12.jpg',
-  gay: 'https://ei.phncdn.com/videos/201603/15/71141301/original/(m=eaAaGwObaaamqv)(mh=2yFTiQZRD7JfE52w)9.jpg',
-  transgender: 'https://ei.phncdn.com/videos/201011/01/101881/original/(m=eaAaGwObaaamqv)(mh=R5MS1sIVFHjwXYNq)12.jpg',
-  pov: 'https://ei.phncdn.com/videos/201603/18/71405651/original/(m=eaAaGwObaaamqv)(mh=Yhij6lXFA0OzfKnN)0.jpg',
-  'big-tits': 'https://ei.phncdn.com/videos/200911/27/1004131/original/(m=eaAaGwObaaamqv)(mh=i6wBhU-qrBLmnsmq)11.jpg',
-  'big-ass': 'https://ei.phncdn.com/videos/201011/01/93959/original/(m=eaAaGwObaaamqv)(mh=kYK1UoOdGIRIwoP1)12.jpg',
-  blowjob: 'https://ei.phncdn.com/videos/201010/28/83323/original/(m=eaAaGwObaaamqv)(mh=MT5l6U1RfnXj7a4Y)12.jpg',
-  creampie: 'https://ei.phncdn.com/videos/201010/28/84967/original/(m=eaAaGwObaaamqv)(mh=Te-lE6wRMN2m3a-U)12.jpg',
-  threesome: 'https://ei.phncdn.com/videos/201011/01/94213/original/(m=eaAaGwObaaamqv)(mh=jlkJ7rchJwvfUpoA)12.jpg',
-  interracial: 'https://ei.phncdn.com/videos/201001/19/1019106/original/(m=eaAaGwObaaamqv)(mh=BKQCo8wlykSzVkl5)12.jpg',
-  ebony: 'https://ei.phncdn.com/videos/201011/01/101667/original/(m=eaAaGwObaaamqv)(mh=BCAp22BraGUyRNWX)12.jpg',
-  latina: 'https://ei.phncdn.com/videos/201011/01/94253/original/(m=eaAaGwObaaamqv)(mh=SfluOcmcGe_DTn_J)16.jpg',
-  desi: 'https://ei.phncdn.com/videos/201211/12/7192091/original/(m=eaAaGwObaaamqv)(mh=2pGU2ezR1rnfidnY)0.jpg',
-  asian: 'https://ei.phncdn.com/videos/201011/02/140512/original/(m=eaAaGwObaaamqv)(mh=v-krzEZ2Wg7QOlBr)4.jpg',
-  hentai: 'https://ei.phncdn.com/videos/201406/08/27862371/original/(m=eaAaGwObaaamqv)(mh=zeFI9UhXJzEm3fOV)1.jpg',
-  vr: 'https://ei.phncdn.com/videos/201603/17/71311701/original/(m=eaAaGwObaaamqv)(mh=E0t8E-zSttpuE4c0)0.jpg',
-  hardcore: 'https://ei.phncdn.com/videos/201010/28/84964/original/(m=eaAaGwObaaamqv)(mh=HwFSif07hZZGOiQI)3.jpg',
-  fetish: 'https://ei.phncdn.com/videos/201004/01/1046275/original/(m=eaAaGwObaaamqv)(mh=QPHav7KTLl7UDVtj)12.jpg',
-  masturbation: 'https://ei.phncdn.com/videos/201010/28/84839/original/(m=eaAaGwObaaamqv)(mh=7FwK3JFcJetvSbTL)12.jpg',
-  public: 'https://ei.phncdn.com/videos/201010/28/84963/original/(m=eaAaGwObaaamqv)(mh=_YeVmrt9qT130dFp)14.jpg',
-  mature: 'https://ei.phncdn.com/videos/201011/01/94170/original/(m=eaAaGwObaaamqv)(mh=4a_-xE70-mOVrO4t)6.jpg',
+  trending: '/images/categories/trending.jpg',
+  amateur: '/images/categories/amateur.jpg',
+  milf: '/images/categories/milf.jpg',
+  teen: '/images/categories/teen.jpg',
+  anal: '/images/categories/anal.jpg',
+  lesbian: '/images/categories/lesbian.jpg',
+  gay: '/images/categories/gay.jpg',
+  transgender: '/images/categories/transgender.jpg',
+  pov: '/images/categories/pov.jpg',
+  'big-tits': '/images/categories/big-tits.jpg',
+  'big-ass': '/images/categories/big-ass.jpg',
+  blowjob: '/images/categories/blowjob.jpg',
+  creampie: '/images/categories/creampie.jpg',
+  threesome: '/images/categories/threesome.jpg',
+  interracial: '/images/categories/interracial.jpg',
+  ebony: '/images/categories/ebony.jpg',
+  latina: '/images/categories/latina.jpg',
+  desi: '/images/categories/desi.jpg',
+  asian: '/images/categories/asian.jpg',
+  hentai: '/images/categories/hentai.jpg',
+  vr: '/images/categories/vr.jpg',
+  hardcore: '/images/categories/hardcore.jpg',
+  fetish: '/images/categories/fetish.jpg',
+  masturbation: '/images/categories/masturbation.jpg',
+  public: '/images/categories/public.jpg',
+  mature: '/images/categories/mature.jpg',
 };
 
 // Default high-quality fallbacks for 6 Home Banners (Optimized 1600px width with quality 75 for instant LCP)
@@ -42,8 +42,8 @@ export const DEFAULT_BANNER_FALLBACKS: string[] = [
 
 /**
  * Resolves the category hero image path:
- * 1. Checks if custom valid external URL (not placeholder / not unsplash) is set
- * 2. Directly uses authentic CDN fallback to prevent 404 roundtrips
+ * 1. Checks if custom valid external URL or local static asset is set
+ * 2. Directly uses authentic fallback to prevent 404 roundtrips
  */
 export function getCategoryHeroImage(category: { id: string; name?: string; heroImage?: string }): string {
   const slug = (category.id || category.name || 'default').toLowerCase().trim().replace(/\s+/g, '-');
@@ -53,12 +53,12 @@ export function getCategoryHeroImage(category: { id: string; name?: string; hero
     !category.heroImage.includes('lh3.googleusercontent.com') &&
     !category.heroImage.includes('placeholder') &&
     !category.heroImage.includes('images.unsplash.com') &&
-    category.heroImage.startsWith('http')
+    (category.heroImage.startsWith('http') || category.heroImage.startsWith('/images/'))
   ) {
     return category.heroImage;
   }
 
-  return DEFAULT_CATEGORY_FALLBACKS[slug] || DEFAULT_CATEGORY_FALLBACKS['trending'];
+  return DEFAULT_CATEGORY_FALLBACKS[slug] || DEFAULT_CATEGORY_FALLBACKS['trending'] || `/images/categories/${slug}.jpg`;
 }
 
 /**
