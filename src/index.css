@@ -383,6 +383,8 @@ html.light .text-\[\#ffb0cd\] {
 .hero-banner-overlay *,
 .aspect-video .absolute,
 .aspect-video .absolute *,
+.category-card-item,
+.category-card-item *,
 .group.relative.h-64,
 .group.relative.h-64 *,
 html.light .hero-banner-container,
@@ -391,6 +393,8 @@ html.light .hero-banner-overlay,
 html.light .hero-banner-overlay *,
 html.light .aspect-video .absolute,
 html.light .aspect-video .absolute *,
+html.light .category-card-item,
+html.light .category-card-item *,
 html.light .group.relative.h-64,
 html.light .group.relative.h-64 *,
 html.light [class*="bg-gradient-to-t"] h1,
@@ -399,6 +403,27 @@ html.light [class*="bg-gradient-to-t"] h3,
 html.light [class*="bg-gradient-to-t"] p,
 html.light [class*="bg-gradient-to-t"] span {
   color: #ffffff !important;
+}
+
+/* Category Card Titles & Subtitles — Always Pure White with Drop Shadow */
+.category-card-title,
+.category-card-item h3,
+.group.relative.h-64 h3,
+html.light .category-card-title,
+html.light .category-card-item h3,
+html.light .group.relative.h-64 h3 {
+  color: #ffffff !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95), 0 0 16px rgba(0, 0, 0, 0.8) !important;
+}
+
+.category-card-desc,
+.category-card-item p,
+.group.relative.h-64 p,
+html.light .category-card-desc,
+html.light .category-card-item p,
+html.light .group.relative.h-64 p {
+  color: #f1f5f9 !important;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9) !important;
 }
 
 /* Specific Hero Banner Title & Subtitle overrides with absolute priority */
@@ -471,10 +496,13 @@ html.light [class*="bg-black/50"] * {
 .thumb-duration-badge,
 html.light .thumb-hd-badge,
 html.light .thumb-duration-badge,
+html.dark .thumb-hd-badge,
+html.dark .thumb-duration-badge,
 html.light .video-card-container .thumb-hd-badge,
 html.light .video-card-container .thumb-duration-badge {
   color: #ffffff !important;
-  background-color: rgba(0, 0, 0, 0.85) !important;
+  background-color: rgba(0, 0, 0, 0.88) !important;
+  border: none !important;
 }
 
 /* Eye Preview Button */
@@ -484,7 +512,7 @@ html.light .video-card-container .thumb-eye-btn {
   background-color: rgba(20, 20, 24, 0.75) !important;
   backdrop-filter: blur(10px) !important;
   -webkit-backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
@@ -495,6 +523,26 @@ html.light .thumb-eye-btn .material-symbols-outlined,
 html.light .video-card-container .thumb-eye-btn span,
 html.light .video-card-container .thumb-eye-btn .material-symbols-outlined {
   color: #ffffff !important;
+}
+
+/* Bottom Navigation Bar High Contrast in Light Mode */
+html.light nav[class*="fixed bottom-0"] {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-top: 1px solid #e2e8f0 !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+html.light nav[class*="fixed bottom-0"] button.inactive-nav,
+html.light nav[class*="fixed bottom-0"] button.inactive-nav span,
+html.light nav[class*="fixed bottom-0"] button:not(.active-nav) span {
+  color: #334155 !important; /* Dark charcoal/slate */
+  font-weight: 700 !important;
+}
+
+html.light nav[class*="fixed bottom-0"] button.active-nav,
+html.light nav[class*="fixed bottom-0"] button.active-nav span {
+  color: #d81b60 !important; /* Rich deep pink */
+  font-weight: 900 !important;
 }
 
 /* Card titles and stats below thumbnails in Dark Mode */

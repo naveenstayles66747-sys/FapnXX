@@ -30,7 +30,7 @@ export const CategoriesScreen: React.FC<CategoriesScreenProps> = ({
             onClick={() => {
               onSelectCategory(cat.id);
             }}
-            className="group relative h-64 rounded-2xl overflow-hidden border border-[#27272a] hover:border-[#ffb0cd] transition-all duration-300 cursor-pointer shadow-lg"
+            className="category-card-item group relative h-64 rounded-2xl overflow-hidden border border-zinc-200 dark:border-[#27272a] hover:border-[#ffb0cd] transition-all duration-300 cursor-pointer shadow-lg bg-[#09090b]"
             style={{ contentVisibility: 'auto', containIntrinsicSize: '256px' }}
           >
             <img
@@ -41,20 +41,20 @@ export const CategoriesScreen: React.FC<CategoriesScreenProps> = ({
               onError={(e) => handleCategoryImageError(e, cat.id)}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/50 to-transparent" />
 
-            <div className="absolute inset-0 p-6 flex flex-col justify-between">
+            <div className="absolute inset-0 p-6 flex flex-col justify-between z-10">
               <div className="flex justify-end">
-                <span className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-[#ffb0cd]">
+                <span className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-[#ffb0cd] shadow-md">
                   <span className="material-symbols-outlined">{cat.icon}</span>
                 </span>
               </div>
 
               <div>
-                <h3 className="text-2xl font-bold text-white mb-1 group-hover:text-[#ffb0cd] transition-colors">
+                <h3 className="category-card-title text-2xl font-black !text-white mb-1 group-hover:text-[#ffb0cd] transition-colors drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
                   {cat.name}
                 </h3>
-                <p className="text-xs text-[#debec8] line-clamp-2 leading-relaxed">
+                <p className="category-card-desc text-xs !text-zinc-200 line-clamp-2 leading-relaxed drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)] font-medium">
                   {cat.description}
                 </p>
               </div>

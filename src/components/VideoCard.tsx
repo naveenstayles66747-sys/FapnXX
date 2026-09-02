@@ -475,7 +475,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       style={{ contentVisibility: "auto", containIntrinsicSize: "240px" }}
     >
       {/* 16:9 Full-Width Clean Thumbnail Container */}
-      <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b]">
+      <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-zinc-200/80 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b]">
         {/* Default Static Thumbnail (Always acts as stable base layer) */}
         <img
           src={displayThumbnail}
@@ -503,16 +503,16 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         {/* Top-Right: Quality Badge (Hidden during preview for 100% clean video view) */}
         {!isPlayingPreview && (
           <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none transition-opacity duration-300">
-            <span className="thumb-hd-badge bg-black/85 text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+            <span className="thumb-hd-badge bg-black/85 text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-sm tracking-wide border-0">
               {video.quality || "HD"}
             </span>
           </div>
         )}
 
-        {/* Duration Badge (Hidden during preview) */}
+        {/* Duration Badge (Clean Borderless Pill Matching YouTube/Pornhub) */}
         {!isPlayingPreview && (
           <div
-            className={`thumb-duration-badge absolute bottom-2 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-white z-20 shadow-md transition-opacity duration-300 ${
+            className={`thumb-duration-badge absolute bottom-2 bg-black/85 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-white z-20 shadow-sm border-0 transition-opacity duration-300 ${
               isMobile ? "left-2" : "right-2"
             }`}
           >

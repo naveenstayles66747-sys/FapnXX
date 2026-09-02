@@ -66,10 +66,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
     >
       <button
         onClick={() => onNavigate('browse')}
-        className={`flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
+        className={`bottom-nav-btn flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
           currentScreen === 'browse'
-            ? 'text-[#e0358d] dark:text-[#ffb0cd] font-bold'
-            : 'text-zinc-800 dark:text-zinc-400 hover:text-[#e0358d] dark:hover:text-[#ffb0cd]'
+            ? 'active-nav text-[#d81b60] dark:text-[#ffb0cd] font-black'
+            : 'inactive-nav text-zinc-800 dark:text-zinc-400 hover:text-[#d81b60] dark:hover:text-[#ffb0cd] font-bold'
         }`}
       >
         <span
@@ -83,10 +83,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
 
       <button
         onClick={() => onNavigate('categories')}
-        className={`flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
+        className={`bottom-nav-btn flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
           currentScreen === 'categories' || currentScreen === 'category-detail'
-            ? 'text-[#e0358d] dark:text-[#ffb0cd] font-bold'
-            : 'text-zinc-800 dark:text-zinc-400 hover:text-[#e0358d] dark:hover:text-[#ffb0cd]'
+            ? 'active-nav text-[#d81b60] dark:text-[#ffb0cd] font-black'
+            : 'inactive-nav text-zinc-800 dark:text-zinc-400 hover:text-[#d81b60] dark:hover:text-[#ffb0cd] font-bold'
         }`}
       >
         <span
@@ -100,10 +100,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
 
       <button
         onClick={() => onNavigate('performers')}
-        className={`flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
+        className={`bottom-nav-btn flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
           currentScreen === 'performers'
-            ? 'text-[#e0358d] dark:text-[#ffb0cd] font-bold'
-            : 'text-zinc-800 dark:text-zinc-400 hover:text-[#e0358d] dark:hover:text-[#ffb0cd]'
+            ? 'active-nav text-[#d81b60] dark:text-[#ffb0cd] font-black'
+            : 'inactive-nav text-zinc-800 dark:text-zinc-400 hover:text-[#d81b60] dark:hover:text-[#ffb0cd] font-bold'
         }`}
       >
         <span
@@ -117,10 +117,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
 
       <button
         onClick={() => onNavigate('signin')}
-        className={`flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
+        className={`bottom-nav-btn flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
           currentScreen === 'signin'
-            ? 'text-[#e0358d] dark:text-[#ffb0cd] font-bold'
-            : 'text-zinc-800 dark:text-zinc-400 hover:text-[#e0358d] dark:hover:text-[#ffb0cd]'
+            ? 'active-nav text-[#d81b60] dark:text-[#ffb0cd] font-black'
+            : 'inactive-nav text-zinc-800 dark:text-zinc-400 hover:text-[#d81b60] dark:hover:text-[#ffb0cd] font-bold'
         }`}
       >
         <span
