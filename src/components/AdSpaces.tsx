@@ -699,6 +699,11 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
 interface NativeAdItem {
   image: string;
   optimum_image?: string;
+  video?: string;
+  video_url?: string;
+  video_preview?: string;
+  animated_image?: string;
+  gif_image?: string;
   url: string;
   title: string;
   description?: string;
@@ -754,11 +759,14 @@ export const NativeRecommendationAd: React.FC<{
           <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white tracking-wide">{title}</h3>
         </div>
       )}
-      {/* Clean 2x2 Grid on Mobile/Tablet, 4-Column on Desktop */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+      {/* Exact 2x2 Grid on Mobile/Tablet, 4-Column on Desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {items.map((item, idx) => {
           const isHovered = hoveredIdx === idx;
           const displayImage = item.optimum_image || item.image;
+          const animatedVideoSrc = item.video || item.video_url || item.video_preview;
+          const animatedGifSrc = item.animated_image || item.gif_image;
+
           return (
             <a
               key={idx}
@@ -767,30 +775,43 @@ export const NativeRecommendationAd: React.FC<{
               rel="noopener noreferrer"
               onMouseEnter={() => setHoveredIdx(idx)}
               onMouseLeave={() => setHoveredIdx(null)}
-              className="group flex flex-col w-full rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 active:scale-95 cursor-pointer bg-zinc-900/60 dark:bg-black/50 border border-zinc-200 dark:border-white/10 hover:border-[#ec4899] shadow-sm hover:shadow-[0_0_15px_rgba(236,72,153,0.3)]"
+              onTouchStart={() => setHoveredIdx(idx)}
+              className="group flex flex-col w-full rounded-xl overflow-hidden transition-all duration-300 active:scale-95 cursor-pointer bg-transparent hover:opacity-95"
             >
-              <div className="relative w-full aspect-[1610/1120] lg:aspect-[16/9] rounded-lg sm:rounded-xl overflow-hidden bg-black flex items-center justify-center">
-                <img
-                  src={displayImage}
-                  alt={item.title || "Sponsored Recommendation"}
-                  className={`w-full h-full object-cover transition-transform duration-500 ${
-                    isHovered ? "scale-105" : "scale-100"
-                  }`}
-                  loading="lazy"
-                  decoding="async"
-                />
+              <div className="relative w-full aspect-[1610/1120] lg:aspect-[16/9] rounded-lg overflow-hidden bg-zinc-900 flex items-center justify-center border border-zinc-200/80 dark:border-white/10 group-hover:border-[#ec4899] transition-colors">
+                {isHovered && animatedVideoSrc ? (
+                  <video
+                    src={animatedVideoSrc}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover transition-transform duration-500 scale-105"
+                  />
+                ) : (
+                  <img
+                    src={isHovered && animatedGifSrc ? animatedGifSrc : displayImage}
+                    alt={item.title || "Sponsored Recommendation"}
+                    className={`w-full h-full object-cover transition-transform duration-500 ${
+                      isHovered ? "scale-105" : "scale-100"
+                    }`}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+
+                {/* Subtle AD indicator on top right */}
+                <span className="absolute top-1.5 right-1.5 bg-black/75 text-zinc-200 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">
+                  AD
+                </span>
               </div>
 
-              <div className="video-info p-2 sm:p-2.5 space-y-1">
+              <div className="pt-1.5 px-0.5 space-y-0.5 flex flex-col justify-between flex-grow">
                 <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white group-hover:text-[#ec4899] transition-colors line-clamp-2 leading-snug">
                   {item.title || "Recommended Content"}
                 </h4>
-                <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 pt-1 border-t border-zinc-100 dark:border-white/5">
-                  <span className="flex items-center gap-1 text-rose-500 font-bold truncate max-w-[70%]">
-                    <span className="material-symbols-outlined text-[12px] sm:text-[13px]">verified</span>
-                    <span className="truncate">{item.brand || "Promoted"}</span>
-                  </span>
-                  <span className="text-[9px] sm:text-[10px] text-zinc-400 uppercase font-mono">HD</span>
+                <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-normal truncate mt-0.5">
+                  {item.brand || "Promoted"}
                 </div>
               </div>
             </a>
