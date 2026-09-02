@@ -545,7 +545,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const selectedCategoryObj = categories.find((c) => c.id === selectedCategory);
 
   return (
-    <main className="flex-1 overflow-y-auto bg-white dark:bg-[#09090b] p-4 md:p-12 pb-6 md:pb-10 lg:ml-64 transition-colors">
+    <main className="w-full bg-white dark:bg-[#09090b] p-3 sm:p-6 md:p-12 pb-4 lg:ml-64 transition-colors">
       {/* Search Header Banner (Ultra Clean Minimalist Reference Header) */}
       {cleanSearch && (
         <section className="mb-4 sm:mb-6 flex items-center justify-between">
@@ -1104,11 +1104,6 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                 </div>
               </div>
             )}
-
-            {/* In-Feed High-Converting Banner Ad Space before Footer */}
-            <div className="w-full max-w-4xl mx-auto my-4 overflow-hidden rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-1.5 shadow-sm">
-              <AdBanner key={`browse-bottom-banner-${selectedCategory}-${effectiveCurrentPage}`} reloadKey={`${selectedCategory}-${effectiveCurrentPage}`} />
-            </div>
           </>
         ) : (
           <div className="p-12 text-center text-zinc-600 dark:text-[#debec8] bg-zinc-50 dark:bg-[#1c1b1d] rounded-2xl border border-zinc-200 dark:border-[#353437] space-y-3 my-6">

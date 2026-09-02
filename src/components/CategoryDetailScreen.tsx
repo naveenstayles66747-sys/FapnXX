@@ -148,7 +148,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
   const subtags = ['All', 'Exclusive', 'POV', '4K', 'Romance', 'Sensual'];
 
   return (
-    <main className="w-full lg:ml-64 flex-1 pb-6 md:pb-10">
+    <main className="w-full lg:ml-64 pb-4">
       {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed bottom-24 right-6 z-50 flex items-center gap-2 bg-[#ec4899] text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs">
@@ -384,11 +384,6 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
                 </div>
               </div>
             )}
-
-            {/* In-Feed High-Converting Banner Ad Space before Footer */}
-            <div className="w-full max-w-4xl mx-auto my-4 overflow-hidden rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-1.5 shadow-sm">
-              <AdBanner key={`category-bottom-banner-${categoryId}-${effectiveCurrentPage}`} reloadKey={`${categoryId}-${effectiveCurrentPage}`} />
-            </div>
           </>
         ) : (
           <div className="p-12 text-center text-zinc-600 dark:text-[#debec8] bg-zinc-100 dark:bg-[#1c1b1d] rounded-2xl border border-zinc-200 dark:border-[#353437]">
