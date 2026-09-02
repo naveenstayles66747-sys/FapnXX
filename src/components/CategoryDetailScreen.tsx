@@ -133,22 +133,22 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
   };
 
   const getPageNumbers = (current: number, total: number): (number | string)[] => {
-    if (total <= 7) {
+    if (total <= 5) {
       return Array.from({ length: total }, (_, i) => i + 1);
     }
-    if (current <= 3) {
-      return [1, 2, 3, 4, '...', total];
+    if (current <= 2) {
+      return [1, 2, 3, '...', total];
     }
-    if (current >= total - 2) {
-      return [1, '...', total - 3, total - 2, total - 1, total];
+    if (current >= total - 1) {
+      return [1, '...', total - 2, total - 1, total];
     }
-    return [1, '...', current - 1, current, current + 1, '...', total];
+    return [1, '...', current, '...', total];
   };
 
   const subtags = ['All', 'Exclusive', 'POV', '4K', 'Romance', 'Sensual'];
 
   return (
-    <main className="w-full lg:ml-64 flex-1 pb-28">
+    <main className="w-full lg:ml-64 flex-1 pb-6 md:pb-10">
       {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed bottom-24 right-6 z-50 flex items-center gap-2 bg-[#ec4899] text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs">
@@ -303,43 +303,43 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
               </div>
             )}
 
-            {/* Sleek, Compact & Responsive Page Navigation (No massive button clump) */}
+            {/* Sleek, Compact & Responsive Page Navigation */}
             {totalPages > 1 && (
-              <div className="mt-12 mb-8 flex flex-col items-center justify-center gap-4 w-full">
+              <div className="mt-8 mb-4 flex flex-col items-center justify-center gap-3.5 w-full">
                 {/* Fast Next Page Banner Button (Page N >> Page N+1) */}
                 {effectiveCurrentPage < totalPages && (
                   <button
                     type="button"
                     onClick={() => handlePageChange(effectiveCurrentPage + 1)}
-                    className="w-full max-w-md py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#e0358d] to-[#ec4899] hover:from-[#ec4899] hover:to-[#f43f5e] text-white font-extrabold text-sm uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95 shadow-xl shadow-[#e0358d]/30 flex items-center justify-center gap-2 border border-white/20"
+                    className="w-full max-w-md py-3 px-6 rounded-2xl bg-gradient-to-r from-[#e0358d] to-[#ec4899] hover:from-[#ec4899] hover:to-[#f43f5e] text-white font-extrabold text-sm uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95 shadow-lg shadow-[#e0358d]/30 flex items-center justify-center gap-2 border border-white/20"
                   >
                     <span>Next Page ({effectiveCurrentPage + 1})</span>
                     <span className="material-symbols-outlined text-lg">arrow_forward</span>
                   </button>
                 )}
 
-                {/* Compact Step-by-Step Numbers Bar */}
-                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center py-2.5 px-3 sm:px-5 rounded-2xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 shadow-sm">
+                {/* Compact Single-Row Numbers Bar */}
+                <div className="flex items-center gap-1 sm:gap-2 justify-center py-2 px-2.5 sm:px-4 rounded-2xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 shadow-sm max-w-full">
                   {/* Previous Page Button */}
                   <button
                     type="button"
                     disabled={effectiveCurrentPage === 1}
                     onClick={() => handlePageChange(effectiveCurrentPage - 1)}
-                    className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
+                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl font-bold text-xs flex items-center justify-center transition-all ${
                       effectiveCurrentPage === 1
                         ? 'opacity-40 cursor-not-allowed text-zinc-400 dark:text-zinc-600'
                         : 'cursor-pointer hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-800 dark:text-zinc-200 active:scale-95 border border-zinc-300 dark:border-white/10'
                     }`}
+                    title="Previous Page"
                   >
-                    <span className="material-symbols-outlined text-sm">chevron_left</span>
-                    <span className="hidden sm:inline">Prev</span>
+                    <span className="material-symbols-outlined text-base">chevron_left</span>
                   </button>
 
                   {/* Compact Page Number Chips */}
                   {getPageNumbers(effectiveCurrentPage, totalPages).map((item, idx) => {
                     if (item === '...') {
                       return (
-                        <span key={`dots-${idx}`} className="px-1.5 text-zinc-400 dark:text-zinc-500 font-bold text-xs">
+                        <span key={`dots-${idx}`} className="px-1 text-zinc-400 dark:text-zinc-500 font-bold text-xs">
                           ...
                         </span>
                       );
@@ -352,7 +352,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
                         key={pageNum}
                         type="button"
                         onClick={() => handlePageChange(pageNum)}
-                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center border ${
+                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center border ${
                           isCurrent
                             ? 'bg-[#e0358d] text-white border-[#e0358d] shadow-md shadow-[#e0358d]/40 scale-105 font-extrabold'
                             : 'bg-white dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/15 text-zinc-800 dark:text-zinc-300 border-zinc-300 dark:border-white/10 hover:border-[#e0358d]'
@@ -368,14 +368,14 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
                     type="button"
                     disabled={effectiveCurrentPage === totalPages}
                     onClick={() => handlePageChange(effectiveCurrentPage + 1)}
-                    className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
+                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl font-bold text-xs flex items-center justify-center transition-all ${
                       effectiveCurrentPage === totalPages
                         ? 'opacity-40 cursor-not-allowed text-zinc-400 dark:text-zinc-600'
                         : 'cursor-pointer hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-800 dark:text-zinc-200 active:scale-95 border border-zinc-300 dark:border-white/10'
                     }`}
+                    title="Next Page"
                   >
-                    <span className="hidden sm:inline">Next</span>
-                    <span className="material-symbols-outlined text-sm">chevron_right</span>
+                    <span className="material-symbols-outlined text-base">chevron_right</span>
                   </button>
                 </div>
 
@@ -384,6 +384,11 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
                 </div>
               </div>
             )}
+
+            {/* In-Feed High-Converting Banner Ad Space before Footer */}
+            <div className="w-full max-w-4xl mx-auto my-4 overflow-hidden rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-1.5 shadow-sm">
+              <AdBanner key={`category-bottom-banner-${categoryId}-${effectiveCurrentPage}`} reloadKey={`${categoryId}-${effectiveCurrentPage}`} />
+            </div>
           </>
         ) : (
           <div className="p-12 text-center text-zinc-600 dark:text-[#debec8] bg-zinc-100 dark:bg-[#1c1b1d] rounded-2xl border border-zinc-200 dark:border-[#353437]">
