@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { CategoryId, CategoryInfo, ScreenId, Video } from '../types';
 import { CATEGORIES, VIDEOS } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';

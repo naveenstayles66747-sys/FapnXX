@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CategoryId, CategoryInfo, ContentPreference, ScreenId, Video } from '../types';
 import { CATEGORIES, VIDEOS } from '../data';
 import { ThemeMode } from '../utils/storage';

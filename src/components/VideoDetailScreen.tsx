@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { DMCAReport, Video } from '../types';
 import { VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';

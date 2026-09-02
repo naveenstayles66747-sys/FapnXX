@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo, useRef, startTransition } from 'react';
 import { CategoryId, CategoryInfo, Video } from '../types';
 import { CATEGORIES, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
