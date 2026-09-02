@@ -696,60 +696,80 @@ export const UnderPlayerBanner: React.FC<{ className?: string; reloadKey?: strin
  * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile - Zone ID: 6010176)
  * Official ExoClick HTML5 Native Video Widget with Auto-Hover Preview & Touch Scrub
  */
-interface NativeAdItem {
-  image: string;
-  optimum_image?: string;
-  video?: string;
-  video_url?: string;
-  video_preview?: string;
-  animated_image?: string;
-  gif_image?: string;
-  url: string;
-  title: string;
-  description?: string;
-  brand?: string;
-  size?: string;
-}
-
 /**
  * Native Recommendation Ad Widget (Multi-device: Desktop, Tablet, Mobile - Zone ID: 6010176)
- * Instant Live Feed with Rich Animated Thumbnails & Interactive Hover/Touch Previews
+ * Official ExoClick Recommendation Widget with Auto-Animated Live Previews on Hover/Touch
  */
 export const NativeRecommendationAd: React.FC<{
   className?: string;
   title?: string;
   reloadKey?: string | number;
 }> = ({ className = "", title = "Sponsored Recommendations", reloadKey }) => {
-  const [items, setItems] = useState<NativeAdItem[]>([]);
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const zoneId = AD_ZONES.NATIVE_RECOMMENDED || "6010176";
 
-  const fetchFreshAds = useCallback(() => {
-    const cb = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    fetch(`https://syndication.realsrv.com/splash.php?idzone=${zoneId}&type=20&cb=${cb}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && Array.isArray(data.data) && data.data.length > 0) {
-          setItems(data.data.slice(0, 4));
-        }
-      })
-      .catch((err) => {
-        console.warn("[ExoClick] Native recommendation fetch error:", err);
-      });
+  const renderAd = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    try {
+      el.innerHTML = "";
+
+      // Ensure global ad-provider script exists
+      if (!document.getElementById("exoclick-global-ad-provider")) {
+        const sdk = document.createElement("script");
+        sdk.id = "exoclick-global-ad-provider";
+        sdk.type = "application/javascript";
+        sdk.async = true;
+        sdk.src = "https://a.magsrv.com/ad-provider.js";
+        document.head.appendChild(sdk);
+      }
+
+      // Official ExoClick Recommendation ins element
+      const ins = document.createElement("ins");
+      ins.className = `eas${AD_ZONES.SITE_HASH}20`; // eas6a97888e20
+      ins.setAttribute("data-zoneid", zoneId);
+      ins.style.display = "block";
+      ins.style.width = "100%";
+      ins.style.margin = "0 auto";
+      el.appendChild(ins);
+
+      // Trigger script
+      const triggerScript = document.createElement("script");
+      triggerScript.type = "application/javascript";
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
+
+      const triggerServe = () => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      };
+
+      triggerServe();
+      setTimeout(triggerServe, 100);
+      setTimeout(triggerServe, 400);
+      setTimeout(triggerServe, 1000);
+      setTimeout(triggerServe, 2000);
+    } catch (e) {
+      console.warn("[ExoClick] Native recommendation widget mount error:", e);
+    }
   }, [zoneId]);
 
   useEffect(() => {
-    fetchFreshAds();
-    const handleRefresh = () => fetchFreshAds();
+    renderAd();
+    const handleRefresh = () => renderAd();
     window.addEventListener("exoclick-refresh-ads", handleRefresh);
     window.addEventListener("popstate", handleRefresh);
+    window.addEventListener("pageshow", handleRefresh);
     return () => {
       window.removeEventListener("exoclick-refresh-ads", handleRefresh);
       window.removeEventListener("popstate", handleRefresh);
+      window.removeEventListener("pageshow", handleRefresh);
     };
-  }, [fetchFreshAds, reloadKey]);
-
-  if (items.length === 0) return null;
+  }, [renderAd, reloadKey]);
 
   return (
     <section className={`native-recommendation-wrapper w-full my-4 ${className}`}>
@@ -759,65 +779,7 @@ export const NativeRecommendationAd: React.FC<{
           <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white tracking-wide">{title}</h3>
         </div>
       )}
-      {/* Exact 2x2 Grid on Mobile/Tablet, 4-Column on Desktop */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {items.map((item, idx) => {
-          const isHovered = hoveredIdx === idx;
-          const displayImage = item.optimum_image || item.image;
-          const animatedVideoSrc = item.video || item.video_url || item.video_preview;
-          const animatedGifSrc = item.animated_image || item.gif_image;
-
-          return (
-            <a
-              key={idx}
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onMouseEnter={() => setHoveredIdx(idx)}
-              onMouseLeave={() => setHoveredIdx(null)}
-              onTouchStart={() => setHoveredIdx(idx)}
-              className="group flex flex-col w-full rounded-xl overflow-hidden transition-all duration-300 active:scale-95 cursor-pointer bg-transparent hover:opacity-95"
-            >
-              <div className="relative w-full aspect-[1610/1120] lg:aspect-[16/9] rounded-lg overflow-hidden bg-zinc-900 flex items-center justify-center border border-zinc-200/80 dark:border-white/10 group-hover:border-[#ec4899] transition-colors">
-                {isHovered && animatedVideoSrc ? (
-                  <video
-                    src={animatedVideoSrc}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover transition-transform duration-500 scale-105"
-                  />
-                ) : (
-                  <img
-                    src={isHovered && animatedGifSrc ? animatedGifSrc : displayImage}
-                    alt={item.title || "Sponsored Recommendation"}
-                    className={`w-full h-full object-cover transition-transform duration-500 ${
-                      isHovered ? "scale-105" : "scale-100"
-                    }`}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                )}
-
-                {/* Subtle AD indicator on top right */}
-                <span className="absolute top-1.5 right-1.5 bg-black/75 text-zinc-200 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">
-                  AD
-                </span>
-              </div>
-
-              <div className="pt-1.5 px-0.5 space-y-0.5 flex flex-col justify-between flex-grow">
-                <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white group-hover:text-[#ec4899] transition-colors line-clamp-2 leading-snug">
-                  {item.title || "Recommended Content"}
-                </h4>
-                <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-normal truncate mt-0.5">
-                  {item.brand || "Promoted"}
-                </div>
-              </div>
-            </a>
-          );
-        })}
-      </div>
+      <div ref={containerRef} className="w-full min-h-[160px] overflow-hidden" />
     </section>
   );
 };
