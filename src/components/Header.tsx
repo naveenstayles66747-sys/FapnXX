@@ -225,11 +225,10 @@ export const Header: React.FC<HeaderProps> = ({
           type="button"
           onClick={() => (onLogoClick ? onLogoClick() : onNavigate('browse'))}
           className="hidden lg:flex items-center cursor-pointer select-none active:scale-95 transition-transform bg-transparent border-0 p-0 text-inherit"
-          aria-label="FapnXX Home"
+          aria-label="FapXX Home"
         >
           <span className="text-xl md:text-2xl font-black tracking-tight whitespace-nowrap">
             <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
-            <span className="brand-letter-n font-black">n</span>
             <span className="header-brand-nxx font-black">XX</span>
           </span>
         </button>
@@ -261,10 +260,9 @@ export const Header: React.FC<HeaderProps> = ({
           type="button"
           onClick={() => (onLogoClick ? onLogoClick() : onNavigate('browse'))}
           className="text-lg sm:text-xl font-black tracking-tight cursor-pointer select-none active:scale-95 transition-transform whitespace-nowrap bg-transparent border-0 p-1 text-inherit"
-          aria-label="FapnXX Home"
+          aria-label="FapXX Home"
         >
           <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
-          <span className="brand-letter-n font-black">n</span>
           <span className="header-brand-nxx font-black">XX</span>
         </button>
       </div>

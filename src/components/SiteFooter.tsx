@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 
 const YEAR = new Date().getFullYear();
-const DOMAIN = "fapnxx.com";
+const DOMAIN = "fapxx.com";
 
 const MODALS: Record<string, { title: string; body: string }> = {
-  privacy: { title: "Privacy Policy", body: "FapnXX is committed to protecting your privacy. We collect information you provide directly and automatically to improve our services. Contact: privacy@fapnxx.com" },
-  terms: { title: "Terms of Service", body: "By accessing FapnXX, you confirm you are at least 18 years of age. You agree not to upload or share illegal, non-consensual, or minor-depicting content. Violations result in immediate termination." },
-  dmca: { title: "DMCA Copyright Takedown", body: "FapnXX complies with the DMCA. To file a takedown, email dmca@fapnxx.com with: (1) description of copyrighted work, (2) URL of infringing content, (3) your contact info, (4) good faith statement, (5) your signature." },
-  usc2257: { title: "18 U.S.C. Section 2257 Statement", body: "FapnXX is not the primary or secondary producer of any content on this website. All persons depicted were 18 or older at time of creation. Records maintained by content producers. Contact: legal@fapnxx.com" },
+  privacy: { title: "Privacy Policy", body: "FapXX is committed to protecting your privacy. We collect information you provide directly and automatically to improve our services. Contact: privacy@fapxx.com" },
+  terms: { title: "Terms of Service", body: "By accessing FapXX, you confirm you are at least 18 years of age. You agree not to upload or share illegal, non-consensual, or minor-depicting content. Violations result in immediate termination." },
+  dmca: { title: "DMCA Copyright Takedown", body: "FapXX complies with the DMCA. To file a takedown, email dmca@fapxx.com with: (1) description of copyrighted work, (2) URL of infringing content, (3) your contact info, (4) good faith statement, (5) your signature." },
+  usc2257: { title: "18 U.S.C. Section 2257 Statement", body: "FapXX is not the primary or secondary producer of any content on this website. All persons depicted were 18 or older at time of creation. Records maintained by content producers. Contact: legal@fapxx.com" },
   cookies: { title: "Cookie Policy", body: "We use cookies for site functionality, analytics, and advertising. Types: Essential (login), Analytics (anonymized), Advertising (relevant ads), Preferences. Manage cookies via your browser settings." },
-  removal: { title: "Content Removal Request", body: "If you appear in a video and want it removed, email removal@fapnxx.com with the URL, reason, and your contact info. We process legitimate requests within 72 hours." },
+  removal: { title: "Content Removal Request", body: "If you appear in a video and want it removed, email removal@fapxx.com with the URL, reason, and your contact info. We process legitimate requests within 72 hours." },
 };
 
 const LEGAL_LINKS = [
@@ -47,7 +47,6 @@ export const SiteFooter: React.FC = () => {
               >
                 <h2 className="text-2xl font-black tracking-tight whitespace-nowrap">
                   <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
-                  <span className="brand-letter-n font-black">n</span>
                   <span className="header-brand-nxx font-black">XX</span>
                 </h2>
               </div>
@@ -97,7 +96,7 @@ export const SiteFooter: React.FC = () => {
             </div>
           </div>
           <div className="border-t border-white/[0.06] mt-8 pt-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-zinc-600 text-[10px]">{"Copyright " + YEAR + " FapnXX. All rights reserved."}</p>
+            <p className="text-zinc-600 text-[10px]">{"Copyright " + YEAR + " FapXX. All rights reserved."}</p>
             <p className="text-zinc-700 text-[10px] text-right max-w-sm">All models are 18+. Zero-tolerance policy against illegal content.</p>
           </div>
         </div>

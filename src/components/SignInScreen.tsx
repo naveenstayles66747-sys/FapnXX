@@ -195,7 +195,6 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack })
         <div className="text-center mb-1">
           <h1 className="text-3xl font-extrabold tracking-tighter italic mb-2">
             <span className="text-[#e0358d] drop-shadow-[0_0_10px_rgba(224,53,141,0.5)] font-black">Fap</span>
-            <span className="brand-letter-n font-black">n</span>
             <span className="text-zinc-900 dark:text-white font-black">XX</span>
           </h1>
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-[#e5e1e4]">
@@ -203,7 +202,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSuccess, onBack })
           </h2>
           <p className="text-xs text-zinc-500 dark:text-[#a19fa6] mt-1">
             {isSignUp
-              ? 'Join FapnXX for personal sync, cloud bookmarks, and playlists.'
+              ? 'Join FapXX for personal sync, cloud bookmarks, and playlists.'
               : 'Sign in to access your synchronized personal library.'}
           </p>
         </div>

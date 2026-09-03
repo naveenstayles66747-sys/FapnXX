@@ -37,7 +37,6 @@ export const AgeGateModal: React.FC<AgeGateModalProps> = ({ onConfirm, onDecline
         {/* Brand Logo */}
         <h1 className="font-black text-3xl sm:text-4xl italic tracking-tight mb-1">
           <span className="text-rose-500 drop-shadow-[0_0_15px_rgba(244,63,94,0.6)]">Fap</span>
-          <span className="text-pink-400">n</span>
           <span className="text-white">XX</span>
         </h1>
         <p className="text-xs uppercase font-extrabold tracking-widest text-rose-400 mb-5">

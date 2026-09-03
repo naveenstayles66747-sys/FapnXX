@@ -6,7 +6,7 @@ export const CATEGORIES: CategoryInfo[] = [
     name: 'Trending',
     icon: 'local_fire_department',
     heroImage: '/images/categories/trending.jpg',
-    description: 'The hottest and most popular exclusive content trending across FapnXX.'
+    description: 'The hottest and most popular exclusive content trending across FapXX.'
   },
   {
     id: 'amateur',
