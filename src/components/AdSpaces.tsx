@@ -548,6 +548,74 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
 export const InFeedAdCard = OutstreamVideoCardAd;
 
 /**
+ * In-Feed 300x250 Partner Banner Ad Card (AdTng / Traffic Factory Spot 10001807)
+ * Represented seamlessly as an interactive video card in the feed
+ */
+export const InFeedBannerCard: React.FC<{
+  className?: string;
+  reloadKey?: string | number;
+}> = ({ className = "", reloadKey }) => {
+  return (
+    <article
+      className={`video-card group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
+    >
+      <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-[#ec4899] transition-colors duration-200 bg-black flex items-center justify-center shadow-md">
+        {/* Responsive iframe wrapper */}
+        <div className="w-full h-full flex items-center justify-center overflow-hidden bg-black/90">
+          <iframe
+            key={`adtng-feed-${reloadKey || "default"}`}
+            title="Sponsored Stream"
+            style={{ backgroundColor: "transparent", maxWidth: "100%", maxHeight: "100%" }}
+            width="300"
+            height="250"
+            scrolling="no"
+            frameBorder="0"
+            allowTransparency={true}
+            marginHeight={0}
+            marginWidth={0}
+            name="spot_id_10001807"
+            src="//a.adtng.com/get/10001807?ata=Navifapx"
+            className="w-full h-full object-contain pointer-events-auto border-0"
+          />
+        </div>
+
+        {/* AD Badge on Top Right */}
+        <div className="absolute top-2 right-2 z-20 pointer-events-none">
+          <span className="bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+            AD
+          </span>
+        </div>
+
+        {/* Sponsored Label on Bottom Left */}
+        <div className="absolute bottom-2 left-2 z-20 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400 pointer-events-none">
+          SPONSORED
+        </div>
+
+        {/* HD Badge on Bottom Right */}
+        <div className="absolute bottom-2 right-2 z-20 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-bold text-white flex items-center gap-1 pointer-events-none">
+          <span className="text-amber-400 font-extrabold">HD</span>
+          <span>1080p</span>
+        </div>
+      </div>
+
+      {/* Video Info Meta */}
+      <div className="video-info pt-2 px-0.5 space-y-1">
+        <h4 className="font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white group-hover:text-[#ec4899] transition-colors line-clamp-2 leading-snug">
+          Featured Partner Video
+        </h4>
+        <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-400">
+          <span className="flex items-center gap-1 text-rose-500 font-bold">
+            <span className="material-symbols-outlined text-[13px]">verified</span>
+            <span>Promoted Stream</span>
+          </span>
+          <span className="text-[10px] text-zinc-400 font-bold">Recommended</span>
+        </div>
+      </div>
+    </article>
+  );
+};
+
+/**
  * On-Stream In-Video Player Overlay Banner (Zone ID: 6003172)
  */
 export const OnStreamVideoBanner: React.FC<{

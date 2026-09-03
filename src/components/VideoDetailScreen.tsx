@@ -4,7 +4,7 @@ import { VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { ReportModal } from './ReportModal';
 import { FluidPlayerWrapper } from './FluidPlayerWrapper';
-import { OnStreamVideoBanner, OutstreamVideoCardAd, UnderPlayerBanner, NativeRecommendationAd } from './AdSpaces';
+import { OnStreamVideoBanner, OutstreamVideoCardAd, UnderPlayerBanner, NativeRecommendationAd, InFeedBannerCard } from './AdSpaces';
 import { CommentsSection } from './CommentsSection';
 import { useLanguage } from '../i18n/LanguageContext';
 import { videoService } from '../services/videoService';
@@ -578,6 +578,13 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
                 {idx === 7 && (
                   <div key={`detail-outstream-in-grid-${video.id}`} className="col-span-1">
                     <OutstreamVideoCardAd key={`outstream-rec-${video.id}`} reloadKey={video.id} />
+                  </div>
+                )}
+
+                {/* Partner In-Feed 300x250 Banner Ad Card (After 12th video) */}
+                {idx === 11 && (
+                  <div key={`detail-adtng-in-grid-${video.id}`} className="col-span-1">
+                    <InFeedBannerCard key={`adtng-rec-${video.id}`} reloadKey={video.id} />
                   </div>
                 )}
               </React.Fragment>

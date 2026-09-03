@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { CategoryId, CategoryInfo, ContentPreference, LandingBanner, Video } from '../types';
 import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
-import { AdBanner, OutstreamVideoCardAd, NativeRecommendationAd } from './AdSpaces';
+import { AdBanner, OutstreamVideoCardAd, NativeRecommendationAd, InFeedBannerCard } from './AdSpaces';
 import { AD_CONFIG } from '../config/adConfig';
 import { useLanguage } from '../i18n/LanguageContext';
 import {
@@ -1071,6 +1071,14 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                   {idx === 7 && (
                     <OutstreamVideoCardAd
                       key={`browse-outstream-${selectedCategory}`}
+                      reloadKey={selectedCategory}
+                    />
+                  )}
+
+                  {/* Partner In-Feed 300x250 Banner Ad Card after the 12th card */}
+                  {idx === 11 && (
+                    <InFeedBannerCard
+                      key={`browse-adtng-${selectedCategory}`}
                       reloadKey={selectedCategory}
                     />
                   )}
