@@ -306,6 +306,18 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     ? (video.sourceWebsite || video.channelName)
     : null;
 
+  // Special Brazzers Promo detection
+  const isSpecialPromo = Boolean(
+    video.id?.startsWith('bz-') ||
+    video.adLinkUrl ||
+    video.isSponsored ||
+    video.sourceWebsiteUrl?.toLowerCase().includes('brazzers') ||
+    video.sourceWebsite?.toLowerCase().includes('brazzers') ||
+    video.channelName?.toLowerCase() === 'brazzers' ||
+    video.title?.toLowerCase().includes('brazzers') ||
+    video.tags?.some((t) => t?.toLowerCase().includes('brazzers'))
+  );
+
   return (
     <main className="flex-grow lg:pl-64 pb-8 sm:pb-12 w-full max-w-6xl mx-auto overflow-x-hidden">
 
@@ -337,11 +349,13 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
         <div className="flex items-center justify-between gap-3 text-xs font-semibold flex-wrap">
           {/* Left Stats Group */}
           <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-            {/* Duration */}
-            <span className="flex items-center gap-1.5 font-medium text-xs text-zinc-600 dark:text-zinc-400">
-              <span className="material-symbols-outlined text-sm">schedule</span>
-              <span>{video.duration || '05:00'}</span>
-            </span>
+            {/* Duration (Hidden on Brazzers Promo Videos) */}
+            {!isSpecialPromo && (
+              <span className="flex items-center gap-1.5 font-medium text-xs text-zinc-600 dark:text-zinc-400">
+                <span className="material-symbols-outlined text-sm">schedule</span>
+                <span>{video.duration || '05:00'}</span>
+              </span>
+            )}
 
             {/* Interactive Real Rating % & Like Button */}
             <button

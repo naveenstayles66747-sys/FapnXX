@@ -182,8 +182,17 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     return raw.includes(".mp4") || raw.includes(".webm") || raw.includes(".mov");
   }, [primaryThumb, video.previewMp4Url]);
   const isSpecialPromo = useMemo(() => {
-    return Boolean(video.id.startsWith("bz-") || video.adLinkUrl || video.isSponsored);
-  }, [video.id, video.adLinkUrl, video.isSponsored]);
+    return Boolean(
+      video.id?.startsWith("bz-") ||
+      video.adLinkUrl ||
+      video.isSponsored ||
+      video.sourceWebsiteUrl?.toLowerCase().includes("brazzers") ||
+      video.sourceWebsite?.toLowerCase().includes("brazzers") ||
+      video.channelName?.toLowerCase() === "brazzers" ||
+      video.title?.toLowerCase().includes("brazzers") ||
+      video.tags?.some((t) => t?.toLowerCase().includes("brazzers"))
+    );
+  }, [video]);
   const displayThumbnail = primaryThumb || FALLBACK_THUMBNAIL;
 
   // Active frame image URL
