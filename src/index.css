@@ -1433,47 +1433,97 @@ html.light .player-wrapper {
 
 /* =====================================================================
    EXOCLICK NATIVE RECOMMENDATION WIDGET (Zone 6010176 | eas6a97888e20)
-   In-Grid Multi-Row Expansion & High Contrast Text in Day/Night Modes
+   Full Dark Mode Contrast & White Text Enforcement
    ===================================================================== */
-.native-ad-section {
-  border-radius: 16px;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-html.light .native-ad-section {
-  background-color: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
-}
-
-html.light .native-ad-section * {
-  color: #0f172a !important;
-}
-
-html.light .native-ad-section span.bg-\[\#ec4899\] {
-  color: #ffffff !important;
-}
-
-html.dark .native-ad-section {
-  background-color: #121115 !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
-}
-
-html.dark .native-ad-section * {
-  color: #f8fafc !important;
-}
-
+.native-recommendation-wrapper,
 #exoclick-native-recommended-zone-6010176,
-.eas6a97888e20 {
+.eas6a97888e20,
+ins[data-zoneid="6010176"] {
   width: 100% !important;
   max-width: 100% !important;
   display: block !important;
   margin: 0 auto !important;
   overflow: visible !important;
-  height: auto !important;
-  min-height: 0 !important;
   background: transparent !important;
+}
+
+/* Force all text in Native Recommendation Ad to Pure White in Dark Mode */
+html.dark .native-recommendation-wrapper *,
+html.dark #exoclick-native-recommended-zone-6010176 *,
+html.dark .eas6a97888e20 *,
+html.dark ins[data-zoneid="6010176"] *,
+html.dark .native-recommendation-wrapper a,
+html.dark .native-recommendation-wrapper span,
+html.dark .native-recommendation-wrapper p,
+html.dark .native-recommendation-wrapper div,
+html.dark .native-recommendation-wrapper h1,
+html.dark .native-recommendation-wrapper h2,
+html.dark .native-recommendation-wrapper h3,
+html.dark .native-recommendation-wrapper h4,
+html.dark .native-recommendation-wrapper strong,
+html.dark .native-recommendation-wrapper b,
+html.dark .native-recommendation-wrapper label {
+  color: #ffffff !important;
+}
+
+/* Video titles in Dark Mode */
+html.dark .native-recommendation-wrapper a,
+html.dark .native-recommendation-wrapper a span,
+html.dark .native-recommendation-wrapper [class*="title"],
+html.dark .native-recommendation-wrapper .title,
+html.dark .eas6a97888e20 a,
+html.dark .eas6a97888e20 [class*="title"] {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Hover highlight on video titles */
+html.dark .native-recommendation-wrapper a:hover,
+html.dark .native-recommendation-wrapper a:hover *,
+html.dark .eas6a97888e20 a:hover * {
+  color: #ec4899 !important;
+}
+
+/* Brand / Domain / Sponsor Subtitles (e.g. xxvid, Lustonic, Blacked) */
+html.dark .native-recommendation-wrapper [class*="brand"],
+html.dark .native-recommendation-wrapper [class*="domain"],
+html.dark .native-recommendation-wrapper [class*="site"],
+html.dark .native-recommendation-wrapper [class*="sponsor"],
+html.dark .native-recommendation-wrapper [class*="desc"],
+html.dark .native-recommendation-wrapper small,
+html.dark .eas6a97888e20 [class*="brand"],
+html.dark .eas6a97888e20 [class*="domain"],
+html.dark .eas6a97888e20 [class*="site"],
+html.dark .eas6a97888e20 small {
+  color: #f472b6 !important;
+  font-weight: 600 !important;
+  opacity: 0.95 !important;
+}
+
+/* Transparent Background for all ExoClick native items */
+html.dark .native-recommendation-wrapper div,
+html.dark .native-recommendation-wrapper a,
+html.dark .eas6a97888e20 div,
+html.dark .eas6a97888e20 a {
+  background-color: transparent !important;
+}
+
+/* Light Mode Overrides for High Contrast (Black text on Light background) */
+html.light .native-recommendation-wrapper *,
+html.light #exoclick-native-recommended-zone-6010176 *,
+html.light .eas6a97888e20 *,
+html.light ins[data-zoneid="6010176"] * {
+  color: #0f172a !important;
+}
+
+html.light .native-recommendation-wrapper [class*="brand"],
+html.light .native-recommendation-wrapper [class*="domain"],
+html.light .native-recommendation-wrapper [class*="site"],
+html.light .native-recommendation-wrapper small,
+html.light .eas6a97888e20 [class*="brand"] {
+  color: #db2777 !important;
+  font-weight: 600 !important;
 }
 
 #exoclick-native-recommended-zone-6010176 iframe,

@@ -786,7 +786,7 @@ export const NativeRecommendationAd: React.FC<{
           <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white tracking-wide">{title}</h3>
         </div>
       )}
-      <div ref={containerRef} className="w-full min-h-[160px] overflow-hidden" />
+      <div ref={containerRef} id="exoclick-native-recommended-zone-6010176" className="w-full min-h-[160px] overflow-hidden" />
     </section>
   );
 };
