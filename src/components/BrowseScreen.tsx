@@ -1060,8 +1060,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     onClick={() => onSelectVideo(video)}
                   />
 
-                  {/* Native Recommendation Widget in-between grid cards spanning full width (After 4th video) */}
-                  {idx === 3 && (
+                  {/* Native Recommendation Widget in-between grid cards */}
+                  {((displayedVideos.length > 8 && idx === 3) || (displayedVideos.length <= 8 && idx === displayedVideos.length - 1)) && (
                     <div key={`browse-native-recommended-in-grid-${selectedCategory}`} className="col-span-full my-3">
                       <NativeRecommendationAd key={`browse-native-${selectedCategory}`} reloadKey={selectedCategory} />
                     </div>
@@ -1075,8 +1075,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                     />
                   )}
 
-                  {/* Partner In-Feed 300x250 Banner Ad Card after the 12th card */}
-                  {idx === 11 && (
+                  {/* Partner In-Feed 300x250 Banner Ad Card after the 12th card (or after cards for short feeds) */}
+                  {((displayedVideos.length > 12 && idx === 11) || (displayedVideos.length <= 8 && idx === displayedVideos.length - 1)) && (
                     <InFeedBannerCard
                       key={`browse-adtng-${selectedCategory}`}
                       reloadKey={selectedCategory}

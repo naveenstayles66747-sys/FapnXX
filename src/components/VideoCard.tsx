@@ -181,6 +181,9 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     const raw = (primaryThumb || video.previewMp4Url || "").toLowerCase();
     return raw.includes(".mp4") || raw.includes(".webm") || raw.includes(".mov");
   }, [primaryThumb, video.previewMp4Url]);
+  const isSpecialPromo = useMemo(() => {
+    return Boolean(video.id.startsWith("bz-") || video.adLinkUrl || video.isSponsored);
+  }, [video.id, video.adLinkUrl, video.isSponsored]);
   const displayThumbnail = primaryThumb || FALLBACK_THUMBNAIL;
 
   // Active frame image URL
@@ -297,7 +300,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     }
   };
 
-  const handleCardClick = () => {
+  const handleCardClick = (e?: React.MouseEvent) => {
     if (Date.now() - lastToggleTimeRef.current < 450) {
       return;
     }
@@ -311,6 +314,18 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
+
+    // Special Destination Landing Redirect for Brazzers / Partner creative cards
+    const directRedirectUrl = video.adLinkUrl || (video.id.startsWith("bz-") ? video.sourceWebsiteUrl : null);
+    if (directRedirectUrl) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      window.open(directRedirectUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
     onClick();
   };
 
@@ -557,8 +572,8 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           </div>
         )}
 
-        {/* Duration Badge (Clean Borderless Pill Matching YouTube/Pornhub) */}
-        {!isPlayingPreview && (
+        {/* Duration Badge (Clean Borderless Pill Matching YouTube/Pornhub; Hidden for promo cards) */}
+        {!isPlayingPreview && !isSpecialPromo && (
           <div
             className={`thumb-duration-badge absolute bottom-2 bg-black/85 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-white z-20 shadow-sm border-0 transition-opacity duration-300 ${
               isMobile ? "left-2" : "right-2"
