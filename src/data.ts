@@ -613,7 +613,7 @@ export const BRAZZERS_VIDEOS: Video[] = [
   }
 ];
 
-export const INITIAL_VIDEOS: Video[] = [...BRAZZERS_VIDEOS, ...VIDEOS];
+export const INITIAL_VIDEOS: Video[] = VIDEOS;
 
 export const INITIAL_LANDING_BANNERS: import('./types').LandingBanner[] = [];
 

@@ -118,8 +118,11 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  // Main feed catalog: Serves all 1,950+ curated videos across all categories without duplicates
-  const filteredVideosList = deduplicateVideos((videosList && videosList.length >= VIDEOS.length) ? videosList : VIDEOS);
+  // Main feed catalog: Serves all curated videos across all categories without promotional overlays
+  const filteredVideosList = useMemo(() => {
+    const base = (videosList && videosList.length >= VIDEOS.length) ? videosList : VIDEOS;
+    return deduplicateVideos(base.filter((v) => !v.id?.startsWith('bz-')));
+  }, [videosList]);
 
   // Brazzers Network Landing Banners
   const brazzersBanners: LandingBanner[] = useMemo(() => [
@@ -135,9 +138,10 @@ export default function App() {
     },
   ], []);
 
-  // Filtered Brazzers Videos (includes BRAZZERS_VIDEOS + matched catalog)
+  // Dedicated Brazzers Channel Catalog: Exactly all 14 Brazzers VIP creative videos + matching catalog
   const brazzersVideosList = useMemo(() => {
-    const matched = filteredVideosList.filter((v) => {
+    const base = (videosList && videosList.length >= VIDEOS.length) ? videosList : VIDEOS;
+    const matched = base.filter((v) => {
       if (!v) return false;
       const title = (v.title || '').toLowerCase();
       const tags = Array.isArray(v.tags) ? v.tags.join(' ').toLowerCase() : '';
@@ -153,7 +157,7 @@ export default function App() {
       );
     });
     return deduplicateVideos([...BRAZZERS_VIDEOS, ...matched]);
-  }, [filteredVideosList]);
+  }, [videosList]);
 
   // Real Firebase Auth & Custom Claims Observer
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
@@ -848,12 +852,18 @@ export default function App() {
                     <VideoDetailScreen
                       key={`video-screen-${selectedVideo.id}`}
                       video={selectedVideo}
-                      onBack={() => handleNavigate('browse')}
+                      onBack={() => {
+                        if (selectedVideo.id.startsWith('bz-') || selectedVideo.sourceWebsite?.toLowerCase().includes('brazzers')) {
+                          handleNavigate('brazzers');
+                        } else {
+                          handleNavigate('browse');
+                        }
+                      }}
                       onSelectVideo={handleSelectVideo}
                       onNavigateToSearch={handleNavigateToSearch}
                       userEmail={userEmail}
                       onOpenSoftLogin={handleOpenSoftLogin}
-                      videos={filteredVideosList}
+                      videos={selectedVideo.id.startsWith('bz-') || selectedVideo.sourceWebsite?.toLowerCase().includes('brazzers') ? brazzersVideosList : filteredVideosList}
                       onVideoUpdated={handleVideoUpdated}
                     />
                   </Suspense>
