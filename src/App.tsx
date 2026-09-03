@@ -152,7 +152,7 @@ export default function App() {
         channel.includes('brazzers')
       );
     });
-    return deduplicateVideos([...BRAZZERS_VIDEOS, ...matched, ...filteredVideosList]);
+    return deduplicateVideos([...BRAZZERS_VIDEOS, ...matched]);
   }, [filteredVideosList]);
 
   // Real Firebase Auth & Custom Claims Observer
