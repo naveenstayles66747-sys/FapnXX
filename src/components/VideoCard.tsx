@@ -300,7 +300,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     }
   };
 
-  const handleCardClick = (e?: React.MouseEvent) => {
+  const handleCardClick = () => {
     if (Date.now() - lastToggleTimeRef.current < 450) {
       return;
     }
@@ -313,17 +313,6 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
-    }
-
-    // Special Destination Landing Redirect for Brazzers / Partner creative cards
-    const directRedirectUrl = video.adLinkUrl || (video.id.startsWith("bz-") ? video.sourceWebsiteUrl : null);
-    if (directRedirectUrl) {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      window.open(directRedirectUrl, "_blank", "noopener,noreferrer");
-      return;
     }
 
     onClick();

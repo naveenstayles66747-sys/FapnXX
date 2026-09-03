@@ -328,6 +328,27 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           EXACT REFERENCE DESIGN: VIDEO INFO & STATS BAR
       ═══════════════════════════════════════════════ */}
       <div className="px-3 sm:px-4 md:px-6 py-2 flex flex-col gap-3">
+        {/* Special Official Stream Affiliate CTA Button */}
+        {(video.sourceWebsiteUrl || video.adLinkUrl) && (
+          <div className="w-full">
+            <a
+              href={video.sourceWebsiteUrl || video.adLinkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-between px-4 sm:px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black font-black uppercase text-xs sm:text-sm tracking-wide shadow-xl shadow-amber-500/20 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer border border-yellow-300 select-none"
+            >
+              <span className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-base sm:text-lg">workspace_premium</span>
+                <span>Stream Full Uncensored 4K Scene on Brazzers Official</span>
+              </span>
+              <span className="flex items-center gap-1 font-bold text-xs bg-black/15 px-2.5 py-1 rounded-xl">
+                <span>WATCH FULL SCENE</span>
+                <span className="material-symbols-outlined text-sm">open_in_new</span>
+              </span>
+            </a>
+          </div>
+        )}
+
         {/* 1. Title */}
         <h1 className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white tracking-tight leading-snug break-words">
           {video.title}

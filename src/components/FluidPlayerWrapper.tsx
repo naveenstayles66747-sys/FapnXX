@@ -373,6 +373,20 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             }}
             className="w-full h-full object-contain block bg-black"
           />
+
+          {/* Partner / Brazzers VIP Watch Full Video Button inside Player */}
+          {(video.sourceWebsiteUrl || video.adLinkUrl) && (
+            <a
+              href={video.sourceWebsiteUrl || video.adLinkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute top-3 right-3 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/85 hover:bg-black text-amber-400 hover:text-amber-300 font-bold text-xs border border-amber-500/40 backdrop-blur-md shadow-xl transition-all cursor-pointer hover:scale-105 active:scale-95"
+            >
+              <span className="material-symbols-outlined text-sm text-amber-400">workspace_premium</span>
+              <span>Watch Full Scene on Brazzers</span>
+              <span className="material-symbols-outlined text-xs">open_in_new</span>
+            </a>
+          )}
         </div>
       )}
     </div>
