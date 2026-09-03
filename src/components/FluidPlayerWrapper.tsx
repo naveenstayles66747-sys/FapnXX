@@ -365,8 +365,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                   hrs > 0
                     ? `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
                     : `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-                if (video?.duration !== formatted) {
-                  videoService.updateVideo({ ...video, duration: formatted }).catch(() => {});
+                // Set formatted duration locally
+                if (video && !video.duration) {
+                  video.duration = formatted;
                 }
               }
             }}

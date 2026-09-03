@@ -22,7 +22,7 @@ const KEYS = {
   LEGACY_REPORTS: 'indianfullxx_dmca_reports',
 };
 
-// Proactively purge any legacy or truncated database content from localStorage so full 1,950 catalog loads
+// Proactively purge legacy, zeroed-out or heavy catalogs from localStorage to ensure authentic data and prevent quota overflow
 try {
   localStorage.removeItem(KEYS.LEGACY_CACHED_VIDEOS_V1);
   localStorage.removeItem(KEYS.LEGACY_CUSTOM_VIDEOS);
@@ -32,7 +32,11 @@ try {
   const cached = localStorage.getItem(KEYS.CACHED_VIDEOS);
   if (cached) {
     const parsed = JSON.parse(cached);
-    if (!Array.isArray(parsed) || parsed.length < 1500) {
+    if (
+      !Array.isArray(parsed) ||
+      parsed.length < 500 ||
+      (parsed[0] && (parsed[0].viewsCount === 0 || parsed[0].rating === '0%'))
+    ) {
       localStorage.removeItem(KEYS.CACHED_VIDEOS);
     }
   }
@@ -95,10 +99,16 @@ export const getStoredCachedVideos = (): import('../types').Video[] => {
 export const setStoredCachedVideos = (videos: import('../types').Video[]): void => {
   try {
     if (Array.isArray(videos) && videos.length > 0) {
+      if (videos.length > 500) {
+        // Full catalog is already statically available in memory; prevent 5MB localStorage quota overflow
+        return;
+      }
       const unique = deduplicateVideos(videos);
       localStorage.setItem(KEYS.CACHED_VIDEOS, JSON.stringify(unique));
     }
-  } catch {}
+  } catch (e) {
+    console.warn('[Storage] Video cache quota notice:', e);
+  }
 };
 
 /**
