@@ -26,6 +26,7 @@ interface HeaderProps {
   contentPreference: ContentPreference;
   onChangeContentPreference: (pref: ContentPreference) => void;
   videos?: Video[];
+  selectedVideo?: Video | null;
 }
 
 // Custom Dual-Color SVG Icon matching the interlinked Male + Female (Venus & Mars) heterosexual gender symbol
@@ -84,6 +85,7 @@ export const Header: React.FC<HeaderProps> = ({
   contentPreference,
   onChangeContentPreference,
   videos = [],
+  selectedVideo,
 }) => {
   const { language, setLanguage, t, currentLanguageMeta } = useLanguage();
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -204,7 +206,17 @@ export const Header: React.FC<HeaderProps> = ({
     </div>
   );
 
-  const isBrazzers = currentScreen === 'brazzers';
+  const isBrazzers =
+    currentScreen === 'brazzers' ||
+    (currentScreen === 'video-detail' &&
+      Boolean(
+        selectedVideo?.id?.startsWith('bz-') ||
+        selectedVideo?.channelName?.toLowerCase() === 'brazzers' ||
+        selectedVideo?.sourceWebsite?.toLowerCase()?.includes('brazzers') ||
+        selectedVideo?.sourceWebsiteUrl?.toLowerCase()?.includes('brazzers') ||
+        selectedVideo?.adLinkUrl?.toLowerCase()?.includes('brazzers') ||
+        selectedVideo?.tags?.some((t) => t.toLowerCase().includes('brazzers'))
+      ));
 
   return (
     <header className={`sticky top-0 w-full z-50 header-container backdrop-blur-xl flex justify-between items-center px-3 md:px-8 h-16 md:h-20 shrink-0 box-border transition-colors ${

@@ -707,6 +707,7 @@ export default function App() {
             contentPreference={contentPreference}
             onChangeContentPreference={handleChangeContentPreference}
             videos={filteredVideosList}
+            selectedVideo={selectedVideo}
           />
 
           <MobileDrawer
