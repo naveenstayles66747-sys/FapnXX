@@ -135,31 +135,36 @@ export const triggerInterstitial = (action?: string) => {
  * - Logo click (Home navigation)
  * - Internal link clicks & Category/Video changes
  */
+let refreshDebounceTimer: any = null;
+
 export const refreshExoClickAds = (context: string = 'navigation'): void => {
   if (typeof window === 'undefined') return;
 
   try {
-    // 1. Dispatch custom refresh event for active React ad components
-    window.dispatchEvent(
-      new CustomEvent('exoclick-refresh-ads', {
-        detail: { context, timestamp: Date.now() },
-      })
-    );
+    if (refreshDebounceTimer) {
+      clearTimeout(refreshDebounceTimer);
+    }
 
-    // 2. Multi-burst trigger for ExoClick global AdProvider
-    const trigger = () => {
-      try {
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
-      } catch {}
-    };
+    refreshDebounceTimer = setTimeout(() => {
+      // 1. Dispatch custom refresh event for active React ad components
+      window.dispatchEvent(
+        new CustomEvent('exoclick-refresh-ads', {
+          detail: { context, timestamp: Date.now() },
+        })
+      );
 
-    trigger();
-    setTimeout(trigger, 80);
-    setTimeout(trigger, 300);
-    setTimeout(trigger, 800);
-    setTimeout(trigger, 1600);
+      // 2. Trigger ExoClick global AdProvider
+      const trigger = () => {
+        try {
+          const win = window as any;
+          win.AdProvider = win.AdProvider || [];
+          win.AdProvider.push({ serve: {} });
+        } catch {}
+      };
+
+      trigger();
+      setTimeout(trigger, 150);
+    }, 60);
   } catch (e) {
     console.warn('[ExoClick] Ad refresh notice:', e);
   }

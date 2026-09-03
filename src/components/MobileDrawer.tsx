@@ -71,7 +71,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           if (Array.isArray(v.categories) && v.categories.some((c) => c && c.toLowerCase() === lowerId)) return true;
           return false;
         });
-        counts[cat.id] = matching.length > 0 ? matching.length : 75;
+        counts[cat.id] = matching.length;
       }
     });
     return counts;
@@ -336,7 +336,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                       onClose();
                       onOpenSoftLogin('Cloud Bookmarks & Playlists');
                     } else {
-                      onNavigate('browse');
+                      onNavigate('saved');
                       onClose();
                     }
                   }}
@@ -446,7 +446,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               {/* Scrollable Categories List (Pornktube Style Clean Rows) */}
               <ul className="divide-y divide-zinc-200 dark:divide-white/5 text-sm py-1">
                 {categories.map((cat) => {
-                  const count = categoryCountMap[cat.id] ?? 75;
+                  const count = categoryCountMap[cat.id] ?? 0;
                   return (
                     <li key={cat.id}>
                       <button

@@ -150,7 +150,7 @@ export const StickyBottomLeaderboard: React.FC = () => {
           className="absolute -top-3 right-2 bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 text-[10px] rounded-full w-5 h-5 flex items-center justify-center cursor-pointer border border-white/10 shadow z-10"
           title="Dismiss ad"
         >
-          ?
+          ✕
         </button>
         <div ref={containerRef} className="w-full flex items-center justify-center min-h-[90px] overflow-hidden" />
       </div>

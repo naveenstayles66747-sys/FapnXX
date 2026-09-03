@@ -1,4 +1,4 @@
-﻿import { Video, ContentPreference } from '../types';
+import { Video, ContentPreference } from '../types';
 
 /**
  * Strict regex patterns with word boundaries to prevent false substring collisions
@@ -77,6 +77,9 @@ const LESBIAN_TAG_KEYWORDS = [
 export function isGayVideo(v: Video): boolean {
   if (!v) return false;
 
+  // 0. Explicit video orientation or contentPreference attribute
+  if (v.orientation === 'gay' || (v as any).contentPreference === 'gay') return true;
+
   // 1. Primary or secondary category match
   const cat = (v.category || '').toLowerCase();
   if (cat === 'gay') return true;
@@ -108,6 +111,9 @@ export function isGayVideo(v: Video): boolean {
  */
 export function isLesbianVideo(v: Video): boolean {
   if (!v) return false;
+
+  // 0. Explicit video orientation or contentPreference attribute
+  if (v.orientation === 'lesbian' || (v as any).contentPreference === 'lesbian') return true;
 
   // 1. Primary or secondary category match
   const cat = (v.category || '').toLowerCase();

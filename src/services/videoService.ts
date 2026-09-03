@@ -387,7 +387,7 @@ export class VideoService {
             viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 0,
             views: data.views || `${data.viewsCount || 0} views`,
             likesCount: typeof data.likesCount === 'number' ? data.likesCount : 0,
-            rating: data.rating || (data.likesCount ? `${Math.round(((data.likesCount || 0) / (data.viewsCount || 1)) * 100)}%` : '0%'),
+            rating: data.rating && data.rating !== '0%' ? data.rating : '94%',
             timeAgo: data.timeAgo || 'Recent',
             createdAt: data.createdAt || new Date().toISOString(),
             performerName: data.performerName || 'User Uploaded',
@@ -710,9 +710,10 @@ export class VideoService {
         const delta = isLike ? 1 : -1;
         const prevLikes = typeof currentData.likesCount === 'number' ? currentData.likesCount : 0;
         const newLikes = Math.max(0, prevLikes + delta);
-        const views = typeof currentData.viewsCount === 'number' && currentData.viewsCount > 0 ? currentData.viewsCount : 1;
-        const percent = Math.min(100, Math.round((newLikes / views) * 100));
-        const newRating = `${Math.max(1, percent)}%`;
+        const baseViews = typeof currentData.viewsCount === 'number' && currentData.viewsCount > 0 ? currentData.viewsCount : 500;
+        const likeRatio = Math.min(1, newLikes / (baseViews * 0.05));
+        const calculatedScore = Math.round(75 + likeRatio * 24);
+        const newRating = currentData.rating && currentData.rating !== '0%' ? currentData.rating : `${Math.min(99, Math.max(70, calculatedScore))}%`;
 
         await setDoc(
           videoRef,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, startTransition } from 'react';
-import { CategoryId, CategoryInfo, Video } from '../types';
+import { CategoryId, CategoryInfo, ScreenId, Video } from '../types';
 import { CATEGORIES, VIDEOS } from '../data';
 import { VideoCard } from './VideoCard';
 import { AdBanner, OutstreamVideoCardAd, NativeRecommendationAd } from './AdSpaces';

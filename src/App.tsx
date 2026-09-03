@@ -47,6 +47,7 @@ import {
   setStoredCachedVideos,
   getStoredCachedBanners,
   setStoredCachedBanners,
+  getStoredSavedVideos,
 } from './utils/storage';
 import { usePrivacyStorage } from './hooks/usePrivacyStorage';
 import { stopAllBackgroundMedia } from './utils/mediaHelper';
@@ -718,6 +719,24 @@ export default function App() {
                   videos={filteredVideosList}
                   categories={categories}
                   banners={banners}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  sortBy={browseSortBy}
+                  setSortBy={setBrowseSortBy}
+                  contentPreference={contentPreference}
+                  onChangeContentPreference={handleChangeContentPreference}
+                />
+              )}
+
+              {currentScreen === 'saved' && (
+                <BrowseScreen
+                  key={`saved-screen-${currentScreen}`}
+                  onSelectVideo={handleSelectVideo}
+                  onSelectCategory={handleSelectCategory}
+                  selectedCategory="all"
+                  videos={filteredVideosList.filter((v) => getStoredSavedVideos().includes(v.id))}
+                  categories={categories}
+                  banners={[]}
                   searchQuery={searchQuery}
                   setSearchQuery={setSearchQuery}
                   sortBy={browseSortBy}

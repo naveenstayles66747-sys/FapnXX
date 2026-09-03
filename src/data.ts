@@ -187,16 +187,8 @@ export const CATEGORIES: CategoryInfo[] = [
 
 import curatedDataset from './data/pornhubCurated.json';
 
-export const PERFORMERS: import('./types').Performer[] = [];
-
-// Clean baseline: All initial video views, likes, and ratings reset to 0 for genuine real-time tracking
-export const VIDEOS: Video[] = ((curatedDataset as any) || []).map((v: any) => ({
-  ...v,
-  viewsCount: 0,
-  views: '0 views',
-  likesCount: 0,
-  rating: '0%',
-}));
+// Preserves authentic metadata (views, likes, ratings) from curated dataset
+export const VIDEOS: Video[] = ((curatedDataset as any) || []) as Video[];
 
 export const INITIAL_VIDEOS = VIDEOS;
 

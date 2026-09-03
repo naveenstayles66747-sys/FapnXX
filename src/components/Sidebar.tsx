@@ -45,7 +45,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({
           if (Array.isArray(v.categories) && v.categories.some((c) => c && c.toLowerCase() === lowerId)) return true;
           return false;
         });
-        counts[cat.id] = matching.length > 0 ? matching.length : 75;
+        counts[cat.id] = matching.length;
       }
     });
     return counts;
@@ -86,7 +86,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({
             const isActive =
               (currentScreen === 'category-detail' && selectedCategoryId === cat.id) ||
               (currentScreen === 'browse' && selectedCategoryId === cat.id);
-            const count = categoryCountMap[cat.id] ?? 75;
+            const count = categoryCountMap[cat.id] ?? 0;
 
             return (
               <li key={cat.id}>
@@ -100,7 +100,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({
                       : 'text-zinc-800 dark:text-[#debec8] hover:bg-zinc-200/80 dark:hover:bg-white/5 hover:text-zinc-950 dark:hover:text-white'
                   }`}
                 >
-                  <span className="truncate">{cat.name} - {count} videos</span>
+                  <span className="truncate">{cat.name} - {count} {count === 1 ? 'video' : 'videos'}</span>
                 </button>
               </li>
             );
@@ -126,10 +126,14 @@ const SidebarComponent: React.FC<SidebarProps> = ({
                 if (!userEmail) {
                   if (onOpenSoftLogin) onOpenSoftLogin('Cloud Bookmarks & Playlists');
                 } else {
-                  onNavigate('browse');
+                  onNavigate('saved');
                 }
               }}
-              className="w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide text-zinc-600 dark:text-[#debec8] hover:bg-zinc-200/60 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white transition-all cursor-pointer"
+              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
+                currentScreen === 'saved'
+                  ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
+                  : 'text-zinc-800 dark:text-[#debec8] hover:bg-zinc-200/80 dark:hover:bg-white/5 hover:text-zinc-950 dark:hover:text-white'
+              }`}
             >
               <span className="material-symbols-outlined text-xl text-[#ec4899]">
                 bookmark_add

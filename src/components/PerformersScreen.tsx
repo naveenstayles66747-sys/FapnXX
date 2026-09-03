@@ -248,9 +248,9 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
         </div>
       </div>
 
-      {/* ── 2-Column Grid (exactly matching reference screenshot) ── */}
+      {/* ── Responsive Multi-Column Grid ── */}
       {visiblePerformers.length > 0 ? (
-        <div className="grid grid-cols-2 gap-0 border-t border-l border-zinc-200 dark:border-white/[0.06]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-0 border-t border-l border-zinc-200 dark:border-white/[0.06]">
           {visiblePerformers.map((performer) => (
             <div
               key={performer.id}
