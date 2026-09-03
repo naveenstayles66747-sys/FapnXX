@@ -8,7 +8,7 @@ import {
   Video,
   VideoComment,
 } from '../types';
-import { CATEGORIES, INITIAL_LANDING_BANNERS, INITIAL_VIDEOS } from '../data';
+import { BRAZZERS_VIDEOS, CATEGORIES, INITIAL_LANDING_BANNERS, INITIAL_VIDEOS } from '../data';
 import { deduplicateVideos } from '../utils/videoDeduplicator';
 import {
   getOrCreateDeviceId,
@@ -348,9 +348,29 @@ export class VideoService {
   }
 
   /**
+   * Automatically persist all curated Brazzers creative videos to Firebase Cloud Firestore
+   */
+  async syncBrazzersVideosToFirestore(): Promise<void> {
+    try {
+      for (const bzVid of BRAZZERS_VIDEOS) {
+        const docRef = doc(db, 'videos', bzVid.id);
+        const snap = await getDoc(docRef);
+        if (!snap.exists()) {
+          await setDoc(docRef, cleanForFirestore(bzVid), { merge: true });
+        }
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [Firestore] Brazzers sync notice:', err?.message || err);
+    }
+  }
+
+  /**
    * Fetch all videos via direct Firestore SDK with Backend API and CDN fallbacks with Smart Cache
    */
   async fetchVideos(category?: string): Promise<Video[]> {
+    // Background cloud sync for new Brazzers embeds
+    this.syncBrazzersVideosToFirestore().catch(() => {});
+
     const cacheKey = `videos_${category || 'all'}`;
     const cached = this.smartCache.get<Video[]>(cacheKey, 60000);
     if (cached && cached.length > 0) {
