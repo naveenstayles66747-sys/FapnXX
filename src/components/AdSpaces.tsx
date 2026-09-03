@@ -585,17 +585,6 @@ export const InFeedBannerCard: React.FC<{
             AD
           </span>
         </div>
-
-        {/* Sponsored Label on Bottom Left */}
-        <div className="absolute bottom-2 left-2 z-20 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400 pointer-events-none">
-          SPONSORED
-        </div>
-
-        {/* HD Badge on Bottom Right */}
-        <div className="absolute bottom-2 right-2 z-20 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-bold text-white flex items-center gap-1 pointer-events-none">
-          <span className="text-amber-400 font-extrabold">HD</span>
-          <span>1080p</span>
-        </div>
       </div>
 
       {/* Video Info Meta */}
