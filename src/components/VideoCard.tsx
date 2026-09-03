@@ -450,7 +450,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
             </div>
           )}
 
-          {!isPlayingPreview && (
+          {!isPlayingPreview && !isSpecialPromo && (
             <div className="absolute bottom-2 right-2 bg-black/80 text-white font-mono text-xs px-2 py-0.5 rounded z-20">
               {video.duration || "05:00"}
             </div>
@@ -626,12 +626,14 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
             </span>
           </span>
 
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">schedule</span>
-            <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">
-              {video.duration || "05:00"}
+          {!isSpecialPromo && (
+            <span className="flex items-center gap-1">
+              <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">schedule</span>
+              <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">
+                {video.duration || "05:00"}
+              </span>
             </span>
-          </span>
+          )}
         </div>
       </div>
     </article>
