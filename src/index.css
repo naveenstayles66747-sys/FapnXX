@@ -200,9 +200,22 @@ video, iframe {
   transform: scale(0.98);
 }
 
-/* Smooth Theme Transition Effects (Restricted to major layout containers for instant 0ms hover response) */
-body, main, header, nav, aside {
-  transition: background-color 0.15s ease-out, color 0.15s ease-out, border-color 0.15s ease-out;
+/* Smooth Theme Transition & Brazzers Mode Switching Effects */
+body,
+main,
+header,
+header.header-container,
+nav,
+aside,
+.sidebar-link-interactive,
+.header-search-input,
+.page-transition-enter {
+  transition: background-color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              fill 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              stroke 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* =====================================================================
