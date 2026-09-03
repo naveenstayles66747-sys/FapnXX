@@ -166,6 +166,10 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   const isPlayingPreview = isMobile ? isPreviewActive : (isHovered || isPreviewActive);
 
   const primaryThumb = cleanMediaUrl(video.thumbnail || video.thumbnailUrl || "");
+  const isMp4Thumb = useMemo(() => {
+    const raw = (primaryThumb || video.previewMp4Url || "").toLowerCase();
+    return raw.includes(".mp4") || raw.includes(".webm") || raw.includes(".mov");
+  }, [primaryThumb, video.previewMp4Url]);
   const displayThumbnail = primaryThumb || FALLBACK_THUMBNAIL;
 
   // Active frame image URL
@@ -397,15 +401,25 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         style={{ contentVisibility: "auto", containIntrinsicSize: "300px" }}
       >
         <div className="relative w-full md:w-2/5 aspect-video md:aspect-auto overflow-hidden bg-black">
-          <img
-            src={displayThumbnail}
-            alt={video.title}
-            loading="lazy"
-            decoding="async"
-            referrerPolicy="no-referrer-when-downgrade"
-            onError={handleImageError}
-            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-          />
+          {isMp4Thumb ? (
+            <video
+              src={`${primaryThumb || video.previewMp4Url}#t=0.001`}
+              preload="metadata"
+              muted
+              playsInline
+              className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <img
+              src={displayThumbnail}
+              alt={video.title}
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer-when-downgrade"
+              onError={handleImageError}
+              className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+            />
+          )}
 
           {renderPreviewContent()}
 
@@ -487,15 +501,25 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       {/* 16:9 Full-Width Clean Thumbnail Container */}
       <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-zinc-200/80 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b]">
         {/* Default Static Thumbnail (Always acts as stable base layer) */}
-        <img
-          src={displayThumbnail}
-          alt={video.title}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer-when-downgrade"
-          onError={handleImageError}
-          className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-        />
+        {isMp4Thumb ? (
+          <video
+            src={`${primaryThumb || video.previewMp4Url}#t=0.001`}
+            preload="metadata"
+            muted
+            playsInline
+            className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <img
+            src={displayThumbnail}
+            alt={video.title}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer-when-downgrade"
+            onError={handleImageError}
+            className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+          />
+        )}
 
         {/* Clean Live Hover / Frame Flipbook Preview */}
         {renderPreviewContent()}
