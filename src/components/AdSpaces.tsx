@@ -219,8 +219,6 @@ export const DesktopFullpageInterstitial: React.FC = () => {
       triggerAdServe();
       setTimeout(triggerAdServe, 80);
       setTimeout(triggerAdServe, 300);
-      setTimeout(triggerAdServe, 700);
-      setTimeout(triggerAdServe, 1500);
     } catch (err) {
       console.warn("[ExoClick] Desktop interstitial error:", err);
     }
@@ -228,16 +226,21 @@ export const DesktopFullpageInterstitial: React.FC = () => {
 
   useEffect(() => {
     if (!canRenderDesktop) return;
-    const t = setTimeout(() => renderAd(), 200);
-    const handleRefresh = () => renderAd();
-    window.addEventListener("exoclick-refresh-ads", handleRefresh);
-    window.addEventListener("popstate", handleRefresh);
-    window.addEventListener("pageshow", handleRefresh);
+    renderAd();
+    const handleTrigger = () => {
+      try {
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+      } catch {}
+    };
+    window.addEventListener("exoclick-refresh-ads", handleTrigger);
+    window.addEventListener("popstate", handleTrigger);
+    window.addEventListener("pageshow", handleTrigger);
     return () => {
-      clearTimeout(t);
-      window.removeEventListener("exoclick-refresh-ads", handleRefresh);
-      window.removeEventListener("popstate", handleRefresh);
-      window.removeEventListener("pageshow", handleRefresh);
+      window.removeEventListener("exoclick-refresh-ads", handleTrigger);
+      window.removeEventListener("popstate", handleTrigger);
+      window.removeEventListener("pageshow", handleTrigger);
     };
   }, [renderAd, canRenderDesktop]);
 
@@ -311,8 +314,6 @@ export const MobileFullpageInterstitial: React.FC = () => {
       triggerAdServe();
       setTimeout(triggerAdServe, 80);
       setTimeout(triggerAdServe, 300);
-      setTimeout(triggerAdServe, 700);
-      setTimeout(triggerAdServe, 1500);
     } catch (err) {
       console.warn("[ExoClick] Mobile native interstitial error:", err);
     }
@@ -320,16 +321,21 @@ export const MobileFullpageInterstitial: React.FC = () => {
 
   useEffect(() => {
     if (!isMobile) return;
-    const t = setTimeout(() => renderAd(), 250);
-    const handleRefresh = () => renderAd();
-    window.addEventListener("exoclick-refresh-ads", handleRefresh);
-    window.addEventListener("popstate", handleRefresh);
-    window.addEventListener("pageshow", handleRefresh);
+    renderAd();
+    const handleTrigger = () => {
+      try {
+        const win = window as any;
+        win.AdProvider = win.AdProvider || [];
+        win.AdProvider.push({ serve: {} });
+      } catch {}
+    };
+    window.addEventListener("exoclick-refresh-ads", handleTrigger);
+    window.addEventListener("popstate", handleTrigger);
+    window.addEventListener("pageshow", handleTrigger);
     return () => {
-      clearTimeout(t);
-      window.removeEventListener("exoclick-refresh-ads", handleRefresh);
-      window.removeEventListener("popstate", handleRefresh);
-      window.removeEventListener("pageshow", handleRefresh);
+      window.removeEventListener("exoclick-refresh-ads", handleTrigger);
+      window.removeEventListener("popstate", handleTrigger);
+      window.removeEventListener("pageshow", handleTrigger);
     };
   }, [renderAd, isMobile]);
 
@@ -708,7 +714,15 @@ export const NativeRecommendationAd: React.FC<{
   const containerRef = useRef<HTMLDivElement>(null);
   const zoneId = AD_ZONES.NATIVE_RECOMMENDED || "6010176";
 
-  const renderAd = useCallback(() => {
+  const triggerAdServe = useCallback(() => {
+    try {
+      const win = window as any;
+      win.AdProvider = win.AdProvider || [];
+      win.AdProvider.push({ serve: {} });
+    } catch {}
+  }, []);
+
+  const mountAd = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
 
@@ -740,27 +754,20 @@ export const NativeRecommendationAd: React.FC<{
       triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
       el.appendChild(triggerScript);
 
-      const triggerServe = () => {
-        try {
-          const win = window as any;
-          win.AdProvider = win.AdProvider || [];
-          win.AdProvider.push({ serve: {} });
-        } catch {}
-      };
-
-      triggerServe();
-      setTimeout(triggerServe, 100);
-      setTimeout(triggerServe, 400);
-      setTimeout(triggerServe, 1000);
-      setTimeout(triggerServe, 2000);
+      triggerAdServe();
+      setTimeout(triggerAdServe, 60);
+      setTimeout(triggerAdServe, 200);
+      setTimeout(triggerAdServe, 600);
     } catch (e) {
       console.warn("[ExoClick] Native recommendation widget mount error:", e);
     }
-  }, [zoneId]);
+  }, [zoneId, triggerAdServe]);
 
   useEffect(() => {
-    renderAd();
-    const handleRefresh = () => renderAd();
+    mountAd();
+    const handleRefresh = () => {
+      triggerAdServe();
+    };
     window.addEventListener("exoclick-refresh-ads", handleRefresh);
     window.addEventListener("popstate", handleRefresh);
     window.addEventListener("pageshow", handleRefresh);
@@ -769,7 +776,7 @@ export const NativeRecommendationAd: React.FC<{
       window.removeEventListener("popstate", handleRefresh);
       window.removeEventListener("pageshow", handleRefresh);
     };
-  }, [renderAd, reloadKey]);
+  }, [mountAd, triggerAdServe, reloadKey]);
 
   return (
     <section className={`native-recommendation-wrapper w-full my-4 ${className}`}>
