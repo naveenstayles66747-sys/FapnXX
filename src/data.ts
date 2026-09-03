@@ -192,6 +192,39 @@ export const VIDEOS: Video[] = ((curatedDataset as any) || []) as Video[];
 
 export const INITIAL_VIDEOS = VIDEOS;
 
+export const BRAZZERS_VIDEOS: Video[] = [
+  {
+    id: 'bz-820285',
+    title: 'Brazzers Exclusive Premiere - HD 4K Scene',
+    category: 'trending',
+    categoryLabel: 'Trending',
+    categories: ['trending', 'hardcore', 'exclusive'],
+    tags: ['Brazzers', 'Exclusive', 'HD', 'Trending', '4K', 'Premiere'],
+    performers: ['Brazzers VIP Stars'],
+    performerName: 'Brazzers Official',
+    channelName: 'Brazzers',
+    sourceWebsite: 'Brazzers Network',
+    sourceWebsiteUrl: 'https://landing1.brazzersnetwork.com/tgp1?ad_id=820285&ata=Navifapx',
+    adLinkUrl: 'https://landing1.brazzersnetwork.com/tgp1?ad_id=820285&ata=Navifapx',
+    thumbnail: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80',
+    previewMp4Url: 'https://hw-cdn2.contentabc.com/a7/creatives/1/49/820285/1118165/1118165_video.mp4',
+    embedUrl: 'https://hw-cdn2.contentabc.com/a7/creatives/1/49/820285/1118165/1118165_video.mp4',
+    duration: '32:15',
+    quality: '4K',
+    views: '2.4M',
+    viewsCount: 2420000,
+    rating: '99%',
+    timeAgo: 'Just now',
+    createdAt: new Date().toISOString(),
+    description: 'Official Brazzers VIP exclusive release in crystal clear 4K definition.',
+    isExclusive: true,
+    isNew: true,
+    isOriginal: true,
+    likesCount: 145000,
+  }
+];
+
 export const INITIAL_LANDING_BANNERS: import('./types').LandingBanner[] = [];
 
 

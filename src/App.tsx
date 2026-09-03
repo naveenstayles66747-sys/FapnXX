@@ -29,7 +29,7 @@ const UploadModal = lazy(() => import('./components/UploadModal').then(m => ({ d
 const AdManagementModal = lazy(() => import('./components/AdManagementModal').then(m => ({ default: m.AdManagementModal })));
 const AdminPanelModal = lazy(() => import('./components/AdminPanelModal').then(m => ({ default: m.AdminPanelModal })));
 const SoftLoginModal = lazy(() => import('./components/SoftLoginModal').then(m => ({ default: m.SoftLoginModal })));
-import { CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from './data';
+import { BRAZZERS_VIDEOS, CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from './data';
 import { deduplicateVideos } from './utils/videoDeduplicator';
 import { videoService } from './services/videoService';
 import { auth } from './services/firebaseConfig';
@@ -135,7 +135,7 @@ export default function App() {
     },
   ], []);
 
-  // Filtered Brazzers Videos (checks title, tags, performers, source, channel)
+  // Filtered Brazzers Videos (includes BRAZZERS_VIDEOS + matched catalog)
   const brazzersVideosList = useMemo(() => {
     const matched = filteredVideosList.filter((v) => {
       if (!v) return false;
@@ -152,7 +152,7 @@ export default function App() {
         channel.includes('brazzers')
       );
     });
-    return matched.length > 0 ? matched : filteredVideosList;
+    return deduplicateVideos([...BRAZZERS_VIDEOS, ...matched, ...filteredVideosList]);
   }, [filteredVideosList]);
 
   // Real Firebase Auth & Custom Claims Observer
