@@ -30,7 +30,7 @@ interface HeaderProps {
 }
 
 // Custom Dual-Color SVG Icon matching the interlinked Male + Female (Venus & Mars) heterosexual gender symbol
-const IntertwinedGenderIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
+const IntertwinedGenderIcon: React.FC<{ className?: string; isBrazzers?: boolean }> = ({ className = 'w-5 h-5', isBrazzers = false }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -39,11 +39,11 @@ const IntertwinedGenderIcon: React.FC<{ className?: string }> = ({ className = '
     strokeLinejoin="round"
     className={className}
   >
-    {/* Female (Venus ♀) Circle & Cross in Swatch Pink #e0358d */}
+    {/* Female (Venus ♀) Circle & Cross in Swatch Pink #e0358d or Brazzers Gold #f59e0b */}
     <g>
-      <circle cx="8.5" cy="12.5" r="4.2" className="stroke-[#e0358d] group-hover/gender:stroke-white transition-colors" />
-      <line x1="8.5" y1="16.7" x2="8.5" y2="22" className="stroke-[#e0358d] group-hover/gender:stroke-white transition-colors" />
-      <line x1="5.5" y1="19.5" x2="11.5" y2="19.5" className="stroke-[#e0358d] group-hover/gender:stroke-white transition-colors" />
+      <circle cx="8.5" cy="12.5" r="4.2" className={`${isBrazzers ? 'stroke-[#f59e0b]' : 'stroke-[#e0358d]'} group-hover/gender:stroke-white transition-colors`} />
+      <line x1="8.5" y1="16.7" x2="8.5" y2="22" className={`${isBrazzers ? 'stroke-[#f59e0b]' : 'stroke-[#e0358d]'} group-hover/gender:stroke-white transition-colors`} />
+      <line x1="5.5" y1="19.5" x2="11.5" y2="19.5" className={`${isBrazzers ? 'stroke-[#f59e0b]' : 'stroke-[#e0358d]'} group-hover/gender:stroke-white transition-colors`} />
     </g>
 
     {/* Male (Mars ♂) Circle & Arrow in Black / Theme Dark */}
@@ -156,6 +156,18 @@ export const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const isBrazzers =
+    currentScreen === 'brazzers' ||
+    (currentScreen === 'video-detail' &&
+      Boolean(
+        selectedVideo?.id?.startsWith('bz-') ||
+        selectedVideo?.channelName?.toLowerCase() === 'brazzers' ||
+        selectedVideo?.sourceWebsite?.toLowerCase()?.includes('brazzers') ||
+        selectedVideo?.sourceWebsiteUrl?.toLowerCase()?.includes('brazzers') ||
+        selectedVideo?.adLinkUrl?.toLowerCase()?.includes('brazzers') ||
+        selectedVideo?.tags?.some((t) => t.toLowerCase().includes('brazzers'))
+      ));
+
   const renderPrefDropdownMenu = () => (
     <div
       className="dropdown-modal-menu absolute left-0 lg:left-auto lg:right-0 mt-2 w-48 rounded-2xl shadow-2xl py-2 z-50 text-xs animate-in fade-in zoom-in-95 duration-150 overflow-hidden overscroll-contain"
@@ -165,10 +177,10 @@ export const Header: React.FC<HeaderProps> = ({
     >
       <div className="px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
         <span className="flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-sm text-[#e0358d]">tune</span>
+          <span className={`material-symbols-outlined text-sm ${isBrazzers ? 'text-amber-400' : 'text-[#e0358d]'}`}>tune</span>
           Content Filter
         </span>
-        <span className="text-[#e0358d] font-mono text-[9px] font-black">ACTIVE</span>
+        <span className={`${isBrazzers ? 'text-amber-400' : 'text-[#e0358d]'} font-mono text-[9px] font-black`}>ACTIVE</span>
       </div>
       {([
         { id: 'straight', label: 'Straight', icon: 'wc' },
@@ -184,39 +196,27 @@ export const Header: React.FC<HeaderProps> = ({
               setIsPrefMenuOpen(false);
             }}
             className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-all cursor-pointer ${
-              isSelected ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'font-semibold'
+              isSelected ? `active-option font-extrabold border-l-4 ${isBrazzers ? 'border-amber-400 text-amber-400' : 'border-[#e0358d]'}` : 'font-semibold'
             }`}
           >
             <span className="flex items-center gap-2.5">
               {pref.id === 'straight' ? (
-                <IntertwinedGenderIcon className="w-4.5 h-4.5" />
+                <IntertwinedGenderIcon className="w-4.5 h-4.5" isBrazzers={isBrazzers} />
               ) : pref.id === 'lesbian' ? (
-                <span className="material-symbols-outlined text-base text-[#e0358d]">female</span>
+                <span className={`material-symbols-outlined text-base ${isBrazzers ? 'text-amber-400' : 'text-[#e0358d]'}`}>female</span>
               ) : (
                 <span className="material-symbols-outlined text-base text-zinc-900 dark:text-zinc-100">male</span>
               )}
               <span className="font-semibold text-xs tracking-wide">{pref.label}</span>
             </span>
             {isSelected && (
-              <span className="material-symbols-outlined text-sm text-[#e0358d] fill-1">check_circle</span>
+              <span className={`material-symbols-outlined text-sm ${isBrazzers ? 'text-amber-400' : 'text-[#e0358d]'} fill-1`}>check_circle</span>
             )}
           </button>
         );
       })}
     </div>
   );
-
-  const isBrazzers =
-    currentScreen === 'brazzers' ||
-    (currentScreen === 'video-detail' &&
-      Boolean(
-        selectedVideo?.id?.startsWith('bz-') ||
-        selectedVideo?.channelName?.toLowerCase() === 'brazzers' ||
-        selectedVideo?.sourceWebsite?.toLowerCase()?.includes('brazzers') ||
-        selectedVideo?.sourceWebsiteUrl?.toLowerCase()?.includes('brazzers') ||
-        selectedVideo?.adLinkUrl?.toLowerCase()?.includes('brazzers') ||
-        selectedVideo?.tags?.some((t) => t.toLowerCase().includes('brazzers'))
-      ));
 
   return (
     <header className={`sticky top-0 w-full z-50 header-container backdrop-blur-xl flex justify-between items-center px-3 md:px-8 h-16 md:h-20 shrink-0 box-border transition-colors ${
@@ -284,7 +284,7 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label="Content Preference"
           >
             {contentPreference === 'straight' ? (
-              <IntertwinedGenderIcon className="w-5 h-5" />
+              <IntertwinedGenderIcon className="w-5 h-5" isBrazzers={isBrazzers} />
             ) : contentPreference === 'lesbian' ? (
               <span className={`material-symbols-outlined text-xl ${isBrazzers ? 'text-amber-400' : 'text-[#e0358d]'}`}>female</span>
             ) : (
@@ -337,15 +337,23 @@ export const Header: React.FC<HeaderProps> = ({
             if (e.key === 'Escape') { setDesktopSuggestionsOpen(false); }
           }}
           placeholder="Search videos, performers, tags..."
-          className="w-full header-search-input rounded-full py-2 pl-5 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-[#e0358d]/50 transition-all shadow-inner border"
+          className={`w-full header-search-input rounded-full py-2 pl-5 pr-10 text-xs focus:outline-none transition-all shadow-inner border ${
+            isBrazzers
+              ? 'bg-zinc-900/90 text-white placeholder:text-zinc-500 border-amber-500/40 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/30'
+              : 'focus:ring-2 focus:ring-[#e0358d]/50'
+          }`}
           autoComplete="off"
         />
         <button
           onClick={() => { onOpenSearch(); setDesktopSuggestionsOpen(false); }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-[#e0358d] hover:bg-[#e0358d]/20 transition-colors cursor-pointer"
+          className={`absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full transition-colors cursor-pointer ${
+            isBrazzers ? 'text-amber-400 hover:bg-amber-500/20' : 'text-[#e0358d] hover:bg-[#e0358d]/20'
+          }`}
           aria-label="Search"
         >
-          <span className="material-symbols-outlined header-search-icon transition-colors text-lg text-[#e0358d]">
+          <span className={`material-symbols-outlined header-search-icon transition-colors text-lg ${
+            isBrazzers ? 'text-amber-400' : 'text-[#e0358d]'
+          }`}>
             search
           </span>
         </button>
@@ -364,11 +372,17 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Desktop Theme Toggle Button (Light/Dark Mode) — Sleek Theme Matching Pill */}
         <button
           onClick={onToggleTheme}
-          className="hidden lg:flex w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/90 hover:bg-[#e0358d] dark:hover:bg-[#e0358d] text-zinc-700 dark:text-zinc-200 hover:text-white dark:hover:text-white items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-300 dark:border-white/10 transition-all duration-200 group/theme"
+          className={`hidden lg:flex w-9 h-9 rounded-full items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border transition-all duration-200 group/theme ${
+            isBrazzers
+              ? 'bg-zinc-900 border-amber-500/30 hover:bg-zinc-800 text-amber-400'
+              : 'bg-zinc-100 dark:bg-zinc-800/90 hover:bg-[#e0358d] dark:hover:bg-[#e0358d] text-zinc-700 dark:text-zinc-200 hover:text-white dark:hover:text-white border-zinc-300 dark:border-white/10'
+          }`}
           title={themeMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           aria-label="Toggle theme mode"
         >
-          <span className="material-symbols-outlined text-[18px] text-[#e0358d] dark:text-[#f472b6] group-hover/theme:text-white transition-colors">
+          <span className={`material-symbols-outlined text-[18px] transition-colors ${
+            isBrazzers ? 'text-amber-400' : 'text-[#e0358d] dark:text-[#f472b6] group-hover/theme:text-white'
+          }`}>
             {themeMode === 'dark' ? 'light_mode' : 'dark_mode'}
           </span>
         </button>
@@ -377,14 +391,18 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative hidden lg:block" ref={prefDropdownRef}>
           <button
             onClick={() => { setIsPrefMenuOpen(!isPrefMenuOpen); setIsLangMenuOpen(false); }}
-            className="header-btn-hover-pink w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10 group/gender"
+            className={`w-9 h-9 rounded-full flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border group/gender transition-colors ${
+              isBrazzers
+                ? 'bg-zinc-900 border-amber-500/30 hover:bg-zinc-800'
+                : 'header-btn-hover-pink bg-zinc-100 dark:bg-zinc-800/80 border-zinc-200/50 dark:border-white/10'
+            }`}
             title="Content Filter Preference"
             aria-label="Content Preference"
           >
             {contentPreference === 'straight' ? (
-              <IntertwinedGenderIcon className="w-5 h-5" />
+              <IntertwinedGenderIcon className="w-5 h-5" isBrazzers={isBrazzers} />
             ) : contentPreference === 'lesbian' ? (
-              <span className="material-symbols-outlined text-lg text-[#e0358d] group-hover/gender:text-white transition-colors">female</span>
+              <span className={`material-symbols-outlined text-lg ${isBrazzers ? 'text-amber-400' : 'text-[#e0358d] group-hover/gender:text-white'} transition-colors`}>female</span>
             ) : (
               <span className="material-symbols-outlined text-lg text-zinc-900 dark:text-zinc-100 group-hover/gender:text-white transition-colors">male</span>
             )}
@@ -400,6 +418,8 @@ export const Header: React.FC<HeaderProps> = ({
             className={`hidden lg:flex px-2.5 py-1.5 rounded-lg font-bold text-[11px] tracking-wider uppercase border transition-all items-center gap-1 cursor-pointer active:scale-95 group/btn ${
               isAdminAuthenticated
                 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30 hover:text-white'
+                : isBrazzers
+                ? 'bg-zinc-900 hover:bg-amber-500 text-amber-400 hover:text-black border-amber-500/30'
                 : 'bg-[#2a2a2c] hover:bg-[#e0358d] text-[#ffb0cd] hover:text-white border-[#353437] hover:border-[#e0358d]'
             }`}
             title="Open Admin Panel & Media Controls"
@@ -412,7 +432,11 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Upload Button — Desktop only (mobile has it in drawer menu) */}
         <button
           onClick={onOpenUpload}
-          className="hidden lg:flex w-auto px-4 py-2 rounded-xl bg-[#e0358d] hover:bg-[#c9287a] text-white font-black text-xs shadow-lg shadow-[#e0358d]/30 items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0"
+          className={`hidden lg:flex w-auto px-4 py-2 rounded-xl font-black text-xs items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0 ${
+            isBrazzers
+              ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black shadow-lg shadow-amber-500/25 hover:brightness-110'
+              : 'bg-[#e0358d] hover:bg-[#c9287a] text-white shadow-lg shadow-[#e0358d]/30'
+          }`}
           title="Upload Video"
         >
           <span className="material-symbols-outlined text-xl">upload</span>
@@ -428,11 +452,17 @@ export const Header: React.FC<HeaderProps> = ({
                 setTimeout(() => mobileSearchRef.current?.focus(), 100);
               }
             }}
-            className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center text-[#e0358d] hover:bg-[#e0358d] hover:text-white dark:text-[#f472b6] dark:hover:text-white transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border ${
+              isBrazzers
+                ? 'bg-zinc-900 border-amber-500/30 text-amber-400 hover:bg-zinc-800'
+                : 'bg-zinc-100 dark:bg-zinc-800/80 border-zinc-200/50 dark:border-white/10 text-[#e0358d] hover:bg-[#e0358d] hover:text-white dark:text-[#f472b6] dark:hover:text-white'
+            }`}
             aria-label="Search"
             title="Search"
           >
-            <span className="material-symbols-outlined text-[20px] text-[#e0358d] dark:text-[#f472b6]">
+            <span className={`material-symbols-outlined text-[20px] ${
+              isBrazzers ? 'text-amber-400' : 'text-[#e0358d] dark:text-[#f472b6]'
+            }`}>
               {mobileSearchActive ? 'close' : 'search'}
             </span>
           </button>
@@ -456,7 +486,11 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="hidden lg:flex items-center gap-2">
             <button
               onClick={() => onNavigate('signin')}
-              className="px-4 py-2 rounded-lg bg-[#2a2a2c] hover:bg-[#ec4899] border border-[#353437] hover:border-[#ec4899] text-[#e5e1e4] hover:text-white font-semibold text-xs tracking-wider uppercase transition-colors cursor-pointer group/btn"
+              className={`px-4 py-2 rounded-lg border font-semibold text-xs tracking-wider uppercase transition-colors cursor-pointer group/btn ${
+                isBrazzers
+                  ? 'bg-zinc-900 hover:bg-amber-500 text-amber-400 hover:text-black border-amber-500/30'
+                  : 'bg-[#2a2a2c] hover:bg-[#ec4899] border-[#353437] hover:border-[#ec4899] text-[#e5e1e4] hover:text-white'
+              }`}
             >
               <span className="group-hover/btn:text-white transition-colors">{t.signIn}</span>
             </button>
@@ -467,16 +501,24 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative" ref={langDropdownRef}>
           <button
             onClick={() => { setIsLangMenuOpen(!isLangMenuOpen); setIsPrefMenuOpen(false); }}
-            className="header-btn-hover-pink w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10 group/lang"
+            className={`w-9 h-9 rounded-full flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border transition-all duration-200 group/lang ${
+              isBrazzers
+                ? 'bg-zinc-900 border-amber-500/30 hover:bg-zinc-800'
+                : 'header-btn-hover-pink bg-zinc-100 dark:bg-zinc-800/80 border-zinc-200/50 dark:border-white/10'
+            }`}
             title={isLangMenuOpen ? "Close Language Menu" : `Switch Language: ${currentLanguageMeta?.englishName || 'English'} (${currentLanguageMeta?.label || 'EN'}) / भाषा बदलें`}
             aria-label={isLangMenuOpen ? "Close Language Menu" : "Switch Language"}
           >
             {isLangMenuOpen ? (
-              <span className="material-symbols-outlined text-[18px] text-[#e0358d] group-hover/lang:text-white transition-colors">
+              <span className={`material-symbols-outlined text-[18px] transition-colors ${
+                isBrazzers ? 'text-amber-400' : 'text-[#e0358d] group-hover/lang:text-white'
+              }`}>
                 close
               </span>
             ) : (
-              <GlobeIcon className="w-[18px] h-[18px] text-[#e0358d] group-hover/lang:text-white transition-colors stroke-current" />
+              <GlobeIcon className={`w-[18px] h-[18px] transition-colors stroke-current ${
+                isBrazzers ? 'text-amber-400' : 'text-[#e0358d] group-hover/lang:text-white'
+              }`} />
             )}
           </button>
 
@@ -489,7 +531,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <div className="px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#debec8] border-b border-white/10 mb-1 flex items-center justify-between">
                 <span>Select Language</span>
-                <span className="text-[#e0358d] text-[9px] font-mono">REGIONAL PICKS</span>
+                <span className={`${isBrazzers ? 'text-amber-400' : 'text-[#e0358d]'} text-[9px] font-mono`}>REGIONAL PICKS</span>
               </div>
               {LANGUAGE_LIST.map((item) => {
                 const isSelected = language === item.code;
@@ -501,7 +543,7 @@ export const Header: React.FC<HeaderProps> = ({
                       setIsLangMenuOpen(false);
                     }}
                     className={`w-full px-3.5 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                      isSelected ? 'active-option font-extrabold border-l-4 border-[#e0358d]' : 'hover:bg-white/10 font-semibold'
+                      isSelected ? `active-option font-extrabold border-l-4 ${isBrazzers ? 'border-amber-400 text-amber-400' : 'border-[#e0358d]'}` : 'hover:bg-white/10 font-semibold'
                     }`}
                   >
                     <span className="flex items-center gap-2">
@@ -509,7 +551,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <span className="font-bold">{item.label}</span>
                       <span className="text-[10px] opacity-60">({item.englishName})</span>
                     </span>
-                    {isSelected && <span className="material-symbols-outlined text-sm text-[#e0358d]">check</span>}
+                    {isSelected && <span className={`material-symbols-outlined text-sm ${isBrazzers ? 'text-amber-400' : 'text-[#e0358d]'}`}>check</span>}
                   </button>
                 );
               })}
