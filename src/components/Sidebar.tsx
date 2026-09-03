@@ -82,6 +82,28 @@ const SidebarComponent: React.FC<SidebarProps> = ({
             </button>
           </li>
 
+          {/* Brazzers Exclusive Channel Feature */}
+          <li>
+            <button
+              onClick={() => onNavigate('brazzers')}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-lg font-bold text-xs tracking-wide cursor-pointer transition-all ${
+                currentScreen === 'brazzers'
+                  ? 'bg-gradient-to-r from-amber-500/25 to-yellow-500/10 text-amber-400 border-l-4 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)]'
+                  : 'text-amber-500/90 dark:text-amber-400 hover:text-amber-400 hover:bg-amber-500/10'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-xl text-amber-400">
+                  workspace_premium
+                </span>
+                <span>Brazzers Edition</span>
+              </div>
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500 text-black shadow-sm">
+                HOT
+              </span>
+            </button>
+          </li>
+
           {categories.map((cat) => {
             const isActive =
               (currentScreen === 'category-detail' && selectedCategoryId === cat.id) ||

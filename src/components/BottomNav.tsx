@@ -67,18 +67,22 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
       <button
         onClick={() => onNavigate('browse')}
         className={`bottom-nav-btn flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-all ${
-          currentScreen === 'browse'
+          currentScreen === 'brazzers'
+            ? 'active-nav text-amber-500 dark:text-amber-400 font-black'
+            : currentScreen === 'browse'
             ? 'active-nav text-[#d81b60] dark:text-[#ffb0cd] font-black'
             : 'inactive-nav text-zinc-800 dark:text-zinc-400 hover:text-[#d81b60] dark:hover:text-[#ffb0cd] font-bold'
         }`}
       >
         <span
           className="material-symbols-outlined text-2xl mb-0.5"
-          style={{ fontVariationSettings: currentScreen === 'browse' ? "'FILL' 1" : "'FILL' 0" }}
+          style={{ fontVariationSettings: currentScreen === 'browse' || currentScreen === 'brazzers' ? "'FILL' 1" : "'FILL' 0" }}
         >
-          explore
+          {currentScreen === 'brazzers' ? 'workspace_premium' : 'explore'}
         </span>
-        <span className="text-[11px] font-bold tracking-wide">Browse</span>
+        <span className="text-[11px] font-bold tracking-wide">
+          {currentScreen === 'brazzers' ? 'Brazzers' : 'Browse'}
+        </span>
       </button>
 
       <button

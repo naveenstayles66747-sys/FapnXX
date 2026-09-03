@@ -186,6 +186,26 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 </button>
               </li>
 
+              {/* Brazzers Exclusive Channel Feature */}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onNavigate('brazzers');
+                    onClose();
+                  }}
+                  className="w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer font-bold text-left text-amber-500 dark:text-amber-400 hover:bg-amber-500/10 active:bg-amber-500/20"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <span className="material-symbols-outlined text-lg text-amber-400">workspace_premium</span>
+                    <span>Brazzers Edition</span>
+                  </div>
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-500 text-black shadow-sm">
+                    VIP
+                  </span>
+                </button>
+              </li>
+
               {/* Videos Dropdown (Accordion) */}
               <li>
                 <button

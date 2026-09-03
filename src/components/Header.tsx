@@ -204,18 +204,34 @@ export const Header: React.FC<HeaderProps> = ({
     </div>
   );
 
+  const isBrazzers = currentScreen === 'brazzers';
+
   return (
-    <header className="sticky top-0 w-full z-50 header-container backdrop-blur-xl border-b border-zinc-200/80 dark:border-white/10 flex justify-between items-center px-3 md:px-8 h-16 md:h-20 shrink-0 box-border bg-white/95 dark:bg-[#09090b]/95">
+    <header className={`sticky top-0 w-full z-50 header-container backdrop-blur-xl flex justify-between items-center px-3 md:px-8 h-16 md:h-20 shrink-0 box-border transition-colors ${
+      isBrazzers
+        ? 'bg-black/98 border-b border-amber-500/30 shadow-[0_4px_30px_rgba(0,0,0,0.95)]'
+        : 'border-b border-zinc-200/80 dark:border-white/10 bg-white/95 dark:bg-[#09090b]/95'
+    }`}>
       {/* 1. Left Section: Hamburger + Brand Logo (Desktop) / Gender Button (Mobile) */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0 z-20">
         {/* Hamburger Menu Button */}
         <button
           onClick={onToggleMobileDrawer}
-          className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700/80 text-zinc-800 dark:text-zinc-100 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0"
+          className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 ${
+            isBrazzers
+              ? 'bg-zinc-900 border border-amber-500/30 text-amber-400 hover:bg-zinc-800'
+              : 'bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700/80 text-zinc-800 dark:text-zinc-100'
+          }`}
           aria-label={isMobileDrawerOpen ? "Close menu" : "Open menu"}
           title={isMobileDrawerOpen ? "Close menu" : "Open menu"}
         >
-          <span className={`material-symbols-outlined text-xl ${isMobileDrawerOpen ? 'text-[#e0358d]' : ''}`}>
+          <span className={`material-symbols-outlined text-xl ${
+            isBrazzers
+              ? 'text-amber-400'
+              : isMobileDrawerOpen
+              ? 'text-[#e0358d]'
+              : ''
+          }`}>
             {isMobileDrawerOpen ? 'close' : 'menu'}
           </span>
         </button>
@@ -227,24 +243,38 @@ export const Header: React.FC<HeaderProps> = ({
           className="hidden lg:flex items-center cursor-pointer select-none active:scale-95 transition-transform bg-transparent border-0 p-0 text-inherit"
           aria-label="FapXX Home"
         >
-          <span className="text-xl md:text-2xl font-black tracking-tight whitespace-nowrap">
-            <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
-            <span className="header-brand-nxx font-black">XX</span>
-          </span>
+          {isBrazzers ? (
+            <span className="text-xl md:text-2xl font-black tracking-tight whitespace-nowrap flex items-center gap-1.5">
+              <span className="text-[#f59e0b] drop-shadow-[0_0_15px_rgba(245,158,11,0.6)] font-black">Fap</span>
+              <span className="text-white font-black">XX</span>
+              <span className="ml-1 px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black text-[9px] tracking-wider uppercase shadow-md">
+                BRAZZERS
+              </span>
+            </span>
+          ) : (
+            <span className="text-xl md:text-2xl font-black tracking-tight whitespace-nowrap">
+              <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
+              <span className="header-brand-nxx font-black">XX</span>
+            </span>
+          )}
         </button>
 
         {/* Mobile Only: Gender Preference Filter Button */}
         <div className="relative shrink-0 lg:hidden" ref={prefDropdownRefMobile}>
           <button
             onClick={() => { setIsPrefMenuOpen(!isPrefMenuOpen); setIsLangMenuOpen(false); }}
-            className="gender-btn-glow w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border border-zinc-200/50 dark:border-white/10"
+            className={`gender-btn-glow w-9 h-9 rounded-full flex items-center justify-center cursor-pointer active:scale-95 shrink-0 shadow-sm border ${
+              isBrazzers
+                ? 'bg-zinc-900 border-amber-500/30'
+                : 'bg-zinc-100 dark:bg-zinc-800/80 border-zinc-200/50 dark:border-white/10'
+            }`}
             title="Content Filter Preference"
             aria-label="Content Preference"
           >
             {contentPreference === 'straight' ? (
               <IntertwinedGenderIcon className="w-5 h-5" />
             ) : contentPreference === 'lesbian' ? (
-              <span className="material-symbols-outlined text-xl text-[#e0358d]">female</span>
+              <span className={`material-symbols-outlined text-xl ${isBrazzers ? 'text-amber-400' : 'text-[#e0358d]'}`}>female</span>
             ) : (
               <span className="material-symbols-outlined text-xl text-zinc-900 dark:text-zinc-100">male</span>
             )}
@@ -262,8 +292,20 @@ export const Header: React.FC<HeaderProps> = ({
           className="text-lg sm:text-xl font-black tracking-tight cursor-pointer select-none active:scale-95 transition-transform whitespace-nowrap bg-transparent border-0 p-1 text-inherit"
           aria-label="FapXX Home"
         >
-          <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
-          <span className="header-brand-nxx font-black">XX</span>
+          {isBrazzers ? (
+            <span className="flex items-center gap-1">
+              <span className="text-[#f59e0b] drop-shadow-[0_0_15px_rgba(245,158,11,0.6)] font-black">Fap</span>
+              <span className="text-white font-black">XX</span>
+              <span className="px-1 py-0.2 rounded bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black text-[8px] tracking-wider uppercase shadow-sm">
+                BRAZZERS
+              </span>
+            </span>
+          ) : (
+            <>
+              <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
+              <span className="header-brand-nxx font-black">XX</span>
+            </>
+          )}
         </button>
       </div>
 

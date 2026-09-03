@@ -1,6 +1,6 @@
 export type CategoryId = string;
 
-export type ScreenId = 'browse' | 'categories' | 'category-detail' | 'performers' | 'video-detail' | 'signin' | 'admin' | 'saved';
+export type ScreenId = 'browse' | 'brazzers' | 'categories' | 'category-detail' | 'performers' | 'video-detail' | 'signin' | 'admin' | 'saved';
 
 export type ContentPreference = 'straight' | 'gay' | 'lesbian';
 

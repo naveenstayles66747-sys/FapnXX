@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense, startTransition } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, startTransition } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { CategoryId, CategoryInfo, ContentPreference, LandingBanner, ScreenId, Video } from './types';
 import { Header } from './components/Header';
@@ -120,6 +120,40 @@ export default function App() {
 
   // Main feed catalog: Serves all 1,950+ curated videos across all categories without duplicates
   const filteredVideosList = deduplicateVideos((videosList && videosList.length >= VIDEOS.length) ? videosList : VIDEOS);
+
+  // Brazzers Network Landing Banners
+  const brazzersBanners: LandingBanner[] = useMemo(() => [
+    {
+      id: 'brazzers-vip-hero',
+      title: 'Brazzers Exclusive Edition',
+      subtitle: 'World-Renowned Adult Entertainment • Premium 4K HD Video Catalog',
+      bannerImage: '/images/categories/trending.jpg',
+      targetCategory: 'trending',
+      ctaText: 'Stream VIP Collection',
+      tag: 'BRAZZERS VIP',
+      isActive: true,
+    },
+  ], []);
+
+  // Filtered Brazzers Videos (checks title, tags, performers, source, channel)
+  const brazzersVideosList = useMemo(() => {
+    const matched = filteredVideosList.filter((v) => {
+      if (!v) return false;
+      const title = (v.title || '').toLowerCase();
+      const tags = Array.isArray(v.tags) ? v.tags.join(' ').toLowerCase() : '';
+      const performer = (v.performerName || '').toLowerCase();
+      const source = (v.sourceWebsite || '').toLowerCase();
+      const channel = (v.channelName || '').toLowerCase();
+      return (
+        title.includes('brazzers') ||
+        tags.includes('brazzers') ||
+        performer.includes('brazzers') ||
+        source.includes('brazzers') ||
+        channel.includes('brazzers')
+      );
+    });
+    return matched.length > 0 ? matched : filteredVideosList;
+  }, [filteredVideosList]);
 
   // Real Firebase Auth & Custom Claims Observer
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
@@ -728,6 +762,24 @@ export default function App() {
                   videos={filteredVideosList}
                   categories={categories}
                   banners={banners}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  sortBy={browseSortBy}
+                  setSortBy={setBrowseSortBy}
+                  contentPreference={contentPreference}
+                  onChangeContentPreference={handleChangeContentPreference}
+                />
+              )}
+
+              {currentScreen === 'brazzers' && (
+                <BrowseScreen
+                  key={`brazzers-screen-${homeResetCount}-${selectedCategoryId}-${searchQuery || 'all'}-${contentPreference}`}
+                  onSelectVideo={handleSelectVideo}
+                  onSelectCategory={handleSelectCategory}
+                  selectedCategory="all"
+                  videos={brazzersVideosList}
+                  categories={categories}
+                  banners={brazzersBanners}
                   searchQuery={searchQuery}
                   setSearchQuery={setSearchQuery}
                   sortBy={browseSortBy}
