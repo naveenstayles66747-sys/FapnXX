@@ -33,6 +33,19 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const [adCurrentTime, setAdCurrentTime] = useState<number>(0);
   const [adDuration, setAdDuration] = useState<number>(15);
 
+  // VIP Partner Badge Auto-Collapse Animation State
+  const [isVipBadgeExpanded, setIsVipBadgeExpanded] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (!isPrerollActive && (video.sourceWebsiteUrl || video.adLinkUrl)) {
+      setIsVipBadgeExpanded(true);
+      const timer = setTimeout(() => {
+        setIsVipBadgeExpanded(false);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [isPrerollActive, video?.id, video.sourceWebsiteUrl, video.adLinkUrl]);
+
   const directPlayerId = `fluid_direct_${(video?.id || "vid").replace(/[^a-zA-Z0-9_-]/g, "_")}`;
   const VAST_TAG_URL = AD_CONFIG.VAST_TAG_URL || "https://s.magsrv.com/v1/vast.php?idz=6003184";
 
@@ -374,17 +387,32 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             className="w-full h-full object-contain block bg-black"
           />
 
-          {/* Partner / Brazzers VIP Watch Full Video Button inside Player */}
-          {(video.sourceWebsiteUrl || video.adLinkUrl) && (
+          {/* Partner / Brazzers VIP Watch Full Video Button inside Player (Auto-collapses to gold badge icon after 1.2s) */}
+          {!isPrerollActive && (video.sourceWebsiteUrl || video.adLinkUrl) && (
             <a
               href={video.sourceWebsiteUrl || video.adLinkUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="absolute top-3 right-3 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/85 hover:bg-black text-amber-400 hover:text-amber-300 font-bold text-xs border border-amber-500/40 backdrop-blur-md shadow-xl transition-all cursor-pointer hover:scale-105 active:scale-95"
+              onMouseEnter={() => setIsVipBadgeExpanded(true)}
+              onMouseLeave={() => setIsVipBadgeExpanded(false)}
+              className="absolute top-2.5 right-2.5 z-30 group/vip flex items-center gap-1.5 p-1.5 sm:py-1.5 sm:px-2.5 rounded-xl bg-black/85 hover:bg-black text-amber-400 hover:text-amber-300 font-bold text-[11px] sm:text-xs border border-amber-500/40 backdrop-blur-md shadow-2xl transition-all duration-300 ease-out cursor-pointer hover:scale-105 active:scale-95 select-none"
+              title="Watch Full Scene on Brazzers"
             >
-              <span className="material-symbols-outlined text-sm text-amber-400">workspace_premium</span>
-              <span>Watch Full Scene on Brazzers</span>
-              <span className="material-symbols-outlined text-xs">open_in_new</span>
+              <span className="material-symbols-outlined text-sm sm:text-base text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]">
+                workspace_premium
+              </span>
+
+              <span
+                className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-out text-[11px] font-black tracking-wide ${
+                  isVipBadgeExpanded ? 'max-w-[170px] opacity-100 mr-0.5' : 'max-w-0 opacity-0'
+                }`}
+              >
+                Watch on Brazzers
+              </span>
+
+              <span className="material-symbols-outlined text-[13px] sm:text-sm text-amber-400/90 group-hover/vip:translate-x-0.5 transition-transform">
+                open_in_new
+              </span>
             </a>
           )}
         </div>
