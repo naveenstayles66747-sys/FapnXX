@@ -210,7 +210,7 @@ export const BRAZZERS_VIDEOS: Video[] = [
     thumbnailUrl: 'https://hw-cdn2.contentabc.com/a7/creatives/1/49/820285/1118165/1118165_video.mp4#t=0.001',
     previewMp4Url: 'https://hw-cdn2.contentabc.com/a7/creatives/1/49/820285/1118165/1118165_video.mp4',
     embedUrl: 'https://hw-cdn2.contentabc.com/a7/creatives/1/49/820285/1118165/1118165_video.mp4',
-    duration: '32:15',
+    duration: '00:15',
     quality: '4K',
     views: '2.4M',
     viewsCount: 2420000,

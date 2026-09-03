@@ -154,6 +154,17 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [isPreviewActive, setIsPreviewActive] = useState<boolean>(false);
   const [currentFrameIndex, setCurrentFrameIndex] = useState<number>(0);
+  const [realDuration, setRealDuration] = useState<string | null>(null);
+
+  const handleMetadataLoaded = useCallback((e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const sec = e.currentTarget.duration;
+    if (typeof sec === "number" && !isNaN(sec) && sec > 0) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      const formatted = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+      setRealDuration(formatted);
+    }
+  }, []);
 
   const isMobile = useIsMobile();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -352,6 +363,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           playsInline
           autoPlay
           controls={false}
+          onLoadedMetadata={handleMetadataLoaded}
           className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-300 scale-105 z-10 bg-black"
         />
       );
@@ -407,6 +419,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
               preload="metadata"
               muted
               playsInline
+              onLoadedMetadata={handleMetadataLoaded}
               className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
             />
           ) : (
@@ -507,6 +520,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
             preload="metadata"
             muted
             playsInline
+            onLoadedMetadata={handleMetadataLoaded}
             className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
           />
         ) : (
@@ -550,7 +564,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
               isMobile ? "left-2" : "right-2"
             }`}
           >
-            {video.duration || "05:00"}
+            {realDuration || video.duration || "05:00"}
           </div>
         )}
 
