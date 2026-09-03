@@ -852,8 +852,10 @@ html.light .age-gate-overlay {
 
 .age-gate-card,
 html.light .age-gate-card {
-  background: rgba(24, 24, 27, 0.85) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: #101014 !important;
+  border: none !important;
+  border-color: transparent !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
 }
 
 /* Force all text inside age gate to be light — overrides light mode text rules */
