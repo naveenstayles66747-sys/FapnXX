@@ -59,6 +59,7 @@ export default function App() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [homeResetCount, setHomeResetCount] = useState<number>(0);
 
   // Theme Mode State (Auto time-based default: 6 AM - 6 PM Light, 6 PM - 6 AM Dark, + Manual toggle & localStorage)
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => getInitialThemeMode());
@@ -512,16 +513,20 @@ export default function App() {
     adManager.recordEligibleTransition('browse_logo', currentScreen);
     refreshExoClickAds('navigate_logo_home');
 
+    setIsMobileDrawerOpen(false);
+
     startTransition(() => {
       setSelectedCategoryId('all');
       setSearchQuery('');
       setSelectedVideo(null);
       setContentPreference('straight');
+      setBrowseSortBy('latest');
       setCurrentScreen('browse');
+      setHomeResetCount((c) => c + 1);
     });
     setStoredContentPreference('straight');
     syncUrlWithState('browse');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
   const handleNavigate = (screen: ScreenId) => {
@@ -531,12 +536,16 @@ export default function App() {
     adManager.recordEligibleTransition(screen, currentScreen);
     refreshExoClickAds(`navigate_${screen}`);
 
+    setIsMobileDrawerOpen(false);
+
     startTransition(() => {
       if (screen === 'browse') {
         setSelectedCategoryId('all');
         setSearchQuery('');
         setSelectedVideo(null);
         setContentPreference('straight');
+        setBrowseSortBy('latest');
+        setHomeResetCount((c) => c + 1);
       }
       setCurrentScreen(screen);
     });
@@ -545,7 +554,7 @@ export default function App() {
     }
     syncUrlWithState(screen);
     // Instant scroll to top — like a fresh page load
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
   // Listen for global reset-to-home events (e.g. from SiteFooter logo)
@@ -712,7 +721,7 @@ export default function App() {
             >
               {currentScreen === 'browse' && (
                 <BrowseScreen
-                  key={`browse-screen-${currentScreen}-${selectedCategoryId}-${searchQuery || 'all'}-${contentPreference}`}
+                  key={`browse-screen-${homeResetCount}-${selectedCategoryId}-${searchQuery || 'all'}-${contentPreference}`}
                   onSelectVideo={handleSelectVideo}
                   onSelectCategory={handleSelectCategory}
                   selectedCategory={selectedCategoryId}

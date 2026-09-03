@@ -221,16 +221,18 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Brand Logo (Visible on Left in Desktop Web View) */}
-        <div
+        <button
+          type="button"
           onClick={() => (onLogoClick ? onLogoClick() : onNavigate('browse'))}
-          className="hidden lg:flex items-center cursor-pointer select-none active:scale-95 transition-transform"
+          className="hidden lg:flex items-center cursor-pointer select-none active:scale-95 transition-transform bg-transparent border-0 p-0 text-inherit"
+          aria-label="FapnXX Home"
         >
-          <h1 className="text-xl md:text-2xl font-black tracking-tight whitespace-nowrap">
+          <span className="text-xl md:text-2xl font-black tracking-tight whitespace-nowrap">
             <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
             <span className="brand-letter-n font-black">n</span>
             <span className="header-brand-nxx font-black">XX</span>
-          </h1>
-        </div>
+          </span>
+        </button>
 
         {/* Mobile Only: Gender Preference Filter Button */}
         <div className="relative shrink-0 lg:hidden" ref={prefDropdownRefMobile}>
@@ -254,15 +256,17 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* 2. Mobile Center Logo (Only on Mobile screens < lg) */}
-      <div className="lg:hidden absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-10 pointer-events-auto">
-        <h1
+      <div className="lg:hidden absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-30 pointer-events-auto">
+        <button
+          type="button"
           onClick={() => (onLogoClick ? onLogoClick() : onNavigate('browse'))}
-          className="text-lg sm:text-xl font-black tracking-tight cursor-pointer select-none active:scale-95 transition-transform whitespace-nowrap"
+          className="text-lg sm:text-xl font-black tracking-tight cursor-pointer select-none active:scale-95 transition-transform whitespace-nowrap bg-transparent border-0 p-1 text-inherit"
+          aria-label="FapnXX Home"
         >
           <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
           <span className="brand-letter-n font-black">n</span>
           <span className="header-brand-nxx font-black">XX</span>
-        </h1>
+        </button>
       </div>
 
       {/* 3. Desktop Centered Search Bar */}
