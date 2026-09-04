@@ -396,7 +396,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               onMouseEnter={() => setIsVipBadgeExpanded(true)}
               onMouseLeave={() => setIsVipBadgeExpanded(false)}
               className="absolute top-2.5 right-2.5 z-30 group/vip flex items-center gap-1.5 p-1.5 sm:py-1.5 sm:px-2.5 rounded-xl bg-black/85 hover:bg-black text-amber-400 hover:text-amber-300 font-bold text-[11px] sm:text-xs border border-amber-500/40 backdrop-blur-md shadow-2xl transition-all duration-300 ease-out cursor-pointer hover:scale-105 active:scale-95 select-none"
-              title="Watch Full Scene on Brazzers"
+              title={`Watch Full Scene on ${video.sourceWebsite || video.channelName || 'Brazzers'}`}
             >
               <span className="material-symbols-outlined text-sm sm:text-base text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]">
                 workspace_premium
@@ -404,10 +404,10 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
               <span
                 className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-out text-[11px] font-black tracking-wide ${
-                  isVipBadgeExpanded ? 'max-w-[170px] opacity-100 mr-0.5' : 'max-w-0 opacity-0'
+                  isVipBadgeExpanded ? 'max-w-[220px] opacity-100 mr-0.5' : 'max-w-0 opacity-0'
                 }`}
               >
-                Watch on Brazzers
+                Watch on {video.sourceWebsite || video.channelName || 'Brazzers'}
               </span>
 
               <span className="material-symbols-outlined text-[13px] sm:text-sm text-amber-400/90 group-hover/vip:translate-x-0.5 transition-transform">
