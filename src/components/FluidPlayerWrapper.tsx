@@ -20,6 +20,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const adVideoRef = useRef<HTMLVideoElement>(null);
+  const mainVideoRef = useRef<HTMLVideoElement>(null);
 
   const [playerMode, setPlayerMode] = useState<"embed" | "video">("embed");
   const [currentVideoSrc, setCurrentVideoSrc] = useState<string>("");
@@ -49,8 +50,8 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const directPlayerId = `fluid_direct_${(video?.id || "vid").replace(/[^a-zA-Z0-9_-]/g, "_")}`;
   const VAST_TAG_URL = AD_CONFIG.VAST_TAG_URL || "https://s.magsrv.com/v1/vast.php?idz=6003184";
 
-  // -- Helper: Clean & Normalize Embed URL directly to unblocked fast mirror ---
-  const extractEmbedUrl = (rawInput?: string): { cleanUrl: string; isDirectVideo: boolean } => {
+  // -- Helper: Clean & Normalize Embed URL directly to unblocked fast mirror with autoplay ---
+  const extractEmbedUrl = (rawInput?: string, shouldAutoPlay: boolean = true): { cleanUrl: string; isDirectVideo: boolean } => {
     let src = (rawInput || "").trim();
     if (src.startsWith("<iframe") || src.includes("src=")) {
       const match = src.match(/src=["']([^"']+)["']/i);
@@ -86,6 +87,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
     const isDirectVideo = !isKnownEmbed && (hasVideoExtension || isStorageBlob);
 
+    if (!isDirectVideo && shouldAutoPlay && src) {
+      if (!/autoplay=/i.test(src) && !/auto=/i.test(src)) {
+        const sep = src.includes("?") ? "&" : "?";
+        src = `${src}${sep}autoplay=1`;
+      }
+    }
+
     return { cleanUrl: src, isDirectVideo };
   };
 
@@ -94,6 +102,22 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     return () => {
       stopAllBackgroundMedia();
     };
+  }, []);
+
+  // -- Main Video Autoplay Trigger (Instant unmuted/muted fallback playback) ---
+  const playMainVideo = useCallback(() => {
+    if (mainVideoRef.current) {
+      mainVideoRef.current.muted = false;
+      const playPromise = mainVideoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          if (mainVideoRef.current) {
+            mainVideoRef.current.muted = true;
+            mainVideoRef.current.play().catch(() => {});
+          }
+        });
+      }
+    }
   }, []);
 
   // -- Helper: Kill ad videos ----------------------------------------------
@@ -105,7 +129,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         adVideoRef.current.src = "";
       }
       document
-        .querySelectorAll(".fluid_ad_video, .fluid_video_wrapper video")
+        .querySelectorAll(".fluid_ad_video")
         .forEach((el: any) => {
           try {
             el.pause();
@@ -116,13 +140,18 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     } catch {}
   }, []);
 
-  // -- Transition Helper: Reveal Main Video Stream cleanly ----------------
+  // -- Transition Helper: Reveal Main Video Stream & Autoplay immediately --
   const startMainContent = useCallback(() => {
     cleanupInstance();
     setIsAdLoading(false);
     setIsPrerollActive(false);
     setDirectVastAd(null);
-  }, [cleanupInstance]);
+    setVideoMountKey((k) => k + 1);
+    // Instant trigger for direct video playback
+    setTimeout(() => {
+      playMainVideo();
+    }, 50);
+  }, [cleanupInstance, playMainVideo]);
 
   // -- Effect: Resolve video stream source and fetch VAST Ad ---------------
   useEffect(() => {
@@ -146,11 +175,11 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     ).trim();
 
     if (rawEmbed) {
-      const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawEmbed);
+      const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawEmbed, autoPlay);
       setPlayerMode(d ? "video" : "embed");
       setCurrentVideoSrc(c);
     } else if (rawMp4) {
-      const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawMp4);
+      const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawMp4, autoPlay);
       setPlayerMode(d ? "video" : "embed");
       setCurrentVideoSrc(c);
     } else {
@@ -180,7 +209,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       isMounted = false;
       cleanupInstance();
     };
-  }, [video?.id, video?.embedUrl, video?.previewMp4Url, cleanupInstance, VAST_TAG_URL]);
+  }, [video?.id, video?.embedUrl, video?.previewMp4Url, autoPlay, cleanupInstance, VAST_TAG_URL]);
 
   // Autoplay handler for VAST Ad Video
   useEffect(() => {
@@ -228,7 +257,15 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       fireTrackingPixel(directVastAd.trackingEvents?.skip);
     }
     startMainContent();
+    playMainVideo();
   };
+
+  // Immediate autoplay effect when preroll ends or is skipped
+  useEffect(() => {
+    if (!isPrerollActive && autoPlay && playerMode === "video") {
+      playMainVideo();
+    }
+  }, [isPrerollActive, autoPlay, playerMode, playMainVideo]);
 
   const toggleAdMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -335,19 +372,32 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       {playerMode === "embed" ? (
         <div className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center">
           {currentVideoSrc ? (
-            <iframe
-              key={`iframe-${videoMountKey}`}
-              src={currentVideoSrc}
-              title={video?.title || "Video Stream"}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
-              allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
-              allowFullScreen
-              referrerPolicy="no-referrer-when-downgrade"
-              scrolling="no"
-              frameBorder={0}
-              className="w-full h-full border-none block bg-black"
-              style={{ border: "none", width: "100%", height: "100%", display: "block" }}
-            />
+            !isPrerollActive ? (
+              <iframe
+                key={`iframe-${videoMountKey}`}
+                src={currentVideoSrc}
+                title={video?.title || "Video Stream"}
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                scrolling="no"
+                frameBorder={0}
+                className="w-full h-full border-none block bg-black"
+                style={{ border: "none", width: "100%", height: "100%", display: "block" }}
+              />
+            ) : (
+              <div className="w-full h-full bg-black flex items-center justify-center relative">
+                {video?.thumbnail || (video as any)?.thumbnailUrl ? (
+                  <img
+                    src={video.thumbnail || (video as any)?.thumbnailUrl}
+                    alt={video.title || "Video"}
+                    className="w-full h-full object-contain opacity-40 blur-[2px]"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-zinc-950" />
+                )}
+              </div>
+            )
           ) : (
             <div className="text-zinc-400 text-sm flex flex-col items-center gap-2 p-4 text-center">
               <span className="material-symbols-outlined text-4xl text-rose-500">videocam_off</span>
@@ -359,15 +409,25 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       ) : (
         <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
           <video
+            ref={mainVideoRef}
             key={`direct-${videoMountKey}`}
             id={directPlayerId}
             src={currentVideoSrc}
             controls
             autoPlay={autoPlay}
             playsInline
+            preload="auto"
             poster={video?.thumbnail || (video as any)?.thumbnailUrl || ""}
             onEnded={onEnded}
+            onCanPlay={() => {
+              if (autoPlay && !isPrerollActive) {
+                playMainVideo();
+              }
+            }}
             onLoadedMetadata={(e) => {
+              if (autoPlay && !isPrerollActive) {
+                playMainVideo();
+              }
               const v = e.currentTarget;
               if (v.duration && !isNaN(v.duration) && v.duration > 0) {
                 const totalSec = Math.floor(v.duration);
