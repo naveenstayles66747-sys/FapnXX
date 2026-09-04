@@ -352,13 +352,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    if (!userEmail && onOpenSoftLogin) {
-                      onClose();
-                      onOpenSoftLogin('Cloud Bookmarks & Playlists');
-                    } else {
-                      onNavigate('saved');
-                      onClose();
-                    }
+                    onNavigate('saved');
+                    onClose();
                   }}
                   className="w-full px-5 py-3.5 flex items-center justify-between text-zinc-900 dark:text-zinc-200 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer font-bold text-left active:bg-zinc-200 dark:active:bg-white/10"
                 >

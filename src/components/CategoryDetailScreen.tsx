@@ -11,6 +11,10 @@ import {
   getResponsiveImageSrcSet,
 } from '../utils/mediaHelper';
 import { deduplicateVideos } from '../utils/videoDeduplicator';
+import {
+  isCategorySaved,
+  toggleStoredSavedCategory,
+} from '../utils/storage';
 
 interface CategoryDetailScreenProps {
   categoryId: CategoryId;
@@ -51,19 +55,25 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
 
   const [selectedSubtag, setSelectedSubtag] = React.useState<string>('All');
   const [sortBy, setSortBy] = React.useState<'newest' | 'views'>('newest');
-  const [isSavedCategory, setIsSavedCategory] = React.useState<boolean>(false);
+  const [isSavedCategory, setIsSavedCategory] = React.useState<boolean>(() => isCategorySaved(categoryId));
   const [toastMsg, setToastMsg] = React.useState<string | null>(null);
   const [currentPage, setCurrentPage] = React.useState<number>(1);
   const PAGE_SIZE = 24;
   const categoryGridTopRef = React.useRef<HTMLElement | null>(null);
 
   React.useEffect(() => {
+    setIsSavedCategory(isCategorySaved(categoryId));
+  }, [categoryId]);
+
+  React.useEffect(() => {
     setCurrentPage(1);
   }, [categoryId, selectedSubtag, sortBy]);
 
   const handleToggleMyList = () => {
-    setIsSavedCategory(!isSavedCategory);
-    setToastMsg(!isSavedCategory ? `Saved ${category.name} to My List` : `Removed ${category.name} from My List`);
+    const updated = toggleStoredSavedCategory(categoryId);
+    const isNowSaved = updated.includes(categoryId);
+    setIsSavedCategory(isNowSaved);
+    setToastMsg(isNowSaved ? `Saved "${category.name}" to My List` : `Removed "${category.name}" from My List`);
     setTimeout(() => setToastMsg(null), 3000);
   };
 
@@ -209,27 +219,27 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
             {category.description}
           </p>
 
-          {/* MY LIST Button (Rendered ONLY when user is logged in / signed up) */}
-          {userEmail && (
-            <div className="pt-5 flex flex-wrap gap-4">
-              <button
-                onClick={handleToggleMyList}
-                className={`border font-bold text-xs uppercase tracking-wider px-6 py-3.5 rounded-full transition-colors flex items-center space-x-2 cursor-pointer active:scale-95 ${
-                  isSavedCategory
-                    ? 'bg-[#ec4899] text-white border-[#ec4899]'
-                    : 'bg-transparent border-[#574048] text-[#fafafa] hover:bg-white/10'
-                }`}
+          {/* MY LIST Button (Persisted to localStorage + Cloud Firestore) */}
+          <div className="pt-5 flex flex-wrap gap-4">
+            <button
+              type="button"
+              onClick={handleToggleMyList}
+              className={`border font-bold text-xs uppercase tracking-wider px-6 py-3.5 rounded-full transition-all flex items-center space-x-2 cursor-pointer active:scale-95 shadow-md ${
+                isSavedCategory
+                  ? 'bg-[#ec4899] text-white border-[#ec4899] shadow-pink-500/30'
+                  : 'bg-black/40 backdrop-blur-md border-white/20 text-[#fafafa] hover:bg-white/15'
+              }`}
+              title={isSavedCategory ? 'Remove category from My List' : 'Add category to My List'}
+            >
+              <span
+                className="material-symbols-outlined text-lg"
+                style={{ fontVariationSettings: isSavedCategory ? "'FILL' 1" : "'FILL' 0" }}
               >
-                <span
-                  className="material-symbols-outlined text-lg"
-                  style={{ fontVariationSettings: isSavedCategory ? "'FILL' 1" : "'FILL' 0" }}
-                >
-                  {isSavedCategory ? 'check' : 'add'}
-                </span>
-                <span>{isSavedCategory ? 'SAVED TO MY LIST' : 'MY LIST'}</span>
-              </button>
-            </div>
-          )}
+                {isSavedCategory ? 'check' : 'add'}
+              </span>
+              <span>{isSavedCategory ? 'SAVED TO MY LIST' : 'MY LIST'}</span>
+            </button>
+          </div>
         </div>
       </section>
 

@@ -327,10 +327,22 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   return (
     <main className="flex-grow lg:pl-64 pb-8 sm:pb-12 w-full max-w-6xl mx-auto overflow-x-hidden">
 
+      {/* Top Back Navigation Bar */}
+      <div className="w-full px-2 sm:px-4 md:px-6 pt-2 pb-1 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-white/5 dark:hover:bg-white/10 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition-all text-xs font-bold cursor-pointer active:scale-95 border border-zinc-200 dark:border-white/10 shadow-sm"
+        >
+          <span className="material-symbols-outlined text-sm">arrow_back</span>
+          <span>Back</span>
+        </button>
+      </div>
+
       {/* ═══════════════════════════════════════════════
           VIDEO PLAYER — Responsive Clean Container
       ═══════════════════════════════════════════════ */}
-      <section className="w-full px-2 sm:px-4 md:px-6 py-1.5 sm:py-2">
+      <section className="w-full px-2 sm:px-4 md:px-6 py-1 sm:py-1.5">
         <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 flex items-center justify-center">
           <FluidPlayerWrapper key={`fluid-player-${video.id}`} video={video} autoPlay={true} />
 

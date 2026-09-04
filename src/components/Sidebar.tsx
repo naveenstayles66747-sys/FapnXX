@@ -144,13 +144,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({
             </button>
 
             <button
-              onClick={() => {
-                if (!userEmail) {
-                  if (onOpenSoftLogin) onOpenSoftLogin('Cloud Bookmarks & Playlists');
-                } else {
-                  onNavigate('saved');
-                }
-              }}
+              onClick={() => onNavigate('saved')}
               className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
                 currentScreen === 'saved'
                   ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'

@@ -322,6 +322,17 @@ export default function App() {
     videosListRef.current = videosList;
   }, [videosList]);
 
+  // Navigation history tracker to return users to their exact previous view (category, search, performers, saved)
+  const previousNavigationRef = useRef<{
+    screen: ScreenId;
+    categoryId?: CategoryId;
+    searchQuery?: string;
+  }>({
+    screen: 'browse',
+    categoryId: 'all',
+    searchQuery: '',
+  });
+
   // Parse URL search params on mount and on window popstate
   const parseUrlRoute = useCallback(() => {
     try {
@@ -345,6 +356,7 @@ export default function App() {
               setSelectedVideo(matched);
               setCurrentScreen('video-detail');
             } else {
+              setSelectedVideo(null);
               setCurrentScreen('browse');
               syncUrlWithState('browse');
             }
@@ -354,18 +366,22 @@ export default function App() {
       }
 
       if (catId) {
+        setSelectedVideo(null);
         setSelectedCategoryId(catId as CategoryId);
         setCurrentScreen('category-detail');
         return;
       }
 
       if (screenParam) {
+        setSelectedVideo(null);
         setCurrentScreen(screenParam);
         return;
       }
 
+      setSelectedVideo(null);
       setCurrentScreen('browse');
     } catch {
+      setSelectedVideo(null);
       setCurrentScreen('browse');
     }
   // Stable: only depends on syncUrlWithState (no videosList — use ref instead)
@@ -495,6 +511,15 @@ export default function App() {
     // Force stop any currently playing ad audio/video
     stopAllBackgroundMedia();
     refreshExoClickAds(`video_${video.id}`);
+
+    // Track the originating screen and filter state before entering video-detail
+    if (currentScreen !== 'video-detail') {
+      previousNavigationRef.current = {
+        screen: currentScreen,
+        categoryId: selectedCategoryId,
+        searchQuery: searchQuery,
+      };
+    }
 
     startTransition(() => {
       setSelectedVideo(video);
@@ -853,11 +878,31 @@ export default function App() {
                       key={`video-screen-${selectedVideo.id}`}
                       video={selectedVideo}
                       onBack={() => {
-                        if (selectedVideo.id.startsWith('bz-') || selectedVideo.sourceWebsite?.toLowerCase().includes('brazzers')) {
+                        triggerPageTransition();
+                        stopAllBackgroundMedia();
+                        const prev = previousNavigationRef.current;
+                        if (prev && prev.screen && prev.screen !== 'video-detail') {
+                          startTransition(() => {
+                            if (prev.categoryId) {
+                              setSelectedCategoryId(prev.categoryId);
+                            }
+                            if (prev.searchQuery !== undefined) {
+                              setSearchQuery(prev.searchQuery);
+                            }
+                            setCurrentScreen(prev.screen);
+                            setSelectedVideo(null);
+                          });
+                          if (prev.screen === 'category-detail' && prev.categoryId && prev.categoryId !== 'all') {
+                            syncUrlWithState('category-detail', undefined, prev.categoryId);
+                          } else {
+                            syncUrlWithState(prev.screen);
+                          }
+                        } else if (selectedVideo.id.startsWith('bz-') || selectedVideo.sourceWebsite?.toLowerCase().includes('brazzers')) {
                           handleNavigate('brazzers');
                         } else {
                           handleNavigate('browse');
                         }
+                        window.scrollTo(0, 0);
                       }}
                       onSelectVideo={handleSelectVideo}
                       onNavigateToSearch={handleNavigateToSearch}

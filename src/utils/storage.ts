@@ -7,6 +7,7 @@ const KEYS = {
   AGE_VERIFIED: 'indianfullxx_age_verified',
   AGE_VERIFIED_TIMESTAMP: 'indianfullxx_age_verified_timestamp',
   SAVED_VIDEOS: 'indianfullxx_saved_videos',
+  SAVED_CATEGORIES: 'indianfullxx_saved_categories',
   LIKED_VIDEOS: 'indianfullxx_liked_videos',
   WATCH_HISTORY: 'indianfullxx_watch_history',
   THEME: 'indianfullxx_theme',
@@ -204,6 +205,7 @@ export interface HistoryItem {
 // User Interaction Sync Dispatcher
 type UserInteractionSyncData = {
   savedVideos?: string[];
+  savedCategories?: string[];
   likedVideos?: string[];
   watchHistory?: HistoryItem[];
   contentPreference?: string;
@@ -257,16 +259,19 @@ const notifyInteractionSync = (data: UserInteractionSyncData): void => {
  */
 export const mergeUserInteractions = (cloudData: {
   savedVideos?: string[];
+  savedCategories?: string[];
   likedVideos?: string[];
   watchHistory?: HistoryItem[];
   contentPreference?: string;
 }): {
   savedVideos: string[];
+  savedCategories: string[];
   likedVideos: string[];
   watchHistory: HistoryItem[];
   contentPreference: string;
 } => {
   const localSaved = getStoredSavedVideos();
+  const localSavedCats = getStoredSavedCategories();
   const localLiked = getStoredLikedVideos();
   const localHistory = getStoredWatchHistory();
   const localPref = getStoredContentPreference();
@@ -275,6 +280,12 @@ export const mergeUserInteractions = (cloudData: {
   const mergedSaved = Array.from(new Set([...(cloudData.savedVideos || []), ...localSaved]));
   try {
     localStorage.setItem(KEYS.SAVED_VIDEOS, JSON.stringify(mergedSaved));
+  } catch {}
+
+  // 1b. Union of Saved Categories (My List)
+  const mergedSavedCats = Array.from(new Set([...(cloudData.savedCategories || []), ...localSavedCats]));
+  try {
+    localStorage.setItem(KEYS.SAVED_CATEGORIES, JSON.stringify(mergedSavedCats));
   } catch {}
 
   // 2. Union of Liked Videos
@@ -350,6 +361,45 @@ export const toggleStoredSavedVideo = (videoId: string): string[] => {
     console.warn('[Storage] Failed to toggle saved video:', err);
     return [];
   }
+};
+
+// Saved Categories (My List)
+export const getStoredSavedCategories = (): string[] => {
+  try {
+    const data = localStorage.getItem(KEYS.SAVED_CATEGORIES);
+    return data ? JSON.parse(data) : [];
+  } catch (err) {
+    console.warn('[Storage] Failed to read saved categories cache:', err);
+    return [];
+  }
+};
+
+export const setStoredSavedCategories = (saved: string[]): void => {
+  try {
+    localStorage.setItem(KEYS.SAVED_CATEGORIES, JSON.stringify(saved));
+    notifyInteractionSync({ savedCategories: saved });
+  } catch (e) {
+    console.warn('[Storage] Failed to persist saved categories:', e);
+  }
+};
+
+export const toggleStoredSavedCategory = (categoryId: string): string[] => {
+  try {
+    const current = getStoredSavedCategories();
+    const updated = current.includes(categoryId)
+      ? current.filter((id) => id !== categoryId)
+      : [...current, categoryId];
+    localStorage.setItem(KEYS.SAVED_CATEGORIES, JSON.stringify(updated));
+    notifyInteractionSync({ savedCategories: updated });
+    return updated;
+  } catch (err) {
+    console.warn('[Storage] Failed to toggle saved category:', err);
+    return [];
+  }
+};
+
+export const isCategorySaved = (categoryId: string): boolean => {
+  return getStoredSavedCategories().includes(categoryId);
 };
 
 // Liked Videos
