@@ -184,13 +184,19 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   const isSpecialPromo = useMemo(() => {
     return Boolean(
       video.id?.startsWith("bz-") ||
+      video.id?.startsWith("dp-") ||
       video.adLinkUrl ||
       video.isSponsored ||
       video.sourceWebsiteUrl?.toLowerCase().includes("brazzers") ||
       video.sourceWebsite?.toLowerCase().includes("brazzers") ||
       video.channelName?.toLowerCase() === "brazzers" ||
       video.title?.toLowerCase().includes("brazzers") ||
-      video.tags?.some((t) => t?.toLowerCase().includes("brazzers"))
+      video.tags?.some((t) => t?.toLowerCase().includes("brazzers")) ||
+      video.sourceWebsiteUrl?.toLowerCase().includes("digitalplayground") ||
+      video.sourceWebsite?.toLowerCase().includes("digital playground") ||
+      video.channelName?.toLowerCase() === "digital playground" ||
+      video.title?.toLowerCase().includes("digital playground") ||
+      video.tags?.some((t) => t?.toLowerCase().includes("digital playground"))
     );
   }, [video]);
   const displayThumbnail = primaryThumb || FALLBACK_THUMBNAIL;

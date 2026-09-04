@@ -503,6 +503,11 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       return parseInt(r.replace('%', ''), 10) || 0;
     };
 
+    // When searching, maintain search relevance score ranking unless user specifically changes sort filter
+    if (cleanSearch && (sortBy === 'latest' || (sortBy as any) === 'most_relevant')) {
+      return deduplicateVideos(list);
+    }
+
     if (sortBy === 'latest') {
       list.sort((a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime());
     } else if (sortBy === 'most_popular' || (sortBy as any) === 'most_relevant') {
@@ -515,7 +520,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       });
     }
     return deduplicateVideos(list);
-  }, [durationFilteredVideos, sortBy]);
+  }, [durationFilteredVideos, sortBy, cleanSearch]);
 
   const [isPageSwitching, setIsPageSwitching] = useState<boolean>(false);
 
