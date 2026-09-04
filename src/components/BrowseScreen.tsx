@@ -1062,8 +1062,8 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
 
                   {/* Native Recommendation Widget in-between grid cards spanning full width (After 4th video) */}
                   {idx === 3 && (
-                    <div key={`browse-native-recommended-in-grid-${selectedCategory}`} className="col-span-full my-3">
-                      <NativeRecommendationAd key={`browse-native-${selectedCategory}`} reloadKey={selectedCategory} />
+                    <div key={`browse-native-recommended-in-grid-${selectedCategory}-${effectiveCurrentPage}-${searchQuery || 'default'}`} className="col-span-full my-3">
+                      <NativeRecommendationAd key={`browse-native-${selectedCategory}-${effectiveCurrentPage}-${searchQuery || 'default'}`} reloadKey={`${selectedCategory}-${effectiveCurrentPage}-${searchQuery || 'default'}`} />
                     </div>
                   )}
 
