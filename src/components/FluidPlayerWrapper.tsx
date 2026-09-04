@@ -26,9 +26,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   const [currentVideoSrc, setCurrentVideoSrc] = useState<string>("");
   const [videoMountKey, setVideoMountKey] = useState<number>(0);
 
-  // VAST In-Stream State
+  // VAST In-Stream State Machine ('checking' -> 'playing' -> 'done')
+  const [adStatus, setAdStatus] = useState<"checking" | "playing" | "done">("checking");
   const [isPrerollActive, setIsPrerollActive] = useState<boolean>(false);
-  const [isAdLoading, setIsAdLoading] = useState<boolean>(false);
   const [directVastAd, setDirectVastAd] = useState<VastAd | null>(null);
   const [isAdMuted, setIsAdMuted] = useState<boolean>(true);
   const [adCurrentTime, setAdCurrentTime] = useState<number>(0);
@@ -143,9 +143,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   // -- Transition Helper: Reveal Main Video Stream & Autoplay immediately --
   const startMainContent = useCallback(() => {
     cleanupInstance();
-    setIsAdLoading(false);
     setIsPrerollActive(false);
     setDirectVastAd(null);
+    setAdStatus("done");
     setVideoMountKey((k) => k + 1);
     // Instant trigger for direct video playback
     setTimeout(() => {
@@ -156,8 +156,8 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   // -- Effect: Resolve video stream source and fetch VAST Ad ---------------
   useEffect(() => {
     setVideoMountKey((k) => k + 1);
+    setAdStatus("checking");
     setIsPrerollActive(false);
-    setIsAdLoading(false);
     setDirectVastAd(null);
     setAdCurrentTime(0);
     setAdDuration(15);
@@ -191,19 +191,29 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     let isMounted = true;
     const dynamicVastTag = `${VAST_TAG_URL}${VAST_TAG_URL.includes("?") ? "&" : "?"}cb=${Date.now()}_${Math.random().toString(36).substring(2, 8)}&v=${encodeURIComponent(video?.id || "vid")}`;
 
-    fetchVastAd(dynamicVastTag, 3000)
+    fetchVastAd(dynamicVastTag, 2500)
       .then((parsedAd) => {
         if (!isMounted) return;
         if (parsedAd && parsedAd.mediaUrl) {
           setDirectVastAd(parsedAd);
           setIsPrerollActive(true);
+          setAdStatus("playing");
           if (parsedAd.durationSeconds && parsedAd.durationSeconds > 0) {
             setAdDuration(parsedAd.durationSeconds);
           }
           fireTrackingPixel(parsedAd.impressionUrls);
+        } else {
+          setIsPrerollActive(false);
+          setDirectVastAd(null);
+          setAdStatus("done");
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!isMounted) return;
+        setIsPrerollActive(false);
+        setDirectVastAd(null);
+        setAdStatus("done");
+      });
 
     return () => {
       isMounted = false;
@@ -213,7 +223,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
   // Autoplay handler for VAST Ad Video
   useEffect(() => {
-    if (isPrerollActive && directVastAd && adVideoRef.current) {
+    if (adStatus === "playing" && isPrerollActive && directVastAd && adVideoRef.current) {
       adVideoRef.current.muted = isAdMuted;
       const playPromise = adVideoRef.current.play();
       if (playPromise !== undefined) {
@@ -226,14 +236,11 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         });
       }
     }
-  }, [isPrerollActive, directVastAd, isAdMuted]);
+  }, [adStatus, isPrerollActive, directVastAd, isAdMuted]);
 
   // Handle direct VAST ad time updates
   const handleDirectAdTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const v = e.currentTarget;
-    if (isAdLoading && v.currentTime > 0.1) {
-      setIsAdLoading(false);
-    }
     setAdCurrentTime(v.currentTime);
     if (v.duration && !isNaN(v.duration) && v.duration > 0) {
       setAdDuration(v.duration);
@@ -262,10 +269,10 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
   // Immediate autoplay effect when preroll ends or is skipped
   useEffect(() => {
-    if (!isPrerollActive && autoPlay && playerMode === "video") {
+    if (adStatus === "done" && autoPlay && playerMode === "video") {
       playMainVideo();
     }
-  }, [isPrerollActive, autoPlay, playerMode, playMainVideo]);
+  }, [adStatus, autoPlay, playerMode, playMainVideo]);
 
   const toggleAdMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -293,9 +300,29 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       className={`relative w-full h-full bg-black overflow-hidden flex flex-col items-center justify-center select-none ${className}`}
     >
       {/* ----------------------------------------------------------------------
+          STAGE 0: AD RESOLVING / LOADING PLACEHOLDER
+      ---------------------------------------------------------------------- */}
+      {adStatus === "checking" && (
+        <div className="absolute inset-0 z-20 w-full h-full bg-black flex items-center justify-center">
+          {video?.thumbnail || (video as any)?.thumbnailUrl ? (
+            <img
+              src={video.thumbnail || (video as any)?.thumbnailUrl}
+              alt={video?.title || "Loading stream"}
+              className="w-full h-full object-contain opacity-40 blur-[1px]"
+            />
+          ) : (
+            <div className="w-full h-full bg-black" />
+          )}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+            <div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
+          </div>
+        </div>
+      )}
+
+      {/* ----------------------------------------------------------------------
           STAGE 1: VAST IN-STREAM AD PREROLL
       ---------------------------------------------------------------------- */}
-      {isPrerollActive && directVastAd && (
+      {adStatus === "playing" && isPrerollActive && directVastAd && (
         <div className="absolute inset-0 z-30 w-full h-full bg-black flex items-center justify-center overflow-hidden">
           <div className="relative w-full h-full flex items-center justify-center bg-black">
             <video
@@ -306,20 +333,17 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               preload="auto"
               muted={isAdMuted}
               onLoadedMetadata={(e) => {
-                setIsAdLoading(false);
                 const v = e.currentTarget;
                 if (v.duration && !isNaN(v.duration) && v.duration > 0) {
                   setAdDuration(v.duration);
                 }
               }}
               onCanPlay={() => {
-                setIsAdLoading(false);
                 if (adVideoRef.current && adVideoRef.current.paused) {
                   adVideoRef.current.play().catch(() => {});
                 }
               }}
               onTimeUpdate={handleDirectAdTimeUpdate}
-              onPlaying={() => setIsAdLoading(false)}
               onEnded={() => {
                 if (directVastAd) {
                   fireTrackingPixel(directVastAd.trackingEvents?.complete);
@@ -369,10 +393,10 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       {/* ----------------------------------------------------------------------
           STAGE 2: MAIN VIDEO STREAM (100% Clean Iframe / Video Player)
       ---------------------------------------------------------------------- */}
-      {playerMode === "embed" ? (
-        <div className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center">
-          {currentVideoSrc ? (
-            !isPrerollActive ? (
+      {adStatus === "done" && (
+        playerMode === "embed" ? (
+          <div className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center">
+            {currentVideoSrc ? (
               <iframe
                 key={`iframe-${videoMountKey}`}
                 src={currentVideoSrc}
@@ -386,96 +410,84 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 style={{ border: "none", width: "100%", height: "100%", display: "block" }}
               />
             ) : (
-              <div className="w-full h-full bg-black flex items-center justify-center relative">
-                {video?.thumbnail || (video as any)?.thumbnailUrl ? (
-                  <img
-                    src={video.thumbnail || (video as any)?.thumbnailUrl}
-                    alt={video.title || "Video"}
-                    className="w-full h-full object-contain opacity-40 blur-[2px]"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-zinc-950" />
-                )}
+              <div className="text-zinc-400 text-sm flex flex-col items-center gap-2 p-4 text-center">
+                <span className="material-symbols-outlined text-4xl text-rose-500">videocam_off</span>
+                <p className="font-semibold text-white">No Stream Source Available</p>
+                <p className="text-xs text-zinc-500">Please provide a valid embed URL or video stream link.</p>
               </div>
-            )
-          ) : (
-            <div className="text-zinc-400 text-sm flex flex-col items-center gap-2 p-4 text-center">
-              <span className="material-symbols-outlined text-4xl text-rose-500">videocam_off</span>
-              <p className="font-semibold text-white">No Stream Source Available</p>
-              <p className="text-xs text-zinc-500">Please provide a valid embed URL or video stream link.</p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
-          <video
-            ref={mainVideoRef}
-            key={`direct-${videoMountKey}`}
-            id={directPlayerId}
-            src={currentVideoSrc}
-            controls
-            autoPlay={autoPlay}
-            playsInline
-            preload="auto"
-            poster={video?.thumbnail || (video as any)?.thumbnailUrl || ""}
-            onEnded={onEnded}
-            onCanPlay={() => {
-              if (autoPlay && !isPrerollActive) {
-                playMainVideo();
-              }
-            }}
-            onLoadedMetadata={(e) => {
-              if (autoPlay && !isPrerollActive) {
-                playMainVideo();
-              }
-              const v = e.currentTarget;
-              if (v.duration && !isNaN(v.duration) && v.duration > 0) {
-                const totalSec = Math.floor(v.duration);
-                const hrs = Math.floor(totalSec / 3600);
-                const mins = Math.floor((totalSec % 3600) / 60);
-                const secs = totalSec % 60;
-                const formatted =
-                  hrs > 0
-                    ? `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
-                    : `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-                // Set formatted duration locally
-                if (video && !video.duration) {
-                  video.duration = formatted;
+            )}
+          </div>
+        ) : (
+          <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
+            <video
+              ref={mainVideoRef}
+              key={`direct-${videoMountKey}`}
+              id={directPlayerId}
+              src={currentVideoSrc}
+              controls
+              autoPlay={autoPlay}
+              playsInline
+              preload="auto"
+              poster={video?.thumbnail || (video as any)?.thumbnailUrl || ""}
+              onEnded={onEnded}
+              onCanPlay={() => {
+                if (autoPlay) {
+                  playMainVideo();
                 }
-              }
-            }}
-            className="w-full h-full object-contain block bg-black"
-          />
+              }}
+              onLoadedMetadata={(e) => {
+                if (autoPlay) {
+                  playMainVideo();
+                }
+                const v = e.currentTarget;
+                if (v.duration && !isNaN(v.duration) && v.duration > 0) {
+                  const totalSec = Math.floor(v.duration);
+                  const hrs = Math.floor(totalSec / 3600);
+                  const mins = Math.floor((totalSec % 3600) / 60);
+                  const secs = totalSec % 60;
+                  const formatted =
+                    hrs > 0
+                      ? `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+                      : `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+                  // Set formatted duration locally
+                  if (video && !video.duration) {
+                    video.duration = formatted;
+                  }
+                }
+              }}
+              className="w-full h-full object-contain block bg-black"
+            />
 
-          {/* Partner / Brazzers VIP Watch Full Video Button inside Player (Auto-collapses to gold badge icon after 1.2s) */}
-          {!isPrerollActive && (video.sourceWebsiteUrl || video.adLinkUrl) && (
-            <a
-              href={video.sourceWebsiteUrl || video.adLinkUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onMouseEnter={() => setIsVipBadgeExpanded(true)}
-              onMouseLeave={() => setIsVipBadgeExpanded(false)}
-              className="absolute top-2.5 right-2.5 z-30 group/vip flex items-center gap-1.5 p-1.5 sm:py-1.5 sm:px-2.5 rounded-xl bg-black/85 hover:bg-black text-amber-400 hover:text-amber-300 font-bold text-[11px] sm:text-xs border border-amber-500/40 backdrop-blur-md shadow-2xl transition-all duration-300 ease-out cursor-pointer hover:scale-105 active:scale-95 select-none"
-              title={`Watch Full Scene on ${video.sourceWebsite || video.channelName || 'Brazzers'}`}
-            >
-              <span className="material-symbols-outlined text-sm sm:text-base text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]">
-                workspace_premium
-              </span>
-
-              <span
-                className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-out text-[11px] font-black tracking-wide ${
-                  isVipBadgeExpanded ? 'max-w-[220px] opacity-100 mr-0.5' : 'max-w-0 opacity-0'
-                }`}
+            {/* Partner / Brazzers VIP Watch Full Video Button inside Player (Auto-collapses to gold badge icon after 1.2s) */}
+            {(video.sourceWebsiteUrl || video.adLinkUrl) && (
+              <a
+                href={video.sourceWebsiteUrl || video.adLinkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onMouseEnter={() => setIsVipBadgeExpanded(true)}
+                onMouseLeave={() => setIsVipBadgeExpanded(false)}
+                className="absolute top-2.5 right-2.5 z-30 group/vip flex items-center gap-1.5 p-1.5 sm:py-1.5 sm:px-2.5 rounded-xl bg-black/85 hover:bg-black text-amber-400 hover:text-amber-300 font-bold text-[11px] sm:text-xs border border-amber-500/40 backdrop-blur-md shadow-2xl transition-all duration-300 ease-out cursor-pointer hover:scale-105 active:scale-95 select-none"
+                title={`Watch Full Scene on ${video.sourceWebsite || video.channelName || 'Brazzers'}`}
               >
-                Watch on {video.sourceWebsite || video.channelName || 'Brazzers'}
-              </span>
+                <span className="material-symbols-outlined text-sm sm:text-base text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]">
+                  workspace_premium
+                </span>
 
-              <span className="material-symbols-outlined text-[13px] sm:text-sm text-amber-400/90 group-hover/vip:translate-x-0.5 transition-transform">
-                open_in_new
-              </span>
-            </a>
-          )}
-        </div>
+                <span
+                  className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-out text-[11px] font-black tracking-wide ${
+                    isVipBadgeExpanded ? 'max-w-[220px] opacity-100 mr-0.5' : 'max-w-0 opacity-0'
+                  }`}
+                >
+                  Watch on {video.sourceWebsite || video.channelName || 'Brazzers'}
+                </span>
+
+                <span className="material-symbols-outlined text-[13px] sm:text-sm text-amber-400/90 group-hover/vip:translate-x-0.5 transition-transform">
+                  open_in_new
+                </span>
+              </a>
+            )}
+          </div>
+        )
       )}
     </div>
   );
