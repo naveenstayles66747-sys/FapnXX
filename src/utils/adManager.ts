@@ -75,58 +75,6 @@ class AdManager {
   }
 
   /**
-   * Safe Popunder trigger: ONLY injects and triggers popunder when user has clicked 3 or more video cards
-   */
-  public triggerPopunderIfEligible(): void {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    try {
-      const isMobile =
-        window.innerWidth < 1024 ||
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const targetZoneId = isMobile ? AD_ZONES.MOBILE_POPUNDER || '6010174' : AD_ZONES.DESKTOP_POPUNDER || '6010172';
-
-      // Remove any existing loader tag so it fresh re-triggers for this session event
-      const oldScript = document.getElementById('popmagicldr');
-      if (oldScript && oldScript.parentNode) {
-        oldScript.parentNode.removeChild(oldScript);
-      }
-
-      const adConfig: Record<string, any> = {
-        ads_host: 'a.pemsrv.com',
-        syndication_host: 's.pemsrv.com',
-        idzone: targetZoneId,
-        popup_fallback: true,
-        popup_force: false,
-        chrome_enabled: true,
-        new_tab: true,
-        frequency_period: 60,
-        frequency_count: 1,
-        trigger_method: 3,
-        trigger_class: '',
-        trigger_delay: 0,
-        capping_enabled: true,
-        tcf_enabled: true,
-        agego_cross_site_enabled: true,
-        only_inline: false,
-      };
-
-      const s = document.createElement('script');
-      s.type = 'application/javascript';
-      s.async = true;
-      s.src = `https://${adConfig.ads_host}/popunder1000.js`;
-      s.id = 'popmagicldr';
-      for (const key in adConfig) {
-        if (Object.prototype.hasOwnProperty.call(adConfig, key) && key !== 'ads_host' && key !== 'syndication_host') {
-          s.setAttribute(`data-exo-${key}`, adConfig[key]);
-        }
-      }
-      document.body.appendChild(s);
-    } catch (e) {
-      console.warn('[ExoClick] Popunder trigger notice:', e);
-    }
-  }
-
-  /**
    * Request an interstitial display.
    * Decision & control only — does NOT touch DOM.
    * Returns true if eligible (>= 3 card clicks) and event dispatched to AdSpaces component.
@@ -155,9 +103,6 @@ class AdManager {
         },
       })
     );
-
-    // Trigger popunder for this 3+ card threshold event
-    this.triggerPopunderIfEligible();
 
     return true;
   }
