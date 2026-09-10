@@ -42,22 +42,14 @@
       />
     </noscript>
 
-    <!-- ExoClick Dynamic Popunder & Global Ad Provider (Deferred via requestIdleCallback to protect FCP & INP) -->
+    <!-- ExoClick Global Ad Provider SDK (Loaded async so on-stream & in-page ads initialize immediately without user tap delay) -->
+    <script async src="https://a.magsrv.com/ad-provider.js" id="exoclick-global-ad-provider"></script>
+
+    <!-- ExoClick Dynamic Popunder (Deferred via requestIdleCallback to protect initial paint) -->
     <script type="application/javascript">
       (function() {
-        var loadAds = function() {
+        var loadPopunder = function() {
           try {
-            // 1. Global Ad Provider SDK
-            if (!document.getElementById('exoclick-global-ad-provider')) {
-              var sdk = document.createElement('script');
-              sdk.id = 'exoclick-global-ad-provider';
-              sdk.type = 'application/javascript';
-              sdk.async = true;
-              sdk.src = 'https://a.magsrv.com/ad-provider.js';
-              document.body.appendChild(sdk);
-            }
-
-            // 2. Popunder Script
             if (document.getElementById('popmagicldr')) return;
             var isMobile = window.innerWidth < 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             var targetZoneId = isMobile ? 6010174 : 6010172;
@@ -96,12 +88,12 @@
         };
 
         if ('requestIdleCallback' in window) {
-          window.requestIdleCallback(loadAds, { timeout: 3500 });
+          window.requestIdleCallback(loadPopunder, { timeout: 3500 });
         } else if (document.readyState === 'complete') {
-          setTimeout(loadAds, 2000);
+          setTimeout(loadPopunder, 2000);
         } else {
           window.addEventListener('load', function() {
-            setTimeout(loadAds, 2000);
+            setTimeout(loadPopunder, 2000);
           });
         }
       })();

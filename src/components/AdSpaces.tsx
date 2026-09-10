@@ -666,6 +666,15 @@ export const OnStreamVideoBanner: React.FC<{
     if (!el) return;
 
     try {
+      if (!document.getElementById("exoclick-global-ad-provider")) {
+        const sdk = document.createElement("script");
+        sdk.id = "exoclick-global-ad-provider";
+        sdk.type = "application/javascript";
+        sdk.async = true;
+        sdk.src = "https://a.magsrv.com/ad-provider.js";
+        document.head.appendChild(sdk);
+      }
+
       el.innerHTML = "";
       const ins = document.createElement("ins");
       ins.className = `eas${AD_ZONES.SITE_HASH}17`;
@@ -688,7 +697,8 @@ export const OnStreamVideoBanner: React.FC<{
       };
 
       triggerAdServe();
-      setTimeout(triggerAdServe, 100);
+      setTimeout(triggerAdServe, 50);
+      setTimeout(triggerAdServe, 200);
     } catch (e) {
       console.warn("[ExoClick] On-stream banner mount error:", e);
     }
@@ -701,18 +711,19 @@ export const OnStreamVideoBanner: React.FC<{
   if (!isVisible || dismissed) return null;
 
   return (
-    <div className="hidden lg:flex absolute bottom-6 left-0 right-0 z-20 items-center justify-center pointer-events-auto px-2">
-      <div className="onstream-ad-container relative bg-black/90 backdrop-blur-md px-3 py-1 rounded-xl border border-white/15 shadow-2xl max-w-full overflow-hidden flex items-center justify-center">
+    <div className="absolute bottom-4 left-0 right-0 z-20 flex items-center justify-center pointer-events-none px-2 select-none">
+      <div className="onstream-ad-container pointer-events-auto relative bg-black/90 backdrop-blur-md px-3 py-1 rounded-xl border border-white/15 shadow-2xl max-w-full overflow-hidden flex items-center justify-center">
         <button
           type="button"
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             setDismissed(true);
             if (onClose) onClose();
           }}
-          className="absolute -top-1.5 -right-1.5 bg-zinc-800 hover:bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] border border-white/20 shadow-md cursor-pointer transition-colors z-10"
+          className="absolute -top-1.5 -right-1.5 bg-zinc-800 hover:bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] border border-white/20 shadow-md cursor-pointer transition-colors z-10 font-bold"
           title="Close overlay"
         >
-          ?
+          ✕
         </button>
         <div ref={containerRef} className="w-full max-w-[468px] max-h-[60px] flex items-center justify-center overflow-hidden" />
       </div>

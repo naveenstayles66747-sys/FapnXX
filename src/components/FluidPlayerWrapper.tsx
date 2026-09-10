@@ -222,10 +222,19 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   }, [video?.id, video?.embedUrl, video?.previewMp4Url, autoPlay, cleanupInstance, VAST_TAG_URL]);
 
   // Autoplay handler for VAST Ad Video
-  useEffect(() => {
-    if (adStatus === "playing" && isPrerollActive && directVastAd && adVideoRef.current) {
-      adVideoRef.current.muted = isAdMuted;
-      const playPromise = adVideoRef.current.play();
+  const triggerAdPlay = useCallback(() => {
+    if (adVideoRef.current) {
+      const v = adVideoRef.current;
+      v.muted = isAdMuted;
+      v.defaultMuted = true;
+      v.playsInline = true;
+      v.setAttribute("playsinline", "true");
+      v.setAttribute("webkit-playsinline", "true");
+      if (isAdMuted) {
+        v.setAttribute("muted", "true");
+      }
+
+      const playPromise = v.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
           if (adVideoRef.current) {
@@ -236,7 +245,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         });
       }
     }
-  }, [adStatus, isPrerollActive, directVastAd, isAdMuted]);
+  }, [isAdMuted]);
+
+  useEffect(() => {
+    if (adStatus === "playing" && isPrerollActive && directVastAd) {
+      triggerAdPlay();
+    }
+  }, [adStatus, isPrerollActive, directVastAd, triggerAdPlay]);
 
   // Handle direct VAST ad time updates
   const handleDirectAdTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
@@ -255,6 +270,22 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
         directVastAd.clickThroughUrl ||
         "https://go.marzaent.com/smartpop/165aea9bcdd7aabac45f72d02f58fd24b8416bc57cfc540b1b4409ac823564af";
       window.open(targetUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const handleVideoTap = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (adVideoRef.current) {
+      if (adVideoRef.current.paused) {
+        adVideoRef.current.play().catch(() => {});
+      } else if (isAdMuted) {
+        // Tapping the ad video unmutes it smoothly
+        adVideoRef.current.muted = false;
+        setIsAdMuted(false);
+      } else {
+        // Toggle play/pause
+        adVideoRef.current.pause();
+      }
     }
   };
 
@@ -334,13 +365,23 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
               muted={isAdMuted}
               onLoadedMetadata={(e) => {
                 const v = e.currentTarget;
+                v.muted = isAdMuted;
+                v.defaultMuted = true;
+                v.playsInline = true;
+                v.setAttribute("playsinline", "true");
+                v.setAttribute("webkit-playsinline", "true");
                 if (v.duration && !isNaN(v.duration) && v.duration > 0) {
                   setAdDuration(v.duration);
                 }
               }}
-              onCanPlay={() => {
-                if (adVideoRef.current && adVideoRef.current.paused) {
-                  adVideoRef.current.play().catch(() => {});
+              onCanPlay={(e) => {
+                const v = e.currentTarget;
+                if (v.paused) {
+                  v.play().catch(() => {
+                    v.muted = true;
+                    setIsAdMuted(true);
+                    v.play().catch(() => {});
+                  });
                 }
               }}
               onTimeUpdate={handleDirectAdTimeUpdate}
@@ -351,8 +392,23 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 startMainContent();
               }}
               className="w-full h-full object-contain block bg-black cursor-pointer"
-              onClick={handleAdClickThrough}
+              onClick={handleVideoTap}
             />
+
+            {/* Sponsor Visit CTA Pill Button (Top-Left) */}
+            <div className="absolute top-3 left-3 z-40 flex items-center gap-2">
+              <span className="bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+                AD
+              </span>
+              <button
+                type="button"
+                onClick={handleAdClickThrough}
+                className="flex items-center gap-1.5 px-3 py-1 bg-black/85 hover:bg-black text-white font-bold text-xs rounded-xl border border-white/20 backdrop-blur-md shadow-lg cursor-pointer hover:border-rose-400 hover:text-rose-400 transition-all active:scale-95"
+              >
+                <span>{directVastAd.ctaText || "Visit Sponsor"}</span>
+                <span className="material-symbols-outlined text-xs">open_in_new</span>
+              </button>
+            </div>
 
             {/* Sound Toggle (Bottom-Left) */}
             <div className="absolute bottom-3 left-3 z-40">
