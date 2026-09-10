@@ -6,6 +6,39 @@ import { fetchVastAd, fireTrackingPixel, VastAd } from "../utils/vastEngine";
 export { triggerInterstitial };
 
 /**
+ * Lightweight Intersection Observer Hook to delay heavy ad calls until element is near screen
+ */
+function useIsNearViewport(margin: string = "350px"): [React.RefObject<HTMLDivElement | null>, boolean] {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isNear, setIsNear] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || isNear) return;
+
+    if (typeof window === "undefined" || typeof IntersectionObserver === "undefined") {
+      setIsNear(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setIsNear(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: margin }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [margin, isNear]);
+
+  return [ref, isNear];
+}
+
+/**
  * Standard Native ExoClick Banner Slot
  */
 export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey?: string | number }> = ({
@@ -441,11 +474,13 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
   className = "",
   reloadKey,
 }) => {
+  const [containerRef, isNear] = useIsNearViewport("350px");
   const [directVast, setDirectVast] = useState<VastAd | null>(null);
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const fetchAndPlayAd = useCallback(() => {
+    if (!isNear) return;
     const cb = `${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const vastUrl = `https://syndication.realsrv.com/splash.php?idzone=6003190&type=37&cb=${cb}`;
 
@@ -457,14 +492,15 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
         }
       })
       .catch(() => {});
-  }, []);
+  }, [isNear]);
 
   useEffect(() => {
+    if (!isNear) return;
     fetchAndPlayAd();
     const handleRefresh = () => fetchAndPlayAd();
     window.addEventListener("exoclick-refresh-ads", handleRefresh);
     return () => window.removeEventListener("exoclick-refresh-ads", handleRefresh);
-  }, [fetchAndPlayAd, reloadKey]);
+  }, [fetchAndPlayAd, reloadKey, isNear]);
 
   const handleAdClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -486,6 +522,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
 
   return (
     <article
+      ref={containerRef}
       className={`video-card group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer ${className}`}
       onClick={handleAdClick}
     >
@@ -555,28 +592,37 @@ export const InFeedBannerCard: React.FC<{
   className?: string;
   reloadKey?: string | number;
 }> = ({ className = "", reloadKey }) => {
+  const [containerRef, isNear] = useIsNearViewport("350px");
+
   return (
     <article
+      ref={containerRef}
       className={`video-card group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
     >
       <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-[#ec4899] transition-colors duration-200 bg-black flex items-center justify-center shadow-md">
         {/* Responsive iframe wrapper */}
         <div className="w-full h-full flex items-center justify-center overflow-hidden bg-black/90">
-          <iframe
-            key={`adtng-feed-${reloadKey || "default"}`}
-            title="Sponsored Stream"
-            style={{ backgroundColor: "transparent", maxWidth: "100%", maxHeight: "100%" }}
-            width="300"
-            height="250"
-            scrolling="no"
-            frameBorder="0"
-            allowTransparency={true}
-            marginHeight={0}
-            marginWidth={0}
-            name="spot_id_10001807"
-            src="//a.adtng.com/get/10001807?ata=Navifapx"
-            className="w-full h-full object-contain pointer-events-auto border-0"
-          />
+          {isNear ? (
+            <iframe
+              key={`adtng-feed-${reloadKey || "default"}`}
+              title="Sponsored Stream"
+              style={{ backgroundColor: "transparent", maxWidth: "100%", maxHeight: "100%" }}
+              width="300"
+              height="250"
+              scrolling="no"
+              frameBorder="0"
+              allowTransparency={true}
+              marginHeight={0}
+              marginWidth={0}
+              name="spot_id_10001807"
+              src="//a.adtng.com/get/10001807?ata=Navifapx"
+              className="w-full h-full object-contain pointer-events-auto border-0"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 skeleton-shimmer">
+              <span className="material-symbols-outlined text-3xl text-rose-500/50">play_circle</span>
+            </div>
+          )}
         </div>
 
         {/* AD Badge on Top Right */}
@@ -765,7 +811,7 @@ export const NativeRecommendationAd: React.FC<{
   title?: string;
   reloadKey?: string | number;
 }> = ({ className = "", title = "Sponsored Recommendations", reloadKey }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerRef, isNear] = useIsNearViewport("350px");
   const [isFilled, setIsFilled] = useState<boolean>(false);
   const [hasTimedOut, setHasTimedOut] = useState<boolean>(false);
   const zoneId = AD_ZONES.NATIVE_RECOMMENDED || "6010176";
@@ -787,6 +833,7 @@ export const NativeRecommendationAd: React.FC<{
   }, []);
 
   const mountAd = useCallback(() => {
+    if (!isNear) return;
     const el = containerRef.current;
     if (!el) return;
 
@@ -843,9 +890,10 @@ export const NativeRecommendationAd: React.FC<{
     } catch (e) {
       console.warn("[ExoClick] Native recommendation widget mount error:", e);
     }
-  }, [zoneId, triggerAdServe]);
+  }, [zoneId, triggerAdServe, isNear]);
 
   useEffect(() => {
+    if (!isNear) return;
     const clearTimers = mountAd();
 
     // Observe DOM mutations inside container to detect when ExoClick has populated content

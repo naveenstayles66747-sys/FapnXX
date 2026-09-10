@@ -7,7 +7,7 @@ import { FluidPlayerWrapper } from './FluidPlayerWrapper';
 import { OnStreamVideoBanner, OutstreamVideoCardAd, UnderPlayerBanner, NativeRecommendationAd, InFeedBannerCard } from './AdSpaces';
 import { CommentsSection } from './CommentsSection';
 import { useLanguage } from '../i18n/LanguageContext';
-import { videoService } from '../services/videoService';
+import { videoService, parseNumericViews, formatViewsCountString } from '../services/videoService';
 import { stopAllBackgroundMedia } from '../utils/mediaHelper';
 import { deduplicateVideos } from '../utils/videoDeduplicator';
 import {
@@ -59,7 +59,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
 
   // Real-time Views Counter
   const [currentViewsCount, setCurrentViewsCount] = useState<number>(() =>
-    typeof video?.viewsCount === 'number' ? video.viewsCount : 0
+    parseNumericViews(video?.viewsCount, video?.views)
   );
   const [watchSeconds, setWatchSeconds] = useState<number>(0);
   const hasCountedRef = useRef<boolean>(false);
@@ -77,12 +77,12 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     const saved = getStoredSavedVideos().includes(video.id);
     setIsLiked(liked);
     setIsSaved(saved);
-    setCurrentViewsCount(typeof video.viewsCount === 'number' ? video.viewsCount : 0);
+    setCurrentViewsCount(parseNumericViews(video.viewsCount, video.views));
     setLikeCount(typeof video.likesCount === 'number' ? video.likesCount : 0);
     if (!isGuest) {
       addStoredWatchHistory(video.id);
     }
-  }, [video.id, video.viewsCount, video.likesCount, isGuest]);
+  }, [video.id, video.viewsCount, video.views, video.likesCount, isGuest]);
 
   // Keep latest onVideoUpdated callback in a ref to prevent infinite re-render loops
   const onVideoUpdatedRef = useRef(onVideoUpdated);
@@ -94,13 +94,14 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   useEffect(() => {
     if (!video.id) return;
     const unsub = videoService.subscribeToSingleVideo(video.id, (fresh) => {
-      if (typeof fresh.viewsCount === 'number') {
-        setCurrentViewsCount(fresh.viewsCount);
+      const freshViews = parseNumericViews(fresh.viewsCount, fresh.views);
+      if (freshViews > 0) {
+        setCurrentViewsCount((prev) => Math.max(prev, freshViews));
       }
       if (typeof fresh.likesCount === 'number') {
         setLikeCount(fresh.likesCount);
       }
-    });
+    }, video);
     return () => unsub();
   }, [video.id]);
 
@@ -143,12 +144,12 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           hasCountedRef.current = true;
           markViewedInSession(video.id);
 
-          videoService.incrementVideoViews(video.id).then((newViewsCount) => {
+          videoService.incrementVideoViews(video.id, currentViewsCount).then((newViewsCount) => {
             setCurrentViewsCount(newViewsCount);
             if (onVideoUpdatedRef.current) {
               onVideoUpdatedRef.current(video.id, {
                 viewsCount: newViewsCount,
-                views: `${newViewsCount} ${newViewsCount === 1 ? 'view' : 'views'}`,
+                views: formatViewsCountString(newViewsCount),
               });
             }
           });
@@ -158,7 +159,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [video.id]);
+  }, [video.id, currentViewsCount]);
 
   const [likeToastMsg, setLikeToastMsg] = useState<string | null>(null);
 

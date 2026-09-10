@@ -8,7 +8,7 @@ import {
   Video,
   VideoComment,
 } from '../types';
-import { BRAZZERS_VIDEOS, CATEGORIES, INITIAL_LANDING_BANNERS, INITIAL_VIDEOS } from '../data';
+import { BRAZZERS_VIDEOS, CATEGORIES, INITIAL_LANDING_BANNERS, INITIAL_VIDEOS, loadFullCuratedVideos } from '../data';
 import { deduplicateVideos } from '../utils/videoDeduplicator';
 import {
   getOrCreateDeviceId,
@@ -70,6 +70,42 @@ class SmartMemoryCache {
       }
     }
   }
+}
+
+/**
+ * Safely parses any views value (number or string like '2.4M views', '850K', '12,500') into real integer number
+ */
+export function parseNumericViews(viewsCount?: number, viewsStr?: string | number, fallbackDefault = 1200): number {
+  if (typeof viewsCount === 'number' && !isNaN(viewsCount) && viewsCount > 0) {
+    return viewsCount;
+  }
+  if (typeof viewsStr === 'number' && !isNaN(viewsStr) && viewsStr > 0) {
+    return viewsStr;
+  }
+  if (typeof viewsStr === 'string' && viewsStr.trim() !== '') {
+    const cleaned = viewsStr.toUpperCase().replace(/\s*views?/i, '').trim();
+    if (cleaned.endsWith('M')) {
+      const num = parseFloat(cleaned.replace('M', ''));
+      if (!isNaN(num) && num > 0) return Math.round(num * 1_000_000);
+    }
+    if (cleaned.endsWith('K')) {
+      const num = parseFloat(cleaned.replace('K', ''));
+      if (!isNaN(num) && num > 0) return Math.round(num * 1_000);
+    }
+    const num = parseInt(cleaned.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(num) && num > 0) return num;
+  }
+  return fallbackDefault;
+}
+
+export function formatViewsCountString(count: number): string {
+  if (count >= 1_000_000) {
+    return `${(count / 1_000_000).toFixed(1).replace(/\.0$/, '')}M views`;
+  }
+  if (count >= 1_000) {
+    return `${(count / 1_000).toFixed(1).replace(/\.0$/, '')}K views`;
+  }
+  return `${count.toLocaleString()} ${count === 1 ? 'view' : 'views'}`;
 }
 
 export class VideoService {
@@ -330,12 +366,31 @@ export class VideoService {
     return false;
   }
 
+  private curatedFullVideos: Video[] | null = null;
+
+  async loadFullCuratedCatalog(): Promise<Video[]> {
+    if (this.curatedFullVideos && this.curatedFullVideos.length > INITIAL_VIDEOS.length) {
+      return this.curatedFullVideos;
+    }
+    try {
+      const v = await loadFullCuratedVideos();
+      if (v && v.length > 0) {
+        this.curatedFullVideos = v;
+        return v;
+      }
+    } catch {}
+    return INITIAL_VIDEOS;
+  }
+
   /**
    * Helper to merge Firestore custom uploads/edits seamlessly with the complete 1,950+ curated video library
    */
   private mergeWithInitialVideos(firestoreVideos: Video[], categoryFilter?: string): Video[] {
-    // 1. Combine firestoreVideos (highest precedence for custom edits/uploads) and INITIAL_VIDEOS
-    const combined = [...firestoreVideos, ...INITIAL_VIDEOS];
+    const baseVideos = this.curatedFullVideos && this.curatedFullVideos.length > INITIAL_VIDEOS.length
+      ? this.curatedFullVideos
+      : INITIAL_VIDEOS;
+    // 1. Combine firestoreVideos (highest precedence for custom edits/uploads) and baseVideos
+    const combined = [...firestoreVideos, ...baseVideos];
 
     // 2. Strict multi-key deduplication (filters duplicate IDs, viewkeys, embeds, thumbnails, and normalized titles)
     const unique = deduplicateVideos(combined);
@@ -490,22 +545,25 @@ export class VideoService {
   }
 
   /**
-   * Realtime listener for a single video document
+   * Realtime listener for a single video document with baseline preservation
    */
-  subscribeToSingleVideo(videoId: string, callback: (video: Video) => void) {
+  subscribeToSingleVideo(videoId: string, callback: (video: Video) => void, fallbackSeed?: Video) {
     if (!videoId) return () => {};
     try {
+      const baseline = fallbackSeed ? parseNumericViews(fallbackSeed.viewsCount, fallbackSeed.views) : 1200;
       const unsub = onSnapshot(
         doc(db, 'videos', videoId),
         (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data() as any;
+            const trueViews = Math.max(parseNumericViews(data.viewsCount, data.views, baseline), baseline);
             const fullVideo: Video = {
               ...data,
               id: docSnap.id,
               isEmbed: data.isEmbed !== undefined ? data.isEmbed : true,
-              viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 1,
-              likesCount: typeof data.likesCount === 'number' ? data.likesCount : 0,
+              viewsCount: trueViews,
+              views: data.views && !data.views.startsWith('1 ') && !data.views.startsWith('0 ') ? data.views : formatViewsCountString(trueViews),
+              likesCount: typeof data.likesCount === 'number' ? data.likesCount : (fallbackSeed?.likesCount || 0),
             };
             callback(fullVideo);
           }
@@ -526,13 +584,14 @@ export class VideoService {
    */
   async saveVideo(video: Video): Promise<Video> {
     const videoId = video.id || `vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const baseViews = parseNumericViews(video.viewsCount, video.views, 1);
     const fullVideo: Video = {
       ...video,
       id: videoId,
       createdAt: video.createdAt || new Date().toISOString(),
-      viewsCount: typeof video.viewsCount === 'number' ? video.viewsCount : 1,
+      viewsCount: baseViews,
       likesCount: typeof video.likesCount === 'number' ? video.likesCount : 0,
-      views: video.views || '1 view',
+      views: video.views || formatViewsCountString(baseViews),
     };
 
     // Invalidate local video cache
@@ -632,22 +691,32 @@ export class VideoService {
   private viewedCooldownMap = new Map<string, number>();
 
   /**
-   * Realtime Video Views Counter via Direct Atomic Firestore Increment with 15m Client Debounce & API Fallback
+   * Realtime Video Views Counter via Direct Atomic Firestore Increment with baseline preservation
    */
-  async incrementVideoViews(videoId: string): Promise<number> {
-    if (!videoId) return 1;
+  async incrementVideoViews(videoId: string, clientBaseViews?: number): Promise<number> {
+    if (!videoId) return clientBaseViews || 1200;
 
-    // 15-minute client-side debounce cooldown per video to prevent spam / infinite loops
+    // Find true seed baseline across all available catalogs
+    const fullDataset = this.curatedFullVideos || INITIAL_VIDEOS;
+    const matchedSeed = fullDataset.find((v) => v.id === videoId) || BRAZZERS_VIDEOS.find((v) => v.id === videoId);
+    const baselineViews = parseNumericViews(
+      matchedSeed?.viewsCount,
+      matchedSeed?.views,
+      clientBaseViews && clientBaseViews > 0 ? clientBaseViews : 1200
+    );
+
+    // 15-minute client-side debounce cooldown per video to prevent spam
     const now = Date.now();
     const lastViewed = this.viewedCooldownMap.get(videoId) || 0;
     if (now - lastViewed < 15 * 60 * 1000) {
       try {
         const snap = await getDoc(doc(db, 'videos', videoId));
         if (snap.exists()) {
-          return (snap.data() as any)?.viewsCount || 1;
+          const raw = (snap.data() as any)?.viewsCount;
+          return Math.max(parseNumericViews(raw, undefined, baselineViews), baselineViews);
         }
       } catch {}
-      return 1;
+      return baselineViews;
     }
     this.viewedCooldownMap.set(videoId, now);
     this.smartCache.invalidate('videos');
@@ -658,41 +727,40 @@ export class VideoService {
       const snap = await getDoc(videoRef);
       if (snap.exists()) {
         const currentData = snap.data() as any;
-        const prevCount = typeof currentData.viewsCount === 'number' ? currentData.viewsCount : 0;
-        const newCount = prevCount + 1;
-        const newViewsStr = `${newCount} ${newCount === 1 ? 'view' : 'views'}`;
+        const currentViews = parseNumericViews(currentData.viewsCount, currentData.views, baselineViews);
+        // If Firestore had a corrupted small count (e.g. 1), repair it with baselineViews
+        const nextCount = Math.max(currentViews, baselineViews) + 1;
+        const newViewsStr = formatViewsCountString(nextCount);
 
         await setDoc(
           videoRef,
           {
-            viewsCount: increment(1),
+            viewsCount: nextCount,
             views: newViewsStr,
             updatedAt: new Date().toISOString(),
           },
           { merge: true }
         );
 
-        console.log(`👁️ [Firestore Realtime] Video ${videoId} view incremented -> ${newCount}`);
-        return newCount;
+        console.log(`👁️ [Firestore Realtime] Video ${videoId} view incremented -> ${nextCount}`);
+        return nextCount;
       } else {
         // First view on a curated catalog video -> initialize Firestore record
-        const seed = INITIAL_VIDEOS.find((v) => v.id === videoId);
-        const baseViews = (seed && typeof seed.viewsCount === 'number' && seed.viewsCount > 0) ? seed.viewsCount : 500;
-        const newCount = baseViews + 1;
-        const newViewsStr = `${newCount} views`;
+        const nextCount = baselineViews + 1;
+        const newViewsStr = formatViewsCountString(nextCount);
 
         await setDoc(
           videoRef,
           {
-            ...(seed ? cleanForFirestore(seed) : { id: videoId }),
-            viewsCount: newCount,
+            ...(matchedSeed ? cleanForFirestore(matchedSeed) : { id: videoId }),
+            viewsCount: nextCount,
             views: newViewsStr,
             updatedAt: new Date().toISOString(),
           },
           { merge: true }
         );
-        console.log(`👁️ [Firestore Realtime] Curated video ${videoId} view initialized in cloud -> ${newCount}`);
-        return newCount;
+        console.log(`👁️ [Firestore Realtime] Curated video ${videoId} view initialized in cloud -> ${nextCount}`);
+        return nextCount;
       }
     } catch (firestoreErr: any) {
       console.warn('⚠️ [Firestore Client] Direct view increment notice:', firestoreErr?.message || firestoreErr);
@@ -709,14 +777,14 @@ export class VideoService {
           },
         }
       );
-      if (res && typeof res.newViewsCount === 'number') {
+      if (res && typeof res.newViewsCount === 'number' && res.newViewsCount >= baselineViews) {
         return res.newViewsCount;
       }
     } catch (apiErr: any) {
       console.warn('⚠️ [VideoService API] View increment notice:', apiErr?.message || apiErr);
     }
 
-    return 1;
+    return baselineViews + 1;
   }
 
   /**

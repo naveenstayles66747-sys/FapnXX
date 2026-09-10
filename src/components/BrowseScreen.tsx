@@ -256,31 +256,30 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     return slides.slice(0, 5);
   }, [activeBanners, activeVideos]);
 
-  // Instant Image Pre-warming: Preload first banner image and next slide image immediately
+  // Defer slide pre-warming to requestIdleCallback so initial main-thread paint is never blocked
   useEffect(() => {
-    if (typeof window === 'undefined' || displayBanners.length === 0) return;
+    if (typeof window === 'undefined' || displayBanners.length <= 1) return;
     
-    // Preload current active slide image
-    const activeBanner = displayBanners[currentSlideIndex];
-    if (activeBanner) {
-      const activeUrl = getBannerImageUrl(activeBanner, currentSlideIndex);
-      if (activeUrl) {
-        const img = new Image();
-        img.src = getOptimizedImageUrl(activeUrl, 1080, 75);
-      }
-    }
-
-    // Preload next slide image for seamless zero-delay transitions
-    if (displayBanners.length > 1) {
+    const prewarmNext = () => {
       const nextIndex = (currentSlideIndex + 1) % displayBanners.length;
       const nextBanner = displayBanners[nextIndex];
       if (nextBanner) {
         const nextUrl = getBannerImageUrl(nextBanner, nextIndex);
         if (nextUrl) {
           const nextImg = new Image();
-          nextImg.src = getOptimizedImageUrl(nextUrl, 1080, 75);
+          nextImg.src = getOptimizedImageUrl(nextUrl, 800, 75);
         }
       }
+    };
+
+    if ('requestIdleCallback' in window) {
+      const handle = (window as any).requestIdleCallback(prewarmNext, { timeout: 2500 });
+      return () => {
+        if ((window as any).cancelIdleCallback) (window as any).cancelIdleCallback(handle);
+      };
+    } else {
+      const t = setTimeout(prewarmNext, 1500);
+      return () => clearTimeout(t);
     }
   }, [currentSlideIndex, displayBanners]);
 

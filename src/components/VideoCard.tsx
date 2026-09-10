@@ -150,6 +150,28 @@ const extractPreviewDetails = (video: Video) => {
 // Global memory cache of already preloaded image URLs across session
 const PRELOADED_URLS = new Set<string>();
 
+// Single global coordinator across all video cards to keep INP ultra-fast
+let globalPreviewListenerAttached = false;
+const activePreviewSubscribers = new Set<(activeId: string | null) => void>();
+
+function subscribeActivePreview(cb: (activeId: string | null) => void): () => void {
+  activePreviewSubscribers.add(cb);
+  if (!globalPreviewListenerAttached && typeof window !== "undefined") {
+    globalPreviewListenerAttached = true;
+    window.addEventListener(
+      "active-global-video-preview" as any,
+      ((e: CustomEvent<string | null>) => {
+        const id = e?.detail ?? null;
+        activePreviewSubscribers.forEach((fn) => fn(id));
+      }) as any,
+      { passive: true }
+    );
+  }
+  return () => {
+    activePreviewSubscribers.delete(cb);
+  };
+}
+
 const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout = "grid" }) => {
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [isPreviewActive, setIsPreviewActive] = useState<boolean>(false);
@@ -248,10 +270,10 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     };
   }, [isPlayingPreview, previewType, frames]);
 
-  // Global listener: Ensures ONLY ONE video previews across the whole page at any given moment
+  // Single global coordinator listener: Ensures ONLY ONE video previews across the whole page at any given moment
   useEffect(() => {
-    const handleActiveChange = (e: CustomEvent<string | null>) => {
-      if (e.detail !== video.id) {
+    return subscribeActivePreview((activeId) => {
+      if (activeId !== video.id) {
         setIsPreviewActive(false);
         setIsHovered(false);
         if (frameIntervalRef.current) {
@@ -263,17 +285,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           videoRef.current.currentTime = 0;
         }
       }
-    };
-
-    window.addEventListener("active-global-video-preview" as any, handleActiveChange as any, { passive: true });
-    window.addEventListener("active-desktop-hover-change" as any, handleActiveChange as any, { passive: true });
-    window.addEventListener("active-mobile-preview-change" as any, handleActiveChange as any, { passive: true });
-
-    return () => {
-      window.removeEventListener("active-global-video-preview" as any, handleActiveChange as any);
-      window.removeEventListener("active-desktop-hover-change" as any, handleActiveChange as any);
-      window.removeEventListener("active-mobile-preview-change" as any, handleActiveChange as any);
-    };
+    });
   }, [video.id]);
 
   const handleMouseEnter = () => {

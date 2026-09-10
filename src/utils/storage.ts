@@ -322,6 +322,7 @@ export const mergeUserInteractions = (cloudData: {
 
   return {
     savedVideos: mergedSaved,
+    savedCategories: mergedSavedCats,
     likedVideos: mergedLiked,
     watchHistory: mergedHistory,
     contentPreference: finalPref,

@@ -29,7 +29,7 @@ const UploadModal = lazy(() => import('./components/UploadModal').then(m => ({ d
 const AdManagementModal = lazy(() => import('./components/AdManagementModal').then(m => ({ default: m.AdManagementModal })));
 const AdminPanelModal = lazy(() => import('./components/AdminPanelModal').then(m => ({ default: m.AdminPanelModal })));
 const SoftLoginModal = lazy(() => import('./components/SoftLoginModal').then(m => ({ default: m.SoftLoginModal })));
-import { BRAZZERS_VIDEOS, CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS } from './data';
+import { BRAZZERS_VIDEOS, CATEGORIES, INITIAL_LANDING_BANNERS, VIDEOS, loadFullCuratedVideos } from './data';
 import { deduplicateVideos } from './utils/videoDeduplicator';
 import { videoService } from './services/videoService';
 import { auth } from './services/firebaseConfig';
@@ -236,6 +236,25 @@ export default function App() {
         setStoredCachedVideos(unique);
       }
     });
+
+    // Seamlessly load complete 1,950+ curated library in background without freezing mobile UI
+    const loadFullCatalog = () => {
+      videoService.loadFullCuratedCatalog().then((fullVids) => {
+        if (fullVids && fullVids.length > VIDEOS.length) {
+          setVideosList((prev) => {
+            const merged = deduplicateVideos([...prev, ...fullVids]);
+            setStoredCachedVideos(merged);
+            return merged;
+          });
+        }
+      });
+    };
+
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(loadFullCatalog, { timeout: 1800 });
+    } else {
+      setTimeout(loadFullCatalog, 600);
+    }
 
     // Real-time listener for views, likes, and video updates across all users worldwide
     const unsubscribe = videoService.subscribeToVideos((updatedVideos) => {

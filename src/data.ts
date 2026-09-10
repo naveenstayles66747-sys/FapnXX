@@ -185,10 +185,52 @@ export const CATEGORIES: CategoryInfo[] = [
   }
 ];
 
-import curatedDataset from './data/pornhubCurated.json';
+import initialCuratedDataset from './data/initialCuratedSeed.json';
 
-// Preserves authentic metadata (views, likes, ratings) from curated dataset
-export const VIDEOS: Video[] = ((curatedDataset as any) || []) as Video[];
+// Lightweight initial seed of top curated videos for instant sub-second FCP & LCP
+export const VIDEOS: Video[] = ((initialCuratedDataset as any) || []) as Video[];
+
+let cachedFullVideos: Video[] | null = null;
+let fullVideosPromise: Promise<Video[]> | null = null;
+
+/**
+ * Asynchronously loads the complete 1,950+ curated video catalog in a non-blocking background chunk
+ */
+export async function loadFullCuratedVideos(): Promise<Video[]> {
+  if (cachedFullVideos && cachedFullVideos.length > VIDEOS.length) {
+    return cachedFullVideos;
+  }
+  if (fullVideosPromise) {
+    return fullVideosPromise;
+  }
+
+  fullVideosPromise = (async () => {
+    try {
+      // 1. Dynamic import code-splits the 6.8MB dataset into a separate lazy chunk
+      const mod = await import('./data/pornhubCurated.json');
+      const data = (mod.default || mod) as Video[];
+      if (Array.isArray(data) && data.length > 0) {
+        cachedFullVideos = data;
+        return data;
+      }
+    } catch {
+      // 2. Fallback to public CDN fetch
+      try {
+        const res = await fetch('/data/videos_page1.json');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            cachedFullVideos = data as Video[];
+            return cachedFullVideos;
+          }
+        }
+      } catch {}
+    }
+    return VIDEOS;
+  })();
+
+  return fullVideosPromise;
+}
 
 export const BRAZZERS_VIDEOS: Video[] = [
   {
