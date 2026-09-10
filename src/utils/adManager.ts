@@ -56,14 +56,10 @@ class AdManager {
   /**
    * Check if user is currently eligible for an interstitial.
    * Requires:
-   * 1. At least AD_CONFIG.INTERSTITIAL_MIN_TRANSITIONS (2) transitions since last interstitial.
-   * 2. At least AD_CONFIG.INTERSTITIAL_COOLDOWN_MS (3 mins) elapsed since last interstitial.
+   * 1. At least AD_CONFIG.INTERSTITIAL_MIN_TRANSITIONS (3) video card clicks since last interstitial.
+   * 2. At least AD_CONFIG.INTERSTITIAL_COOLDOWN_MS (20s) elapsed since last interstitial.
    */
   public canShowInterstitial(): boolean {
-    if (AD_CONFIG.INTERSTITIAL_MIN_TRANSITIONS <= 1 && AD_CONFIG.INTERSTITIAL_COOLDOWN_MS <= 0) {
-      return true;
-    }
-
     const transitions = this.getEligibleTransitions();
     if (transitions < AD_CONFIG.INTERSTITIAL_MIN_TRANSITIONS) {
       return false;
@@ -79,10 +75,62 @@ class AdManager {
   }
 
   /**
+   * Safe Popunder trigger: ONLY injects and triggers popunder when user has clicked 3 or more video cards
+   */
+  public triggerPopunderIfEligible(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    try {
+      const isMobile =
+        window.innerWidth < 1024 ||
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const targetZoneId = isMobile ? AD_ZONES.MOBILE_POPUNDER || '6010174' : AD_ZONES.DESKTOP_POPUNDER || '6010172';
+
+      // Remove any existing loader tag so it fresh re-triggers for this session event
+      const oldScript = document.getElementById('popmagicldr');
+      if (oldScript && oldScript.parentNode) {
+        oldScript.parentNode.removeChild(oldScript);
+      }
+
+      const adConfig: Record<string, any> = {
+        ads_host: 'a.pemsrv.com',
+        syndication_host: 's.pemsrv.com',
+        idzone: targetZoneId,
+        popup_fallback: true,
+        popup_force: false,
+        chrome_enabled: true,
+        new_tab: true,
+        frequency_period: 60,
+        frequency_count: 1,
+        trigger_method: 3,
+        trigger_class: '',
+        trigger_delay: 0,
+        capping_enabled: true,
+        tcf_enabled: true,
+        agego_cross_site_enabled: true,
+        only_inline: false,
+      };
+
+      const s = document.createElement('script');
+      s.type = 'application/javascript';
+      s.async = true;
+      s.src = `https://${adConfig.ads_host}/popunder1000.js`;
+      s.id = 'popmagicldr';
+      for (const key in adConfig) {
+        if (Object.prototype.hasOwnProperty.call(adConfig, key) && key !== 'ads_host' && key !== 'syndication_host') {
+          s.setAttribute(`data-exo-${key}`, adConfig[key]);
+        }
+      }
+      document.body.appendChild(s);
+    } catch (e) {
+      console.warn('[ExoClick] Popunder trigger notice:', e);
+    }
+  }
+
+  /**
    * Request an interstitial display.
    * Decision & control only — does NOT touch DOM.
-   * Returns true if eligible and event dispatched to AdSpaces component.
-   * Returns false if ineligible (caller immediately continues video playback).
+   * Returns true if eligible (>= 3 card clicks) and event dispatched to AdSpaces component.
+   * Returns false if ineligible (< 3 card clicks), allowing user to browse uninterrupted.
    */
   public requestInterstitial(action: string = 'video_click'): boolean {
     if (typeof window === 'undefined') return false;
@@ -90,6 +138,9 @@ class AdManager {
     if (!this.canShowInterstitial()) {
       return false;
     }
+
+    // Reset transition count & record timestamp
+    this.commitInterstitialSuccess();
 
     const isMobile = window.innerWidth < 1024;
     const zoneId = isMobile ? AD_ZONES.MOBILE_INTERSTITIAL : AD_ZONES.DESKTOP_INTERSTITIAL;
@@ -104,6 +155,9 @@ class AdManager {
         },
       })
     );
+
+    // Trigger popunder for this 3+ card threshold event
+    this.triggerPopunderIfEligible();
 
     return true;
   }

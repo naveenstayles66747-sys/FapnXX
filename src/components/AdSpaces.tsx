@@ -193,6 +193,7 @@ export const StickyBottomLeaderboard: React.FC = () => {
 
 /**
  * Desktop Fullpage Interstitial Ad (Zone ID: 6003174)
+ * Only triggers when user reaches 3+ video card clicks threshold
  */
 export const DesktopFullpageInterstitial: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -259,21 +260,14 @@ export const DesktopFullpageInterstitial: React.FC = () => {
 
   useEffect(() => {
     if (!canRenderDesktop) return;
-    renderAd();
-    const handleTrigger = () => {
-      try {
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
-      } catch {}
+    const handleInterstitialRequest = (e: any) => {
+      if (e?.detail?.target === "desktop" || canRenderDesktop) {
+        renderAd();
+      }
     };
-    window.addEventListener("exoclick-refresh-ads", handleTrigger);
-    window.addEventListener("popstate", handleTrigger);
-    window.addEventListener("pageshow", handleTrigger);
+    window.addEventListener("exoclick-interstitial-request", handleInterstitialRequest);
     return () => {
-      window.removeEventListener("exoclick-refresh-ads", handleTrigger);
-      window.removeEventListener("popstate", handleTrigger);
-      window.removeEventListener("pageshow", handleTrigger);
+      window.removeEventListener("exoclick-interstitial-request", handleInterstitialRequest);
     };
   }, [renderAd, canRenderDesktop]);
 
@@ -288,6 +282,7 @@ export const DesktopFullpageInterstitial: React.FC = () => {
 
 /**
  * Mobile Fullpage Interstitial Ad (Zone ID: 6003180)
+ * Only triggers when user reaches 3+ video card clicks threshold
  */
 export const MobileFullpageInterstitial: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -354,21 +349,14 @@ export const MobileFullpageInterstitial: React.FC = () => {
 
   useEffect(() => {
     if (!isMobile) return;
-    renderAd();
-    const handleTrigger = () => {
-      try {
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
-      } catch {}
+    const handleInterstitialRequest = (e: any) => {
+      if (e?.detail?.target === "mobile" || isMobile) {
+        renderAd();
+      }
     };
-    window.addEventListener("exoclick-refresh-ads", handleTrigger);
-    window.addEventListener("popstate", handleTrigger);
-    window.addEventListener("pageshow", handleTrigger);
+    window.addEventListener("exoclick-interstitial-request", handleInterstitialRequest);
     return () => {
-      window.removeEventListener("exoclick-refresh-ads", handleTrigger);
-      window.removeEventListener("popstate", handleTrigger);
-      window.removeEventListener("pageshow", handleTrigger);
+      window.removeEventListener("exoclick-interstitial-request", handleInterstitialRequest);
     };
   }, [renderAd, isMobile]);
 
