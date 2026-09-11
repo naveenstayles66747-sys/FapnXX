@@ -37,33 +37,30 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   // VIP Partner Badge Auto-Collapse Animation State
   const [isVipBadgeExpanded, setIsVipBadgeExpanded] = useState<boolean>(true);
 
-  // Check specifically if the current video is a Brazzers or Partner Promo video
-  const isBrazzersVideo = Boolean(
-    video?.id?.startsWith("bz-") ||
-    video?.id?.startsWith("dp-") ||
-    video?.adLinkUrl?.toLowerCase().includes("brazzers") ||
-    video?.adLinkUrl?.toLowerCase().includes("digitalplayground") ||
-    video?.sourceWebsiteUrl?.toLowerCase().includes("brazzers") ||
-    video?.sourceWebsiteUrl?.toLowerCase().includes("digitalplayground") ||
-    video?.sourceWebsite?.toLowerCase().includes("brazzers") ||
-    video?.sourceWebsite?.toLowerCase().includes("digital playground") ||
-    video?.channelName?.toLowerCase() === "brazzers" ||
-    video?.channelName?.toLowerCase() === "digital playground" ||
-    video?.title?.toLowerCase().includes("brazzers") ||
-    video?.title?.toLowerCase().includes("digital playground") ||
-    video?.tags?.some((t) => t?.toLowerCase().includes("brazzers") || t?.toLowerCase().includes("digital playground"))
-  );
-
   // Check specifically if the current video is a Pornhub video embed
   const isPornhubVideo = Boolean(
-    !isBrazzersVideo && (
-      currentVideoSrc.includes("pornhub") ||
-      video?.embedUrl?.toLowerCase().includes("pornhub") ||
-      video?.sourceWebsite?.toLowerCase().includes("pornhub") ||
-      video?.sourceWebsiteUrl?.toLowerCase().includes("pornhub") ||
-      video?.id?.startsWith("ph-") ||
-      video?.id?.startsWith("ph") ||
-      video?.channelName?.toLowerCase().includes("pornhub")
+    video?.id?.startsWith("ph-") ||
+    video?.id?.startsWith("ph_") ||
+    currentVideoSrc.includes("pornhub") ||
+    video?.embedUrl?.toLowerCase().includes("pornhub") ||
+    video?.sourceWebsite?.toLowerCase().includes("pornhub") ||
+    video?.sourceWebsiteUrl?.toLowerCase().includes("pornhub") ||
+    video?.channelName?.toLowerCase().includes("pornhub")
+  );
+
+  // Check specifically if the current video is a Brazzers or Partner Promo video
+  const isBrazzersVideo = Boolean(
+    !isPornhubVideo && (
+      video?.id?.startsWith("bz-") ||
+      video?.id?.startsWith("dp-") ||
+      video?.adLinkUrl?.toLowerCase().includes("brazzers") ||
+      video?.adLinkUrl?.toLowerCase().includes("digitalplayground") ||
+      video?.sourceWebsiteUrl?.toLowerCase().includes("brazzers") ||
+      video?.sourceWebsiteUrl?.toLowerCase().includes("digitalplayground") ||
+      video?.sourceWebsite?.toLowerCase().includes("brazzers") ||
+      video?.sourceWebsite?.toLowerCase().includes("digital playground") ||
+      video?.channelName?.toLowerCase() === "brazzers" ||
+      video?.channelName?.toLowerCase() === "digital playground"
     )
   );
 
