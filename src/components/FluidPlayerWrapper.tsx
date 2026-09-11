@@ -37,15 +37,45 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
   // VIP Partner Badge Auto-Collapse Animation State
   const [isVipBadgeExpanded, setIsVipBadgeExpanded] = useState<boolean>(true);
 
+  // Check specifically if the current video is a Brazzers or Partner Promo video
+  const isBrazzersVideo = Boolean(
+    video?.id?.startsWith("bz-") ||
+    video?.id?.startsWith("dp-") ||
+    video?.adLinkUrl?.toLowerCase().includes("brazzers") ||
+    video?.adLinkUrl?.toLowerCase().includes("digitalplayground") ||
+    video?.sourceWebsiteUrl?.toLowerCase().includes("brazzers") ||
+    video?.sourceWebsiteUrl?.toLowerCase().includes("digitalplayground") ||
+    video?.sourceWebsite?.toLowerCase().includes("brazzers") ||
+    video?.sourceWebsite?.toLowerCase().includes("digital playground") ||
+    video?.channelName?.toLowerCase() === "brazzers" ||
+    video?.channelName?.toLowerCase() === "digital playground" ||
+    video?.title?.toLowerCase().includes("brazzers") ||
+    video?.title?.toLowerCase().includes("digital playground") ||
+    video?.tags?.some((t) => t?.toLowerCase().includes("brazzers") || t?.toLowerCase().includes("digital playground"))
+  );
+
+  // Check specifically if the current video is a Pornhub video embed
+  const isPornhubVideo = Boolean(
+    !isBrazzersVideo && (
+      currentVideoSrc.includes("pornhub") ||
+      video?.embedUrl?.toLowerCase().includes("pornhub") ||
+      video?.sourceWebsite?.toLowerCase().includes("pornhub") ||
+      video?.sourceWebsiteUrl?.toLowerCase().includes("pornhub") ||
+      video?.id?.startsWith("ph-") ||
+      video?.id?.startsWith("ph") ||
+      video?.channelName?.toLowerCase().includes("pornhub")
+    )
+  );
+
   useEffect(() => {
-    if (!isPrerollActive && (video.sourceWebsiteUrl || video.adLinkUrl)) {
+    if (!isPrerollActive && isBrazzersVideo && (video?.sourceWebsiteUrl || video?.adLinkUrl)) {
       setIsVipBadgeExpanded(true);
       const timer = setTimeout(() => {
         setIsVipBadgeExpanded(false);
       }, 1200);
       return () => clearTimeout(timer);
     }
-  }, [isPrerollActive, video?.id, video.sourceWebsiteUrl, video.adLinkUrl]);
+  }, [isPrerollActive, isBrazzersVideo, video?.id, video?.sourceWebsiteUrl, video?.adLinkUrl]);
 
   const directPlayerId = `fluid_direct_${(video?.id || "vid").replace(/[^a-zA-Z0-9_-]/g, "_")}`;
   const VAST_TAG_URL = AD_CONFIG.VAST_TAG_URL || "https://s.magsrv.com/v1/vast.php?idz=6003184";
@@ -462,6 +492,11 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 referrerPolicy="no-referrer-when-downgrade"
                 scrolling="no"
                 frameBorder={0}
+                sandbox={
+                  isPornhubVideo
+                    ? "allow-scripts allow-same-origin allow-presentation allow-forms"
+                    : undefined
+                }
                 className="w-full h-full border-none block bg-black"
                 style={{ border: "none", width: "100%", height: "100%", display: "block" }}
               />
@@ -515,7 +550,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             />
 
             {/* Partner / Brazzers VIP Watch Full Video Button inside Player (Auto-collapses to gold badge icon after 1.2s) */}
-            {(video.sourceWebsiteUrl || video.adLinkUrl) && (
+            {isBrazzersVideo && (video.sourceWebsiteUrl || video.adLinkUrl) && (
               <a
                 href={video.sourceWebsiteUrl || video.adLinkUrl}
                 target="_blank"
