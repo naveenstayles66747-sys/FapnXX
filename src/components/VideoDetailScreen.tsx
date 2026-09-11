@@ -578,17 +578,17 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
         </div>
 
         {isPageSwitching ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5 my-2 animate-pulse">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3.5 md:gap-4 lg:gap-5 my-2 animate-pulse">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={`rec-page-skeleton-${i}`} className="flex flex-col gap-2.5">
-                <div className="w-full aspect-video rounded-2xl bg-zinc-200 dark:bg-zinc-800/80" />
-                <div className="h-4 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800" />
+              <div key={`rec-page-skeleton-${i}`} className="flex flex-col gap-2">
+                <div className="w-full aspect-video rounded-lg sm:rounded-xl bg-zinc-200 dark:bg-zinc-800/80" />
+                <div className="h-3.5 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800" />
                 <div className="h-3 w-1/2 rounded bg-zinc-200 dark:bg-zinc-800" />
               </div>
             ))}
           </div>
         ) : (
-          <div key={`rec-page-grid-${effectiveCurrentPage}`} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-5 gap-x-4 sm:gap-5 animate-in fade-in duration-200">
+          <div key={`rec-page-grid-${effectiveCurrentPage}`} className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3.5 md:gap-4 lg:gap-5 animate-in fade-in duration-200">
             {(displayedRelatedVideos || []).map((relatedVideo, idx) => (
               <React.Fragment key={relatedVideo.id}>
                 <div className="relative group">

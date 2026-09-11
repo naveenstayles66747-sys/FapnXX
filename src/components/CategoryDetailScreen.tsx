@@ -295,11 +295,11 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
 
         {/* Video Card Layout */}
         {isPageSwitching ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 my-2 animate-pulse">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3.5 md:gap-4 lg:gap-5 my-2 animate-pulse">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={`cat-page-skeleton-${i}`} className="flex flex-col gap-2.5">
-                <div className="w-full aspect-video rounded-2xl bg-zinc-200 dark:bg-zinc-800/80" />
-                <div className="h-4 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800" />
+              <div key={`cat-page-skeleton-${i}`} className="flex flex-col gap-2">
+                <div className="w-full aspect-video rounded-lg sm:rounded-xl bg-zinc-200 dark:bg-zinc-800/80" />
+                <div className="h-3.5 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800" />
                 <div className="h-3 w-1/2 rounded bg-zinc-200 dark:bg-zinc-800" />
               </div>
             ))}
@@ -308,7 +308,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
           <>
             <div key={`cat-grid-page-${effectiveCurrentPage}`} className="animate-in fade-in duration-200">
               {categoryId === 'pov' ? (
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-4 sm:gap-6">
                   {displayedCategoryVideos.map((video) => (
                     <VideoCard
                       key={video.id}
@@ -319,7 +319,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3.5 md:gap-4 lg:gap-5">
                   {displayedCategoryVideos.map((video, idx) => (
                     <React.Fragment key={video.id}>
                       <VideoCard

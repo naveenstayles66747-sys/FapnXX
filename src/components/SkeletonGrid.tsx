@@ -6,11 +6,11 @@ interface SkeletonGridProps {
 
 export const SkeletonGrid: React.FC<SkeletonGridProps> = ({ count = 8 }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3.5 md:gap-4 p-2 sm:p-4">
       {Array.from({ length: count }).map((_, idx) => (
-        <div key={idx} className="flex flex-col gap-2 rounded-xl overflow-hidden animate-pulse">
+        <div key={idx} className="flex flex-col gap-1.5 rounded-lg sm:rounded-xl overflow-hidden animate-pulse">
           {/* Thumbnail Shape */}
-          <div className="w-full aspect-[16/9] rounded-xl bg-zinc-800/60 skeleton-shimmer border border-white/5" />
+          <div className="w-full aspect-[16/9] rounded-lg sm:rounded-xl bg-zinc-800/60 skeleton-shimmer border border-white/5" />
           
           {/* Title & Metadata Lines */}
           <div className="p-1 space-y-2">

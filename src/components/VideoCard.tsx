@@ -532,6 +532,22 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     );
   }
 
+  const channelName = useMemo(() => {
+    return (
+      video.channelName ||
+      video.performerName ||
+      (Array.isArray(video.performers) && video.performers[0]) ||
+      (Array.isArray(video.modelsActors) && video.modelsActors[0]) ||
+      video.sourceWebsite ||
+      video.categoryLabel ||
+      "Verified"
+    );
+  }, [video]);
+
+  const channelInitial = useMemo(() => {
+    return channelName.charAt(0).toUpperCase() || "V";
+  }, [channelName]);
+
   return (
     <article
       ref={cardRef}
@@ -539,11 +555,11 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
-      className="group cursor-pointer flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300"
+      className="group cursor-pointer flex flex-col w-full max-w-full rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300"
       style={{ contentVisibility: "auto", containIntrinsicSize: "240px" }}
     >
       {/* 16:9 Full-Width Clean Thumbnail Container */}
-      <div className="video-card-container relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-zinc-200/80 dark:border-white/10 hover:border-rose-500/80 transition-colors duration-200 bg-[#09090b]">
+      <div className="video-card-container relative w-full aspect-[16/9] rounded-lg sm:rounded-xl overflow-hidden border border-zinc-200/80 dark:border-white/10 hover:border-[#ec4899]/80 transition-colors duration-200 bg-[#09090b]">
         {/* Default Static Thumbnail (Always acts as stable base layer) */}
         {isMp4Thumb ? (
           <video
@@ -579,21 +595,19 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           </div>
         )}
 
-        {/* Top-Right: Quality Badge (Hidden during preview for 100% clean video view) */}
+        {/* Top-Right: Quality Badge */}
         {!isPlayingPreview && (
-          <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 pointer-events-none transition-opacity duration-300">
-            <span className="thumb-hd-badge bg-black/85 text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-sm tracking-wide border-0">
+          <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-20 flex flex-col items-end gap-1 pointer-events-none transition-opacity duration-300">
+            <span className="thumb-hd-badge bg-black/85 text-white px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-extrabold uppercase shadow-sm tracking-wide border-0">
               {video.quality || "HD"}
             </span>
           </div>
         )}
 
-        {/* Duration Badge (Clean Borderless Pill Matching YouTube/Pornhub; Hidden for promo cards) */}
+        {/* Duration Badge (Bottom-Right matching xHamster standard) */}
         {!isPlayingPreview && !isSpecialPromo && (
           <div
-            className={`thumb-duration-badge absolute bottom-2 bg-black/85 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-white z-20 shadow-sm border-0 transition-opacity duration-300 ${
-              isMobile ? "left-2" : "right-2"
-            }`}
+            className="thumb-duration-badge absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 bg-black/85 px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold text-white z-20 shadow-sm border-0 transition-opacity duration-300"
           >
             {realDuration || video.duration || "05:00"}
           </div>
@@ -618,49 +632,38 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           onMouseDown={(e) => {
             e.stopPropagation();
           }}
-          className={`thumb-eye-btn absolute bottom-2 right-2 z-30 p-1.5 sm:p-2 rounded-xl backdrop-blur-md transition-all duration-300 ease-out shadow-2xl flex items-center justify-center cursor-pointer ${
+          className={`thumb-eye-btn absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 z-30 p-1 sm:p-1.5 rounded-md sm:rounded-lg backdrop-blur-md transition-all duration-300 ease-out shadow-2xl flex items-center justify-center cursor-pointer ${
             isPlayingPreview
               ? "opacity-0 pointer-events-none scale-75"
               : "opacity-90 hover:opacity-100 bg-[#141418]/90 text-zinc-200 hover:text-white border border-white/25 hover:scale-105 active:scale-90"
           }`}
           title="Play Video Preview"
         >
-          <span className="material-symbols-outlined text-base sm:text-lg">
+          <span className="material-symbols-outlined text-xs sm:text-sm">
             visibility
           </span>
         </button>
       </div>
 
-      {/* Card Info Below Thumbnail */}
-      <div className="video-card-meta-box pt-2 px-0.5 space-y-1">
-        <h3 className="video-card-meta-title font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white transition-colors line-clamp-2 leading-snug tracking-tight">
+      {/* Card Info Below Thumbnail - xHamster Style */}
+      <div className="video-card-meta-box pt-1.5 sm:pt-2 px-0.5 space-y-1">
+        <h3 className="video-card-meta-title font-semibold text-xs sm:text-[13px] md:text-sm text-zinc-900 dark:text-zinc-100 transition-colors line-clamp-2 leading-tight tracking-tight group-hover:text-[#ec4899]">
           {video.title}
         </h3>
 
-        {/* Stats Row: Views, Rating, Duration */}
-        <div className="video-card-stats-row flex items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs font-semibold text-[#334155] dark:text-zinc-300">
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">visibility</span>
-            <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">
-              {formatCardViews(video)}
-            </span>
+        {/* Channel & Views Row (xHamster exact format) */}
+        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-zinc-600 dark:text-zinc-400 font-medium overflow-hidden">
+          {/* Mini Channel Avatar Circle */}
+          <span className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-gradient-to-br from-[#e0358d] to-[#db2777] text-white flex items-center justify-center text-[8px] sm:text-[9px] font-black uppercase shadow-xs">
+            {channelInitial}
           </span>
-
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">thumb_up</span>
-            <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">
-              {formatCardRating(video)}
-            </span>
+          <span className="truncate max-w-[75px] sm:max-w-[120px] font-bold text-zinc-700 dark:text-zinc-300">
+            {channelName}
           </span>
-
-          {!isSpecialPromo && (
-            <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[13px] sm:text-sm text-[#64748b] dark:text-zinc-400">schedule</span>
-              <span className="video-card-stat-value text-[#0f172a] dark:text-zinc-100 font-bold">
-                {video.duration || "05:00"}
-              </span>
-            </span>
-          )}
+          <span className="text-zinc-400 dark:text-zinc-600 font-bold shrink-0">|</span>
+          <span className="shrink-0 font-semibold text-zinc-500 dark:text-zinc-400">
+            {formatCardViews(video)} {formatCardViews(video).toLowerCase().includes("view") ? "" : "views"}
+          </span>
         </div>
       </div>
     </article>

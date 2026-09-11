@@ -511,10 +511,10 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
   return (
     <article
       ref={containerRef}
-      className={`video-card group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer ${className}`}
+      className={`video-card group flex flex-col w-full max-w-full rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer ${className}`}
       onClick={handleAdClick}
     >
-      <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-[#ec4899] transition-colors duration-200 bg-black flex items-center justify-center">
+      <div className="relative w-full aspect-[16/9] rounded-lg sm:rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-[#ec4899]/80 transition-colors duration-200 bg-black flex items-center justify-center">
         {directVast?.mediaUrl ? (
           <video
             ref={videoRef}
@@ -527,7 +527,7 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 skeleton-shimmer">
-            <span className="material-symbols-outlined text-3xl text-rose-500 animate-pulse">play_circle</span>
+            <span className="material-symbols-outlined text-2xl sm:text-3xl text-rose-500 animate-pulse">play_circle</span>
           </div>
         )}
 
@@ -535,35 +535,38 @@ export const OutstreamVideoCardAd: React.FC<{ className?: string; reloadKey?: st
         <button
           type="button"
           onClick={toggleMute}
-          className="absolute bottom-2 right-2 z-20 p-1.5 bg-black/75 hover:bg-black/95 text-white rounded-full border border-white/20 shadow-lg backdrop-blur-md cursor-pointer active:scale-95"
+          className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 z-20 p-1 sm:p-1.5 bg-black/75 hover:bg-black/95 text-white rounded-full border border-white/20 shadow-lg backdrop-blur-md cursor-pointer active:scale-95"
           title={isMuted ? "Unmute" : "Mute"}
         >
-          <span className="material-symbols-outlined text-sm">
+          <span className="material-symbols-outlined text-xs sm:text-sm">
             {isMuted ? "volume_off" : "volume_up"}
           </span>
         </button>
 
-        <div className="absolute top-2 right-2 z-20">
-          <span className="bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+        <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-20">
+          <span className="bg-[#ec4899] text-white px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-extrabold uppercase shadow-md tracking-wide">
             AD
           </span>
         </div>
 
-        <div className="absolute bottom-2 left-2 z-20 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-rose-400">
-          SPONSORED VIDEO
+        <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 z-20 bg-black/90 border border-white/10 px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-mono font-bold text-rose-400">
+          SPONSORED
         </div>
       </div>
 
-      <div className="video-info pt-2 px-0.5 space-y-1">
-        <h4 className="font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white group-hover:text-[#ec4899] transition-colors line-clamp-2 leading-snug">
+      <div className="video-info pt-1.5 sm:pt-2 px-0.5 space-y-1">
+        <h4 className="font-semibold text-xs sm:text-[13px] md:text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-[#ec4899] transition-colors line-clamp-2 leading-tight tracking-tight">
           Recommended Partner Video
         </h4>
-        <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-400">
-          <span className="flex items-center gap-1 text-rose-500 font-bold">
-            <span className="material-symbols-outlined text-[13px]">verified</span>
-            <span>Promoted Stream</span>
+        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium text-zinc-600 dark:text-zinc-400 truncate">
+          <span className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 text-white flex items-center justify-center text-[8px] sm:text-[9px] font-black uppercase">
+            P
           </span>
-          <span className="text-[10px] text-zinc-400 font-bold">HD 1080p</span>
+          <span className="truncate font-bold text-rose-500">
+            Promoted
+          </span>
+          <span className="text-zinc-400 dark:text-zinc-600 font-bold shrink-0">|</span>
+          <span className="text-zinc-500 dark:text-zinc-400 font-semibold shrink-0">HD 1080p</span>
         </div>
       </div>
     </article>
@@ -585,18 +588,16 @@ export const InFeedBannerCard: React.FC<{
   return (
     <article
       ref={containerRef}
-      className={`video-card group flex flex-col w-full max-w-full rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
+      className={`video-card group flex flex-col w-full max-w-full rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
     >
-      <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-[#ec4899] transition-colors duration-200 bg-black flex items-center justify-center shadow-md">
+      <div className="relative w-full aspect-[16/9] rounded-lg sm:rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 hover:border-[#ec4899] transition-colors duration-200 bg-black flex items-center justify-center shadow-md">
         {/* Responsive iframe wrapper */}
         <div className="w-full h-full flex items-center justify-center overflow-hidden bg-black/90">
           {isNear ? (
             <iframe
               key={`adtng-feed-${reloadKey || "default"}`}
               title="Sponsored Stream"
-              style={{ backgroundColor: "transparent", maxWidth: "100%", maxHeight: "100%" }}
-              width="300"
-              height="250"
+              style={{ backgroundColor: "transparent", width: "100%", height: "100%", border: "none" }}
               scrolling="no"
               frameBorder="0"
               allowTransparency={true}
@@ -604,34 +605,37 @@ export const InFeedBannerCard: React.FC<{
               marginWidth={0}
               name="spot_id_10001807"
               src="//a.adtng.com/get/10001807?ata=Navifapx"
-              className="w-full h-full object-contain pointer-events-auto border-0"
+              className="w-full h-full object-cover pointer-events-auto border-0"
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 skeleton-shimmer">
-              <span className="material-symbols-outlined text-3xl text-rose-500/50">play_circle</span>
+              <span className="material-symbols-outlined text-2xl sm:text-3xl text-rose-500/50">play_circle</span>
             </div>
           )}
         </div>
 
         {/* AD Badge on Top Right */}
-        <div className="absolute top-2 right-2 z-20 pointer-events-none">
-          <span className="bg-[#ec4899] text-white px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-md tracking-wide">
+        <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-20 pointer-events-none">
+          <span className="bg-[#ec4899] text-white px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-extrabold uppercase shadow-md tracking-wide">
             AD
           </span>
         </div>
       </div>
 
       {/* Video Info Meta */}
-      <div className="video-info pt-2 px-0.5 space-y-1">
-        <h4 className="font-bold text-sm md:text-[15px] text-zinc-900 dark:text-white group-hover:text-[#ec4899] transition-colors line-clamp-2 leading-snug">
+      <div className="video-info pt-1.5 sm:pt-2 px-0.5 space-y-1">
+        <h4 className="font-semibold text-xs sm:text-[13px] md:text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-[#ec4899] transition-colors line-clamp-2 leading-tight tracking-tight">
           Featured Partner Video
         </h4>
-        <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-400">
-          <span className="flex items-center gap-1 text-rose-500 font-bold">
-            <span className="material-symbols-outlined text-[13px]">verified</span>
-            <span>Promoted Stream</span>
+        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium text-zinc-600 dark:text-zinc-400 truncate">
+          <span className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-gradient-to-br from-amber-500 to-rose-600 text-white flex items-center justify-center text-[8px] sm:text-[9px] font-black uppercase">
+            A
           </span>
-          <span className="text-[10px] text-zinc-400 font-bold">Recommended</span>
+          <span className="truncate font-bold text-amber-500">
+            Featured
+          </span>
+          <span className="text-zinc-400 dark:text-zinc-600 font-bold shrink-0">|</span>
+          <span className="text-zinc-500 dark:text-zinc-400 font-semibold shrink-0">Recommended</span>
         </div>
       </div>
     </article>

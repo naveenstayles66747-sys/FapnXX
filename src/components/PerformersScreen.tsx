@@ -180,7 +180,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
           </div>
 
           {performerVideos.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-6 gap-x-4 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3.5 md:gap-4 lg:gap-5">
               {performerVideos.map((video) => (
                 <VideoCard
                   key={video.id}
