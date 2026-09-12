@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import readline from "readline";
+import Database from "better-sqlite3";
 import { adminDb } from "../firebase-admin";
 
 export interface PornhubImportQuery {
@@ -56,37 +56,155 @@ export function mapCategory(catRaw: string, tagsRaw: string): { id: string; labe
   return { id: "trending", label: "Trending" };
 }
 
+// Global SQLite FTS5 connection
+let sqliteDb: Database.Database | null = null;
+const sqliteDbPath = path.join(process.cwd(), "server", "data", "videos_fts.db");
+
+function getSqliteDb(): Database.Database | null {
+  if (!sqliteDb && fs.existsSync(sqliteDbPath)) {
+    try {
+      sqliteDb = new Database(sqliteDbPath, { readonly: true, fileMustExist: true });
+      sqliteDb.pragma("cache_size = 1000000");
+    } catch (e) {
+      console.warn("Failed to open SQLite FTS5 database:", e);
+      sqliteDb = null;
+    }
+  }
+  return sqliteDb;
+}
+
 export const pornhubService = {
   getDbStatus: () => {
-    const csvPath = path.join(process.cwd(), "affiliate-webmaster", "pornhub.com-db", "pornhub.com-db.csv");
-    const exists = fs.existsSync(csvPath);
+    const dbExists = fs.existsSync(sqliteDbPath);
     let sizeBytes = 0;
-    if (exists) {
+    if (dbExists) {
       try {
-        const stats = fs.statSync(csvPath);
+        const stats = fs.statSync(sqliteDbPath);
         sizeBytes = stats.size;
       } catch {}
     }
 
+    const csvPath = path.join(process.cwd(), "affiliate-webmaster", "pornhub.com-db", "pornhub.com-db.csv");
+    const csvExists = fs.existsSync(csvPath);
+
     return {
-      available: exists,
-      path: csvPath,
-      sizeBytes,
-      sizeGb: exists ? (sizeBytes / (1024 * 1024 * 1024)).toFixed(2) + " GB" : "0 GB",
+      available: dbExists || csvExists,
+      sqliteIndexed: dbExists,
+      sqliteSizeMb: dbExists ? (sizeBytes / (1024 * 1024)).toFixed(2) + " MB" : "0 MB",
+      csvAvailable: csvExists,
     };
   },
 
   queryVideos: async (query: PornhubImportQuery = {}) => {
-    const csvPath = path.join(process.cwd(), "affiliate-webmaster", "pornhub.com-db", "pornhub.com-db.csv");
-    if (!fs.existsSync(csvPath)) {
-      throw new Error("Pornhub database dump CSV not found at affiliate-webmaster/pornhub.com-db/pornhub.com-db.csv");
+    const limit = Math.min(query.limit || 24, 100);
+    const minViews = query.minViews !== undefined ? query.minViews : 1000;
+    const search = (query.searchQuery || "").trim();
+    const category = (query.category || "").trim();
+    const atsCode = (query.atsCode || "").trim();
+
+    const db = getSqliteDb();
+
+    // ── 1. FAST SQLITE FTS5 SEARCH (Sub-millisecond) ──
+    if (db) {
+      try {
+        let sql = "SELECT * FROM videos_fts";
+        const params: any[] = [];
+        const clauses: string[] = [];
+
+        // Full Text Query
+        if (search) {
+          const sanitized = search
+            .replace(/["'*^:?]/g, " ")
+            .split(/\s+/)
+            .filter((w) => w.length > 0)
+            .map((w) => `"${w}"*`)
+            .join(" ");
+
+          if (sanitized) {
+            clauses.push("videos_fts MATCH ?");
+            params.push(sanitized);
+          }
+        } else if (category && category !== "all" && category !== "trending") {
+          clauses.push("videos_fts MATCH ?");
+          params.push(`"${category}"*`);
+        }
+
+        if (clauses.length > 0) {
+          sql += " WHERE " + clauses.join(" AND ");
+        }
+
+        sql += " LIMIT ?";
+        params.push(limit);
+
+        const rows = db.prepare(sql).all(...params) as any[];
+
+        const matched = rows.map((r: any) => {
+          const videoId = r.id;
+          const embedUrl = atsCode
+            ? `https://www.pornhub.com/embed/${videoId}?ats=${encodeURIComponent(atsCode)}`
+            : `https://www.pornhub.com/embed/${videoId}`;
+
+          let thumbUrl = r.thumb || "";
+          if (thumbUrl && !thumbUrl.startsWith("http")) {
+            thumbUrl = `https://ei.phncdn.com/videos/${thumbUrl}`;
+          }
+
+          const catInfo = mapCategory(r.categories || "", "");
+          const viewsNum = parseInt(r.views, 10) || 0;
+          const durationNum = parseInt(r.duration, 10) || 0;
+          const ratingNum = parseInt(r.rating, 10) || 85;
+
+          const models = r.performers
+            ? r.performers.split(";").map((s: string) => s.trim()).filter(Boolean)
+            : [];
+
+          return {
+            id: `ph_${videoId}`,
+            title: r.title,
+            description: `${r.title} - Free full HD video streaming on FapnXX.`,
+            videoUrl: embedUrl,
+            streamUrl: embedUrl,
+            embedUrl: embedUrl,
+            thumbnail: thumbUrl,
+            views: formatViews(viewsNum),
+            viewsCount: viewsNum,
+            likes: Math.round((viewsNum * ratingNum) / 1000),
+            duration: formatDuration(durationNum),
+            durationSeconds: durationNum,
+            isPornhubEmbed: true,
+            pornhubEmbedId: videoId,
+            tags: (r.categories || "").split(";").map((s: string) => s.trim()).filter(Boolean),
+            categories: [catInfo.label],
+            categoryId: catInfo.id,
+            category: catInfo.id,
+            categoryLabel: catInfo.label,
+            performerName: models.length > 0 ? models[0] : "",
+            modelsActors: models,
+            models_actors: models,
+            rating: ratingNum,
+            ratingPercent: ratingNum,
+            createdAt: new Date().toISOString(),
+          };
+        });
+
+        if (matched.length > 0) {
+          return {
+            totalFound: matched.length,
+            count: matched.length,
+            source: "sqlite_fts5",
+            videos: matched,
+          };
+        }
+      } catch (err) {
+        console.warn("SQLite FTS5 query warning, falling back to CSV if present:", err);
+      }
     }
 
-    const limit = Math.min(query.limit || 24, 100);
-    const minViews = query.minViews !== undefined ? query.minViews : 5000;
-    const targetCategory = (query.category || "").toLowerCase().trim();
-    const search = (query.searchQuery || "").toLowerCase().trim();
-    const atsCode = (query.atsCode || "").trim();
+    // ── 2. FALLBACK TO DIRECT CSV SCAN ──
+    const csvPath = path.join(process.cwd(), "affiliate-webmaster", "pornhub.com-db", "pornhub.com-db.csv");
+    if (!fs.existsSync(csvPath)) {
+      return { totalFound: 0, count: 0, source: "none", videos: [] };
+    }
 
     const matched: any[] = [];
     const seenIds = new Set<string>();
@@ -97,7 +215,7 @@ export const pornhubService = {
     let bytesRead = 0;
     let remainder = "";
     let scannedRows = 0;
-    const maxRowsToScan = 800000; // Search across up to 800,000 deep rows per instant query
+    const maxRowsToScan = 500000;
 
     try {
       while ((bytesRead = fs.readSync(fd, buf, 0, BUFFER_SIZE, null)) > 0) {
@@ -119,83 +237,75 @@ export const pornhubService = {
           const viewsCount = parseInt(cols[8], 10) || 0;
           if (viewsCount < minViews) continue;
 
-          const tagsStr = cols[4] || "";
-          const catStr = cols[5] || "";
-          const pornstarsStr = cols[6] || "";
+          const tagsRaw = (cols[4] || "").toLowerCase();
+          const catRaw = (cols[5] || "").toLowerCase();
+          const modelsRaw = (cols[6] || "").toLowerCase();
 
           if (search) {
-            const fullText = `${title} ${tagsStr} ${catStr} ${pornstarsStr}`.toLowerCase();
-            if (!fullText.includes(search)) continue;
+            const matchesSearch =
+              title.toLowerCase().includes(search) ||
+              tagsRaw.includes(search) ||
+              catRaw.includes(search) ||
+              modelsRaw.includes(search);
+            if (!matchesSearch) continue;
           }
 
-          const catMapping = mapCategory(catStr, tagsStr);
-          if (targetCategory && targetCategory !== "all" && catMapping.id !== targetCategory) {
-            continue;
+          if (category && category !== "all" && category !== "trending") {
+            const matchesCat = catRaw.includes(category) || tagsRaw.includes(category);
+            if (!matchesCat) continue;
           }
 
-          const keyMatch = rawEmbed.match(/\/embed\/([a-zA-Z0-9_-]+)/i) || rawEmbed.match(/viewkey=([a-zA-Z0-9_-]+)/i);
-          const vKey = keyMatch ? keyMatch[1] : "";
-          if (!vKey) continue;
-
-          const vidId = `ph-${vKey}`;
-          if (seenIds.has(vidId)) continue;
-          seenIds.add(vidId);
-
-          let cleanEmbed = `https://www.pornhub.org/embed/${vKey}`;
-          if (atsCode) {
-            cleanEmbed += cleanEmbed.includes("?") ? `&ats=${atsCode}` : `?ats=${atsCode}`;
+          let videoId = "";
+          const matchEmbed = rawEmbed.match(/embed\/([a-zA-Z0-9_-]+)/);
+          if (matchEmbed) {
+            videoId = matchEmbed[1];
+          } else {
+            videoId = rawEmbed.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32);
           }
 
-          const durationSec = parseInt(cols[7], 10) || 450;
-          const upvotes = parseInt(cols[9], 10) || Math.round(viewsCount * 0.04);
-          const downvotes = parseInt(cols[10], 10) || 0;
-          const totalVotes = upvotes + downvotes;
-          const ratingPct = totalVotes > 0 ? Math.round((upvotes / totalVotes) * 100) : 95;
+          if (seenIds.has(videoId)) continue;
+          seenIds.add(videoId);
 
-          const primaryThumb = cols[11] && cols[11].startsWith("http") ? cols[11].trim() : (cols[1] || "").trim();
-          if (!primaryThumb || !primaryThumb.startsWith("http")) continue;
+          const thumb = (cols[11] || cols[1] || "").trim();
+          const durationSeconds = parseInt(cols[7], 10) || 0;
+          const ratingUp = parseInt(cols[9], 10) || 0;
+          const ratingDown = parseInt(cols[10], 10) || 0;
+          const totalRating = ratingUp + ratingDown;
+          const ratingPercent = totalRating > 0 ? Math.round((ratingUp / totalRating) * 100) : 85;
 
-          const framePreviews = (cols[12] || cols[2] || "").split(";").filter((f) => f && f.startsWith("http"));
-          const actors = pornstarsStr.split(";").map((a) => a.trim()).filter(Boolean);
-          const performerName = actors.length > 0 ? actors[0] : `${catMapping.label} Verified`;
+          const finalEmbedUrl = atsCode
+            ? `https://www.pornhub.com/embed/${videoId}?ats=${encodeURIComponent(atsCode)}`
+            : `https://www.pornhub.com/embed/${videoId}`;
 
-          const item = {
-            id: vidId,
+          const catInfo = mapCategory(catRaw, tagsRaw);
+
+          matched.push({
+            id: `ph_${videoId}`,
             title,
-            category: catMapping.id,
-            categoryLabel: catMapping.label,
-            categories: [catMapping.id, ...catStr.split(";").map((c) => c.trim().toLowerCase()).filter(Boolean)].slice(0, 5),
-            tags: Array.from(new Set([...tagsStr.split(";").map((t) => t.trim()).filter(Boolean), catMapping.label])).slice(0, 12),
-            modelsActors: actors.length > 0 ? actors : undefined,
-            models_actors: actors.length > 0 ? actors : undefined,
-            performers: actors.length > 0 ? actors : undefined,
-            performerName,
-            performerAvatar: primaryThumb,
-            channelName: "Pornhub Verified",
-            thumbnail: primaryThumb,
-            thumbnailUrl: primaryThumb,
-            previewFrames: framePreviews.length > 0 ? framePreviews : undefined,
-            previewMp4Url: framePreviews.length > 0 ? framePreviews[Math.min(4, framePreviews.length - 1)] : undefined,
-            duration: formatDuration(durationSec),
-            quality: durationSec > 600 || viewsCount > 500000 ? "4K" : "HD",
-            views: `${formatViews(viewsCount)} views`,
+            description: `${title} - Free streaming on FapnXX.`,
+            videoUrl: finalEmbedUrl,
+            streamUrl: finalEmbedUrl,
+            embedUrl: finalEmbedUrl,
+            thumbnail: thumb,
+            views: formatViews(viewsCount),
             viewsCount,
-            likesCount: upvotes,
-            rating: `${ratingPct}%`,
-            timeAgo: "Trending now",
+            likes: ratingUp,
+            duration: formatDuration(durationSeconds),
+            durationSeconds,
+            isPornhubEmbed: true,
+            pornhubEmbedId: videoId,
+            tags: tagsRaw.split(";").filter(Boolean),
+            categories: [catInfo.label],
+            categoryId: catInfo.id,
+            category: catInfo.id,
+            categoryLabel: catInfo.label,
+            performerName: (cols[6] || "").split(";")[0]?.trim() || "",
+            modelsActors: (cols[6] || "").split(";").map((s) => s.trim()).filter(Boolean),
+            rating: ratingPercent,
+            ratingPercent,
             createdAt: new Date().toISOString(),
-            description: `Watch ${title} in 4K Ultra HD on FapnXX. Featuring top verified adult performers.`,
-            embedUrl: cleanEmbed,
-            isEmbed: true,
-            isExclusive: viewsCount > 1000000,
-            isNew: true,
-            orientation: catMapping.id === "lesbian" ? "lesbian" : "straight",
-            contentPreference: catMapping.id === "lesbian" ? "lesbian" : "straight",
-            sourceWebsite: "Pornhub",
-            sourceWebsiteUrl: "https://www.pornhub.com",
-          };
+          });
 
-          matched.push(item);
           if (matched.length >= limit) break;
         }
 
@@ -205,25 +315,32 @@ export const pornhubService = {
       fs.closeSync(fd);
     }
 
-    // Auto publish directly to Firestore if requested
-    if (query.autoPublish && matched.length > 0 && adminDb) {
-      try {
-        const batch = adminDb.batch();
-        matched.forEach((v) => {
-          const ref = adminDb.collection("videos").doc(v.id);
-          batch.set(ref, v, { merge: true });
-        });
-        await batch.commit();
-      } catch (err: any) {
-        console.warn("⚠️ [Firestore Sync] Auto-publish notice:", err?.message);
-      }
-    }
-
     return {
+      totalFound: matched.length,
       count: matched.length,
       scannedRows,
-      autoPublished: Boolean(query.autoPublish),
+      source: "csv_scan",
       videos: matched,
     };
+  },
+
+  importToFirestore: async (videos: any[]) => {
+    if (!videos || videos.length === 0) return { success: false, imported: 0 };
+    const batch = adminDb.batch();
+    let count = 0;
+
+    for (const v of videos) {
+      const ref = adminDb.collection("videos").doc(v.id);
+      batch.set(ref, {
+        ...v,
+        importedAt: new Date().toISOString(),
+        published: true,
+        source: "pornhub_affiliate",
+      }, { merge: true });
+      count++;
+    }
+
+    await batch.commit();
+    return { success: true, imported: count };
   },
 };

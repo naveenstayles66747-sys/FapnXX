@@ -15,9 +15,13 @@ export const pornhubController = {
   search: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const category = req.query.category as string;
-      const minViews = req.query.minViews ? parseInt(req.query.minViews as string, 10) : 50000;
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
-      const searchQuery = req.query.q as string;
+      const searchQuery = (req.query.q as string) || (req.query.searchQuery as string);
+      const minViews = req.query.minViews
+        ? parseInt(req.query.minViews as string, 10)
+        : searchQuery
+        ? 0
+        : 1000;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 30;
       const atsCode = req.query.atsCode as string;
 
       const result = await pornhubService.queryVideos({

@@ -56,7 +56,7 @@ async function run() {
       name: 'Naveen',
       email: 'naveenstayles66747@gmail.com',
     },
-    message: 'feat: Enhanced pornstars directory with authentic photos, live search and full performer catalog',
+    message: 'feat: SQLite FTS5 search index (64MB), 1500+ A-Z Pornstars catalog, search bar and live query engine',
   });
 
   console.log('Committed SHA:', sha);

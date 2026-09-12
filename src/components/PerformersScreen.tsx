@@ -12,6 +12,12 @@ interface PerformersScreenProps {
   onNavigateToSearch?: (query: string) => void;
 }
 
+const ALPHABET = [
+  'ALL',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+  'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+];
+
 export const PerformersScreen: React.FC<PerformersScreenProps> = ({
   videos = [],
   onSelectVideo,
@@ -19,107 +25,100 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
 }) => {
   const [selectedPerformer, setSelectedPerformer] = useState<Performer | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [visibleCount, setVisibleCount] = useState<number>(30);
+  const [selectedLetter, setSelectedLetter] = useState<string>('ALL');
+  const [sortBy, setSortBy] = useState<'popular' | 'alpha'>('alpha');
+  const [visibleCount, setVisibleCount] = useState<number>(48);
   const [livePerformerVideos, setLivePerformerVideos] = useState<Video[]>([]);
   const [isLoadingLiveVideos, setIsLoadingLiveVideos] = useState<boolean>(false);
 
-  // Dynamically extract real unique performers from catalog + uploaded videos
-  const performers = useMemo<Performer[]>(() => {
-    const map = new Map<string, { performer: Performer; videos: Video[] }>();
+  // Blacklist set to strictly prevent any category or non-human names
+  const nonPerformerBlacklist = useMemo(
+    () =>
+      new Set([
+        'outdoor', 'amateur', 'mature', 'hd', 'verified', 'anonymous', 'user uploaded',
+        'public & outdoor star', 'mature & vintage star', 'amateur star', '4k', 'vr',
+        'pov', 'anal', 'blowjob', 'creampie', 'milf', 'teen', 'latina', 'ebony',
+        'asian', 'blonde', 'brunette', 'redhead', 'bbw', 'massage', 'public',
+        'squirt', 'compilation', 'striptease', 'hentai', 'solo', 'babe', 'hardcore',
+        'lesbian', 'interracial', 'threesome', 'fetish', 'masturbation', 'transgender',
+        'trending', 'desi', 'indian'
+      ]),
+    []
+  );
 
-    // 1. Seed top verified performers from catalog
+  // Build high-quality verified performers list
+  const allPerformers = useMemo<Performer[]>(() => {
+    const map = new Map<string, Performer>();
+
+    // 1. Seed all 1,500+ top verified adult stars from catalog
     if (Array.isArray(TOP_PERFORMERS_CATALOG)) {
       TOP_PERFORMERS_CATALOG.forEach((item: any) => {
         if (!item || !item.name) return;
         const name = item.name.trim();
+        const low = name.toLowerCase();
+
+        if (nonPerformerBlacklist.has(low) || low.includes('star') || low.includes('creator')) {
+          return;
+        }
+
         const id = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-        const viewsCount = item.totalViews || (item.videosCount * 450000);
-        const subCount = Math.max(12, Math.round((viewsCount / 100000) % 950));
+        const viewsCount = item.totalViews || item.videosCount * 450000;
+        const subCount = Math.max(15, Math.round((viewsCount / 100000) % 950));
+
         map.set(id, {
-          performer: {
-            id,
-            name,
-            avatar: item.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop',
-            subscribers: `${subCount}K`,
-            videosCount: item.videosCount || 1,
-            isFollowing: false,
-            bio: `Official verified adult creator channel & HD video catalog for ${name}.`,
-            tags: Array.isArray(item.categories) && item.categories.length > 0 ? item.categories : ['Verified', 'HD', 'Top Rated'],
-          },
-          videos: [],
+          id,
+          name,
+          avatar:
+            item.avatar ||
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop',
+          subscribers: `${subCount}K`,
+          videosCount: item.videosCount || 1,
+          isFollowing: false,
+          bio: `Official verified adult creator channel & HD video catalog for ${name}.`,
+          tags:
+            Array.isArray(item.categories) && item.categories.length > 0
+              ? item.categories.slice(0, 4)
+              : ['Verified', 'HD', 'Top Rated'],
         });
       });
     }
 
-    // 2. Merge from all active dynamic videos
-    (videos || []).forEach((v) => {
-      if (!v || v.isTakenDown) return;
-      const performerNames: string[] = [];
+    return Array.from(map.values());
+  }, [nonPerformerBlacklist]);
 
-      if (v.performerName && v.performerName.trim() && v.performerName !== 'User Uploaded' && v.performerName !== 'Anonymous' && !v.performerName.includes('Verified')) {
-        performerNames.push(v.performerName.trim());
-      }
-      if (Array.isArray(v.modelsActors)) {
-        v.modelsActors.forEach((m) => {
-          if (m && typeof m === 'string' && m.trim()) performerNames.push(m.trim());
-        });
-      }
-      if (Array.isArray(v.models_actors)) {
-        v.models_actors.forEach((m) => {
-          if (m && typeof m === 'string' && m.trim()) performerNames.push(m.trim());
-        });
-      }
+  // Filter & Sort performers
+  const filteredAndSortedPerformers = useMemo(() => {
+    let list = [...allPerformers];
 
-      performerNames.forEach((name) => {
-        const id = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-        const nameHash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const subCount = (nameHash % 45) + 15;
-        if (!map.has(id)) {
-          map.set(id, {
-            performer: {
-              id,
-              name,
-              avatar:
-                v.performerAvatar ||
-                v.thumbnail ||
-                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop',
-              subscribers: `${subCount}K`,
-              videosCount: 1,
-              isFollowing: false,
-              bio: `Official video channel & exclusive content for ${name}.`,
-              tags: Array.isArray(v.tags) && v.tags.length > 0 ? v.tags : ['HD', 'Verified'],
-            },
-            videos: [v],
-          });
-        } else {
-          const entry = map.get(id)!;
-          entry.performer.videosCount = Math.max(entry.performer.videosCount, entry.performer.videosCount + 1);
-          if (v.thumbnail && (!entry.performer.avatar || entry.performer.avatar.includes('unsplash'))) {
-            entry.performer.avatar = v.thumbnail;
-          }
-          if (!entry.videos.some((existing) => existing.id === v.id)) {
-            entry.videos.push(v);
-          }
-        }
-      });
-    });
+    // 1. Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((p) => p.name.toLowerCase().includes(q));
+    }
 
-    return Array.from(map.values())
-      .map((e) => e.performer)
-      .sort((a, b) => (b.videosCount || 0) - (a.videosCount || 0));
-  }, [videos]);
+    // 2. Alphabet letter filter
+    if (selectedLetter !== 'ALL') {
+      const letter = selectedLetter.toUpperCase();
+      list = list.filter((p) => p.name.toUpperCase().startsWith(letter));
+    }
 
-  // Filter performers based on search query
-  const filteredPerformers = useMemo(() => {
-    if (!searchQuery.trim()) return performers;
-    return performers.filter((p) =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
-    );
-  }, [performers, searchQuery]);
+    // 3. Sorting
+    if (sortBy === 'alpha') {
+      list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    } else {
+      // Most popular by video count
+      list.sort((a, b) => (b.videosCount || 0) - (a.videosCount || 0));
+    }
 
-  const visiblePerformers = filteredPerformers.slice(0, visibleCount);
+    return list;
+  }, [allPerformers, searchQuery, selectedLetter, sortBy]);
 
-  // Fetch live videos from the 80 Lakh database whenever a performer profile is opened
+  const visiblePerformers = useMemo(
+    () => filteredAndSortedPerformers.slice(0, visibleCount),
+    [filteredAndSortedPerformers, visibleCount]
+  );
+
+  // Fetch live videos from the database whenever a performer profile is opened
   useEffect(() => {
     if (!selectedPerformer) {
       setLivePerformerVideos([]);
@@ -141,7 +140,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
       });
   }, [selectedPerformer]);
 
-  // Performer-specific videos when a performer is selected (combined local + live 80L database)
+  // Performer-specific videos when a performer is selected
   const performerVideos = useMemo<Video[]>(() => {
     if (!selectedPerformer) return [];
     const targetName = selectedPerformer.name.toLowerCase().trim();
@@ -172,12 +171,12 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
   // ═════════════════════════════════════════════════════════════════════════
   if (selectedPerformer) {
     return (
-      <main className="flex-grow pt-4 lg:pt-8 px-3 sm:px-6 md:px-12 max-w-7xl mx-auto w-full lg:ml-64 pb-10">
+      <main className="flex-grow pt-4 lg:pt-8 px-3 sm:px-6 md:px-12 max-w-7xl mx-auto w-full lg:ml-64 pb-16">
         {/* Back Button */}
         <button
           type="button"
           onClick={() => setSelectedPerformer(null)}
-          className="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-100 dark:bg-white/10 hover:bg-zinc-200 dark:hover:bg-white/20 text-zinc-800 dark:text-white font-bold text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
+          className="mb-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-100 dark:bg-white/10 hover:bg-zinc-200 dark:hover:bg-white/20 text-zinc-900 dark:text-white font-bold text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
         >
           <span className="material-symbols-outlined text-base">arrow_back</span>
           <span>Back to All Pornstars</span>
@@ -189,7 +188,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
             <img
               src={selectedPerformer.avatar}
               alt={selectedPerformer.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-top"
             />
           </div>
 
@@ -205,9 +204,21 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
 
             <div className="flex items-center justify-center sm:justify-start gap-3 text-xs font-semibold text-zinc-600 dark:text-zinc-300 flex-wrap">
               <span className="bg-[#ec4899]/20 text-[#ec4899] px-2.5 py-0.5 rounded-full font-bold border border-[#ec4899]/30">
-                {performerVideos.length} {performerVideos.length === 1 ? 'Video' : 'Videos'}
+                {selectedPerformer.videosCount || performerVideos.length} Videos
               </span>
               <span>⭐ Top Rated Creator</span>
+              {selectedPerformer.tags && selectedPerformer.tags.length > 0 && (
+                <div className="flex gap-1.5 flex-wrap">
+                  {selectedPerformer.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="bg-white/5 border border-white/10 px-2 py-0.5 rounded-md text-[11px] text-zinc-400 capitalize"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xl">
@@ -233,6 +244,12 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
                 Videos featuring {selectedPerformer.name} ({performerVideos.length})
               </span>
             </h2>
+            {isLoadingLiveVideos && (
+              <span className="text-xs text-[#ec4899] animate-pulse flex items-center gap-1 font-medium">
+                <span className="material-symbols-outlined text-sm animate-spin">sync</span>
+                Loading full catalog...
+              </span>
+            )}
           </div>
 
           {performerVideos.length > 0 ? (
@@ -247,7 +264,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
             </div>
           ) : (
             <div className="p-12 text-center text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-[#121115] rounded-3xl border border-white/10 space-y-2">
-              <span className="material-symbols-outlined text-4xl text-rose-500">videocam_off</span>
+              <span className="material-symbols-outlined text-4xl text-[#ec4899]">videocam_off</span>
               <h3 className="text-base font-bold text-white">
                 No Videos Found for {selectedPerformer.name}
               </h3>
@@ -260,20 +277,53 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
   }
 
   // ═════════════════════════════════════════════════════════════════════════
-  // VIEW 1: MAIN PORNSTARS DIRECTORY GRID — Reference design (2-col)
+  // VIEW 1: MAIN PORNSTARS DIRECTORY GRID (A-Z, Search, Real Photos)
   // ═════════════════════════════════════════════════════════════════════════
   return (
-    <main className="flex-grow pt-0 pb-10 w-full lg:ml-64">
-      {/* Page Header */}
-      <div className="px-3 sm:px-6 md:px-12 max-w-7xl mx-auto pt-6 md:pt-8 mb-4">
-        <h1 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
-          <span>Pornstars</span>
-          <span className="material-symbols-outlined text-[#ec4899]">stars</span>
-        </h1>
-      </div>
+    <main className="flex-grow pt-0 pb-16 w-full lg:ml-64">
+      {/* ── Page Header & Controls ── */}
+      <div className="px-3 sm:px-6 md:px-12 max-w-7xl mx-auto pt-6 md:pt-8 mb-5 space-y-4">
+        {/* Title + Sort Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
+              Pornstars
+            </h1>
+            <span className="bg-[#ec4899]/20 text-[#ec4899] text-xs font-black px-2.5 py-1 rounded-full border border-[#ec4899]/30">
+              {filteredAndSortedPerformers.length.toLocaleString()}
+            </span>
+          </div>
 
-      {/* Search Bar */}
-      <div className="px-3 sm:px-6 md:px-12 max-w-7xl mx-auto mb-4">
+          {/* Sort Switcher (A-Z vs Most Popular) */}
+          <div className="flex items-center bg-zinc-100 dark:bg-[#18171b] p-1 rounded-xl border border-zinc-200 dark:border-white/10 shrink-0">
+            <button
+              type="button"
+              onClick={() => setSortBy('alpha')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                sortBy === 'alpha'
+                  ? 'bg-[#ec4899] text-white shadow-md'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-white'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">sort_by_alpha</span>
+              <span>A to Z</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSortBy('popular')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                sortBy === 'popular'
+                  ? 'bg-[#ec4899] text-white shadow-md'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-white'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">local_fire_department</span>
+              <span>Most Popular</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Search Bar ── */}
         <div className="relative w-full">
           <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-lg pointer-events-none">
             search
@@ -281,24 +331,51 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search pornstar by name..."
-            className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-zinc-100 dark:bg-[#18171b] border border-zinc-200 dark:border-white/10 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#ec4899] transition-all shadow-inner"
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setVisibleCount(48);
+            }}
+            placeholder="Search pornstar by name (e.g. Mia Khalifa, Sunny Leone, Abella Danger)..."
+            className="w-full pl-10 pr-10 py-3 rounded-2xl bg-zinc-100 dark:bg-[#18171b] border border-zinc-200 dark:border-white/10 text-xs sm:text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#ec4899] transition-all shadow-inner"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-rose-500 text-xs cursor-pointer transition-colors"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-rose-500 text-sm cursor-pointer transition-colors p-1"
             >
               ✕
             </button>
           )}
         </div>
+
+        {/* ── A to Z Alphabet Bar ── */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-700">
+          {ALPHABET.map((letter) => {
+            const isActive = selectedLetter === letter;
+            return (
+              <button
+                key={letter}
+                type="button"
+                onClick={() => {
+                  setSelectedLetter(letter);
+                  setVisibleCount(48);
+                }}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
+                  isActive
+                    ? 'bg-[#ec4899] text-white shadow-md scale-105'
+                    : 'bg-zinc-100 dark:bg-[#141316] text-zinc-600 dark:text-zinc-400 hover:text-white hover:bg-zinc-200 dark:hover:bg-white/10 border border-zinc-200 dark:border-white/5'
+                }`}
+              >
+                {letter}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Ad Banner */}
-      <div className="px-3 sm:px-6 md:px-12 max-w-7xl mx-auto mb-4">
+      <div className="px-3 sm:px-6 md:px-12 max-w-7xl mx-auto mb-5">
         <div className="w-full flex items-center justify-center overflow-hidden rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-1 shadow-sm">
           <AdBanner key="performers-banner" reloadKey="performers" />
         </div>
@@ -313,7 +390,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
               onClick={() => setSelectedPerformer(performer)}
               className="group cursor-pointer border-b border-r border-zinc-200 dark:border-white/[0.06] bg-white dark:bg-[#0f0e12] hover:bg-zinc-50 dark:hover:bg-[#1a1820] transition-colors duration-200 active:opacity-75"
             >
-              {/* Portrait Photo (4:3 aspect ratio — same as reference) */}
+              {/* Portrait Photo (4:3 aspect ratio) */}
               <div className="relative w-full aspect-[4/3] overflow-hidden bg-zinc-900">
                 <img
                   src={performer.avatar}
@@ -324,14 +401,14 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
                 />
                 {/* Dark gradient at bottom of photo */}
                 <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/75 to-transparent pointer-events-none" />
-                {/* ▶ N videos badge — bottom-left inside image (exact reference style) */}
+                {/* ▶ N videos badge */}
                 <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/65 backdrop-blur-sm px-1.5 py-0.5 rounded text-white text-[11px] font-semibold leading-none">
-                  <span className="text-[9px] opacity-80">▶</span>
+                  <span className="text-[9px] text-[#ec4899]">▶</span>
                   <span>{performer.videosCount} {performer.videosCount === 1 ? 'video' : 'videos'}</span>
                 </div>
               </div>
 
-              {/* Performer Name — bold uppercase below image (exact reference style) */}
+              {/* Performer Name */}
               <div className="px-2.5 py-2.5">
                 <h3 className="font-black text-[13px] sm:text-sm tracking-wide uppercase text-zinc-900 dark:text-white group-hover:text-[#ec4899] transition-colors duration-200 line-clamp-1">
                   {performer.name}
@@ -346,21 +423,24 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
           <h3 className="text-xl font-bold text-zinc-900 dark:text-white">No Pornstars Found</h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
             {searchQuery
-              ? `No models found matching "${searchQuery}".`
-              : 'No creator profiles available yet. Upload videos with performer names to populate this page.'}
+              ? `No pornstars found matching "${searchQuery}".`
+              : `No pornstars found starting with letter "${selectedLetter}".`}
           </p>
         </div>
       )}
 
       {/* Load More Button */}
-      {visibleCount < filteredPerformers.length && (
+      {visibleCount < filteredAndSortedPerformers.length && (
         <div className="mt-8 flex justify-center px-3">
           <button
             type="button"
-            onClick={() => setVisibleCount((prev) => prev + 20)}
-            className="px-8 py-3 rounded-2xl bg-[#ec4899] hover:bg-[#db2777] text-white font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 shadow-lg shadow-[#ec4899]/30"
+            onClick={() => setVisibleCount((prev) => prev + 48)}
+            className="px-8 py-3.5 rounded-2xl bg-[#ec4899] hover:bg-[#db2777] text-white font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 shadow-lg shadow-[#ec4899]/30 flex items-center gap-2"
           >
-            Load More ({filteredPerformers.length - visibleCount} remaining)
+            <span>Load More Pornstars</span>
+            <span className="bg-black/20 px-2 py-0.5 rounded-full text-[11px]">
+              {filteredAndSortedPerformers.length - visibleCount} remaining
+            </span>
           </button>
         </div>
       )}
