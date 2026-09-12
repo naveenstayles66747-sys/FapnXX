@@ -56,7 +56,7 @@ async function run() {
       name: 'Naveen',
       email: 'naveenstayles66747@gmail.com',
     },
-    message: 'fix: Restored mobileSearchActive state declaration in Header component',
+    message: 'fix: Remove duplicate age verification exports in storage.ts and resolve black screen build issue',
   });
 
   console.log('Committed SHA:', sha);
