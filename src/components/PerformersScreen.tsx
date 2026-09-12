@@ -1,8 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Performer, Video } from '../types';
 import { VideoCard } from './VideoCard';
 import { AdBanner, NativeRecommendationAd } from './AdSpaces';
 import { deduplicateVideos } from '../utils/videoDeduplicator';
+import { videoService } from '../services/videoService';
+import TOP_PERFORMERS_CATALOG from '../data/performersCatalog.json';
 
 interface PerformersScreenProps {
   videos?: Video[];
@@ -17,17 +19,44 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
 }) => {
   const [selectedPerformer, setSelectedPerformer] = useState<Performer | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [visibleCount, setVisibleCount] = useState<number>(24);
+  const [visibleCount, setVisibleCount] = useState<number>(30);
+  const [livePerformerVideos, setLivePerformerVideos] = useState<Video[]>([]);
+  const [isLoadingLiveVideos, setIsLoadingLiveVideos] = useState<boolean>(false);
 
-  // Dynamically extract real unique performers from genuine uploaded videos
+  // Dynamically extract real unique performers from catalog + uploaded videos
   const performers = useMemo<Performer[]>(() => {
     const map = new Map<string, { performer: Performer; videos: Video[] }>();
 
+    // 1. Seed top verified performers from catalog
+    if (Array.isArray(TOP_PERFORMERS_CATALOG)) {
+      TOP_PERFORMERS_CATALOG.forEach((item: any) => {
+        if (!item || !item.name) return;
+        const name = item.name.trim();
+        const id = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        const viewsCount = item.totalViews || (item.videosCount * 450000);
+        const subCount = Math.max(12, Math.round((viewsCount / 100000) % 950));
+        map.set(id, {
+          performer: {
+            id,
+            name,
+            avatar: item.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop',
+            subscribers: `${subCount}K`,
+            videosCount: item.videosCount || 1,
+            isFollowing: false,
+            bio: `Official verified adult creator channel & HD video catalog for ${name}.`,
+            tags: Array.isArray(item.categories) && item.categories.length > 0 ? item.categories : ['Verified', 'HD', 'Top Rated'],
+          },
+          videos: [],
+        });
+      });
+    }
+
+    // 2. Merge from all active dynamic videos
     (videos || []).forEach((v) => {
       if (!v || v.isTakenDown) return;
       const performerNames: string[] = [];
 
-      if (v.performerName && v.performerName.trim() && v.performerName !== 'User Uploaded' && v.performerName !== 'Anonymous') {
+      if (v.performerName && v.performerName.trim() && v.performerName !== 'User Uploaded' && v.performerName !== 'Anonymous' && !v.performerName.includes('Verified')) {
         performerNames.push(v.performerName.trim());
       }
       if (Array.isArray(v.modelsActors)) {
@@ -42,9 +71,9 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
       }
 
       performerNames.forEach((name) => {
-        const id = name.toLowerCase().replace(/\s+/g, '-');
+        const id = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
         const nameHash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const subCount = (nameHash % 45) + 5;
+        const subCount = (nameHash % 45) + 15;
         if (!map.has(id)) {
           map.set(id, {
             performer: {
@@ -64,7 +93,10 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
           });
         } else {
           const entry = map.get(id)!;
-          entry.performer.videosCount += 1;
+          entry.performer.videosCount = Math.max(entry.performer.videosCount, entry.performer.videosCount + 1);
+          if (v.thumbnail && (!entry.performer.avatar || entry.performer.avatar.includes('unsplash'))) {
+            entry.performer.avatar = v.thumbnail;
+          }
           if (!entry.videos.some((existing) => existing.id === v.id)) {
             entry.videos.push(v);
           }
@@ -72,7 +104,9 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
       });
     });
 
-    return Array.from(map.values()).map((e) => e.performer);
+    return Array.from(map.values())
+      .map((e) => e.performer)
+      .sort((a, b) => (b.videosCount || 0) - (a.videosCount || 0));
   }, [videos]);
 
   // Filter performers based on search query
@@ -85,11 +119,33 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
 
   const visiblePerformers = filteredPerformers.slice(0, visibleCount);
 
-  // Performer-specific videos when a performer is selected
+  // Fetch live videos from the 80 Lakh database whenever a performer profile is opened
+  useEffect(() => {
+    if (!selectedPerformer) {
+      setLivePerformerVideos([]);
+      return;
+    }
+    const performerName = selectedPerformer.name;
+    setIsLoadingLiveVideos(true);
+
+    videoService
+      .searchLivePornhubVideos(performerName, undefined, 50)
+      .then((liveVids) => {
+        if (liveVids && liveVids.length > 0) {
+          setLivePerformerVideos(liveVids);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setIsLoadingLiveVideos(false);
+      });
+  }, [selectedPerformer]);
+
+  // Performer-specific videos when a performer is selected (combined local + live 80L database)
   const performerVideos = useMemo<Video[]>(() => {
     if (!selectedPerformer) return [];
     const targetName = selectedPerformer.name.toLowerCase().trim();
-    const cleanVideos = deduplicateVideos(videos || []);
+    const cleanVideos = deduplicateVideos([...(videos || []), ...livePerformerVideos]);
 
     const list = cleanVideos.filter((v) => {
       if (!v || v.isTakenDown) return false;
@@ -109,7 +165,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
     });
 
     return deduplicateVideos(list);
-  }, [videos, selectedPerformer]);
+  }, [videos, selectedPerformer, livePerformerVideos]);
 
   // ═════════════════════════════════════════════════════════════════════════
   // VIEW 2: DEDICATED PORNSTAR FEED VIEW (when a card is clicked)
