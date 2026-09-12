@@ -383,7 +383,31 @@ export class VideoService {
   }
 
   /**
-   * Helper to merge Firestore custom uploads/edits seamlessly with the complete 1,950+ curated video library
+   * Real-time live search querying the 80 Lakh video database via Backend API
+   */
+  async searchLivePornhubVideos(searchQuery: string, category?: string, limit: number = 30): Promise<Video[]> {
+    if (!searchQuery && (!category || category === 'all')) return [];
+    try {
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('q', searchQuery);
+      if (category && category !== 'all') params.append('category', category);
+      params.append('limit', String(limit));
+
+      const res = await fetch(`${API_BASE}/pornhub/search?${params.toString()}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.success && Array.isArray(json.data?.videos)) {
+          return json.data.videos as Video[];
+        }
+      }
+    } catch (err) {
+      console.warn('[VideoService] Live Pornhub search fallback:', err);
+    }
+    return [];
+  }
+
+  /**
+   * Helper to merge Firestore custom uploads/edits seamlessly with the complete 6,500+ curated video library
    */
   private mergeWithInitialVideos(firestoreVideos: Video[], categoryFilter?: string): Video[] {
     const baseVideos = this.curatedFullVideos && this.curatedFullVideos.length > INITIAL_VIDEOS.length

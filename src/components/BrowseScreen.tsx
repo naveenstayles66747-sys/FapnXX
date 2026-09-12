@@ -14,6 +14,7 @@ import {
 import { deduplicateVideos } from '../utils/videoDeduplicator';
 import { smartSearch, hasRealMatches } from '../utils/searchEngine';
 import { filterVideosByOrientation } from '../utils/orientationClassifier';
+import { videoService } from '../services/videoService';
 
 interface BrowseScreenProps {
   onSelectVideo: (video: Video) => void;
@@ -410,15 +411,51 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     );
   }, [genderFilteredVideos]);
 
+  // Live Backend 80 Lakh Video Search State
+  const [liveApiVideos, setLiveApiVideos] = useState<Video[]>([]);
+
   // Deferred search engine — keeps UI typing and clicking lightning responsive
   const deferredSearchQuery = React.useDeferredValue(searchQuery);
   const cleanSearch = (deferredSearchQuery || '').trim();
+
+  useEffect(() => {
+    if (!cleanSearch || cleanSearch.length < 2) {
+      setLiveApiVideos([]);
+      return;
+    }
+    const currentQuery = cleanSearch;
+    const timer = setTimeout(() => {
+      videoService
+        .searchLivePornhubVideos(
+          currentQuery,
+          selectedCategory === 'all' ? undefined : selectedCategory,
+          40
+        )
+        .then((remoteVids) => {
+          if (remoteVids && remoteVids.length > 0) {
+            setLiveApiVideos((prev) => deduplicateVideos([...prev, ...remoteVids]));
+          }
+        })
+        .catch(() => {});
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [cleanSearch, selectedCategory]);
+
+  const allAvailableVideos = React.useMemo(() => {
+    if (liveApiVideos.length > 0) {
+      return deduplicateVideos([...genderFilteredVideos, ...liveApiVideos]);
+    }
+    return genderFilteredVideos;
+  }, [genderFilteredVideos, liveApiVideos]);
+
   const searchedVideos = React.useMemo(() => {
-    return cleanSearch ? smartSearch(genderFilteredVideos, cleanSearch) : genderFilteredVideos;
-  }, [genderFilteredVideos, cleanSearch]);
+    return cleanSearch ? smartSearch(allAvailableVideos, cleanSearch) : allAvailableVideos;
+  }, [allAvailableVideos, cleanSearch]);
+
   const isRealMatch = React.useMemo(() => {
-    return cleanSearch ? hasRealMatches(genderFilteredVideos, cleanSearch) : true;
-  }, [genderFilteredVideos, cleanSearch]);
+    return cleanSearch ? hasRealMatches(allAvailableVideos, cleanSearch) : true;
+  }, [allAvailableVideos, cleanSearch]);
 
   // Smart Language-Based Regional Recommendation Engine
   const regionalVideos = React.useMemo(() => {

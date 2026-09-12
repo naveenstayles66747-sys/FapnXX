@@ -45,31 +45,32 @@ function normalizeTitle(t) {
 function matchCats(title, catRaw, tagsRaw) {
   const t = (String(title) + " " + String(catRaw) + " " + String(tagsRaw)).toLowerCase();
   const matched = new Set();
+
+  if (t.includes("desi") || t.includes("indian") || t.includes("hindi") || t.includes("bhabhi") || t.includes("punjabi") || t.includes("tamil") || t.includes("telugu") || t.includes("mallu") || t.includes("marathi") || t.includes("bangla") || t.includes("pakistani") || t.includes("aunty")) matched.add("desi");
   if (t.includes("vr") || t.includes("virtual reality") || t.includes("360") || t.includes("oculus") || t.includes("180 vr")) matched.add("vr");
-  if (t.includes("desi") || t.includes("indian") || t.includes("hindi") || t.includes("bhabhi") || t.includes("punjabi") || t.includes("tamil") || t.includes("mallu")) matched.add("desi");
-  if (t.includes("amateur") || t.includes("homemade") || t.includes("verified")) matched.add("amateur");
-  if (t.includes("milf") || t.includes("mom") || t.includes("mature")) matched.add("milf");
-  if (t.includes("teen") || t.includes("18-25") || t.includes("18 year") || t.includes("college") || t.includes("babe")) matched.add("teen");
-  if (t.includes("anal") || t.includes("ass fuck")) matched.add("anal");
-  if (t.includes("lesbian") || t.includes("girls kissing") || t.includes("tribbing")) matched.add("lesbian");
-  if (t.includes("gay") || t.includes("twink") || t.includes("bareback gay")) matched.add("gay");
-  if (t.includes("transgender") || t.includes("shemale") || t.includes("tranny") || t.includes("ladyboy") || t.includes("ts ")) matched.add("transgender");
-  if (t.includes("pov") || t.includes("point of view")) matched.add("pov");
-  if (t.includes("big tits") || t.includes("big-tits") || t.includes("huge boobs") || t.includes("big boobs") || t.includes("natural tits") || t.includes("tits")) matched.add("big-tits");
+  if (t.includes("amateur") || t.includes("homemade") || t.includes("verified amateurs") || t.includes("real couple")) matched.add("amateur");
+  if (t.includes("milf") || t.includes("mom") || t.includes("mature") || t.includes("stepmom")) matched.add("milf");
+  if (t.includes("teen") || t.includes("18-25") || t.includes("18 year") || t.includes("college") || t.includes("babe") || t.includes("young")) matched.add("teen");
+  if (t.includes("anal") || t.includes("ass fuck") || t.includes("anal sex") || t.includes("butt")) matched.add("anal");
+  if (t.includes("lesbian") || t.includes("girls kissing") || t.includes("tribbing") || t.includes("scissor")) matched.add("lesbian");
+  if (t.includes("gay") || t.includes("twink") || t.includes("bareback gay") || t.includes("men")) matched.add("gay");
+  if (t.includes("transgender") || t.includes("shemale") || t.includes("tranny") || t.includes("ladyboy") || t.includes("ts ") || t.includes("trans")) matched.add("transgender");
+  if (t.includes("pov") || t.includes("point of view") || t.includes("gopro")) matched.add("pov");
+  if (t.includes("big tits") || t.includes("big-tits") || t.includes("huge boobs") || t.includes("big boobs") || t.includes("natural tits") || t.includes("tits") || t.includes("boobs")) matched.add("big-tits");
   if (t.includes("big ass") || t.includes("big-ass") || t.includes("booty") || t.includes("thick") || t.includes("pawg") || t.includes("ass")) matched.add("big-ass");
-  if (t.includes("blowjob") || t.includes("deepthroat") || t.includes("sucking") || t.includes("oral") || t.includes("throat")) matched.add("blowjob");
-  if (t.includes("creampie") || t.includes("cumshot") || t.includes("jizz") || t.includes("swallow") || t.includes("facial")) matched.add("creampie");
+  if (t.includes("blowjob") || t.includes("deepthroat") || t.includes("sucking") || t.includes("oral") || t.includes("throat") || t.includes("gagging")) matched.add("blowjob");
+  if (t.includes("creampie") || t.includes("cumshot") || t.includes("jizz") || t.includes("swallow") || t.includes("facial") || t.includes("cum")) matched.add("creampie");
   if (t.includes("threesome") || t.includes("foursome") || t.includes("orgy") || t.includes("gangbang") || t.includes("group") || t.includes("ffm") || t.includes("mmf")) matched.add("threesome");
   if (t.includes("interracial") || t.includes("bbc") || t.includes("blacked") || t.includes("white girl")) matched.add("interracial");
-  if (t.includes("ebony") || t.includes("black woman")) matched.add("ebony");
-  if (t.includes("latina") || t.includes("brazilian") || t.includes("colombian") || t.includes("mexican")) matched.add("latina");
-  if (t.includes("asian") || t.includes("japanese") || t.includes("korean") || t.includes("jav") || t.includes("chinese")) matched.add("asian");
+  if (t.includes("ebony") || t.includes("black woman") || t.includes("african")) matched.add("ebony");
+  if (t.includes("latina") || t.includes("brazilian") || t.includes("colombian") || t.includes("mexican") || t.includes("spanish")) matched.add("latina");
+  if (t.includes("asian") || t.includes("japanese") || t.includes("korean") || t.includes("jav") || t.includes("chinese") || t.includes("thai")) matched.add("asian");
   if (t.includes("hentai") || t.includes("anime") || t.includes("3d") || t.includes("sfm") || t.includes("cartoon") || t.includes("overwatch")) matched.add("hentai");
-  if (t.includes("hardcore") || t.includes("rough") || t.includes("violent") || t.includes("choking")) matched.add("hardcore");
-  if (t.includes("fetish") || t.includes("bdsm") || t.includes("bondage") || t.includes("feet") || t.includes("foot") || t.includes("nylon") || t.includes("stockings")) matched.add("fetish");
-  if (t.includes("masturbation") || t.includes("solo") || t.includes("dildo") || t.includes("toy") || t.includes("fingering") || t.includes("webcam")) matched.add("masturbation");
-  if (t.includes("public") || t.includes("outdoor") || t.includes("car") || t.includes("street") || t.includes("beach") || t.includes("park")) matched.add("public");
-  if (t.includes("mature") || t.includes("vintage") || t.includes("granny") || t.includes("older") || t.includes("retro")) matched.add("mature");
+  if (t.includes("hardcore") || t.includes("rough") || t.includes("violent") || t.includes("choking") || t.includes("fucking")) matched.add("hardcore");
+  if (t.includes("fetish") || t.includes("bdsm") || t.includes("bondage") || t.includes("feet") || t.includes("foot") || t.includes("nylon") || t.includes("stockings") || t.includes("latex")) matched.add("fetish");
+  if (t.includes("masturbation") || t.includes("solo") || t.includes("dildo") || t.includes("toy") || t.includes("fingering") || t.includes("webcam") || t.includes("squirt")) matched.add("masturbation");
+  if (t.includes("public") || t.includes("outdoor") || t.includes("car") || t.includes("street") || t.includes("beach") || t.includes("park") || t.includes("hidden")) matched.add("public");
+  if (t.includes("mature") || t.includes("vintage") || t.includes("granny") || t.includes("older") || t.includes("retro") || t.includes("classic")) matched.add("mature");
 
   matched.add("trending");
   return Array.from(matched);
@@ -88,159 +89,207 @@ const seenThumbs = new Set();
 const seenExactTitles = new Set();
 const seenNormTitles = new Set();
 
-const TARGET_PER_CAT = 75;
+const TARGET_PER_CAT = 250; // 250 per category across 26 categories = ~6,500 curated videos
 const globalUniqueList = [];
+const performersMap = new Map();
 
-const fileStream = fs.createReadStream(csvPath);
-const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
-
+console.log("Starting ultra-fast chunk extraction from " + csvPath + "...");
+const fd = fs.openSync(csvPath, "r");
+const BUFFER_SIZE = 1024 * 1024 * 16; // 16MB buffer
+const buf = Buffer.alloc(BUFFER_SIZE);
+let bytesRead = 0;
+let remainder = "";
 let row = 0;
-let isDone = false;
 const baseTime = Date.now();
+let isDone = false;
 
-rl.on("line", (line) => {
-  if (isDone) return;
-  row++;
-  if (row === 1 && line.startsWith("embed_url|")) return;
+while (!isDone && (bytesRead = fs.readSync(fd, buf, 0, BUFFER_SIZE, null)) > 0) {
+  const chunkStr = remainder + buf.toString("utf8", 0, bytesRead);
+  const lines = chunkStr.split("\n");
+  remainder = lines.pop() || "";
 
-  const cols = line.split("|");
-  if (cols.length < 13) return;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    row++;
+    if (row === 1 && line.startsWith("embed_url|")) continue;
+    if (!line || !line.includes("|")) continue;
 
-  const rawEmbed = (cols[0] || "").trim();
-  const title = (cols[3] || "").trim();
-  const viewsCount = parseInt(cols[8], 10) || 0;
-  if (!rawEmbed || !title || viewsCount < 6000) return;
+    const cols = line.split("|");
+    if (cols.length < 10) continue;
 
-  // 1. Check Exact & Normalized Title
-  const lowerTitle = title.toLowerCase();
-  const normTitle = normalizeTitle(title);
-  if (normTitle.length < 4) return;
-  if (seenExactTitles.has(lowerTitle) || seenNormTitles.has(normTitle)) return;
+    const rawEmbed = (cols[0] || "").trim();
+    const title = (cols[3] || "").trim();
+    const viewsCount = parseInt(cols[8], 10) || 0;
+    if (!rawEmbed || !title || title.length < 5 || viewsCount < 6000) continue;
 
-  // 2. Check Embed URL & ViewKey
-  const keyMatch = rawEmbed.match(/\/embed\/([a-zA-Z0-9_-]+)/i) || rawEmbed.match(/viewkey=([a-zA-Z0-9_-]+)/i);
-  const vKey = keyMatch ? keyMatch[1] : "";
-  if (!vKey) return;
+    const lowerTitle = title.toLowerCase();
+    const normTitle = normalizeTitle(title);
+    if (normTitle.length < 4) continue;
+    if (seenExactTitles.has(lowerTitle) || seenNormTitles.has(normTitle)) continue;
 
-  const vidId = "ph-" + vKey;
-  const cleanEmbed = "https://www.pornhub.com/embed/" + vKey;
-  const lowerEmbed = cleanEmbed.toLowerCase();
+    const keyMatch = rawEmbed.match(/\/embed\/([a-zA-Z0-9_-]+)/i) || rawEmbed.match(/viewkey=([a-zA-Z0-9_-]+)/i);
+    const vKey = keyMatch ? keyMatch[1] : "";
+    if (!vKey) continue;
 
-  if (seenIds.has(vidId) || seenEmbeds.has(lowerEmbed)) return;
+    const vidId = "ph-" + vKey;
+    const cleanEmbed = "https://www.pornhub.org/embed/" + vKey;
+    const lowerEmbed = cleanEmbed.toLowerCase();
 
-  // 3. Check Primary Thumbnail
-  const primaryThumb = cols[11] && cols[11].startsWith("http") ? cols[11].trim() : (cols[1] || "").trim();
-  if (!primaryThumb || seenThumbs.has(primaryThumb)) return;
+    if (seenIds.has(vidId) || seenEmbeds.has(lowerEmbed)) continue;
 
-  const tagsStr = cols[4] || "";
-  const catStr = cols[5] || "";
-  const pornstarsStr = cols[6] || "";
+    const primaryThumb = cols[11] && cols[11].startsWith("http") ? cols[11].trim() : (cols[1] || "").trim();
+    if (!primaryThumb || !primaryThumb.startsWith("http") || seenThumbs.has(primaryThumb)) continue;
 
-  const matched = matchCats(title, catStr, tagsStr);
+    const tagsStr = cols[4] || "";
+    const catStr = cols[5] || "";
+    const pornstarsStr = cols[6] || "";
 
-  // Only accept video if its matched category still needs items, or if global quota is not met
-  let hungryCat = null;
-  for (const c of matched) {
-    if (buckets[c] && buckets[c].length < TARGET_PER_CAT) {
-      hungryCat = c;
+    const matched = matchCats(title, catStr, tagsStr);
+
+    let hungryCat = null;
+    for (const c of matched) {
+      if (buckets[c] && buckets[c].length < TARGET_PER_CAT) {
+        hungryCat = c;
+        break;
+      }
+    }
+
+    if (!hungryCat) {
+      if (buckets["trending"].length < TARGET_PER_CAT) {
+        hungryCat = "trending";
+      } else {
+        continue;
+      }
+    }
+
+    seenIds.add(vidId);
+    seenEmbeds.add(lowerEmbed);
+    seenThumbs.add(primaryThumb);
+    seenExactTitles.add(lowerTitle);
+    seenNormTitles.add(normTitle);
+
+    const durationSec = parseInt(cols[7], 10) || 450;
+    const upvotes = parseInt(cols[9], 10) || Math.round(viewsCount * 0.04);
+    const downvotes = parseInt(cols[10], 10) || 0;
+    const totalVotes = upvotes + downvotes;
+    const ratingPct = totalVotes > 0 ? Math.round((upvotes / totalVotes) * 100) : 96;
+
+    const framePreviews = (cols[12] || cols[2] || "").split(";").filter((f) => f && f.startsWith("http"));
+    const actors = pornstarsStr.split(";").map((a) => a.trim()).filter(Boolean);
+    const performerName = actors.length > 0 ? actors[0] : (getLabel(hungryCat) + " Star");
+
+    let pref = "straight";
+    if (matched.includes("lesbian")) pref = "lesbian";
+    else if (matched.includes("gay")) pref = "gay";
+    else if (matched.includes("transgender")) pref = "transgender";
+
+    const staggeredDate = new Date(baseTime - globalUniqueList.length * 90000).toISOString();
+
+    const item = {
+      id: vidId,
+      title: title,
+      category: hungryCat,
+      categoryLabel: getLabel(hungryCat),
+      categories: matched,
+      tags: Array.from(new Set([...tagsStr.split(";").map((t) => t.trim()).filter(Boolean), ...matched.map(getLabel)])).slice(0, 15),
+      modelsActors: actors.length > 0 ? actors : undefined,
+      models_actors: actors.length > 0 ? actors : undefined,
+      performers: actors.length > 0 ? actors : undefined,
+      performerName: performerName,
+      performerAvatar: primaryThumb,
+      channelName: "Pornhub Verified",
+      thumbnail: primaryThumb,
+      thumbnailUrl: primaryThumb,
+      previewFrames: framePreviews.length > 0 ? framePreviews : undefined,
+      previewMp4Url: framePreviews.length > 0 ? framePreviews[Math.min(4, framePreviews.length - 1)] : undefined,
+      duration: formatDuration(durationSec),
+      quality: durationSec > 600 || viewsCount > 500000 ? "4K" : "HD",
+      views: formatViews(viewsCount) + " views",
+      viewsCount: viewsCount,
+      likesCount: upvotes,
+      rating: ratingPct + "%",
+      timeAgo: "Trending now",
+      createdAt: staggeredDate,
+      description: "Watch " + title + " in 4K Ultra HD on FapnXX. Featuring top verified adult performers in " + getLabel(hungryCat) + ".",
+      embedUrl: cleanEmbed,
+      isEmbed: true,
+      isExclusive: viewsCount > 1000000,
+      isNew: true,
+      orientation: hungryCat === "vr" ? "vr" : pref,
+      contentPreference: pref,
+      sourceWebsite: "Pornhub",
+      sourceWebsiteUrl: "https://www.pornhub.com",
+    };
+
+    globalUniqueList.push(item);
+    if (buckets[hungryCat]) {
+      buckets[hungryCat].push(item);
+    }
+
+    if (actors.length > 0) {
+      actors.forEach((act) => {
+        const key = act.toLowerCase().trim();
+        if (!performersMap.has(key)) {
+          performersMap.set(key, {
+            name: act,
+            videosCount: 1,
+            avatar: primaryThumb,
+            categories: [hungryCat],
+            totalViews: viewsCount
+          });
+        } else {
+          const p = performersMap.get(key);
+          p.videosCount++;
+          p.totalViews += viewsCount;
+          if (!p.categories.includes(hungryCat)) p.categories.push(hungryCat);
+        }
+      });
+    }
+
+    let fullCount = 0;
+    for (const c of ALL_CATEGORIES) {
+      if (buckets[c] && buckets[c].length >= TARGET_PER_CAT) fullCount++;
+    }
+
+    if (fullCount === ALL_CATEGORIES.length || row > 3000000) {
+      isDone = true;
       break;
     }
   }
 
-  // If no matched category needs more items, skip this row to save space for hungry categories
-  if (!hungryCat) return;
-
-  // Register in all deduplication trackers
-  seenIds.add(vidId);
-  seenEmbeds.add(lowerEmbed);
-  seenThumbs.add(primaryThumb);
-  seenExactTitles.add(lowerTitle);
-  seenNormTitles.add(normTitle);
-
-  const durationSec = parseInt(cols[7], 10) || 450;
-  const upvotes = parseInt(cols[9], 10) || Math.round(viewsCount * 0.04);
-  const downvotes = parseInt(cols[10], 10) || 0;
-  const totalVotes = upvotes + downvotes;
-  const ratingPct = totalVotes > 0 ? Math.round((upvotes / totalVotes) * 100) : 96;
-
-  const framePreviews = (cols[12] || cols[2] || "").split(";").filter(Boolean);
-  const actors = pornstarsStr.split(";").map((a) => a.trim()).filter(Boolean);
-  const performerName = actors.length > 0 ? actors[0] : (getLabel(hungryCat) + " Star");
-
-  let pref = "straight";
-  if (matched.includes("lesbian")) pref = "lesbian";
-  else if (matched.includes("gay")) pref = "gay";
-  else if (matched.includes("transgender")) pref = "transgender";
-
-  // Stagger createdAt timestamp naturally so sorting by latest is smooth and consistent
-  const staggeredDate = new Date(baseTime - globalUniqueList.length * 120000).toISOString();
-
-  const item = {
-    id: vidId,
-    title: title,
-    category: hungryCat,
-    categoryLabel: getLabel(hungryCat),
-    categories: matched,
-    tags: Array.from(new Set([...tagsStr.split(";").map((t) => t.trim()).filter(Boolean), ...matched.map(getLabel)])).slice(0, 15),
-    modelsActors: actors.length > 0 ? actors : undefined,
-    models_actors: actors.length > 0 ? actors : undefined,
-    performers: actors.length > 0 ? actors : undefined,
-    performerName: performerName,
-    thumbnail: primaryThumb,
-    thumbnailUrl: primaryThumb,
-    previewFrames: framePreviews.length > 0 ? framePreviews : undefined,
-    previewMp4Url: framePreviews.length > 0 ? framePreviews[Math.min(4, framePreviews.length - 1)] : undefined,
-    duration: formatDuration(durationSec),
-    quality: durationSec > 600 || viewsCount > 500000 ? "4K" : "HD",
-    views: formatViews(viewsCount) + " views",
-    viewsCount: viewsCount,
-    likesCount: upvotes,
-    rating: ratingPct + "%",
-    timeAgo: "Trending now",
-    createdAt: staggeredDate,
-    description: "Watch " + title + " in 4K Ultra HD on FapnXX. Featuring top verified adult performers in " + getLabel(hungryCat) + ".",
-    embedUrl: cleanEmbed,
-    isEmbed: true,
-    isExclusive: viewsCount > 1000000,
-    isNew: true,
-    orientation: hungryCat === "vr" ? "vr" : pref,
-    contentPreference: pref,
-    sourceWebsite: "Pornhub",
-    sourceWebsiteUrl: "https://www.pornhub.com",
-  };
-
-  globalUniqueList.push(item);
-  if (buckets[hungryCat]) {
-    buckets[hungryCat].push(item);
-  }
-
-  let fullCount = 0;
-  for (const c of ALL_CATEGORIES) {
-    if (buckets[c] && buckets[c].length >= TARGET_PER_CAT) fullCount++;
-  }
-
-  if (fullCount === ALL_CATEGORIES.length || row > 800000) {
-    if (!isDone) {
-      isDone = true;
-      console.log("Collection successfully completed at CSV row " + row + " with " + fullCount + " full categories (" + globalUniqueList.length + " 100% unique videos)!");
-      rl.close();
-      fileStream.destroy();
+  if (row % 100000 < 5000) {
+    let fullCount = 0;
+    for (const c of ALL_CATEGORIES) {
+      if (buckets[c] && buckets[c].length >= TARGET_PER_CAT) fullCount++;
     }
+    console.log(`Progress: Row ${row} | Unique videos: ${globalUniqueList.length} | Full categories: ${fullCount}/${ALL_CATEGORIES.length}`);
   }
-});
+}
 
-rl.on("close", () => {
-  console.log("Total unique videos generated in dataset: " + globalUniqueList.length);
-  const counts = {};
-  for (const c of ALL_CATEGORIES) {
-    counts[c] = buckets[c] ? buckets[c].length : 0;
-  }
-  console.log("Category breakdown:", JSON.stringify(counts, null, 2));
+fs.closeSync(fd);
 
-  const dest1 = path.join(process.cwd(), "src", "data", "pornhubCurated.json");
-  const dest2 = path.join(process.cwd(), "public", "data", "videos_page1.json");
+console.log("\nScan complete!");
+console.log("Total unique videos collected: " + globalUniqueList.length);
+console.log("Total unique performers indexed: " + performersMap.size);
 
-  fs.writeFileSync(dest1, JSON.stringify(globalUniqueList, null, 2), "utf8");
-  fs.writeFileSync(dest2, JSON.stringify(globalUniqueList, null, 2), "utf8");
-  console.log("Successfully saved massive library of " + globalUniqueList.length + " unique videos to pornhubCurated.json & videos_page1.json!");
-});
+const counts = {};
+for (const c of ALL_CATEGORIES) {
+  counts[c] = buckets[c] ? buckets[c].length : 0;
+}
+console.log("Category breakdown:", JSON.stringify(counts, null, 2));
+
+const dest1 = path.join(process.cwd(), "src", "data", "pornhubCurated.json");
+const dest2 = path.join(process.cwd(), "public", "data", "videos_page1.json");
+
+fs.writeFileSync(dest1, JSON.stringify(globalUniqueList, null, 2), "utf8");
+fs.writeFileSync(dest2, JSON.stringify(globalUniqueList, null, 2), "utf8");
+
+const topPerformers = Array.from(performersMap.values())
+  .sort((a, b) => b.videosCount - a.videosCount)
+  .slice(0, 250);
+
+const dest3 = path.join(process.cwd(), "src", "data", "performersCatalog.json");
+fs.writeFileSync(dest3, JSON.stringify(topPerformers, null, 2), "utf8");
+
+console.log("Successfully saved massive library of " + globalUniqueList.length + " unique videos to pornhubCurated.json & videos_page1.json!");
+console.log("Successfully saved " + topPerformers.length + " top performers to performersCatalog.json!");

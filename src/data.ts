@@ -206,25 +206,16 @@ export async function loadFullCuratedVideos(): Promise<Video[]> {
 
   fullVideosPromise = (async () => {
     try {
-      // 1. Dynamic import code-splits the 6.8MB dataset into a separate lazy chunk
-      const mod = await import('./data/pornhubCurated.json');
-      const data = (mod.default || mod) as Video[];
-      if (Array.isArray(data) && data.length > 0) {
-        cachedFullVideos = data;
-        return data;
-      }
-    } catch {
-      // 2. Fallback to public CDN fetch
-      try {
-        const res = await fetch('/data/videos_page1.json');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            cachedFullVideos = data as Video[];
-            return cachedFullVideos;
-          }
+      const res = await fetch('/data/videos_page1.json');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          cachedFullVideos = data as Video[];
+          return cachedFullVideos;
         }
-      } catch {}
+      }
+    } catch (e) {
+      console.warn('[Data] Failed to load edge catalog:', e);
     }
     return VIDEOS;
   })();

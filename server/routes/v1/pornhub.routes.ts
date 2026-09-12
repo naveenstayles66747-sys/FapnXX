@@ -12,13 +12,9 @@ router.get("/status", pornhubController.getStatus);
 // Public Unblocked ISP Proxy Relay Route (Bypasses ERR_CONNECTION_RESET)
 router.get("/embed/:videoId", pornhubController.embedProxy);
 
-// Admin-only search & bulk import
-router.get(
-  "/search",
-  authenticateToken,
-  requireRole(Role.MODERATOR, Role.ADMIN, Role.SUPER_ADMIN),
-  pornhubController.search
-);
+// Public live search across 80 Lakh video database
+router.get("/search", pornhubController.search);
+router.get("/live-search", pornhubController.search);
 
 router.post(
   "/import",

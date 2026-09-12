@@ -131,6 +131,46 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     };
   }, []);
 
+  // -- Fullscreen Auto-Landscape Orientation Lock for Mobile Devices ---------
+  useEffect(() => {
+    const handleOrientationOnFullscreen = async () => {
+      const isFullscreen = Boolean(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+
+      if (isFullscreen) {
+        try {
+          if (screen.orientation && typeof (screen.orientation as any).lock === 'function') {
+            await (screen.orientation as any).lock('landscape');
+          }
+        } catch {
+          // Unpermitted or iOS Safari where user physical orientation is used
+        }
+      } else {
+        try {
+          if (screen.orientation && typeof (screen.orientation as any).unlock === 'function') {
+            (screen.orientation as any).unlock();
+          }
+        } catch {}
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleOrientationOnFullscreen);
+    document.addEventListener('webkitfullscreenchange', handleOrientationOnFullscreen);
+    document.addEventListener('mozfullscreenchange', handleOrientationOnFullscreen);
+    document.addEventListener('MSFullscreenChange', handleOrientationOnFullscreen);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleOrientationOnFullscreen);
+      document.removeEventListener('webkitfullscreenchange', handleOrientationOnFullscreen);
+      document.removeEventListener('mozfullscreenchange', handleOrientationOnFullscreen);
+      document.removeEventListener('MSFullscreenChange', handleOrientationOnFullscreen);
+    };
+  }, []);
+
   // -- Main Video Autoplay Trigger (Instant unmuted/muted fallback playback) ---
   const playMainVideo = useCallback(() => {
     if (mainVideoRef.current) {
@@ -484,7 +524,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 key={`iframe-${videoMountKey}`}
                 src={currentVideoSrc}
                 title={video?.title || "Video Stream"}
-                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope; screen-wake-lock"
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
                 scrolling="no"
