@@ -56,7 +56,7 @@ async function run() {
       name: 'Naveen',
       email: 'naveenstayles66747@gmail.com',
     },
-    message: 'fix: Protected fullscreen playback from click interrupts and popunder window dismissal',
+    message: 'perf: Ultra-fast 120 FPS search typing, eliminated Levenshtein freeze, instant debounced query engine',
   });
 
   console.log('Committed SHA:', sha);

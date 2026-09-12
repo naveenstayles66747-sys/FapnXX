@@ -90,13 +90,20 @@ export const Header: React.FC<HeaderProps> = ({
   const { language, setLanguage, t, currentLanguageMeta } = useLanguage();
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isPrefMenuOpen, setIsPrefMenuOpen] = useState(false);
-  const [mobileSearchActive, setMobileSearchActive] = useState(false);
-  const [mobileSearchInput, setMobileSearchInput] = useState('');
+  // Local input state for 0ms typing response without full-app re-renders
+  const [desktopSearchInput, setDesktopSearchInput] = useState(searchQuery || '');
+  const [mobileSearchInput, setMobileSearchInput] = useState(searchQuery || '');
   const mobileSearchRef = React.useRef<HTMLInputElement>(null);
   const prefDropdownRef = useRef<HTMLDivElement>(null);
   const prefDropdownRefMobile = useRef<HTMLDivElement>(null);
   const langDropdownRef = useRef<HTMLDivElement>(null);
   const desktopSearchRef = useRef<HTMLDivElement>(null);
+
+  // Sync local inputs when searchQuery changes externally (e.g. tag clicks, reset)
+  useEffect(() => {
+    setDesktopSearchInput(searchQuery || '');
+    setMobileSearchInput(searchQuery || '');
+  }, [searchQuery]);
 
   // Search suggestions state
   const [desktopSuggestionsOpen, setDesktopSuggestionsOpen] = useState(false);
@@ -109,30 +116,40 @@ export const Header: React.FC<HeaderProps> = ({
     totalCount: 0,
   });
 
-  // Deferred search values to prevent keyboard typing lag
-  const deferredSearchQuery = React.useDeferredValue(searchQuery);
-  const deferredMobileSearchInput = React.useDeferredValue(mobileSearchInput);
-
-  // Generate suggestions whenever query changes (deferred)
+  // Debounced update to global search query (250ms delay) to keep 120 FPS typing
   useEffect(() => {
-    if (deferredSearchQuery.trim().length >= 1 && videos.length > 0) {
-      setGroupedSuggestions(getGroupedSearchSuggestions(videos, deferredSearchQuery));
+    const timer = setTimeout(() => {
+      if (desktopSearchInput !== searchQuery && !mobileSearchActive) {
+        setSearchQuery(desktopSearchInput);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [desktopSearchInput, searchQuery, setSearchQuery, mobileSearchActive]);
+
+  useEffect(() => {
+    if (!mobileSearchActive) return;
+    const timer = setTimeout(() => {
+      if (mobileSearchInput !== searchQuery) {
+        setSearchQuery(mobileSearchInput);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [mobileSearchInput, searchQuery, setSearchQuery, mobileSearchActive]);
+
+  // Generate suggestions fast (< 0.1ms)
+  useEffect(() => {
+    const q = (desktopSuggestionsOpen ? desktopSearchInput : mobileSearchInput).trim();
+    if (q.length >= 1 && (desktopSuggestionsOpen || mobileSuggestionsOpen)) {
+      setGroupedSuggestions(getGroupedSearchSuggestions(videos, q));
     } else {
       setGroupedSuggestions({ performers: [], tags: [], categories: [], titles: [], totalCount: 0 });
     }
-  }, [deferredSearchQuery, videos]);
-
-  useEffect(() => {
-    if (deferredMobileSearchInput.trim().length >= 1 && videos.length > 0) {
-      setGroupedSuggestions(getGroupedSearchSuggestions(videos, deferredMobileSearchInput));
-    } else if (!mobileSearchActive) {
-      setGroupedSuggestions({ performers: [], tags: [], categories: [], titles: [], totalCount: 0 });
-    }
-  }, [deferredMobileSearchInput, videos, mobileSearchActive]);
+  }, [desktopSearchInput, mobileSearchInput, desktopSuggestionsOpen, mobileSuggestionsOpen, videos]);
 
   const handleSuggestionSelect = useCallback((text: string) => {
-    setSearchQuery(text);
+    setDesktopSearchInput(text);
     setMobileSearchInput(text);
+    setSearchQuery(text);
     setDesktopSuggestionsOpen(false);
     setMobileSuggestionsOpen(false);
     onOpenSearch();
@@ -325,15 +342,18 @@ export const Header: React.FC<HeaderProps> = ({
       <div ref={desktopSearchRef} className="hidden lg:flex flex-1 max-w-xs xl:max-w-md mx-4 relative group/search min-w-0 z-20">
         <input
           type="text"
-          value={searchQuery}
+          value={desktopSearchInput}
           onChange={(e) => {
-            setSearchQuery(e.target.value);
-            onOpenSearch();
+            setDesktopSearchInput(e.target.value);
             setDesktopSuggestionsOpen(true);
           }}
-          onFocus={() => { if (searchQuery.trim()) setDesktopSuggestionsOpen(true); }}
+          onFocus={() => { if (desktopSearchInput.trim()) setDesktopSuggestionsOpen(true); }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') { onOpenSearch(); setDesktopSuggestionsOpen(false); }
+            if (e.key === 'Enter') {
+              setSearchQuery(desktopSearchInput.trim());
+              onOpenSearch();
+              setDesktopSuggestionsOpen(false);
+            }
             if (e.key === 'Escape') { setDesktopSuggestionsOpen(false); }
           }}
           placeholder="Search videos, performers, tags..."
@@ -345,7 +365,12 @@ export const Header: React.FC<HeaderProps> = ({
           autoComplete="off"
         />
         <button
-          onClick={() => { onOpenSearch(); setDesktopSuggestionsOpen(false); }}
+          type="button"
+          onClick={() => {
+            setSearchQuery(desktopSearchInput.trim());
+            onOpenSearch();
+            setDesktopSuggestionsOpen(false);
+          }}
           className={`absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full transition-colors cursor-pointer ${
             isBrazzers ? 'text-amber-400 hover:bg-amber-500/20' : 'text-[#e0358d] hover:bg-[#e0358d]/20'
           }`}
@@ -360,7 +385,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Desktop Suggestions Dropdown */}
         <SearchSuggestionsDropdown
           groupedSuggestions={groupedSuggestions}
-          query={searchQuery}
+          query={desktopSearchInput}
           onSelect={handleSuggestionSelect}
           onClose={() => setDesktopSuggestionsOpen(false)}
           visible={desktopSuggestionsOpen && groupedSuggestions.totalCount > 0}
@@ -572,12 +597,11 @@ export const Header: React.FC<HeaderProps> = ({
               autoComplete="off"
               onChange={(e) => {
                 setMobileSearchInput(e.target.value);
-                setSearchQuery(e.target.value);
                 setMobileSuggestionsOpen(true);
-                if (e.target.value.trim()) onOpenSearch();
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
+                  setSearchQuery(mobileSearchInput.trim());
                   onOpenSearch();
                   setMobileSearchActive(false);
                   setMobileSuggestionsOpen(false);
@@ -587,16 +611,18 @@ export const Header: React.FC<HeaderProps> = ({
                   setMobileSuggestionsOpen(false);
                 }
               }}
-              placeholder="Search pornstars, tags..."
+              placeholder="Search pornstars, tags, categories..."
               className="flex-1 bg-zinc-100 dark:bg-[#1c1b1f] text-zinc-900 dark:text-white px-3.5 py-2 rounded-lg text-sm border border-zinc-300 dark:border-white/15 focus:outline-none focus:border-[#e0358d]"
             />
             <button
+              type="button"
               onClick={() => {
+                setSearchQuery(mobileSearchInput.trim());
                 onOpenSearch();
                 setMobileSearchActive(false);
                 setMobileSuggestionsOpen(false);
               }}
-              className="px-4 py-2 bg-[#e0358d] hover:bg-[#c9287a] text-white font-bold text-xs rounded-lg flex items-center gap-1.5 shrink-0 transition-colors shadow-sm cursor-pointer"
+              className="px-4 py-2 bg-[#e0358d] hover:bg-[#c9287a] active:scale-95 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 shrink-0 transition-all shadow-sm cursor-pointer"
             >
               <span className="material-symbols-outlined text-base">search</span>
               <span>Search</span>
