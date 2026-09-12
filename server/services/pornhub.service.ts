@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";
-import { adminDb } from "../firebase-admin";
 
 export interface PornhubImportQuery {
   category?: string;
@@ -326,6 +325,7 @@ export const pornhubService = {
 
   importToFirestore: async (videos: any[]) => {
     if (!videos || videos.length === 0) return { success: false, imported: 0 };
+    const { adminDb } = await import("../firebase-admin");
     const batch = adminDb.batch();
     let count = 0;
 
