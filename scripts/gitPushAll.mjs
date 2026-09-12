@@ -56,7 +56,7 @@ async function run() {
       name: 'Naveen',
       email: 'naveenstayles66747@gmail.com',
     },
-    message: 'feat: SQLite FTS5 search index (64MB), 1500+ A-Z Pornstars catalog, search bar and live query engine',
+    message: 'fix: Protected fullscreen playback from click interrupts and popunder window dismissal',
   });
 
   console.log('Committed SHA:', sha);

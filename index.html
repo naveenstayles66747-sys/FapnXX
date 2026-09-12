@@ -42,6 +42,29 @@
       />
     </noscript>
 
+    <!-- Fullscreen Playback Protection (Prevents background popups/tab switches from breaking fullscreen) -->
+    <script type="application/javascript">
+      (function() {
+        var isCurrentlyFullscreen = function() {
+          return Boolean(
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement
+          );
+        };
+
+        // Guard window.open during active fullscreen so tapping screen never kicks user out of fullscreen
+        var originalWindowOpen = window.open;
+        window.open = function() {
+          if (isCurrentlyFullscreen()) {
+            return null;
+          }
+          return originalWindowOpen.apply(this, arguments);
+        };
+      })();
+    </script>
+
     <!-- ExoClick Global Ad Provider SDK -->
     <script async src="https://a.magsrv.com/ad-provider.js" id="exoclick-global-ad-provider"></script>
 
@@ -62,7 +85,7 @@
               "popup_force": false,
               "chrome_enabled": true,
               "new_tab": true,
-              "frequency_period": 60,
+              "frequency_period": 180,
               "frequency_count": 1,
               "trigger_method": 3,
               "trigger_class": "",

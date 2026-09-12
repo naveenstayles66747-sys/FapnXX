@@ -133,29 +133,31 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
   // -- Fullscreen Auto-Landscape Orientation Lock for Mobile Devices ---------
   useEffect(() => {
-    const handleOrientationOnFullscreen = async () => {
-      const isFullscreen = Boolean(
-        document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).mozFullScreenElement ||
-        (document as any).msFullscreenElement
-      );
+    let isOrientationLocked = false;
 
-      if (isFullscreen) {
-        try {
+    const handleOrientationOnFullscreen = async () => {
+      try {
+        const isFullscreen = Boolean(
+          document.fullscreenElement ||
+          (document as any).webkitFullscreenElement ||
+          (document as any).mozFullScreenElement ||
+          (document as any).msFullscreenElement
+        );
+
+        if (isFullscreen && !isOrientationLocked) {
           if (screen.orientation && typeof (screen.orientation as any).lock === 'function') {
-            await (screen.orientation as any).lock('landscape');
+            await (screen.orientation as any).lock('landscape').catch(() => {});
+            isOrientationLocked = true;
           }
-        } catch {
-          // Unpermitted or iOS Safari where user physical orientation is used
-        }
-      } else {
-        try {
+        } else if (!isFullscreen && isOrientationLocked) {
+          isOrientationLocked = false;
           if (screen.orientation && typeof (screen.orientation as any).unlock === 'function') {
-            (screen.orientation as any).unlock();
+            try {
+              (screen.orientation as any).unlock();
+            } catch {}
           }
-        } catch {}
-      }
+        }
+      } catch {}
     };
 
     document.addEventListener('fullscreenchange', handleOrientationOnFullscreen);
@@ -529,11 +531,6 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 referrerPolicy="no-referrer-when-downgrade"
                 scrolling="no"
                 frameBorder={0}
-                sandbox={
-                  isPornhubVideo
-                    ? "allow-scripts allow-same-origin allow-presentation allow-forms"
-                    : undefined
-                }
                 className="w-full h-full border-none block bg-black"
                 style={{ border: "none", width: "100%", height: "100%", display: "block" }}
               />
