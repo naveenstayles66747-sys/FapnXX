@@ -90,6 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { language, setLanguage, t, currentLanguageMeta } = useLanguage();
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isPrefMenuOpen, setIsPrefMenuOpen] = useState(false);
+  const [mobileSearchActive, setMobileSearchActive] = useState(false);
   // Local input state for 0ms typing response without full-app re-renders
   const [desktopSearchInput, setDesktopSearchInput] = useState(searchQuery || '');
   const [mobileSearchInput, setMobileSearchInput] = useState(searchQuery || '');

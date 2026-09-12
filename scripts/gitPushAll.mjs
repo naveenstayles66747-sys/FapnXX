@@ -56,7 +56,7 @@ async function run() {
       name: 'Naveen',
       email: 'naveenstayles66747@gmail.com',
     },
-    message: 'perf: Ultra-fast 120 FPS search typing, eliminated Levenshtein freeze, instant debounced query engine',
+    message: 'fix: Restored mobileSearchActive state declaration in Header component',
   });
 
   console.log('Committed SHA:', sha);
