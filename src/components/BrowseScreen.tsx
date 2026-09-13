@@ -602,7 +602,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const selectedCategoryObj = categories.find((c) => c.id === selectedCategory);
 
   return (
-    <main className="w-full bg-white dark:bg-[#09090b] p-3 sm:p-6 md:p-12 pb-4 lg:ml-64 transition-colors">
+    <main className="w-full bg-white dark:bg-[#09090b] px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 pb-6 transition-colors max-w-[1920px] mx-auto box-border overflow-x-hidden">
       {/* Search / Gender Orientation Header Banner */}
       {(cleanSearch || contentPreference === 'gay' || contentPreference === 'lesbian') && (
         <section className="mb-4 sm:mb-6 flex items-center justify-between flex-wrap gap-3 p-4 rounded-2xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 shadow-sm animate-in fade-in duration-200">
@@ -866,36 +866,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
         </section>
       )}
 
-      {/* Category Pills Filter — hidden on mobile view since categories are already present in the side drawer & bottom navigation */}
-      {!cleanSearch && (
-        <section className="hidden md:block mb-10 w-full">
-          <div className="flex md:flex-wrap gap-2 md:gap-3 overflow-x-auto md:overflow-x-visible hide-scrollbar snap-x snap-mandatory md:snap-none pb-1 md:pb-0">
-            <button
-              onClick={() => onSelectCategory('all')}
-              className={`snap-start shrink-0 px-4 md:px-5 py-1.5 md:py-2 rounded-full font-semibold text-xs transition-all cursor-pointer active:scale-95 ${
-                selectedCategory === 'all'
-                  ? 'bg-[#ec4899] text-white border border-[#ec4899] shadow-neon-pink'
-                  : 'bg-zinc-200 dark:bg-[#27272a] text-zinc-800 dark:text-white hover:bg-[#ec4899] hover:text-white dark:hover:bg-[#ffb0cd] dark:hover:text-black border border-transparent'
-              }`}
-            >
-              {t.allCategories}
-            </button>
-            {categories.filter((c) => c.id !== 'trending').map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => onSelectCategory(cat.id)}
-                className={`snap-start shrink-0 px-4 md:px-5 py-1.5 md:py-2 rounded-full font-semibold text-xs transition-all cursor-pointer active:scale-95 capitalize ${
-                  selectedCategory === cat.id
-                    ? 'bg-[#ec4899] text-white border border-[#ec4899] shadow-neon-pink'
-                    : 'bg-zinc-200 dark:bg-[#27272a] text-zinc-800 dark:text-white hover:bg-[#ec4899] hover:text-white dark:hover:bg-[#ffb0cd] dark:hover:text-black border border-transparent'
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
+
 
       {/* Video Grid Section */}
       <section ref={videoGridTopRef} className="w-full scroll-mt-20">
@@ -1242,6 +1213,20 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
             )}
           </div>
         )}
+      </section>
+
+      {/* ── Bottom Leaderboard Banner Ad (Desktop 728x90 / Mobile 300x250) ── */}
+      <section className="w-full my-6 flex flex-col items-center justify-center">
+        <div className="w-full max-w-5xl overflow-hidden rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-2 shadow-sm flex flex-col items-center justify-center">
+          <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-zinc-500 tracking-wider mb-1">
+            Advertisement
+          </span>
+          <AdBanner
+            key={`browse-bottom-leaderboard-${selectedCategory}-${effectiveCurrentPage}`}
+            reloadKey={`${selectedCategory}-${effectiveCurrentPage}`}
+            className="w-full min-h-[90px]"
+          />
+        </div>
       </section>
     </main>
   );

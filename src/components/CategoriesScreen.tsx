@@ -2,6 +2,7 @@ import React from 'react';
 import { CategoryId, CategoryInfo, ScreenId } from '../types';
 import { CATEGORIES } from '../data';
 import { getCategoryHeroImage, handleCategoryImageError } from '../utils/mediaHelper';
+import { AdBanner } from './AdSpaces';
 
 interface CategoriesScreenProps {
   onSelectCategory: (id: CategoryId) => void;
@@ -15,7 +16,7 @@ export const CategoriesScreen: React.FC<CategoriesScreenProps> = ({
   categories = CATEGORIES,
 }) => {
   return (
-    <main className="w-full bg-zinc-50 dark:bg-[#09090b] p-4 sm:p-6 md:p-12 pb-8 lg:ml-64 transition-colors">
+    <main className="w-full bg-zinc-50 dark:bg-[#09090b] px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 pb-8 transition-colors max-w-[1920px] mx-auto box-border overflow-x-hidden">
       <div className="mb-8">
         <h2 className="text-3xl font-extrabold text-zinc-900 dark:text-[#e5e1e4] mb-2 tracking-tight">Explore Categories</h2>
         <p className="text-base text-zinc-600 dark:text-[#debec8]">
@@ -62,6 +63,20 @@ export const CategoriesScreen: React.FC<CategoriesScreenProps> = ({
           </div>
         ))}
       </div>
+
+      {/* ── Bottom Leaderboard Banner Ad ── */}
+      <section className="w-full my-8 flex flex-col items-center justify-center">
+        <div className="w-full max-w-5xl overflow-hidden rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-2 shadow-sm flex flex-col items-center justify-center">
+          <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-zinc-500 tracking-wider mb-1">
+            Advertisement
+          </span>
+          <AdBanner
+            key="categories-bottom-leaderboard"
+            reloadKey="categories"
+            className="w-full min-h-[90px]"
+          />
+        </div>
+      </section>
     </main>
   );
 };

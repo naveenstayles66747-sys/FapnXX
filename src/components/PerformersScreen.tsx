@@ -171,7 +171,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
   // ═════════════════════════════════════════════════════════════════════════
   if (selectedPerformer) {
     return (
-      <main className="flex-grow pt-4 lg:pt-8 px-3 sm:px-6 md:px-12 max-w-7xl mx-auto w-full lg:ml-64 pb-16">
+      <main className="flex-grow pt-4 lg:pt-8 px-3 sm:px-6 md:px-12 max-w-7xl mx-auto w-full pb-16">
         {/* Back Button */}
         <button
           type="button"
@@ -280,7 +280,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
   // VIEW 1: MAIN PORNSTARS DIRECTORY GRID (A-Z, Search, Real Photos)
   // ═════════════════════════════════════════════════════════════════════════
   return (
-    <main className="flex-grow pt-0 pb-16 w-full lg:ml-64">
+    <main className="flex-grow pt-0 pb-16 w-full">
       {/* ── Page Header & Controls ── */}
       <div className="px-3 sm:px-6 md:px-12 max-w-7xl mx-auto pt-6 md:pt-8 mb-5 space-y-4">
         {/* Title + Sort Switcher */}

@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, star
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { CategoryId, CategoryInfo, ContentPreference, LandingBanner, ScreenId, Video } from './types';
 import { Header } from './components/Header';
-import { Sidebar } from './components/Sidebar';
 import { MobileDrawer } from './components/MobileDrawer';
 import { BottomNav } from './components/BottomNav';
 import { AgeGateModal } from './components/AgeGateModal';
@@ -783,24 +782,11 @@ export default function App() {
             onChangeContentPreference={handleChangeContentPreference}
           />
 
-          <div className="flex flex-1 min-h-[calc(100vh-5rem)]">
-            <Sidebar
-              currentScreen={currentScreen}
-              selectedCategoryId={selectedCategoryId}
-              onSelectCategory={handleSelectCategory}
-              onNavigate={handleNavigate}
-              categories={categories}
-              videos={filteredVideosList}
-              onOpenAdminPanel={() => setIsAdminModalOpen(true)}
-              isAdminAuthenticated={isAdminAuthenticated}
-              userEmail={userEmail}
-              onOpenSoftLogin={handleOpenSoftLogin}
-            />
-
+          <div className="flex flex-1 min-h-[calc(100vh-5rem)] w-full max-w-full">
             {/* Screen Router with Smooth Micro-Transitions */}
             <div
               key={`screen-${currentScreen}-${selectedVideo?.id || ''}-${selectedCategoryId || ''}`}
-              className="flex-1 flex flex-col min-w-0 page-transition-enter"
+              className="flex-1 flex flex-col w-full min-w-0 page-transition-enter"
             >
               {currentScreen === 'browse' && (
                 <BrowseScreen

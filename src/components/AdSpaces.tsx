@@ -54,6 +54,16 @@ export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey
 
     try {
       el.innerHTML = "";
+
+      if (!document.getElementById("exoclick-global-ad-provider")) {
+        const sdk = document.createElement("script");
+        sdk.id = "exoclick-global-ad-provider";
+        sdk.type = "application/javascript";
+        sdk.async = true;
+        sdk.src = "https://a.magsrv.com/ad-provider.js";
+        document.head.appendChild(sdk);
+      }
+
       const ins = document.createElement("ins");
       ins.className = `eas${AD_ZONES.SITE_HASH}17`;
       ins.setAttribute("data-zoneid", zoneId || AD_ZONES.IN_PAGE_BANNER);
@@ -64,19 +74,26 @@ export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey
       // Trigger script adjacent
       const triggerScript = document.createElement("script");
       triggerScript.type = "application/javascript";
-      triggerScript.text = "(window.AdProvider = window.AdProvider || []).push({\"serve\": {}});";
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
       el.appendChild(triggerScript);
 
       const triggerAdServe = () => {
         try {
           const win = window as any;
-          win.AdProvider = win.AdProvider || [];
-          win.AdProvider.push({ serve: {} });
+          if (!win.AdProvider) win.AdProvider = [];
+          if (typeof win.AdProvider.serve === "function") {
+            win.AdProvider.serve();
+          }
+          if (typeof win.AdProvider.push === "function") {
+            win.AdProvider.push({ serve: {} });
+          }
         } catch {}
       };
 
       triggerAdServe();
       setTimeout(triggerAdServe, 100);
+      setTimeout(triggerAdServe, 300);
+      setTimeout(triggerAdServe, 800);
     } catch (e) {
       console.warn("[ExoClick] AdBanner mount error:", e);
     }
@@ -84,21 +101,19 @@ export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey
 
   useEffect(() => {
     renderAd();
-    const handleTrigger = () => {
-      try {
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
-      } catch {}
-    };
+    const handleTrigger = () => renderAd();
     window.addEventListener("exoclick-refresh-ads", handleTrigger);
-    return () => window.removeEventListener("exoclick-refresh-ads", handleTrigger);
+    window.addEventListener("popstate", handleTrigger);
+    return () => {
+      window.removeEventListener("exoclick-refresh-ads", handleTrigger);
+      window.removeEventListener("popstate", handleTrigger);
+    };
   }, [renderAd, reloadKey]);
 
   return (
     <div
       ref={containerRef}
-      className={`w-full flex items-center justify-center overflow-hidden my-2 min-h-[50px] ${className}`}
+      className={`w-full flex items-center justify-center overflow-hidden my-3 min-h-[90px] ${className}`}
     />
   );
 };
@@ -109,83 +124,91 @@ export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey
 export const StickyBottomLeaderboard: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDismissed, setIsDismissed] = useState<boolean>(false);
-  const [canRenderDesktop, setCanRenderDesktop] = useState<boolean>(false);
-
-  useEffect(() => {
-    const checkDevice = () => {
-      const isMobile =
-        typeof window === "undefined" ||
-        window.innerWidth < 1024 ||
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      setCanRenderDesktop(!isMobile);
-    };
-
-    checkDevice();
-    window.addEventListener("resize", checkDevice);
-    return () => window.removeEventListener("resize", checkDevice);
-  }, []);
 
   const renderAd = useCallback(() => {
-    if (isDismissed || !canRenderDesktop) return;
+    if (isDismissed) return;
     const el = containerRef.current;
     if (!el) return;
 
     try {
       el.innerHTML = "";
+
+      if (!document.getElementById("exoclick-global-ad-provider")) {
+        const sdk = document.createElement("script");
+        sdk.id = "exoclick-global-ad-provider";
+        sdk.type = "application/javascript";
+        sdk.async = true;
+        sdk.src = "https://a.magsrv.com/ad-provider.js";
+        document.head.appendChild(sdk);
+      }
+
       const ins = document.createElement("ins");
       ins.className = `eas${AD_ZONES.SITE_HASH}17`;
-      ins.setAttribute("data-zoneid", AD_ZONES.DESKTOP_STICKY_LEADERBOARD);
+      ins.setAttribute("data-zoneid", AD_ZONES.DESKTOP_STICKY_LEADERBOARD || "6003172");
       ins.style.display = "block";
       ins.style.margin = "0 auto";
       el.appendChild(ins);
 
+      const triggerScript = document.createElement("script");
+      triggerScript.type = "application/javascript";
+      triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
+      el.appendChild(triggerScript);
+
       const triggerAdServe = () => {
         try {
           const win = window as any;
-          win.AdProvider = win.AdProvider || [];
-          win.AdProvider.push({ serve: {} });
+          if (!win.AdProvider) win.AdProvider = [];
+          if (typeof win.AdProvider.serve === "function") {
+            win.AdProvider.serve();
+          }
+          if (typeof win.AdProvider.push === "function") {
+            win.AdProvider.push({ serve: {} });
+          }
         } catch {}
       };
 
       triggerAdServe();
       setTimeout(triggerAdServe, 100);
+      setTimeout(triggerAdServe, 400);
+      setTimeout(triggerAdServe, 1000);
     } catch (e) {
       console.warn("[ExoClick] Sticky leaderboard error:", e);
     }
-  }, [isDismissed, canRenderDesktop]);
+  }, [isDismissed]);
 
   useEffect(() => {
-    if (!canRenderDesktop) return;
     renderAd();
-    const handleTrigger = () => {
-      try {
-        const win = window as any;
-        win.AdProvider = win.AdProvider || [];
-        win.AdProvider.push({ serve: {} });
-      } catch {}
-    };
+    const handleTrigger = () => renderAd();
     window.addEventListener("exoclick-refresh-ads", handleTrigger);
-    return () => window.removeEventListener("exoclick-refresh-ads", handleTrigger);
-  }, [renderAd, canRenderDesktop]);
+    window.addEventListener("popstate", handleTrigger);
+    return () => {
+      window.removeEventListener("exoclick-refresh-ads", handleTrigger);
+      window.removeEventListener("popstate", handleTrigger);
+    };
+  }, [renderAd]);
 
-  if (!canRenderDesktop || isDismissed) return null;
+  if (isDismissed) return null;
 
   return (
     <aside
       id="exoclick-sticky-leaderboard"
       aria-label="Sponsored Advertisement"
-      className="hidden lg:flex fixed bottom-0 left-64 right-0 z-[120] flex-col items-center justify-center pointer-events-auto bg-[#09090b]/95 backdrop-blur-md border-t border-white/10 pb-[env(safe-area-inset-bottom,0px)]"
+      className="hidden lg:flex fixed bottom-0 left-0 right-0 z-[120] flex-col items-center justify-center pointer-events-auto bg-[#09090b]/95 backdrop-blur-md border-t border-white/10 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_25px_rgba(0,0,0,0.8)] animate-in fade-in slide-in-from-bottom-2 duration-300"
     >
-      <div className="relative w-full max-w-4xl flex items-center justify-center py-1">
+      <div className="relative w-full max-w-4xl flex items-center justify-center py-1.5 px-4">
         <button
           type="button"
           onClick={() => setIsDismissed(true)}
-          className="absolute -top-3 right-2 bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 text-[10px] rounded-full w-5 h-5 flex items-center justify-center cursor-pointer border border-white/10 shadow z-10"
-          title="Dismiss ad"
+          className="absolute -top-3.5 right-4 bg-zinc-800 hover:bg-rose-600 text-zinc-300 hover:text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center cursor-pointer border border-white/20 shadow-lg transition-colors z-20"
+          title="Close ad"
+          aria-label="Close advertisement"
         >
           ✕
         </button>
-        <div ref={containerRef} className="w-full flex items-center justify-center min-h-[90px] overflow-hidden" />
+        <div
+          ref={containerRef}
+          className="w-full flex items-center justify-center min-h-[90px] overflow-hidden"
+        />
       </div>
     </aside>
   );

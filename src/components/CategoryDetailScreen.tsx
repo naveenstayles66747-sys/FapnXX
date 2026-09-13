@@ -166,7 +166,7 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
   const subtags = ['All', 'Exclusive', 'POV', '4K', 'Romance', 'Sensual'];
 
   return (
-    <main className="w-full lg:ml-64 pb-4">
+    <main className="w-full pb-6 max-w-[1920px] mx-auto box-border overflow-x-hidden">
       {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed bottom-24 right-6 z-50 flex items-center gap-2 bg-[#ec4899] text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs">
