@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer utilities {
   .glass-panel {
     background: rgba(24, 24, 27, 0.7);
@@ -245,9 +247,44 @@ html.light header {
 }
 
 html.light nav,
-html.light aside {
+html.light aside,
+html.light .mobile-drawer-aside {
   background-color: #ffffff !important;
+  color: #0f172a !important;
   border-right: 1px solid #e2e8f0 !important;
+}
+
+html.light .mobile-drawer-top-bar {
+  background-color: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html.light .mobile-drawer-auth-btn,
+html.light .mobile-drawer-theme-btn,
+html.light .mobile-drawer-close-btn {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html.light .mobile-drawer-filter-section {
+  background-color: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html.light .mobile-drawer-filter-box {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html.light .mobile-drawer-unselected-item {
+  color: #334155 !important;
+  background-color: transparent !important;
+}
+
+html.light .mobile-drawer-unselected-item:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 
 /* 2. Main Page Backgrounds on White Pages */
