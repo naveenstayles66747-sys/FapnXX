@@ -39,36 +39,65 @@ function useIsNearViewport(margin: string = "350px"): [React.RefObject<HTMLDivEl
 }
 
 /**
- * Standard Native ExoClick Banner Slot
+ * Adaptive Native ExoClick Banner Slot (Desktop 728x90 Leaderboard | Mobile 300x250 / 300x50 Banner)
  */
-export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey?: string | number }> = ({
-  zoneId = AD_ZONES.IN_PAGE_BANNER,
+export const AdBanner: React.FC<{
+  zoneId?: string;
+  mobileZoneId?: string;
+  className?: string;
+  reloadKey?: string | number;
+}> = ({
+  zoneId,
+  mobileZoneId,
   className = "",
   reloadKey,
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const desktopContainerRef = useRef<HTMLDivElement>(null);
+  const mobileContainerRef = useRef<HTMLDivElement>(null);
 
   const renderAd = useCallback(() => {
-    const el = containerRef.current;
+    if (typeof window === "undefined") return;
+
+    if (!document.getElementById("exoclick-global-ad-provider")) {
+      const sdk = document.createElement("script");
+      sdk.id = "exoclick-global-ad-provider";
+      sdk.type = "application/javascript";
+      sdk.async = true;
+      sdk.src = "https://a.magsrv.com/ad-provider.js";
+      document.head.appendChild(sdk);
+    }
+
+    const isMobile = window.innerWidth < 1024;
+    const targetRef = isMobile ? mobileContainerRef : desktopContainerRef;
+    const el = targetRef.current;
     if (!el) return;
 
     try {
       el.innerHTML = "";
+      const ins = document.createElement("ins");
 
-      if (!document.getElementById("exoclick-global-ad-provider")) {
-        const sdk = document.createElement("script");
-        sdk.id = "exoclick-global-ad-provider";
-        sdk.type = "application/javascript";
-        sdk.async = true;
-        sdk.src = "https://a.magsrv.com/ad-provider.js";
-        document.head.appendChild(sdk);
+      if (isMobile) {
+        // Mobile 300x250 Banner Slot (Zone 6010078 / Type 10)
+        const targetMobileZone = mobileZoneId || AD_ZONES.MOBILE_UNDER_PLAYER || "6010078";
+        ins.className = `eas${AD_ZONES.SITE_HASH}10`;
+        ins.setAttribute("data-zoneid", targetMobileZone);
+        ins.style.display = "block";
+        ins.style.margin = "0 auto";
+        ins.style.maxWidth = "300px";
+        ins.style.width = "100%";
+        ins.style.minHeight = "250px";
+      } else {
+        // Desktop 728x90 Leaderboard Slot (Zone 6003172 / Type 17)
+        const targetDesktopZone = zoneId || AD_ZONES.DESKTOP_STICKY_LEADERBOARD || "6003172";
+        ins.className = `eas${AD_ZONES.SITE_HASH}17`;
+        ins.setAttribute("data-zoneid", targetDesktopZone);
+        ins.style.display = "block";
+        ins.style.margin = "0 auto";
+        ins.style.maxWidth = "728px";
+        ins.style.width = "100%";
+        ins.style.minHeight = "90px";
       }
 
-      const ins = document.createElement("ins");
-      ins.className = `eas${AD_ZONES.SITE_HASH}17`;
-      ins.setAttribute("data-zoneid", zoneId || AD_ZONES.IN_PAGE_BANNER);
-      ins.style.display = "block";
-      ins.style.margin = "0 auto";
       el.appendChild(ins);
 
       // Trigger script adjacent
@@ -97,24 +126,34 @@ export const AdBanner: React.FC<{ zoneId?: string; className?: string; reloadKey
     } catch (e) {
       console.warn("[ExoClick] AdBanner mount error:", e);
     }
-  }, [zoneId]);
+  }, [zoneId, mobileZoneId]);
 
   useEffect(() => {
     renderAd();
     const handleTrigger = () => renderAd();
     window.addEventListener("exoclick-refresh-ads", handleTrigger);
     window.addEventListener("popstate", handleTrigger);
+    window.addEventListener("resize", handleTrigger);
     return () => {
       window.removeEventListener("exoclick-refresh-ads", handleTrigger);
       window.removeEventListener("popstate", handleTrigger);
+      window.removeEventListener("resize", handleTrigger);
     };
   }, [renderAd, reloadKey]);
 
   return (
-    <div
-      ref={containerRef}
-      className={`w-full flex items-center justify-center overflow-hidden my-3 min-h-[90px] ${className}`}
-    />
+    <div className={`w-full flex flex-col items-center justify-center overflow-hidden my-2 ${className}`}>
+      {/* Desktop View 728x90 Leaderboard Container */}
+      <div
+        ref={desktopContainerRef}
+        className="hidden lg:flex w-full max-w-[728px] min-h-[90px] items-center justify-center overflow-hidden"
+      />
+      {/* Mobile View 300x250 Banner Container */}
+      <div
+        ref={mobileContainerRef}
+        className="flex lg:hidden w-full max-w-[300px] min-h-[250px] items-center justify-center overflow-hidden"
+      />
+    </div>
   );
 };
 

@@ -1216,7 +1216,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
       </section>
 
       {/* ── Bottom Leaderboard Banner Ad (Desktop 728x90 / Mobile 300x250) ── */}
-      <section className="w-full my-6 flex flex-col items-center justify-center">
+      <section className="w-full my-6 flex flex-col items-center justify-center px-2">
         <div className="w-full max-w-5xl overflow-hidden rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-2 shadow-sm flex flex-col items-center justify-center">
           <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-zinc-500 tracking-wider mb-1">
             Advertisement
@@ -1224,7 +1224,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
           <AdBanner
             key={`browse-bottom-leaderboard-${selectedCategory}-${effectiveCurrentPage}`}
             reloadKey={`${selectedCategory}-${effectiveCurrentPage}`}
-            className="w-full min-h-[90px]"
+            className="w-full"
           />
         </div>
       </section>

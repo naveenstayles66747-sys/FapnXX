@@ -65,7 +65,7 @@ export const CategoriesScreen: React.FC<CategoriesScreenProps> = ({
       </div>
 
       {/* ── Bottom Leaderboard Banner Ad ── */}
-      <section className="w-full my-8 flex flex-col items-center justify-center">
+      <section className="w-full my-8 flex flex-col items-center justify-center px-2">
         <div className="w-full max-w-5xl overflow-hidden rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-2 shadow-sm flex flex-col items-center justify-center">
           <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-zinc-500 tracking-wider mb-1">
             Advertisement
@@ -73,7 +73,7 @@ export const CategoriesScreen: React.FC<CategoriesScreenProps> = ({
           <AdBanner
             key="categories-bottom-leaderboard"
             reloadKey="categories"
-            className="w-full min-h-[90px]"
+            className="w-full"
           />
         </div>
       </section>
