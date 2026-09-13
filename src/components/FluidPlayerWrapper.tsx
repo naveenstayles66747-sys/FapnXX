@@ -93,6 +93,9 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       if (vKey) src = `https://www.pornhub.org/embed/${vKey}`;
     } else if (src.includes("pornhub.com/embed/")) {
       src = src.replace("pornhub.com/embed/", "pornhub.org/embed/");
+    } else if (src.startsWith("ph-") || src.startsWith("ph_") || /^ph[0-9a-zA-Z]+/i.test(src)) {
+      const vKey = src.replace(/^ph[-_]?/i, "ph");
+      src = `https://www.pornhub.org/embed/${vKey}`;
     } else if (src.includes("xvideos.com/video") && !src.includes("embedframe")) {
       const vMatch = src.match(/xvideos\.com\/video(\d+)/i);
       if (vMatch && vMatch[1]) src = `https://www.xvideos.com/embedframe/${vMatch[1]}`;
@@ -229,12 +232,11 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
     setIsPrerollActive(false);
     setDirectVastAd(null);
     setAdCurrentTime(0);
-    setAdDuration(15);
-
-    const rawEmbed = (
+    let rawEmbed = (
       video?.embedUrl ||
       (video as any)?.embedCode ||
       (video as any)?.videoUrl ||
+      video?.sourceWebsiteUrl ||
       ""
     ).trim();
     const rawMp4 = (
@@ -242,6 +244,13 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       (video as any)?.mp4Url ||
       ""
     ).trim();
+
+    if (!rawEmbed && !rawMp4 && video?.id) {
+      if (video.id.startsWith("ph-") || video.id.startsWith("ph_") || /^ph[0-9a-zA-Z]+/i.test(video.id)) {
+        const vKey = video.id.replace(/^ph[-_]?/i, "ph");
+        rawEmbed = `https://www.pornhub.org/embed/${vKey}`;
+      }
+    }
 
     if (rawEmbed) {
       const { cleanUrl: c, isDirectVideo: d } = extractEmbedUrl(rawEmbed, autoPlay);
@@ -526,6 +535,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
                 key={`iframe-${videoMountKey}`}
                 src={currentVideoSrc}
                 title={video?.title || "Video Stream"}
+                sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope; screen-wake-lock"
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
