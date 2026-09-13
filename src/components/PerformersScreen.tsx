@@ -176,15 +176,15 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
         <button
           type="button"
           onClick={() => setSelectedPerformer(null)}
-          className="mb-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-100 dark:bg-white/10 hover:bg-zinc-200 dark:hover:bg-white/20 text-zinc-900 dark:text-white font-bold text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
+          className="mb-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-200 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white dark:border-transparent font-bold text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
         >
           <span className="material-symbols-outlined text-base">arrow_back</span>
           <span>Back to All Pornstars</span>
         </button>
 
         {/* Performer Profile Hero Banner */}
-        <section className="mb-8 p-4 sm:p-6 rounded-3xl bg-gradient-to-r from-[#e0358d]/20 via-[#18171c] to-[#09090b] border border-white/10 shadow-2xl flex flex-col sm:flex-row items-center sm:items-start gap-5">
-          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden ring-2 ring-[#ec4899] shadow-[0_0_20px_rgba(236,72,153,0.4)] shrink-0 bg-black">
+        <section className="mb-8 p-4 sm:p-6 rounded-3xl bg-gradient-to-r from-pink-50 via-white to-slate-50 border border-slate-200 dark:from-[#e0358d]/20 dark:via-[#18171c] dark:to-[#09090b] dark:border-white/10 shadow-lg dark:shadow-2xl flex flex-col sm:flex-row items-center sm:items-start gap-5">
+          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden ring-2 ring-[#ec4899] shadow-[0_0_20px_rgba(236,72,153,0.4)] shrink-0 bg-slate-100 dark:bg-black">
             <img
               src={selectedPerformer.avatar}
               alt={selectedPerformer.name}
@@ -194,7 +194,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
 
           <div className="flex-1 text-center sm:text-left space-y-2">
             <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 {selectedPerformer.name}
               </h1>
               <span className="material-symbols-outlined text-[#ec4899] text-xl" title="Verified Creator">
@@ -202,8 +202,8 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center justify-center sm:justify-start gap-3 text-xs font-semibold text-zinc-600 dark:text-zinc-300 flex-wrap">
-              <span className="bg-[#ec4899]/20 text-[#ec4899] px-2.5 py-0.5 rounded-full font-bold border border-[#ec4899]/30">
+            <div className="flex items-center justify-center sm:justify-start gap-3 text-xs font-semibold text-slate-600 dark:text-zinc-300 flex-wrap">
+              <span className="bg-[#ec4899]/15 text-[#ec4899] px-2.5 py-0.5 rounded-full font-bold border border-[#ec4899]/30">
                 {selectedPerformer.videosCount || performerVideos.length} Videos
               </span>
               <span>⭐ Top Rated Creator</span>
@@ -212,7 +212,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
                   {selectedPerformer.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="bg-white/5 border border-white/10 px-2 py-0.5 rounded-md text-[11px] text-zinc-400 capitalize"
+                      className="bg-slate-100 border border-slate-200 dark:bg-white/5 dark:border-white/10 px-2 py-0.5 rounded-md text-[11px] text-slate-700 dark:text-zinc-400 capitalize"
                     >
                       {tag}
                     </span>
@@ -221,7 +221,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
               )}
             </div>
 
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xl">
+            <p className="text-xs text-slate-600 dark:text-zinc-400 max-w-xl">
               {selectedPerformer.bio}
             </p>
           </div>
@@ -238,7 +238,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
         {/* Video Grid for this Performer */}
         <section>
           <div className="flex items-center justify-between gap-3 mb-5">
-            <h2 className="text-base sm:text-lg font-extrabold text-zinc-900 dark:text-white flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-[#ec4899]">video_library</span>
               <span>
                 Videos featuring {selectedPerformer.name} ({performerVideos.length})
@@ -263,9 +263,9 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
               ))}
             </div>
           ) : (
-            <div className="p-12 text-center text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-[#121115] rounded-3xl border border-white/10 space-y-2">
+            <div className="p-12 text-center text-slate-600 dark:text-zinc-400 bg-slate-50 dark:bg-[#121115] rounded-3xl border border-slate-200 dark:border-white/10 space-y-2">
               <span className="material-symbols-outlined text-4xl text-[#ec4899]">videocam_off</span>
-              <h3 className="text-base font-bold text-white">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 No Videos Found for {selectedPerformer.name}
               </h3>
               <p className="text-xs">Check back soon as new content is added daily!</p>
@@ -286,23 +286,23 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
         {/* Title + Sort Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
               Pornstars
             </h1>
-            <span className="bg-[#ec4899]/20 text-[#ec4899] text-xs font-black px-2.5 py-1 rounded-full border border-[#ec4899]/30">
+            <span className="bg-[#ec4899]/15 text-[#ec4899] text-xs font-black px-2.5 py-1 rounded-full border border-[#ec4899]/30">
               {filteredAndSortedPerformers.length.toLocaleString()}
             </span>
           </div>
 
           {/* Sort Switcher (A-Z vs Most Popular) */}
-          <div className="flex items-center bg-zinc-100 dark:bg-[#18171b] p-1 rounded-xl border border-zinc-200 dark:border-white/10 shrink-0">
+          <div className="flex items-center bg-slate-100 dark:bg-[#18171b] p-1 rounded-xl border border-slate-200 dark:border-white/10 shrink-0">
             <button
               type="button"
               onClick={() => setSortBy('alpha')}
               className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
                 sortBy === 'alpha'
                   ? 'bg-[#ec4899] text-white shadow-md'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-white'
+                  : 'text-slate-700 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-sm">sort_by_alpha</span>
@@ -314,7 +314,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
               className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
                 sortBy === 'popular'
                   ? 'bg-[#ec4899] text-white shadow-md'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-white'
+                  : 'text-slate-700 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-sm">local_fire_department</span>
@@ -325,7 +325,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
 
         {/* ── Search Bar ── */}
         <div className="relative w-full">
-          <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-lg pointer-events-none">
+          <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">
             search
           </span>
           <input
@@ -336,13 +336,13 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
               setVisibleCount(48);
             }}
             placeholder="Search pornstar by name (e.g. Mia Khalifa, Sunny Leone, Abella Danger)..."
-            className="w-full pl-10 pr-10 py-3 rounded-2xl bg-zinc-100 dark:bg-[#18171b] border border-zinc-200 dark:border-white/10 text-xs sm:text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#ec4899] transition-all shadow-inner"
+            className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white dark:bg-[#18171b] border border-slate-200 dark:border-white/10 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#ec4899] transition-all shadow-sm"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-rose-500 text-sm cursor-pointer transition-colors p-1"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 text-sm cursor-pointer transition-colors p-1"
             >
               ✕
             </button>
@@ -364,7 +364,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
                   isActive
                     ? 'bg-[#ec4899] text-white shadow-md scale-105'
-                    : 'bg-zinc-100 dark:bg-[#141316] text-zinc-600 dark:text-zinc-400 hover:text-white hover:bg-zinc-200 dark:hover:bg-white/10 border border-zinc-200 dark:border-white/5'
+                    : 'bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-950 border border-slate-200 dark:bg-[#141316] dark:text-zinc-400 dark:hover:text-white dark:hover:bg-white/10 dark:border-white/5'
                 }`}
               >
                 {letter}
@@ -376,22 +376,22 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
 
       {/* Ad Banner */}
       <div className="px-3 sm:px-6 md:px-12 max-w-7xl mx-auto mb-5">
-        <div className="w-full flex items-center justify-center overflow-hidden rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/30 p-1 shadow-sm">
+        <div className="w-full flex items-center justify-center overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/30 p-1 shadow-sm">
           <AdBanner key="performers-banner" reloadKey="performers" />
         </div>
       </div>
 
       {/* ── Responsive Multi-Column Grid ── */}
       {visiblePerformers.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-0 border-t border-l border-zinc-200 dark:border-white/[0.06]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-0 border-t border-l border-slate-200 dark:border-white/[0.06]">
           {visiblePerformers.map((performer) => (
             <div
               key={performer.id}
               onClick={() => setSelectedPerformer(performer)}
-              className="group cursor-pointer border-b border-r border-zinc-200 dark:border-white/[0.06] bg-white dark:bg-[#0f0e12] hover:bg-zinc-50 dark:hover:bg-[#1a1820] transition-colors duration-200 active:opacity-75"
+              className="performer-card group cursor-pointer border-b border-r border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0f0e12] hover:bg-slate-50 dark:hover:bg-[#1a1820] transition-colors duration-200 active:opacity-75"
             >
               {/* Portrait Photo (4:3 aspect ratio) */}
-              <div className="relative w-full aspect-[4/3] overflow-hidden bg-zinc-900">
+              <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-zinc-900">
                 <img
                   src={performer.avatar}
                   alt={performer.name}
@@ -402,15 +402,15 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
                 {/* Dark gradient at bottom of photo */}
                 <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/75 to-transparent pointer-events-none" />
                 {/* ▶ N videos badge */}
-                <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/65 backdrop-blur-sm px-1.5 py-0.5 rounded text-white text-[11px] font-semibold leading-none">
+                <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/65 backdrop-blur-sm px-1.5 py-0.5 rounded text-white text-[11px] font-semibold leading-none shadow-sm">
                   <span className="text-[9px] text-[#ec4899]">▶</span>
                   <span>{performer.videosCount} {performer.videosCount === 1 ? 'video' : 'videos'}</span>
                 </div>
               </div>
 
               {/* Performer Name */}
-              <div className="px-2.5 py-2.5">
-                <h3 className="font-black text-[13px] sm:text-sm tracking-wide uppercase text-zinc-900 dark:text-white group-hover:text-[#ec4899] transition-colors duration-200 line-clamp-1">
+              <div className="px-2.5 py-2.5 bg-white dark:bg-[#0f0e12]">
+                <h3 className="performer-name font-black text-[13px] sm:text-sm tracking-wide uppercase text-slate-900 dark:text-white group-hover:text-[#ec4899] transition-colors duration-200 line-clamp-1">
                   {performer.name}
                 </h3>
               </div>
@@ -418,10 +418,10 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
           ))}
         </div>
       ) : (
-        <div className="mx-3 sm:mx-6 md:mx-12 p-12 text-center text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-[#1c1b1d] rounded-3xl border border-zinc-200 dark:border-white/10 space-y-3">
+        <div className="mx-3 sm:mx-6 md:mx-12 p-12 text-center text-slate-600 dark:text-zinc-400 bg-slate-50 dark:bg-[#1c1b1d] rounded-3xl border border-slate-200 dark:border-white/10 space-y-3">
           <span className="material-symbols-outlined text-5xl text-[#ec4899]">group_off</span>
-          <h3 className="text-xl font-bold text-zinc-900 dark:text-white">No Pornstars Found</h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white">No Pornstars Found</h3>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
             {searchQuery
               ? `No pornstars found matching "${searchQuery}".`
               : `No pornstars found starting with letter "${selectedLetter}".`}

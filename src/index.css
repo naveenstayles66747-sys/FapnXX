@@ -287,6 +287,26 @@ html.light .mobile-drawer-unselected-item:hover {
   color: #0f172a !important;
 }
 
+/* Performer / Pornstar Cards in Light Mode */
+html.light .performer-card {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .performer-card:hover {
+  background-color: #f8fafc !important;
+}
+
+html.light .performer-name,
+html.light .performer-card h3 {
+  color: #0f172a !important;
+}
+
+html.light .performer-card:hover .performer-name,
+html.light .performer-card:hover h3 {
+  color: #ec4899 !important;
+}
+
 /* 2. Main Page Backgrounds on White Pages */
 html.light .bg-\[\#09090b\],
 html.light .bg-\[\#0d0c0e\],
