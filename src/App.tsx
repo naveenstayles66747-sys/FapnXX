@@ -885,6 +885,7 @@ export default function App() {
                       onBack={() => {
                         triggerPageTransition();
                         stopAllBackgroundMedia();
+                        refreshExoClickAds('back_from_video_detail');
                         const prev = previousNavigationRef.current;
                         if (prev && prev.screen && prev.screen !== 'video-detail') {
                           startTransition(() => {

@@ -39,7 +39,8 @@ function useIsNearViewport(margin: string = "350px"): [React.RefObject<HTMLDivEl
 }
 
 /**
- * Adaptive Native ExoClick Banner Slot (Desktop 728x90 Leaderboard | Mobile 300x250 / 300x50 Banner)
+ * Adaptive Native ExoClick Banner Slot (Desktop 728x90 Leaderboard | Mobile 300x250 Banner)
+ * Guaranteed Re-Triggering on SPA Navigation, Page Refresh, Back Button, and Viewport Scroll
  */
 export const AdBanner: React.FC<{
   zoneId?: string;
@@ -54,9 +55,25 @@ export const AdBanner: React.FC<{
 }) => {
   const desktopContainerRef = useRef<HTMLDivElement>(null);
   const mobileContainerRef = useRef<HTMLDivElement>(null);
+  const [containerRef, isNear] = useIsNearViewport("600px");
+
+  const triggerAdServe = useCallback(() => {
+    try {
+      const win = window as any;
+      if (!win.AdProvider) {
+        win.AdProvider = [];
+      }
+      if (typeof win.AdProvider.serve === "function") {
+        win.AdProvider.serve();
+      }
+      if (typeof win.AdProvider.push === "function") {
+        win.AdProvider.push({ serve: {} });
+      }
+    } catch {}
+  }, []);
 
   const renderAd = useCallback(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !isNear) return;
 
     if (!document.getElementById("exoclick-global-ad-provider")) {
       const sdk = document.createElement("script");
@@ -64,6 +81,7 @@ export const AdBanner: React.FC<{
       sdk.type = "application/javascript";
       sdk.async = true;
       sdk.src = "https://a.magsrv.com/ad-provider.js";
+      sdk.onload = () => triggerAdServe();
       document.head.appendChild(sdk);
     }
 
@@ -106,43 +124,52 @@ export const AdBanner: React.FC<{
       triggerScript.text = '(window.AdProvider = window.AdProvider || []).push({"serve": {}});';
       el.appendChild(triggerScript);
 
-      const triggerAdServe = () => {
-        try {
-          const win = window as any;
-          if (!win.AdProvider) win.AdProvider = [];
-          if (typeof win.AdProvider.serve === "function") {
-            win.AdProvider.serve();
-          }
-          if (typeof win.AdProvider.push === "function") {
-            win.AdProvider.push({ serve: {} });
-          }
-        } catch {}
-      };
-
+      // Multi-phase pulse triggers
       triggerAdServe();
-      setTimeout(triggerAdServe, 100);
-      setTimeout(triggerAdServe, 300);
-      setTimeout(triggerAdServe, 800);
+      requestAnimationFrame(triggerAdServe);
+      const timers = [
+        setTimeout(triggerAdServe, 60),
+        setTimeout(triggerAdServe, 200),
+        setTimeout(triggerAdServe, 500),
+        setTimeout(triggerAdServe, 1200),
+      ];
+
+      return () => {
+        timers.forEach(clearTimeout);
+      };
     } catch (e) {
       console.warn("[ExoClick] AdBanner mount error:", e);
     }
-  }, [zoneId, mobileZoneId]);
+  }, [zoneId, mobileZoneId, isNear, triggerAdServe]);
 
   useEffect(() => {
-    renderAd();
-    const handleTrigger = () => renderAd();
-    window.addEventListener("exoclick-refresh-ads", handleTrigger);
-    window.addEventListener("popstate", handleTrigger);
-    window.addEventListener("resize", handleTrigger);
-    return () => {
-      window.removeEventListener("exoclick-refresh-ads", handleTrigger);
-      window.removeEventListener("popstate", handleTrigger);
-      window.removeEventListener("resize", handleTrigger);
+    if (!isNear) return;
+    const clearTimers = renderAd();
+
+    const handleRefresh = () => {
+      renderAd();
+      triggerAdServe();
     };
-  }, [renderAd, reloadKey]);
+
+    window.addEventListener("exoclick-refresh-ads", handleRefresh);
+    window.addEventListener("popstate", handleRefresh);
+    window.addEventListener("pageshow", handleRefresh);
+    window.addEventListener("resize", handleRefresh);
+
+    return () => {
+      if (clearTimers) clearTimers();
+      window.removeEventListener("exoclick-refresh-ads", handleRefresh);
+      window.removeEventListener("popstate", handleRefresh);
+      window.removeEventListener("pageshow", handleRefresh);
+      window.removeEventListener("resize", handleRefresh);
+    };
+  }, [renderAd, reloadKey, isNear, triggerAdServe]);
 
   return (
-    <div className={`w-full flex flex-col items-center justify-center overflow-hidden my-2 ${className}`}>
+    <div
+      ref={containerRef}
+      className={`w-full flex flex-col items-center justify-center overflow-hidden my-2 ${className}`}
+    >
       {/* Desktop View 728x90 Leaderboard Container */}
       <div
         ref={desktopContainerRef}
