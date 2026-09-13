@@ -106,7 +106,10 @@
                 s.setAttribute("data-exo-" + key, adConfig[key]);
               }
             }
-            document.body.appendChild(s);
+            var target = document.body || document.head || document.documentElement;
+            if (target) {
+              target.appendChild(s);
+            }
           } catch (e) {}
         };
 

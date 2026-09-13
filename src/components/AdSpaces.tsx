@@ -457,7 +457,7 @@ export const MobileInstantMessage: React.FC = () => {
 
   useEffect(() => {
     if (!isMobile) return;
-    const t = setTimeout(() => renderAd(), 200);
+    const t = setTimeout(() => renderAd(), 5000);
     const handleRefresh = () => renderAd();
     window.addEventListener("exoclick-refresh-ads", handleRefresh);
     window.addEventListener("popstate", handleRefresh);
