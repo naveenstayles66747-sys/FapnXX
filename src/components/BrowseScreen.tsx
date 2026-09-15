@@ -1181,34 +1181,66 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
             )}
           </>
         ) : (
-          <div className="p-10 md:p-14 text-center text-zinc-600 dark:text-[#debec8] bg-zinc-50 dark:bg-[#1c1b1d] rounded-2xl border border-zinc-200 dark:border-[#353437] space-y-4 my-6 shadow-sm">
-            <span className="material-symbols-outlined text-5xl text-rose-500 dark:text-[#ffb0cd]">
-              {searchQuery || durationFilter !== 'all' || selectedCategory !== 'all' ? 'search_off' : 'video_library'}
-            </span>
-            <h3 className="text-xl font-bold text-zinc-900 dark:text-white">
-              {searchQuery || durationFilter !== 'all' || selectedCategory !== 'all' ? 'No Videos Found' : 'No Videos Available'}
-            </h3>
-            <p className="text-sm text-zinc-600 dark:text-[#debec8] max-w-md mx-auto">
-              {searchQuery
-                ? `We couldn't find any videos matching "${searchQuery}". Try different search terms or reset your filters.`
-                : durationFilter !== 'all' || selectedCategory !== 'all'
-                ? 'No videos match the selected filters. Try choosing a different duration or category.'
-                : 'No videos are available in this section right now. Please check back later!'}
-            </p>
-            {(searchQuery || durationFilter !== 'all' || selectedCategory !== 'all') && (
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (setSearchQuery) setSearchQuery('');
-                    setDurationFilter('all');
-                    onSelectCategory('all');
-                  }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#ec4899] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#db2777] transition-all cursor-pointer shadow-md shadow-pink-500/20 active:scale-95"
-                >
-                  <span className="material-symbols-outlined text-sm">restart_alt</span>
-                  <span>Clear Filters & Search</span>
-                </button>
+          <div className="space-y-8 my-6">
+            {/* Informative Notice & Quick Reset Button */}
+            <div className="p-8 md:p-12 text-center text-zinc-600 dark:text-[#debec8] bg-zinc-50 dark:bg-[#1c1b1d] rounded-2xl border border-zinc-200 dark:border-[#353437] space-y-3 shadow-sm">
+              <span className="material-symbols-outlined text-4xl sm:text-5xl text-[#e0358d]">
+                {searchQuery || durationFilter !== 'all' || selectedCategory !== 'all' ? 'search_off' : 'video_library'}
+              </span>
+              <h3 className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white">
+                {searchQuery
+                  ? `No exact matches for "${searchQuery}"`
+                  : durationFilter !== 'all' || selectedCategory !== 'all'
+                  ? 'No videos match the selected filters'
+                  : 'No Videos Available'}
+              </h3>
+              <p className="text-xs sm:text-sm text-zinc-600 dark:text-[#debec8] max-w-md mx-auto">
+                {searchQuery
+                  ? 'We couldn\'t find an exact video matching your query, but here are some popular & trending videos you might enjoy:'
+                  : durationFilter !== 'all' || selectedCategory !== 'all'
+                  ? 'Try choosing a different duration or category, or check out these trending recommendations:'
+                  : 'Here are some top trending videos to explore right now:'}
+              </p>
+              {(searchQuery || durationFilter !== 'all' || selectedCategory !== 'all') && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (setSearchQuery) setSearchQuery('');
+                      setDurationFilter('all');
+                      onSelectCategory('all');
+                    }}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#e0358d] to-[#ec4899] text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-all cursor-pointer shadow-md shadow-pink-500/20 active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-sm">restart_alt</span>
+                    <span>Reset All Filters & Search</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Smart Auto-Fallback: Trending Recommendations Grid */}
+            {activeVideos.length > 0 && (
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/10 pb-3">
+                  <h4 className="font-bold text-base sm:text-lg text-zinc-900 dark:text-white flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#e0358d] fill-1">local_fire_department</span>
+                    <span>Trending Recommendations For You</span>
+                  </h4>
+                  <span className="text-[11px] font-semibold text-[#e0358d] uppercase tracking-wider">
+                    Popular Now
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3.5 md:gap-4 lg:gap-5 animate-in fade-in duration-300">
+                  {activeVideos.slice(0, 10).map((recVideo) => (
+                    <VideoCard
+                      key={`empty-fallback-${recVideo.id}`}
+                      video={recVideo}
+                      onClick={() => onSelectVideo(recVideo)}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>

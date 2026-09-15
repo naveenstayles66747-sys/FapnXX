@@ -20,7 +20,7 @@ export const AD_ZONES = {
 
 export const AD_CONFIG = {
   VAST_TAG_URL: AD_ZONES.IN_STREAM_VAST,
-  INTERSTITIAL_COOLDOWN_MS: 20000,            // 20-second cooldown between fullpage interstitials
-  INTERSTITIAL_MIN_TRANSITIONS: 3,            // Triggers strictly when user clicks 3 or more video cards
+  INTERSTITIAL_COOLDOWN_MS: 45000,            // 45-second cooldown between fullpage interstitials (Non-intrusive)
+  INTERSTITIAL_MIN_TRANSITIONS: 6,            // Triggers strictly after 6 or more video card clicks
   OUTSTREAM_FEED_FREQUENCY: 6,                // Every 6 cards in feed
 } as const;

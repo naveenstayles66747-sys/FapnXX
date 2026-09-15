@@ -56,7 +56,7 @@ async function run() {
       name: 'Naveen',
       email: 'naveenstayles66747@gmail.com',
     },
-    message: 'feat: Add TheyAreHuge-style Lenis smooth scrolling, mouse timeline scrubbing, GPU transitions and skeleton wave shimmer',
+    message: 'fix(ux): Increase interstitial threshold to 6 clicks and add smart trending recommendations fallback for empty search',
   });
 
   console.log('Committed SHA:', sha);
