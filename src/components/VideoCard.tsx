@@ -176,6 +176,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [isPreviewActive, setIsPreviewActive] = useState<boolean>(false);
   const [currentFrameIndex, setCurrentFrameIndex] = useState<number>(0);
+  const [scrubProgress, setScrubProgress] = useState<number | null>(null);
   const [realDuration, setRealDuration] = useState<string | null>(null);
 
   const handleMetadataLoaded = useCallback((e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
@@ -244,22 +245,24 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     });
   }, [frames]);
 
-  // Frame cycling engine: runs continuously and smoothly while preview is active without getting stuck
+  // Frame cycling engine: runs continuously and smoothly while preview is active without getting stuck (when not manual scrubbing)
   useEffect(() => {
-    if (isPlayingPreview && previewType === "frames" && frames.length > 1) {
+    if (isPlayingPreview && previewType === "frames" && frames.length > 1 && scrubProgress === null) {
       const totalFrames = frames.length;
       if (frameIntervalRef.current) {
         clearInterval(frameIntervalRef.current);
       }
       frameIntervalRef.current = setInterval(() => {
         setCurrentFrameIndex((prev) => (prev + 1) % totalFrames);
-      }, 850); // Natural 850ms per storyboard frame (Pornhub standard)
+      }, 850); // Natural 850ms per storyboard frame (Pornhub / TheyAreHuge standard)
     } else {
       if (frameIntervalRef.current) {
         clearInterval(frameIntervalRef.current);
         frameIntervalRef.current = null;
       }
-      setCurrentFrameIndex(0);
+      if (!isPlayingPreview) {
+        setCurrentFrameIndex(0);
+      }
     }
 
     return () => {
@@ -268,7 +271,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         frameIntervalRef.current = null;
       }
     };
-  }, [isPlayingPreview, previewType, frames]);
+  }, [isPlayingPreview, previewType, frames, scrubProgress]);
 
   // Single global coordinator listener: Ensures ONLY ONE video previews across the whole page at any given moment
   useEffect(() => {
@@ -276,6 +279,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       if (activeId !== video.id) {
         setIsPreviewActive(false);
         setIsHovered(false);
+        setScrubProgress(null);
         if (frameIntervalRef.current) {
           clearInterval(frameIntervalRef.current);
           frameIntervalRef.current = null;
@@ -299,7 +303,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           detail: video.id,
         })
       );
-    }, 100);
+    }, 120);
   };
 
   const handleMouseLeave = () => {
@@ -309,21 +313,42 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       hoverTimerRef.current = null;
     }
     setIsHovered(false);
+    setScrubProgress(null);
+    setCurrentFrameIndex(0);
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
   };
 
-  const handleMouseMove = () => {
+  // Ultra-Smooth Mouse-X Timeline Scrubbing (TheyAreHuge / Pornhub standard)
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isMobile) return;
     if (!isHovered) {
       setIsHovered(true);
+      preloadCardFrames();
       window.dispatchEvent(
         new CustomEvent("active-global-video-preview", {
           detail: video.id,
         })
       );
+    }
+
+    if (cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const pct = rect.width > 0 ? x / rect.width : 0;
+      setScrubProgress(pct);
+
+      if (previewType === "frames" && frames.length > 1) {
+        const frameIdx = Math.min(frames.length - 1, Math.floor(pct * frames.length));
+        setCurrentFrameIndex(frameIdx);
+      } else if (previewType === "video" && videoRef.current && videoRef.current.duration) {
+        const targetTime = pct * videoRef.current.duration;
+        if (Math.abs(videoRef.current.currentTime - targetTime) > 0.3) {
+          videoRef.current.currentTime = targetTime;
+        }
+      }
     }
   };
 
@@ -337,6 +362,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     }
     setIsHovered(false);
     setIsPreviewActive(false);
+    setScrubProgress(null);
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
@@ -366,6 +392,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
     } else {
       setIsPreviewActive(false);
       setIsHovered(false);
+      setScrubProgress(null);
       window.dispatchEvent(
         new CustomEvent("active-global-video-preview", {
           detail: null,
@@ -440,10 +467,10 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onMouseMove={handleMouseMove}
-        className="group relative bg-[#131315] rounded-2xl overflow-hidden border border-[#353437] hover:border-[#ffb0cd]/50 transition-colors cursor-pointer flex flex-col md:flex-row"
+        className="group relative bg-[#131315] rounded-2xl overflow-hidden border border-[#353437] hover:border-[#ffb0cd]/50 gpu-smooth smooth-card-transition cursor-pointer flex flex-col md:flex-row"
         style={{ contentVisibility: "auto", containIntrinsicSize: "300px" }}
       >
-        <div className="relative w-full md:w-2/5 aspect-video md:aspect-auto overflow-hidden bg-black">
+        <div className="relative w-full md:w-2/5 aspect-video md:aspect-auto overflow-hidden bg-black gpu-smooth">
           {isMp4Thumb ? (
             <video
               src={`${primaryThumb || video.previewMp4Url}#t=0.001`}
@@ -451,7 +478,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
               muted
               playsInline
               onLoadedMetadata={handleMetadataLoaded}
-              className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+              className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
             />
           ) : (
             <img
@@ -461,19 +488,26 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
               decoding="async"
               referrerPolicy="no-referrer-when-downgrade"
               onError={handleImageError}
-              className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+              className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
             />
           )}
 
           {renderPreviewContent()}
 
-          {/* Butter-Smooth Continuous Progress Bar */}
+          {/* Butter-Smooth Scrubbing / Progress Bar */}
           {isPlayingPreview && frames.length > 1 && (
             <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-black/70 z-20 pointer-events-none overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] card-smooth-progress"
-                style={{ animationDuration: `${frames.length * 850}ms` }}
-              />
+              {scrubProgress !== null ? (
+                <div
+                  className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] transition-all duration-75 ease-out"
+                  style={{ width: `${Math.round(scrubProgress * 100)}%` }}
+                />
+              ) : (
+                <div
+                  className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] card-smooth-progress"
+                  style={{ animationDuration: `${frames.length * 850}ms` }}
+                />
+              )}
             </div>
           )}
 
@@ -555,11 +589,11 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
-      className="group cursor-pointer flex flex-col w-full max-w-full rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300"
+      className="group cursor-pointer flex flex-col w-full max-w-full rounded-xl sm:rounded-2xl overflow-hidden gpu-smooth smooth-card-transition"
       style={{ contentVisibility: "auto", containIntrinsicSize: "240px" }}
     >
       {/* 16:9 Full-Width Clean Thumbnail Container */}
-      <div className="video-card-container relative w-full aspect-[16/9] rounded-lg sm:rounded-xl overflow-hidden border border-zinc-200/80 dark:border-white/10 hover:border-[#ec4899]/80 transition-colors duration-200 bg-[#09090b]">
+      <div className="video-card-container relative w-full aspect-[16/9] rounded-lg sm:rounded-xl overflow-hidden border border-zinc-200/80 dark:border-white/10 hover:border-[#ec4899]/80 transition-colors duration-200 bg-[#09090b] gpu-smooth">
         {/* Default Static Thumbnail (Always acts as stable base layer) */}
         {isMp4Thumb ? (
           <video
@@ -568,7 +602,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
             muted
             playsInline
             onLoadedMetadata={handleMetadataLoaded}
-            className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+            className="static-thumb w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
           />
         ) : (
           <img
@@ -578,20 +612,27 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
             decoding="async"
             referrerPolicy="no-referrer-when-downgrade"
             onError={handleImageError}
-            className="static-thumb w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+            className="static-thumb w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
           />
         )}
 
         {/* Clean Live Hover / Frame Flipbook Preview */}
         {renderPreviewContent()}
 
-        {/* Butter-Smooth Continuous Progress Bar: Never Freezes */}
+        {/* Butter-Smooth Continuous / Scrub Progress Bar */}
         {isPlayingPreview && frames.length > 1 && (
           <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-black/70 z-20 pointer-events-none overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] card-smooth-progress"
-              style={{ animationDuration: `${frames.length * 850}ms` }}
-            />
+            {scrubProgress !== null ? (
+              <div
+                className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] transition-all duration-75 ease-out"
+                style={{ width: `${Math.round(scrubProgress * 100)}%` }}
+              />
+            ) : (
+              <div
+                className="h-full bg-gradient-to-r from-[#e0358d] via-[#ec4899] to-[#ff70a6] shadow-[0_0_8px_#ec4899] card-smooth-progress"
+                style={{ animationDuration: `${frames.length * 850}ms` }}
+              />
+            )}
           </div>
         )}
 

@@ -56,7 +56,7 @@ async function run() {
       name: 'Naveen',
       email: 'naveenstayles66747@gmail.com',
     },
-    message: 'fix: Remove duplicate age verification exports in storage.ts and resolve black screen build issue',
+    message: 'feat: Add TheyAreHuge-style Lenis smooth scrolling, mouse timeline scrubbing, GPU transitions and skeleton wave shimmer',
   });
 
   console.log('Committed SHA:', sha);

@@ -49,6 +49,7 @@ import {
   getStoredSavedVideos,
 } from './utils/storage';
 import { usePrivacyStorage } from './hooks/usePrivacyStorage';
+import { useLenisScroll } from './hooks/useLenisScroll';
 import { stopAllBackgroundMedia } from './utils/mediaHelper';
 
 export default function App() {
@@ -223,6 +224,20 @@ export default function App() {
   // Upload and Ad Modal State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [isAdModalOpen, setIsAdModalOpen] = useState<boolean>(false);
+
+  // Buttery-Smooth Lenis Momentum Scrolling (Pauses seamlessly during active modals / age gate)
+  const isAnyModalOpen =
+    isMobileDrawerOpen ||
+    isUploadModalOpen ||
+    isAdModalOpen ||
+    isAdminModalOpen ||
+    isSoftLoginModalOpen ||
+    !isAgeVerified;
+
+  useLenisScroll({
+    enabled: true,
+    isPaused: isAnyModalOpen,
+  });
 
   // Initial load & real-time subscription from Video Service (Firestore / API Layer)
   useEffect(() => {
