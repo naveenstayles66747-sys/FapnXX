@@ -49,6 +49,11 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     typeof video?.likesCount === 'number' ? video.likesCount : 0
   );
   const [showShareNotification, setShowShareNotification] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isTheaterMode, setIsTheaterMode] = useState(false);
+  const [isMiniPlayerVisible, setIsMiniPlayerVisible] = useState(false);
+  const [isMiniPlayerDismissed, setIsMiniPlayerDismissed] = useState(false);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
 
   // DMCA Report Modal State
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -60,6 +65,29 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   );
   const [watchSeconds, setWatchSeconds] = useState<number>(0);
   const hasCountedRef = useRef<boolean>(false);
+
+  // Reset mini player dismissed state on video change
+  useEffect(() => {
+    setIsMiniPlayerDismissed(false);
+    setIsMiniPlayerVisible(false);
+  }, [video.id]);
+
+  // Sticky Floating Mini-Player on scroll using IntersectionObserver
+  useEffect(() => {
+    if (!playerContainerRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting && !isMiniPlayerDismissed) {
+          setIsMiniPlayerVisible(true);
+        } else {
+          setIsMiniPlayerVisible(false);
+        }
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(playerContainerRef.current);
+    return () => observer.disconnect();
+  }, [isMiniPlayerDismissed, video.id]);
 
   // Hard media killer when user leaves VideoDetailScreen (navigates back)
   useEffect(() => {
@@ -330,9 +358,11 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   );
 
   return (
-    <main className="flex-grow lg:pl-64 pb-8 sm:pb-12 w-full max-w-6xl mx-auto overflow-x-hidden">
+    <main className={`flex-grow pb-8 sm:pb-12 w-full mx-auto overflow-x-hidden transition-all duration-300 ${
+      isTheaterMode ? 'max-w-7xl px-1 sm:px-3' : 'max-w-6xl'
+    }`}>
 
-      {/* Top Back Navigation Bar */}
+      {/* Top Back & Theater Mode Navigation Bar */}
       <div className="w-full px-2 sm:px-4 md:px-6 pt-2 pb-1 flex items-center justify-between">
         <button
           type="button"
@@ -342,12 +372,29 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           <span className="material-symbols-outlined text-sm">arrow_back</span>
           <span>Back</span>
         </button>
+
+        {/* Theater / Cinema Mode Toggle Button */}
+        <button
+          type="button"
+          onClick={() => setIsTheaterMode(!isTheaterMode)}
+          className={`hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 border ${
+            isTheaterMode
+              ? 'bg-[#ec4899] text-white border-[#ec4899] shadow-md shadow-[#ec4899]/30'
+              : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-white/5 dark:hover:bg-white/10 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-white/10'
+          }`}
+          title={isTheaterMode ? 'Exit Theater Mode' : 'Theater / Cinema Mode'}
+        >
+          <span className="material-symbols-outlined text-sm">
+            {isTheaterMode ? 'fit_screen' : 'width_wide'}
+          </span>
+          <span>{isTheaterMode ? 'Default View' : 'Theater Mode'}</span>
+        </button>
       </div>
 
       {/* ═══════════════════════════════════════════════
           VIDEO PLAYER — Responsive Clean Container
       ═══════════════════════════════════════════════ */}
-      <section className="w-full px-2 sm:px-4 md:px-6 py-1 sm:py-1.5">
+      <section ref={playerContainerRef} className="w-full px-2 sm:px-4 md:px-6 py-1 sm:py-1.5">
         <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 flex items-center justify-center">
           <FluidPlayerWrapper key={`fluid-player-${video.id}`} video={video} autoPlay={true} />
         </div>
@@ -708,6 +755,158 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           </div>
         )}
       </div>
+
+      {/* Multi-Channel Share Modal Dialog */}
+      {isShareModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setIsShareModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl bg-white dark:bg-[#151419] border border-zinc-200 dark:border-white/15 p-5 sm:p-6 shadow-2xl text-zinc-900 dark:text-white space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#e0358d]">share</span>
+                <h3 className="font-extrabold text-base sm:text-lg">Share This Video</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-white/10 dark:hover:bg-white/20 text-zinc-600 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-600 dark:text-zinc-300 line-clamp-2 font-medium">
+              {video.title}
+            </p>
+
+            {/* Social Share Buttons */}
+            <div className="grid grid-cols-3 gap-2.5 pt-1">
+              {/* WhatsApp */}
+              <a
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${video.title} - Watch now: ${window.location.href}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/30 text-[#25D366] font-bold text-xs transition-all active:scale-95 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-2xl">chat</span>
+                <span>WhatsApp</span>
+              </a>
+
+              {/* Telegram */}
+              <a
+                href={`https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(video.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-[#229ED9]/15 hover:bg-[#229ED9]/25 border border-[#229ED9]/30 text-[#229ED9] font-bold text-xs transition-all active:scale-95 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-2xl">send</span>
+                <span>Telegram</span>
+              </a>
+
+              {/* X / Twitter */}
+              <a
+                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(video.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-zinc-100 hover:bg-zinc-200 dark:bg-white/10 dark:hover:bg-white/20 border border-zinc-300 dark:border-white/15 text-zinc-800 dark:text-zinc-200 font-bold text-xs transition-all active:scale-95 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-2xl">tag</span>
+                <span>X / Twitter</span>
+              </a>
+            </div>
+
+            {/* Direct Copy Link Input Row */}
+            <div className="pt-2">
+              <div className="flex items-stretch gap-2 p-1.5 rounded-2xl bg-zinc-100 dark:bg-[#0e0d11] border border-zinc-300 dark:border-white/10">
+                <input
+                  type="text"
+                  readOnly
+                  value={typeof window !== 'undefined' ? window.location.href : ''}
+                  className="flex-1 bg-transparent px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none select-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (navigator.clipboard) {
+                      navigator.clipboard.writeText(window.location.href).catch(() => {});
+                    }
+                    setShowShareNotification(true);
+                    setTimeout(() => setShowShareNotification(false), 3000);
+                  }}
+                  className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#e0358d] to-[#ec4899] text-white font-extrabold text-xs uppercase tracking-wide cursor-pointer active:scale-95 transition-all shadow-md shadow-[#e0358d]/20 flex items-center gap-1 shrink-0"
+                >
+                  <span className="material-symbols-outlined text-sm">content_copy</span>
+                  <span>Copy</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sticky Floating Picture-in-Picture Mini-Player on Scroll */}
+      {isMiniPlayerVisible && !isMiniPlayerDismissed && (
+        <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 z-40 w-72 sm:w-80 rounded-2xl overflow-hidden shadow-2xl border border-zinc-300 dark:border-white/15 bg-white/95 dark:bg-[#141418]/95 backdrop-blur-xl transition-all duration-300 animate-in slide-in-from-bottom-5 duration-200">
+          <div className="relative w-full aspect-video bg-black overflow-hidden group/mini">
+            <img
+              src={video.thumbnail}
+              alt={video.title}
+              className="w-full h-full object-cover opacity-90 group-hover/mini:scale-105 transition-transform duration-300"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+
+            {/* Live Playing Pulse Badge */}
+            <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] font-bold text-white border border-white/20">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Playing</span>
+            </div>
+
+            {/* Close Mini Player Button */}
+            <button
+              type="button"
+              onClick={() => setIsMiniPlayerDismissed(true)}
+              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/70 hover:bg-black/90 text-white flex items-center justify-center cursor-pointer active:scale-90 transition-transform shadow-md"
+              title="Close mini player"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+
+            {/* Center Expand / Scroll to Top Button */}
+            <button
+              type="button"
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setIsMiniPlayerVisible(false);
+              }}
+              className="absolute inset-0 m-auto w-10 h-10 rounded-full bg-[#e0358d]/90 hover:bg-[#e0358d] text-white flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 active:scale-95 transition-all"
+              title="Expand to Full Player"
+            >
+              <span className="material-symbols-outlined text-xl">open_in_full</span>
+            </button>
+          </div>
+
+          <div className="p-2.5 flex items-center justify-between gap-2">
+            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate flex-1">
+              {video.title}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setIsMiniPlayerVisible(false);
+              }}
+              className="text-[11px] font-extrabold text-[#e0358d] dark:text-[#ec4899] hover:underline cursor-pointer shrink-0"
+            >
+              Top ↑
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* DMCA Report Modal */}
       <ReportModal

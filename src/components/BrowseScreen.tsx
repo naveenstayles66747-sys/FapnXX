@@ -15,6 +15,7 @@ import { deduplicateVideos } from '../utils/videoDeduplicator';
 import { smartSearch, hasRealMatches } from '../utils/searchEngine';
 import { filterVideosByOrientation } from '../utils/orientationClassifier';
 import { videoService } from '../services/videoService';
+import TOP_PERFORMERS_CATALOG from '../data/performersCatalog.json';
 
 interface BrowseScreenProps {
   onSelectVideo: (video: Video) => void;
@@ -453,6 +454,22 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     return cleanSearch ? smartSearch(allAvailableVideos, cleanSearch) : allAvailableVideos;
   }, [allAvailableVideos, cleanSearch]);
 
+  // Top 16 Verified Performers for the Story Avatar Strip
+  const topTrendingStars = useMemo(() => {
+    if (!Array.isArray(TOP_PERFORMERS_CATALOG)) return [];
+    const blacklist = new Set([
+      'outdoor', 'amateur', 'mature', 'hd', 'verified', 'anonymous', 'user uploaded',
+      '4k', 'vr', 'pov', 'anal', 'blowjob', 'creampie', 'milf', 'teen', 'latina',
+      'ebony', 'asian', 'blonde', 'brunette', 'redhead', 'bbw', 'massage', 'public',
+      'squirt', 'compilation', 'striptease', 'hentai', 'solo', 'babe', 'hardcore',
+      'lesbian', 'interracial', 'threesome', 'fetish', 'masturbation', 'transgender',
+      'trending', 'desi', 'indian', 'brazzers', 'digital playground'
+    ]);
+    return TOP_PERFORMERS_CATALOG
+      .filter((p: any) => p && p.name && p.avatar && !blacklist.has(p.name.toLowerCase().trim()))
+      .slice(0, 16);
+  }, []);
+
   const isRealMatch = React.useMemo(() => {
     return cleanSearch ? hasRealMatches(allAvailableVideos, cleanSearch) : true;
   }, [allAvailableVideos, cleanSearch]);
@@ -602,7 +619,106 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
   const selectedCategoryObj = categories.find((c) => c.id === selectedCategory);
 
   return (
-    <main className="w-full bg-white dark:bg-[#09090b] px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 pb-6 transition-colors max-w-[1920px] mx-auto box-border overflow-x-hidden">
+    <main className="w-full bg-white dark:bg-[#09090b] px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-5 pb-6 transition-colors max-w-[1920px] mx-auto box-border overflow-x-hidden">
+      {/* ── Category Quick Pills Bar (Horizontal 1-Click Filter) ── */}
+      <section className="mb-4 sm:mb-5 w-full">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto hide-scrollbar py-1 px-0.5 scroll-smooth select-none">
+          <button
+            type="button"
+            onClick={() => {
+              if (setSearchQuery) setSearchQuery('');
+              onSelectCategory('all');
+            }}
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 border ${
+              selectedCategory === 'all' && !cleanSearch
+                ? 'bg-gradient-to-r from-[#e0358d] to-[#ec4899] text-white font-extrabold border-[#e0358d] shadow-md shadow-[#e0358d]/30'
+                : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-[#18171c] dark:hover:bg-[#25242b] text-zinc-800 dark:text-zinc-200 border-zinc-300/80 dark:border-white/10 font-semibold'
+            }`}
+          >
+            <span className="material-symbols-outlined text-sm sm:text-base">explore</span>
+            <span>All Videos</span>
+          </button>
+
+          {categories.map((cat) => {
+            const isSelected = selectedCategory === cat.id && !cleanSearch;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  if (setSearchQuery) setSearchQuery('');
+                  onSelectCategory(cat.id);
+                }}
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 border ${
+                  isSelected
+                    ? 'bg-gradient-to-r from-[#e0358d] to-[#ec4899] text-white font-extrabold border-[#e0358d] shadow-md shadow-[#e0358d]/30'
+                    : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-[#18171c] dark:hover:bg-[#25242b] text-zinc-800 dark:text-zinc-200 border-zinc-300/80 dark:border-white/10 font-semibold'
+                }`}
+              >
+                {cat.icon && (
+                  <span className={`material-symbols-outlined text-sm sm:text-base ${isSelected ? 'text-white' : 'text-[#e0358d]'}`}>
+                    {cat.icon}
+                  </span>
+                )}
+                <span>{cat.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Top Trending Stars / Models Avatar Strip ── */}
+      {!cleanSearch && selectedCategory === 'all' && topTrendingStars.length > 0 && (
+        <section className="mb-5 sm:mb-7 w-full p-3 sm:p-4 rounded-2xl bg-zinc-50 dark:bg-[#121114] border border-zinc-200 dark:border-white/10 shadow-xs">
+          <div className="flex items-center justify-between mb-2.5 px-1">
+            <h3 className="text-xs sm:text-sm font-black text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[#e0358d] text-base" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+              <span>Trending Stars & Creators</span>
+            </h3>
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#e0358d] dark:text-[#ec4899] uppercase tracking-wide">
+              Verified Profiles
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto hide-scrollbar py-1 px-1 scroll-smooth">
+            {topTrendingStars.map((star) => (
+              <button
+                key={star.name}
+                type="button"
+                onClick={() => {
+                  if (setSearchQuery) {
+                    setSearchQuery(star.name);
+                  }
+                }}
+                className="group/star shrink-0 flex flex-col items-center gap-1.5 cursor-pointer active:scale-95 transition-transform"
+                title={`Search videos of ${star.name}`}
+              >
+                <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full p-[2px] bg-gradient-to-tr from-[#e0358d] via-[#ec4899] to-amber-400 group-hover/star:scale-105 transition-transform shadow-sm shadow-[#e0358d]/20">
+                  <div className="w-full h-full rounded-full overflow-hidden bg-zinc-900 border-2 border-white dark:border-[#121114]">
+                    <img
+                      src={star.avatar}
+                      alt={star.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover group-hover/star:scale-110 transition-transform duration-300"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop';
+                      }}
+                    />
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-[#121114] flex items-center justify-center text-[7px] text-white font-black" title="Verified">
+                    ✓
+                  </span>
+                </div>
+                <span className="text-[10px] sm:text-[11px] font-bold text-zinc-800 dark:text-zinc-200 group-hover/star:text-[#ec4899] transition-colors max-w-[65px] sm:max-w-[75px] truncate text-center">
+                  {star.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Search / Gender Orientation Header Banner */}
       {(cleanSearch || contentPreference === 'gay' || contentPreference === 'lesbian') && (
         <section className="mb-4 sm:mb-6 flex items-center justify-between flex-wrap gap-3 p-4 rounded-2xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 shadow-sm animate-in fade-in duration-200">

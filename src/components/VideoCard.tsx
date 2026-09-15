@@ -3,6 +3,7 @@ import { Video } from "../types";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { cleanMediaUrl } from "../utils/mediaHelper";
 import { videoService } from "../services/videoService";
+import { getStoredSavedVideos, toggleStoredSavedVideo } from "../utils/storage";
 
 interface VideoCardProps {
   video: Video;
@@ -178,6 +179,11 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
   const [currentFrameIndex, setCurrentFrameIndex] = useState<number>(0);
   const [scrubProgress, setScrubProgress] = useState<number | null>(null);
   const [realDuration, setRealDuration] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState<boolean>(() => getStoredSavedVideos().includes(video.id));
+
+  useEffect(() => {
+    setIsSaved(getStoredSavedVideos().includes(video.id));
+  }, [video.id]);
 
   const handleMetadataLoaded = useCallback((e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
     const sec = e.currentTarget.duration;
@@ -511,6 +517,30 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
             </div>
           )}
 
+          {/* Quick Save / Bookmark Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const updated = toggleStoredSavedVideo(video.id);
+              setIsSaved(updated.includes(video.id));
+            }}
+            className={`thumb-save-btn absolute top-2 left-2 z-30 p-1.5 rounded-xl backdrop-blur-md transition-all duration-200 ease-out shadow-lg flex items-center justify-center cursor-pointer ${
+              isSaved
+                ? "bg-[#ec4899] text-white border border-[#ec4899] shadow-[0_0_10px_rgba(236,72,153,0.5)] opacity-100"
+                : "opacity-0 group-hover:opacity-100 bg-black/70 hover:bg-black/90 text-white/90 hover:text-white border border-white/20 hover:scale-105 active:scale-90"
+            }`}
+            title={isSaved ? "Saved to Watch Later" : "Save to Watch Later"}
+          >
+            <span
+              className="material-symbols-outlined text-sm"
+              style={{ fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0" }}
+            >
+              bookmark
+            </span>
+          </button>
+
           {!isPlayingPreview && !isSpecialPromo && (
             <div className="absolute bottom-2 right-2 bg-black/80 text-white font-mono text-xs px-2 py-0.5 rounded z-20">
               {video.duration || "05:00"}
@@ -636,6 +666,30 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           </div>
         )}
 
+        {/* Top-Left: Quick Save / Bookmark Button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const updated = toggleStoredSavedVideo(video.id);
+            setIsSaved(updated.includes(video.id));
+          }}
+          className={`thumb-save-btn absolute top-1.5 left-1.5 sm:top-2 sm:left-2 z-30 p-1 sm:p-1.5 rounded-md sm:rounded-lg backdrop-blur-md transition-all duration-200 ease-out shadow-lg flex items-center justify-center cursor-pointer ${
+            isSaved
+              ? "bg-[#ec4899] text-white border border-[#ec4899] shadow-[0_0_10px_rgba(236,72,153,0.5)] opacity-100 scale-100"
+              : "opacity-0 group-hover:opacity-100 bg-black/70 hover:bg-black/90 text-white/90 hover:text-white border border-white/20 hover:scale-105 active:scale-90"
+          }`}
+          title={isSaved ? "Saved to Watch Later" : "Save to Watch Later"}
+        >
+          <span
+            className="material-symbols-outlined text-xs sm:text-sm"
+            style={{ fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0" }}
+          >
+            bookmark
+          </span>
+        </button>
+
         {/* Top-Right: Quality Badge */}
         {!isPlayingPreview && (
           <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-20 flex flex-col items-end gap-1 pointer-events-none transition-opacity duration-300">
@@ -695,8 +749,12 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         {/* Channel & Views Row (xHamster exact format) */}
         <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-zinc-600 dark:text-zinc-400 font-medium overflow-hidden">
           {/* Mini Channel Avatar Circle */}
-          <span className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-gradient-to-br from-[#e0358d] to-[#db2777] text-white flex items-center justify-center text-[8px] sm:text-[9px] font-black uppercase shadow-xs">
-            {channelInitial}
+          <span className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full overflow-hidden bg-gradient-to-br from-[#e0358d] to-[#db2777] text-white flex items-center justify-center text-[8px] sm:text-[9px] font-black uppercase shadow-xs">
+            {video.performerAvatar ? (
+              <img src={video.performerAvatar} alt={channelName} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }} />
+            ) : (
+              channelInitial
+            )}
           </span>
           <span className="truncate max-w-[75px] sm:max-w-[120px] font-bold text-zinc-700 dark:text-zinc-300">
             {channelName}
