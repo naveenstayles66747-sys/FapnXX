@@ -165,10 +165,20 @@ const AGE_VERIFICATION_EXPIRY_MS = 18 * 60 * 60 * 1000; // 18 Hours
 export const getStoredAgeVerified = (): boolean => {
   try {
     const raw = localStorage.getItem(KEYS.AGE_VERIFIED);
-    if (raw === 'false') return false;
+    if (raw !== 'true') return false;
+
+    const timestampStr = localStorage.getItem(KEYS.AGE_VERIFIED_TIMESTAMP);
+    if (timestampStr) {
+      const timestamp = parseInt(timestampStr, 10);
+      if (!isNaN(timestamp) && Date.now() - timestamp > AGE_VERIFICATION_EXPIRY_MS) {
+        localStorage.removeItem(KEYS.AGE_VERIFIED);
+        localStorage.removeItem(KEYS.AGE_VERIFIED_TIMESTAMP);
+        return false;
+      }
+    }
     return true;
   } catch {
-    return true;
+    return false;
   }
 };
 
@@ -178,7 +188,7 @@ export const setStoredAgeVerified = (verified: boolean): void => {
       localStorage.setItem(KEYS.AGE_VERIFIED, 'true');
       localStorage.setItem(KEYS.AGE_VERIFIED_TIMESTAMP, Date.now().toString());
     } else {
-      localStorage.removeItem(KEYS.AGE_VERIFIED);
+      localStorage.setItem(KEYS.AGE_VERIFIED, 'false');
       localStorage.removeItem(KEYS.AGE_VERIFIED_TIMESTAMP);
     }
   } catch (e) {

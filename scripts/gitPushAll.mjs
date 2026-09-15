@@ -56,7 +56,7 @@ async function run() {
       name: 'Naveen',
       email: 'naveenstayles66747@gmail.com',
     },
-    message: 'fix(ux): Increase interstitial threshold to 6 clicks and add smart trending recommendations fallback for empty search',
+    message: 'fix: resolve age gate verification, secure firestore rules, clean index preload, and streamline search',
   });
 
   console.log('Committed SHA:', sha);

@@ -84,7 +84,7 @@ service cloud.firestore {
                        request.resource.data.text.size() <= 2000;
       allow update: if isModerator() ||
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'updatedAt']);
-      allow delete: if isModerator() || (isAuthenticated() && resource.data.userId == request.auth.uid) || true;
+      allow delete: if isModerator() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

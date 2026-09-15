@@ -91,24 +91,21 @@ export const Header: React.FC<HeaderProps> = ({
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isPrefMenuOpen, setIsPrefMenuOpen] = useState(false);
   const [mobileSearchActive, setMobileSearchActive] = useState(false);
-  // Local input state for 0ms typing response without full-app re-renders
-  const [desktopSearchInput, setDesktopSearchInput] = useState(searchQuery || '');
-  const [mobileSearchInput, setMobileSearchInput] = useState(searchQuery || '');
+  // Unified local input state for 0ms typing response without full-app re-renders
+  const [searchInput, setSearchInput] = useState(searchQuery || '');
   const mobileSearchRef = React.useRef<HTMLInputElement>(null);
   const prefDropdownRef = useRef<HTMLDivElement>(null);
   const prefDropdownRefMobile = useRef<HTMLDivElement>(null);
   const langDropdownRef = useRef<HTMLDivElement>(null);
   const desktopSearchRef = useRef<HTMLDivElement>(null);
 
-  // Sync local inputs when searchQuery changes externally (e.g. tag clicks, reset)
+  // Sync local input when searchQuery changes externally (e.g. tag clicks, reset)
   useEffect(() => {
-    setDesktopSearchInput(searchQuery || '');
-    setMobileSearchInput(searchQuery || '');
+    setSearchInput(searchQuery || '');
   }, [searchQuery]);
 
   // Search suggestions state
-  const [desktopSuggestionsOpen, setDesktopSuggestionsOpen] = useState(false);
-  const [mobileSuggestionsOpen, setMobileSuggestionsOpen] = useState(false);
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [groupedSuggestions, setGroupedSuggestions] = useState<GroupedSuggestions>({
     performers: [],
     tags: [],
@@ -120,39 +117,27 @@ export const Header: React.FC<HeaderProps> = ({
   // Debounced update to global search query (250ms delay) to keep 120 FPS typing
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (desktopSearchInput !== searchQuery && !mobileSearchActive) {
-        setSearchQuery(desktopSearchInput);
+      if (searchInput !== searchQuery) {
+        setSearchQuery(searchInput);
       }
     }, 250);
     return () => clearTimeout(timer);
-  }, [desktopSearchInput, searchQuery, setSearchQuery, mobileSearchActive]);
-
-  useEffect(() => {
-    if (!mobileSearchActive) return;
-    const timer = setTimeout(() => {
-      if (mobileSearchInput !== searchQuery) {
-        setSearchQuery(mobileSearchInput);
-      }
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [mobileSearchInput, searchQuery, setSearchQuery, mobileSearchActive]);
+  }, [searchInput, searchQuery, setSearchQuery]);
 
   // Generate suggestions fast (< 0.1ms)
   useEffect(() => {
-    const q = (desktopSuggestionsOpen ? desktopSearchInput : mobileSearchInput).trim();
-    if (q.length >= 1 && (desktopSuggestionsOpen || mobileSuggestionsOpen)) {
+    const q = searchInput.trim();
+    if (q.length >= 1 && isSuggestionsOpen) {
       setGroupedSuggestions(getGroupedSearchSuggestions(videos, q));
     } else {
       setGroupedSuggestions({ performers: [], tags: [], categories: [], titles: [], totalCount: 0 });
     }
-  }, [desktopSearchInput, mobileSearchInput, desktopSuggestionsOpen, mobileSuggestionsOpen, videos]);
+  }, [searchInput, isSuggestionsOpen, videos]);
 
   const handleSuggestionSelect = useCallback((text: string) => {
-    setDesktopSearchInput(text);
-    setMobileSearchInput(text);
+    setSearchInput(text);
     setSearchQuery(text);
-    setDesktopSuggestionsOpen(false);
-    setMobileSuggestionsOpen(false);
+    setIsSuggestionsOpen(false);
     onOpenSearch();
   }, [setSearchQuery, onOpenSearch]);
 
@@ -343,19 +328,19 @@ export const Header: React.FC<HeaderProps> = ({
       <div ref={desktopSearchRef} className="hidden lg:flex flex-1 max-w-xs xl:max-w-md mx-4 relative group/search min-w-0 z-20">
         <input
           type="text"
-          value={desktopSearchInput}
+          value={searchInput}
           onChange={(e) => {
-            setDesktopSearchInput(e.target.value);
-            setDesktopSuggestionsOpen(true);
+            setSearchInput(e.target.value);
+            setIsSuggestionsOpen(true);
           }}
-          onFocus={() => { if (desktopSearchInput.trim()) setDesktopSuggestionsOpen(true); }}
+          onFocus={() => { if (searchInput.trim()) setIsSuggestionsOpen(true); }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
-              setSearchQuery(desktopSearchInput.trim());
+              setSearchQuery(searchInput.trim());
               onOpenSearch();
-              setDesktopSuggestionsOpen(false);
+              setIsSuggestionsOpen(false);
             }
-            if (e.key === 'Escape') { setDesktopSuggestionsOpen(false); }
+            if (e.key === 'Escape') { setIsSuggestionsOpen(false); }
           }}
           placeholder="Search videos, performers, tags..."
           className={`w-full header-search-input rounded-full py-2 pl-5 pr-10 text-xs focus:outline-none transition-all shadow-inner border ${
@@ -368,9 +353,9 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={() => {
-            setSearchQuery(desktopSearchInput.trim());
+            setSearchQuery(searchInput.trim());
             onOpenSearch();
-            setDesktopSuggestionsOpen(false);
+            setIsSuggestionsOpen(false);
           }}
           className={`absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full transition-colors cursor-pointer ${
             isBrazzers ? 'text-amber-400 hover:bg-amber-500/20' : 'text-[#e0358d] hover:bg-[#e0358d]/20'
@@ -386,10 +371,10 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Desktop Suggestions Dropdown */}
         <SearchSuggestionsDropdown
           groupedSuggestions={groupedSuggestions}
-          query={desktopSearchInput}
+          query={searchInput}
           onSelect={handleSuggestionSelect}
-          onClose={() => setDesktopSuggestionsOpen(false)}
-          visible={desktopSuggestionsOpen && groupedSuggestions.totalCount > 0}
+          onClose={() => setIsSuggestionsOpen(false)}
+          visible={isSuggestionsOpen && groupedSuggestions.totalCount > 0}
         />
       </div>
 
@@ -593,23 +578,23 @@ export const Header: React.FC<HeaderProps> = ({
             <input
               ref={mobileSearchRef}
               type="text"
-              value={mobileSearchInput}
+              value={searchInput}
               autoFocus
               autoComplete="off"
               onChange={(e) => {
-                setMobileSearchInput(e.target.value);
-                setMobileSuggestionsOpen(true);
+                setSearchInput(e.target.value);
+                setIsSuggestionsOpen(true);
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  setSearchQuery(mobileSearchInput.trim());
+                  setSearchQuery(searchInput.trim());
                   onOpenSearch();
                   setMobileSearchActive(false);
-                  setMobileSuggestionsOpen(false);
+                  setIsSuggestionsOpen(false);
                 }
                 if (e.key === 'Escape') {
                   setMobileSearchActive(false);
-                  setMobileSuggestionsOpen(false);
+                  setIsSuggestionsOpen(false);
                 }
               }}
               placeholder="Search pornstars, tags, categories..."
@@ -618,10 +603,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => {
-                setSearchQuery(mobileSearchInput.trim());
+                setSearchQuery(searchInput.trim());
                 onOpenSearch();
                 setMobileSearchActive(false);
-                setMobileSuggestionsOpen(false);
+                setIsSuggestionsOpen(false);
               }}
               className="px-4 py-2 bg-[#e0358d] hover:bg-[#c9287a] active:scale-95 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 shrink-0 transition-all shadow-sm cursor-pointer"
             >
@@ -633,13 +618,13 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Grouped Suggestions Dropdown Attached directly under input */}
           <SearchSuggestionsDropdown
             groupedSuggestions={groupedSuggestions}
-            query={mobileSearchInput}
+            query={searchInput}
             onSelect={(text) => {
               handleSuggestionSelect(text);
               setMobileSearchActive(false);
             }}
-            onClose={() => setMobileSuggestionsOpen(false)}
-            visible={mobileSuggestionsOpen && groupedSuggestions.totalCount > 0}
+            onClose={() => setIsSuggestionsOpen(false)}
+            visible={isSuggestionsOpen && groupedSuggestions.totalCount > 0}
           />
         </div>
       )}

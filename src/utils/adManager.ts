@@ -56,8 +56,8 @@ class AdManager {
   /**
    * Check if user is currently eligible for an interstitial.
    * Requires:
-   * 1. At least AD_CONFIG.INTERSTITIAL_MIN_TRANSITIONS (3) video card clicks since last interstitial.
-   * 2. At least AD_CONFIG.INTERSTITIAL_COOLDOWN_MS (20s) elapsed since last interstitial.
+   * 1. At least AD_CONFIG.INTERSTITIAL_MIN_TRANSITIONS (6) video card clicks since last interstitial.
+   * 2. At least AD_CONFIG.INTERSTITIAL_COOLDOWN_MS (45s) elapsed since last interstitial.
    */
   public canShowInterstitial(): boolean {
     const transitions = this.getEligibleTransitions();
