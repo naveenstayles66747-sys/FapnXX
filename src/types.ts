@@ -36,6 +36,7 @@ export interface Video {
   isOriginal?: boolean;
   likesCount?: number;
   embedUrl?: string;
+  previewWebmUrl?: string;
   previewMp4Url?: string;
   previewWebpUrl?: string;
   previewFrames?: string[];

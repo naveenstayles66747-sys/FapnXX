@@ -106,11 +106,12 @@ const extractPreviewDetails = (video: Video) => {
     return { previewSrc: video.previewFrames[0], previewType: "frames" as const, frames: video.previewFrames };
   }
 
-  const mp4Src = cleanMediaUrl(video.previewMp4Url || (video as any).mp4Url || "");
-  if (mp4Src) {
-    const urlPath = mp4Src.split("?")[0].split("#")[0].toLowerCase();
+  // Lightweight WebM / MP4 preview videos
+  const videoPreviewSrc = cleanMediaUrl(video.previewWebmUrl || video.previewMp4Url || (video as any).mp4Url || "");
+  if (videoPreviewSrc) {
+    const urlPath = videoPreviewSrc.split("?")[0].split("#")[0].toLowerCase();
     const isVideo = /\.(mp4|webm|m3u8|mov|ogg)$/i.test(urlPath);
-    if (isVideo) return { previewSrc: mp4Src, previewType: "video" as const, frames: [] };
+    if (isVideo) return { previewSrc: videoPreviewSrc, previewType: "video" as const, frames: [] };
   }
 
   const webpSrc = cleanMediaUrl(video.previewWebpUrl || "");
@@ -309,7 +310,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           detail: video.id,
         })
       );
-    }, 120);
+    }, 150); // Standard 150ms hover delay to eliminate accidental trigger & preserve 60fps scrolling
   };
 
   const handleMouseLeave = () => {
