@@ -70,9 +70,9 @@ const SidebarComponent: React.FC<SidebarProps> = ({
               onClick={() => {
                 onNavigate('browse');
               }}
-              className={`sidebar-link-interactive w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide cursor-pointer transition-all ${
+              className={`sidebar-interactive-pill w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide cursor-pointer transition-all ${
                 currentScreen === 'browse' && selectedCategoryId === 'all'
-                  ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
+                  ? 'active bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
                   : 'text-zinc-800 dark:text-[#debec8] hover:bg-zinc-200/80 dark:hover:bg-white/5 hover:text-zinc-950 dark:hover:text-white'
               }`}
             >
@@ -90,9 +90,9 @@ const SidebarComponent: React.FC<SidebarProps> = ({
           <li>
             <button
               onClick={() => onNavigate('brazzers')}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-lg font-bold text-xs tracking-wide cursor-pointer transition-all ${
+              className={`sidebar-interactive-pill w-full flex items-center justify-between px-4 py-3 rounded-lg font-bold text-xs tracking-wide cursor-pointer transition-all ${
                 currentScreen === 'brazzers'
-                  ? 'bg-gradient-to-r from-amber-500/25 to-yellow-500/10 text-amber-400 border-l-4 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)]'
+                  ? 'active bg-gradient-to-r from-amber-500/25 to-yellow-500/10 text-amber-400 border-l-4 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)]'
                   : 'text-amber-500/90 dark:text-amber-400 hover:text-amber-400 hover:bg-amber-500/10'
               }`}
             >
@@ -120,9 +120,9 @@ const SidebarComponent: React.FC<SidebarProps> = ({
                   onClick={() => {
                     onSelectCategory(cat.id);
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
+                  className={`sidebar-interactive-pill w-full flex items-center justify-between px-4 py-2.5 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
+                      ? 'active bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
                       : 'text-zinc-800 dark:text-[#debec8] hover:bg-zinc-200/80 dark:hover:bg-white/5 hover:text-zinc-950 dark:hover:text-white'
                   }`}
                 >
@@ -135,9 +135,9 @@ const SidebarComponent: React.FC<SidebarProps> = ({
           <li className="pt-4 border-t border-zinc-200 dark:border-white/5 mt-4 space-y-1">
             <button
               onClick={() => onNavigate('performers')}
-              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
+              className={`sidebar-interactive-pill w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
                 currentScreen === 'performers'
-                  ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
+                  ? 'active bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
                   : 'text-zinc-800 dark:text-[#debec8] hover:bg-zinc-200/80 dark:hover:bg-white/5 hover:text-zinc-950 dark:hover:text-white'
               }`}
             >
@@ -149,9 +149,9 @@ const SidebarComponent: React.FC<SidebarProps> = ({
 
             <button
               onClick={() => onNavigate('saved')}
-              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
+              className={`sidebar-interactive-pill w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer ${
                 currentScreen === 'saved'
-                  ? 'bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
+                  ? 'active bg-[#ec4899]/15 text-[#ec4899] dark:text-[#ffb0cd] border-l-4 border-[#ec4899] dark:border-[#ffb0cd]'
                   : 'text-zinc-800 dark:text-[#debec8] hover:bg-zinc-200/80 dark:hover:bg-white/5 hover:text-zinc-950 dark:hover:text-white'
               }`}
             >

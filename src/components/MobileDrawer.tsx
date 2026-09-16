@@ -258,11 +258,11 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               themeMode === 'light' ? 'divide-slate-200 text-slate-900' : 'divide-white/5 text-white'
             }`}>
               {/* Home */}
-              <li>
+              <li className="drawer-item-stagger">
                 <button
                   type="button"
                   onClick={handleHomeClick}
-                  className={`w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors cursor-pointer font-bold text-left ${
+                  className={`sidebar-interactive-pill w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors cursor-pointer font-bold text-left ${
                     themeMode === 'light'
                       ? 'text-slate-900 hover:text-[#ec4899] hover:bg-slate-100 active:bg-slate-200'
                       : 'text-zinc-100 hover:text-white hover:bg-white/10 active:bg-white/15'
@@ -274,14 +274,14 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               </li>
 
               {/* Brazzers Exclusive Channel Feature */}
-              <li>
+              <li className="drawer-item-stagger">
                 <button
                   type="button"
                   onClick={() => {
                     onNavigate('brazzers');
                     onClose();
                   }}
-                  className={`w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer font-bold text-left ${
+                  className={`sidebar-interactive-pill w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer font-bold text-left ${
                     themeMode === 'light'
                       ? 'text-amber-600 hover:bg-amber-50 active:bg-amber-100'
                       : 'text-amber-400 hover:bg-amber-500/15 active:bg-amber-500/25'
@@ -297,12 +297,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 </button>
               </li>
 
-              {/* Videos Dropdown (Accordion) */}
-              <li>
+              {/* Videos Dropdown (Smooth Pure CSS Grid Accordion) */}
+              <li className="drawer-item-stagger">
                 <button
                   type="button"
                   onClick={() => setIsVideosExpanded(!isVideosExpanded)}
-                  className={`w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer font-bold text-left ${
+                  className={`sidebar-interactive-pill w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer font-bold text-left ${
                     themeMode === 'light'
                       ? 'text-slate-900 hover:text-[#ec4899] hover:bg-slate-100 active:bg-slate-200'
                       : 'text-zinc-100 hover:text-white hover:bg-white/10 active:bg-white/15'
@@ -312,70 +312,72 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                     <span className="material-symbols-outlined text-xl text-[#a855f7]">smart_display</span>
                     <span className={`text-sm font-bold ${themeMode === 'light' ? 'text-slate-900' : 'text-zinc-100'}`}>Videos</span>
                   </div>
-                  <span className={`material-symbols-outlined text-sm transition-transform duration-200 ${
+                  <span className={`material-symbols-outlined text-sm transition-transform duration-300 ease-out ${
                     themeMode === 'light' ? 'text-slate-500' : 'text-zinc-400'
-                  } ${isVideosExpanded ? 'rotate-180' : ''}`}>
+                  } ${isVideosExpanded ? 'rotate-180 text-[#a855f7]' : ''}`}>
                     expand_more
                   </span>
                 </button>
 
-                {/* Sub-items when Videos dropdown is expanded */}
-                {isVideosExpanded && (
-                  <ul className={`py-1 border-t border-b space-y-0.5 ${
-                    themeMode === 'light' ? 'bg-slate-100 border-slate-200' : 'bg-black/40 border-white/10'
-                  }`}>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onSelectCategory('all');
-                          if (onSelectSort) onSelectSort('top_rated');
-                          onNavigate('browse');
-                          onClose();
-                          setDrawerSubView('main');
-                          setIsVideosExpanded(false);
-                        }}
-                        className={`w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-xs font-bold text-left transition-colors cursor-pointer ${
-                          themeMode === 'light'
-                            ? 'text-slate-800 hover:text-amber-600 hover:bg-slate-200'
-                            : 'text-zinc-200 hover:text-amber-400 hover:bg-white/5'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-base text-amber-500">trophy</span>
-                        <span>Top Rated</span>
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onSelectCategory('all');
-                          if (onSelectSort) onSelectSort('most_popular');
-                          onNavigate('browse');
-                          onClose();
-                          setDrawerSubView('main');
-                          setIsVideosExpanded(false);
-                        }}
-                        className={`w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-xs font-bold text-left transition-colors cursor-pointer ${
-                          themeMode === 'light'
-                            ? 'text-slate-800 hover:text-rose-600 hover:bg-slate-200'
-                            : 'text-zinc-200 hover:text-rose-400 hover:bg-white/5'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-base text-rose-500">local_fire_department</span>
-                        <span>Most Popular</span>
-                      </button>
-                    </li>
-                  </ul>
-                )}
+                {/* Smooth CSS Grid Dropdown Content */}
+                <div className={`accordion-grid-wrapper ${isVideosExpanded ? 'expanded' : ''}`}>
+                  <div className="accordion-grid-content">
+                    <ul className={`py-1 border-t border-b space-y-0.5 ${
+                      themeMode === 'light' ? 'bg-slate-100/90 border-slate-200' : 'bg-black/40 border-white/10'
+                    }`}>
+                      <li>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onSelectCategory('all');
+                            if (onSelectSort) onSelectSort('top_rated');
+                            onNavigate('browse');
+                            onClose();
+                            setDrawerSubView('main');
+                            setIsVideosExpanded(false);
+                          }}
+                          className={`sidebar-interactive-pill w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-xs font-bold text-left transition-colors cursor-pointer ${
+                            themeMode === 'light'
+                              ? 'text-slate-800 hover:text-amber-600 hover:bg-slate-200'
+                              : 'text-zinc-200 hover:text-amber-400 hover:bg-white/5'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-base text-amber-500">trophy</span>
+                          <span>Top Rated</span>
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onSelectCategory('all');
+                            if (onSelectSort) onSelectSort('most_popular');
+                            onNavigate('browse');
+                            onClose();
+                            setDrawerSubView('main');
+                            setIsVideosExpanded(false);
+                          }}
+                          className={`sidebar-interactive-pill w-full pl-12 pr-5 py-2.5 flex items-center gap-3 text-xs font-bold text-left transition-colors cursor-pointer ${
+                            themeMode === 'light'
+                              ? 'text-slate-800 hover:text-rose-600 hover:bg-slate-200'
+                              : 'text-zinc-200 hover:text-rose-400 hover:bg-white/5'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-base text-rose-500">local_fire_department</span>
+                          <span>Most Popular</span>
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </li>
 
               {/* All Categories Drill-Down Folder */}
-              <li>
+              <li className="drawer-item-stagger">
                 <button
                   type="button"
                   onClick={() => setDrawerSubView('categories')}
-                  className={`w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer font-bold text-left group ${
+                  className={`sidebar-interactive-pill w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer font-bold text-left group ${
                     themeMode === 'light'
                       ? 'text-slate-900 hover:text-[#06b6d4] hover:bg-slate-100 active:bg-slate-200'
                       : 'text-zinc-100 hover:text-white hover:bg-white/10 active:bg-white/15'
@@ -397,14 +399,14 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               </li>
 
               {/* Popular Categories */}
-              <li>
+              <li className="drawer-item-stagger">
                 <button
                   type="button"
                   onClick={() => {
                     onNavigate('categories');
                     onClose();
                   }}
-                  className={`w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors cursor-pointer font-bold text-left ${
+                  className={`sidebar-interactive-pill w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors cursor-pointer font-bold text-left ${
                     themeMode === 'light'
                       ? 'text-slate-900 hover:text-[#10b981] hover:bg-slate-100 active:bg-slate-200'
                       : 'text-zinc-100 hover:text-white hover:bg-white/10 active:bg-white/15'
@@ -416,11 +418,11 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               </li>
 
               {/* Pornstars / Performers */}
-              <li>
+              <li className="drawer-item-stagger">
                 <button
                   type="button"
                   onClick={handlePerformersClick}
-                  className={`w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors cursor-pointer font-bold text-left ${
+                  className={`sidebar-interactive-pill w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors cursor-pointer font-bold text-left ${
                     themeMode === 'light'
                       ? 'text-slate-900 hover:text-[#f43f5e] hover:bg-slate-100 active:bg-slate-200'
                       : 'text-zinc-100 hover:text-white hover:bg-white/10 active:bg-white/15'
@@ -432,7 +434,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               </li>
 
               {/* Content Preference Filter (Straight / Gay / Lesbian) */}
-              <li className={`mobile-drawer-filter-section px-5 py-3.5 border-b space-y-2.5 ${
+              <li className={`drawer-item-stagger mobile-drawer-filter-section px-5 py-3.5 border-b space-y-2.5 ${
                 themeMode === 'light' ? 'bg-slate-100 border-slate-200' : 'bg-black/20 border-white/10'
               }`}>
                 <div className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider">
@@ -485,14 +487,14 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               </li>
 
               {/* Saved Videos / Bookmarks */}
-              <li>
+              <li className="drawer-item-stagger">
                 <button
                   type="button"
                   onClick={() => {
                     onNavigate('saved');
                     onClose();
                   }}
-                  className={`w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer font-bold text-left ${
+                  className={`sidebar-interactive-pill w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer font-bold text-left ${
                     themeMode === 'light'
                       ? 'text-slate-900 hover:text-[#ec4899] hover:bg-slate-100 active:bg-slate-200'
                       : 'text-zinc-100 hover:text-white hover:bg-white/10 active:bg-white/15'
@@ -516,14 +518,14 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
               {/* User Account / Sign In / Sign Out */}
               {userEmail ? (
-                <li>
+                <li className="drawer-item-stagger">
                   <button
                     type="button"
                     onClick={() => {
                       onClose();
                       if (onSignOut) onSignOut();
                     }}
-                    className={`w-full px-5 py-3.5 flex items-center justify-between transition-colors font-bold text-left cursor-pointer ${
+                    className={`sidebar-interactive-pill w-full px-5 py-3.5 flex items-center justify-between transition-colors font-bold text-left cursor-pointer ${
                       themeMode === 'light'
                         ? 'text-rose-600 hover:bg-rose-50'
                         : 'text-rose-400 hover:bg-rose-500/15'
@@ -536,14 +538,14 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                   </button>
                 </li>
               ) : (
-                <li>
+                <li className="drawer-item-stagger">
                   <button
                     type="button"
                     onClick={() => {
                       onClose();
                       onNavigate('signin');
                     }}
-                    className={`w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors cursor-pointer font-bold text-left ${
+                    className={`sidebar-interactive-pill w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors cursor-pointer font-bold text-left ${
                       themeMode === 'light'
                         ? 'text-slate-900 hover:text-emerald-600 hover:bg-slate-100'
                         : 'text-zinc-100 hover:text-white hover:bg-white/10'
@@ -557,14 +559,14 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
               {/* Admin Panel Quick Link */}
               {onOpenAdminPanel && (
-                <li>
+                <li className="drawer-item-stagger">
                   <button
                     type="button"
                     onClick={() => {
                       onClose();
                       onOpenAdminPanel();
                     }}
-                    className={`w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors font-bold text-left ${
+                    className={`sidebar-interactive-pill w-full px-5 py-3.5 flex items-center gap-3.5 transition-colors font-bold text-left ${
                       isAdminAuthenticated
                         ? themeMode === 'light'
                           ? 'text-emerald-700 bg-emerald-50'
@@ -582,7 +584,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
               {/* Upload Video Button */}
               {onOpenUpload && (
-                <li className="p-4">
+                <li className="drawer-item-stagger p-4">
                   <button
                     type="button"
                     onClick={() => {
@@ -599,17 +601,17 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             </ul>
           ) : (
             /* ── VIEW 2: CATEGORIES FOLDER DRILL-DOWN (Direct Smooth Scrolling List) ─── */
-            <ul className={`divide-y text-sm py-2 pb-28 animate-in fade-in slide-in-from-right-3 duration-150 ${
+            <ul className={`divide-y text-sm py-2 pb-28 ${
               themeMode === 'light' ? 'divide-slate-200 text-slate-900' : 'divide-white/5 text-white'
             }`}>
               {categories.map((cat) => {
                 const count = categoryCountMap[cat.id] ?? 0;
                 return (
-                  <li key={cat.id}>
+                  <li key={cat.id} className="drawer-item-stagger">
                     <button
                       type="button"
                       onClick={() => handleCategoryClick(cat.id)}
-                      className={`w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer text-left group ${
+                      className={`sidebar-interactive-pill w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer text-left group ${
                         themeMode === 'light'
                           ? 'text-slate-900 hover:text-[#ec4899] hover:bg-slate-100 active:bg-slate-200'
                           : 'text-zinc-100 hover:text-[#ec4899] hover:bg-white/5 active:bg-white/10'

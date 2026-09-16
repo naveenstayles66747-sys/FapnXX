@@ -229,26 +229,24 @@ export const Header: React.FC<HeaderProps> = ({
     }`}>
       {/* 1. Left Section: Hamburger + Brand Logo (Desktop) / Gender Button (Mobile) */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0 z-20">
-        {/* Hamburger Menu Button */}
+        {/* Hamburger Menu Button with Smooth Morphing Animation */}
         <button
           onClick={onToggleMobileDrawer}
-          className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 ${
+          className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 ${
             isBrazzers
-              ? 'bg-zinc-900 border border-amber-500/30 text-amber-400 hover:bg-zinc-800'
+              ? 'bg-zinc-900 border border-amber-500/30 text-amber-400 hover:bg-zinc-800 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+              : isMobileDrawerOpen
+              ? 'bg-rose-500/10 dark:bg-rose-500/20 text-[#e0358d] border border-rose-500/30 shadow-[0_0_12px_rgba(224,53,141,0.3)]'
               : 'bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700/80 text-zinc-800 dark:text-zinc-100'
           }`}
           aria-label={isMobileDrawerOpen ? "Close menu" : "Open menu"}
           title={isMobileDrawerOpen ? "Close menu" : "Open menu"}
         >
-          <span className={`material-symbols-outlined text-xl ${
-            isBrazzers
-              ? 'text-amber-400'
-              : isMobileDrawerOpen
-              ? 'text-[#e0358d]'
-              : ''
-          }`}>
-            {isMobileDrawerOpen ? 'close' : 'menu'}
-          </span>
+          <div className={`hamburger-morph-btn ${isMobileDrawerOpen ? 'is-open' : ''}`}>
+            <span className="hamburger-morph-line" />
+            <span className="hamburger-morph-line" />
+            <span className="hamburger-morph-line" />
+          </div>
         </button>
 
         {/* Brand Logo (Visible on Left in Desktop Web View) */}

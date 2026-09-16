@@ -336,7 +336,7 @@ video, iframe {
 @keyframes smoothDrawerSlideIn {
   0% {
     transform: translate3d(-100%, 0, 0);
-    opacity: 0.8;
+    opacity: 0.85;
   }
   100% {
     transform: translate3d(0, 0, 0);
@@ -347,20 +347,158 @@ video, iframe {
 @keyframes smoothBackdropFadeIn {
   0% {
     opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
   }
   100% {
     opacity: 1;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 }
 
 .mobile-drawer-anim {
-  animation: smoothDrawerSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: smoothDrawerSlideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
 }
 
 .mobile-drawer-backdrop-anim {
-  animation: smoothBackdropFadeIn 0.25s ease-out forwards;
-  will-change: opacity;
+  animation: smoothBackdropFadeIn 0.3s ease-out forwards;
+  will-change: opacity, backdrop-filter;
+}
+
+/* Staggered Cascade Entrance for Drawer Items */
+@keyframes drawerItemCascade {
+  0% {
+    opacity: 0;
+    transform: translate3d(-14px, 6px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.drawer-item-stagger {
+  animation: drawerItemCascade 0.32s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  will-change: transform, opacity;
+}
+
+.drawer-item-stagger:nth-child(1) { animation-delay: 0.04s; }
+.drawer-item-stagger:nth-child(2) { animation-delay: 0.07s; }
+.drawer-item-stagger:nth-child(3) { animation-delay: 0.10s; }
+.drawer-item-stagger:nth-child(4) { animation-delay: 0.13s; }
+.drawer-item-stagger:nth-child(5) { animation-delay: 0.16s; }
+.drawer-item-stagger:nth-child(6) { animation-delay: 0.19s; }
+.drawer-item-stagger:nth-child(7) { animation-delay: 0.22s; }
+.drawer-item-stagger:nth-child(8) { animation-delay: 0.25s; }
+.drawer-item-stagger:nth-child(9) { animation-delay: 0.28s; }
+.drawer-item-stagger:nth-child(10) { animation-delay: 0.31s; }
+.drawer-item-stagger:nth-child(n+11) { animation-delay: 0.34s; }
+
+/* Sidebar & Drawer Interactive Liquid Hover Indicator */
+.sidebar-interactive-pill {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.18s ease;
+  will-change: transform;
+}
+
+.sidebar-interactive-pill::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 3.5px;
+  height: 60%;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #ec4899, #f43f5e);
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.85);
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+}
+
+.sidebar-interactive-pill:hover::before,
+.sidebar-interactive-pill.active::before {
+  transform: translateY(-50%) scaleY(1);
+}
+
+.sidebar-interactive-pill:hover {
+  transform: translateX(4px);
+}
+
+.sidebar-interactive-pill:active {
+  transform: scale(0.98);
+}
+
+/* Category Accordion Smooth CSS Grid Dropdown */
+.accordion-grid-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.25s ease;
+  opacity: 0;
+}
+
+.accordion-grid-wrapper.expanded {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.accordion-grid-content {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Morphing Hamburger to 'X' Icon */
+.hamburger-morph-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
+
+.hamburger-morph-line {
+  position: absolute;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background-color: currentColor;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.2s ease;
+  transform-origin: center;
+}
+
+.hamburger-morph-line:nth-child(1) {
+  transform: translateY(-5px);
+}
+
+.hamburger-morph-line:nth-child(2) {
+  transform: translateY(0);
+}
+
+.hamburger-morph-line:nth-child(3) {
+  transform: translateY(5px);
+}
+
+.hamburger-morph-btn.is-open .hamburger-morph-line:nth-child(1) {
+  transform: translateY(0) rotate(45deg);
+}
+
+.hamburger-morph-btn.is-open .hamburger-morph-line:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.hamburger-morph-btn.is-open .hamburger-morph-line:nth-child(3) {
+  transform: translateY(0) rotate(-45deg);
 }
 
 /* Sidebar Item Micro-Interactions (Smooth Desktop & Mobile Hover) */
