@@ -421,7 +421,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
               </span>
             )}
 
-            {/* Interactive Real Rating % & Like Button */}
+            {/* Interactive Real Rating % & Like Button with Micro-Burst Animation */}
             <button
               type="button"
               onClick={handleLike}
@@ -434,7 +434,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
               aria-label={isLiked ? 'Unlike video' : 'Like video'}
             >
               <span
-                className={`material-symbols-outlined text-base transition-transform duration-200 ${isLiked ? 'scale-110' : ''}`}
+                className={`material-symbols-outlined text-base ${isLiked ? 'anim-heart-burst text-white' : ''}`}
                 style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
               >
                 thumb_up

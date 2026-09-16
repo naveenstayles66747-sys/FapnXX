@@ -23,14 +23,14 @@ export const AgeGateModal: React.FC<AgeGateModalProps> = ({ onConfirm, onDecline
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-[#050507]/95 backdrop-blur-2xl overflow-y-auto flex items-center justify-center p-4 sm:p-6 min-h-screen">
-      <div className="relative w-full max-w-lg bg-[#101014] rounded-3xl p-6 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.8)] text-center my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-300 border-0 outline-none">
+    <div className="fixed inset-0 z-[9999] bg-[#050507]/90 backdrop-blur-2xl overflow-y-auto flex items-center justify-center p-4 sm:p-6 min-h-screen">
+      <div className="relative w-full max-w-lg bg-[#101014]/95 backdrop-blur-3xl rounded-3xl p-6 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.85),0_0_30px_rgba(244,63,94,0.15)] text-center my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-300 border border-white/10 outline-none">
         {/* Ambient Subtle Glow Gradient inside card */}
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-rose-600/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-pink-600/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -left-24 w-48 h-48 bg-rose-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-pink-600/20 rounded-full blur-3xl pointer-events-none" />
 
-        {/* 18+ Shield Icon Badge */}
-        <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-500 text-white shadow-[0_0_30px_rgba(244,63,94,0.4)] mb-4 border-0">
+        {/* 18+ Shield Icon Badge with Pulse Glow */}
+        <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-500 text-white shadow-[0_0_30px_rgba(244,63,94,0.5)] mb-4 border-0 pulse-glow-badge">
           <span className="material-symbols-outlined text-3xl sm:text-4xl">verified_user</span>
         </div>
 

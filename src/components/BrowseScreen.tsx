@@ -629,7 +629,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
               if (setSearchQuery) setSearchQuery('');
               onSelectCategory('all');
             }}
-            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 border ${
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm pill-hover-glow cursor-pointer active:scale-95 border ${
               selectedCategory === 'all' && !cleanSearch
                 ? 'bg-gradient-to-r from-[#e0358d] to-[#ec4899] text-white font-extrabold border-[#e0358d] shadow-md shadow-[#e0358d]/30'
                 : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-[#18171c] dark:hover:bg-[#25242b] text-zinc-800 dark:text-zinc-200 border-zinc-300/80 dark:border-white/10 font-semibold'
@@ -649,7 +649,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                   if (setSearchQuery) setSearchQuery('');
                   onSelectCategory(cat.id);
                 }}
-                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 border ${
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm pill-hover-glow cursor-pointer active:scale-95 border ${
                   isSelected
                     ? 'bg-gradient-to-r from-[#e0358d] to-[#ec4899] text-white font-extrabold border-[#e0358d] shadow-md shadow-[#e0358d]/30'
                     : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-[#18171c] dark:hover:bg-[#25242b] text-zinc-800 dark:text-zinc-200 border-zinc-300/80 dark:border-white/10 font-semibold'

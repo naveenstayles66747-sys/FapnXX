@@ -267,9 +267,13 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </span>
           ) : (
-            <span className="text-xl md:text-2xl font-black tracking-tight whitespace-nowrap">
+            <span className="text-xl md:text-2xl font-black tracking-tight whitespace-nowrap flex items-center">
               <span className="text-[#e0358d] drop-shadow-[0_0_12px_rgba(224,53,141,0.6)] font-black">Fap</span>
               <span className="header-brand-nxx font-black">XX</span>
+              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-500 border border-rose-500/30 pulse-glow-badge ml-2 select-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                <span>18+ RTA</span>
+              </span>
             </span>
           )}
         </button>

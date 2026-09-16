@@ -666,7 +666,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           </div>
         )}
 
-        {/* Top-Left: Quick Save / Bookmark Button */}
+        {/* Top-Left: Quick Save / Bookmark Button with Micro-Pop Animation */}
         <button
           type="button"
           onClick={(e) => {
@@ -677,13 +677,13 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
           }}
           className={`thumb-save-btn absolute top-1.5 left-1.5 sm:top-2 sm:left-2 z-30 p-1 sm:p-1.5 rounded-md sm:rounded-lg backdrop-blur-md transition-all duration-200 ease-out shadow-lg flex items-center justify-center cursor-pointer ${
             isSaved
-              ? "bg-[#ec4899] text-white border border-[#ec4899] shadow-[0_0_10px_rgba(236,72,153,0.5)] opacity-100 scale-100"
+              ? "bg-[#ec4899] text-white border border-[#ec4899] shadow-[0_0_12px_rgba(236,72,153,0.6)] opacity-100 scale-100"
               : "opacity-0 group-hover:opacity-100 bg-black/70 hover:bg-black/90 text-white/90 hover:text-white border border-white/20 hover:scale-105 active:scale-90"
           }`}
           title={isSaved ? "Saved to Watch Later" : "Save to Watch Later"}
         >
           <span
-            className="material-symbols-outlined text-xs sm:text-sm"
+            className={`material-symbols-outlined text-xs sm:text-sm ${isSaved ? "anim-bookmark-pop" : ""}`}
             style={{ fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0" }}
           >
             bookmark

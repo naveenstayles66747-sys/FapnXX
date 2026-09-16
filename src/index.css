@@ -71,6 +71,78 @@
   animation: cardSmoothProgress linear infinite;
 }
 
+@keyframes heartBurst {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.35) rotate(-6deg);
+  }
+  70% {
+    transform: scale(0.92) rotate(4deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes bookmarkPop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.4) translateY(-2px);
+  }
+  75% {
+    transform: scale(0.9) translateY(1px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes subtlePulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.4), inset 0 0 4px rgba(244, 63, 94, 0.2);
+    border-color: rgba(244, 63, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(244, 63, 94, 0.75), inset 0 0 8px rgba(244, 63, 94, 0.4);
+    border-color: rgba(244, 63, 94, 0.8);
+  }
+}
+
+.anim-heart-burst {
+  animation: heartBurst 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.anim-bookmark-pop {
+  animation: bookmarkPop 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.pulse-glow-badge {
+  animation: subtlePulseGlow 2.4s ease-in-out infinite;
+}
+
+/* Category Pill Hover Glow & Gradient Shift */
+.pill-hover-glow {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+}
+
+.pill-hover-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px -3px rgba(236, 72, 153, 0.35);
+  border-color: rgba(236, 72, 153, 0.6);
+}
+
+.pill-hover-glow:active {
+  transform: scale(0.95);
+}
+
 /* Lenis Smooth Scrolling Standard Styles */
 html.lenis, html.lenis body {
   height: auto;
