@@ -92,7 +92,7 @@ html.lenis, html.lenis body {
   pointer-events: none;
 }
 
-/* GPU Hardware Acceleration & Micro-Animations */
+/* GPU Hardware Acceleration & Micro-Animations (Following Golden Performance Rules) */
 .gpu-smooth {
   transform: translate3d(0, 0, 0);
   -webkit-transform: translate3d(0, 0, 0);
@@ -103,10 +103,40 @@ html.lenis, html.lenis body {
 }
 
 .smooth-card-transition {
-  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-              border-color 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, box-shadow;
+}
+
+/* Subtle & Soft Video Card Hover Lift */
+.group:hover .video-card-container {
+  transform: translateY(-4px) scale(1.012);
+  box-shadow: 0 14px 30px -6px rgba(0, 0, 0, 0.5), 0 0 18px rgba(236, 72, 153, 0.12);
+}
+
+.video-card-container {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+}
+
+/* Micro-Interaction Button Soft Hover & Glow Expansion */
+.btn-interactive {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+}
+
+.btn-interactive:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 22px -4px rgba(236, 72, 153, 0.35);
+}
+
+.btn-interactive:active {
+  transform: scale(0.96);
 }
 
 @keyframes skeletonWave {
@@ -119,7 +149,7 @@ html.lenis, html.lenis body {
 }
 
 .animate-skeleton-wave {
-  animation: skeletonWave 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: skeletonWave 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 
 
