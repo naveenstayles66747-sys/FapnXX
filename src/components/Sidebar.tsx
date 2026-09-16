@@ -52,7 +52,11 @@ const SidebarComponent: React.FC<SidebarProps> = ({
   }, [categories, videos]);
 
   return (
-    <nav className="hidden lg:flex flex-col justify-between w-64 bg-zinc-50 dark:bg-[#1c1b1d] border-r border-zinc-200 dark:border-white/5 shrink-0 overflow-y-auto py-6 fixed left-0 top-20 h-[calc(100vh-5rem)] z-40 transition-colors">
+    <nav 
+      data-lenis-prevent="true"
+      style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+      className="hidden lg:flex flex-col w-64 bg-zinc-50 dark:bg-[#1c1b1d] border-r border-zinc-200 dark:border-white/5 shrink-0 overflow-y-auto py-6 pb-12 fixed left-0 top-20 h-[calc(100vh-5rem)] z-40 transition-colors overscroll-contain touch-pan-y custom-scrollbar"
+    >
       <div className="space-y-2">
         <div className="px-6 mb-2">
           <h2 className="text-xs font-bold text-zinc-700 dark:text-[#debec8] uppercase tracking-widest">

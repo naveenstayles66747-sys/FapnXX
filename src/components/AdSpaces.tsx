@@ -903,11 +903,9 @@ export const NativeRecommendationAd: React.FC<{
   title?: string;
   reloadKey?: string | number;
 }> = ({ className = "", title = "Sponsored Recommendations", reloadKey }) => {
-  const [containerRef, isNear] = useIsNearViewport("350px");
-  const [isFilled, setIsFilled] = useState<boolean>(false);
-  const [hasTimedOut, setHasTimedOut] = useState<boolean>(false);
+  const [containerRef, isNear] = useIsNearViewport("800px");
   const zoneId = AD_ZONES.NATIVE_RECOMMENDED || "6010176";
-  const instanceIdRef = useRef<string>(`exo_native_${Math.random().toString(36).substring(2, 9)}`);
+  const mountedRef = useRef<boolean>(false);
 
   const triggerAdServe = useCallback(() => {
     try {
@@ -928,9 +926,6 @@ export const NativeRecommendationAd: React.FC<{
     if (!isNear) return;
     const el = containerRef.current;
     if (!el) return;
-
-    setIsFilled(false);
-    setHasTimedOut(false);
 
     try {
       el.innerHTML = "";
@@ -969,11 +964,11 @@ export const NativeRecommendationAd: React.FC<{
       triggerAdServe();
       requestAnimationFrame(triggerAdServe);
       const timers = [
-        setTimeout(triggerAdServe, 80),
-        setTimeout(triggerAdServe, 250),
-        setTimeout(triggerAdServe, 600),
+        setTimeout(triggerAdServe, 60),
+        setTimeout(triggerAdServe, 200),
+        setTimeout(triggerAdServe, 500),
         setTimeout(triggerAdServe, 1200),
-        setTimeout(triggerAdServe, 2400),
+        setTimeout(triggerAdServe, 2500),
       ];
 
       return () => {
@@ -988,66 +983,27 @@ export const NativeRecommendationAd: React.FC<{
     if (!isNear) return;
     const clearTimers = mountAd();
 
-    // Observe DOM mutations inside container to detect when ExoClick has populated content
-    const el = containerRef.current;
-    let observer: MutationObserver | null = null;
-
-    if (el) {
-      observer = new MutationObserver(() => {
-        const ins = el.querySelector("ins");
-        const hasContent = Boolean(
-          (ins && (ins.children.length > 0 || ins.innerHTML.trim().length > 0 || ins.clientHeight > 30)) ||
-          el.querySelector("iframe") ||
-          el.querySelector("div[class*='exo']")
-        );
-        if (hasContent) {
-          setIsFilled(true);
-        }
-      });
-      observer.observe(el, { childList: true, subtree: true, attributes: true });
-    }
-
-    // Safety timeout: if ad fails to fill after 4.5s, mark as timed out
-    const timeoutTimer = setTimeout(() => {
-      if (el) {
-        const ins = el.querySelector("ins");
-        const hasContent = Boolean(
-          (ins && (ins.children.length > 0 || ins.innerHTML.trim().length > 0 || ins.clientHeight > 30)) ||
-          el.querySelector("iframe")
-        );
-        if (hasContent) {
-          setIsFilled(true);
-        } else {
-          setHasTimedOut(true);
-        }
-      }
-    }, 4500);
-
     const handleRefresh = () => {
       triggerAdServe();
     };
+
     window.addEventListener("exoclick-refresh-ads", handleRefresh);
     window.addEventListener("popstate", handleRefresh);
     window.addEventListener("pageshow", handleRefresh);
+    window.addEventListener("resize", handleRefresh);
 
     return () => {
       if (clearTimers) clearTimers();
-      if (observer) observer.disconnect();
-      clearTimeout(timeoutTimer);
       window.removeEventListener("exoclick-refresh-ads", handleRefresh);
       window.removeEventListener("popstate", handleRefresh);
       window.removeEventListener("pageshow", handleRefresh);
+      window.removeEventListener("resize", handleRefresh);
     };
-  }, [mountAd, triggerAdServe, reloadKey]);
-
-  // If timed out with no ad content filled, collapse cleanly without blank gap
-  if (hasTimedOut && !isFilled) {
-    return null;
-  }
+  }, [mountAd, triggerAdServe, reloadKey, isNear]);
 
   return (
-    <section className={`native-recommendation-wrapper w-full my-3 transition-opacity duration-300 ${isFilled ? "opacity-100" : "opacity-90"} ${className}`}>
-      {title && isFilled && (
+    <section className={`native-recommendation-wrapper w-full my-3 transition-opacity duration-300 ${className}`}>
+      {title && (
         <div className="flex items-center gap-2 mb-2.5">
           <span className="material-symbols-outlined text-rose-500 text-lg">recommend</span>
           <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white tracking-wide">{title}</h3>
@@ -1055,8 +1011,8 @@ export const NativeRecommendationAd: React.FC<{
       )}
       <div
         ref={containerRef}
-        id={instanceIdRef.current}
-        className="w-full overflow-hidden transition-all duration-300"
+        id="exoclick-native-recommended-zone-6010176"
+        className="w-full overflow-hidden transition-all duration-300 min-h-[40px]"
       />
     </section>
   );

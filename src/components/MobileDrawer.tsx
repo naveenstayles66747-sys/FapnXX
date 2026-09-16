@@ -116,103 +116,145 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
       />
 
       {/* Main Drawer Container */}
-      <aside className={`mobile-drawer-aside mobile-drawer-anim relative w-[320px] max-w-[85vw] h-full flex flex-col z-20 select-none transition-colors border-r ${
+      <aside className={`mobile-drawer-aside mobile-drawer-anim relative w-[320px] max-w-[85vw] h-full flex flex-col z-20 transition-colors border-r overscroll-contain ${
         themeMode === 'light'
           ? 'bg-white text-slate-900 border-slate-200 shadow-[10px_0_40px_rgba(0,0,0,0.15)]'
           : 'bg-[#131217] text-white border-white/10 shadow-[20px_0_60px_rgba(0,0,0,0.95)]'
       }`}>
-        {/* ── TOP ACTION BAR (Theme Toggle + Login + Sign Up + Close) ─────────── */}
-        <div className={`mobile-drawer-top-bar p-3 border-b flex items-center justify-between gap-2 shrink-0 ${
-          themeMode === 'light' ? 'bg-slate-100 border-slate-200 text-slate-900' : 'bg-[#18171d] border-white/10 text-white'
-        }`}>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* Day / Night Theme Switcher Pill */}
+        {/* ── TOP ACTION BAR (Theme Toggle + Login + Sign Up + Close OR Back Header in Categories View) ─────────── */}
+        {drawerSubView === 'main' ? (
+          <div className={`mobile-drawer-top-bar p-3 border-b flex items-center justify-between gap-2 shrink-0 ${
+            themeMode === 'light' ? 'bg-slate-100 border-slate-200 text-slate-900' : 'bg-[#18171d] border-white/10 text-white'
+          }`}>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Day / Night Theme Switcher Pill */}
+              <button
+                type="button"
+                onClick={onToggleTheme}
+                className={`mobile-drawer-theme-btn w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border ${
+                  themeMode === 'light'
+                    ? 'bg-white hover:bg-slate-200 text-amber-500 border-slate-300'
+                    : 'bg-zinc-800 hover:bg-zinc-700 text-amber-400 border-white/10'
+                }`}
+                title={themeMode === 'dark' ? 'Switch to Daytime Light Mode' : 'Switch to Nighttime Dark Mode'}
+                aria-label="Toggle Theme Mode"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {themeMode === 'dark' ? 'light_mode' : 'dark_mode'}
+                </span>
+              </button>
+            </div>
+
+            {/* User Auth Buttons */}
+            {userEmail ? (
+              <div className="flex-1 flex items-center justify-end gap-1.5 overflow-hidden">
+                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs truncate shadow-sm ${
+                  themeMode === 'light'
+                    ? 'bg-white border-slate-300 text-slate-900'
+                    : 'bg-zinc-800 border-white/10 text-zinc-100'
+                }`}>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="truncate font-semibold text-[11px]">{userEmail.split('@')[0]}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSignInClick}
+                  className="px-2.5 py-1.5 bg-[#ec4899] hover:bg-[#f751a1] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer shrink-0 shadow-sm"
+                >
+                  Profile
+                </button>
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleSignInClick}
+                  className={`mobile-drawer-auth-btn flex-1 py-2 px-2.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1 active:scale-95 shadow-sm border ${
+                    themeMode === 'light'
+                      ? 'bg-white hover:bg-slate-200 text-slate-900 border-slate-300'
+                      : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-white/10'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-xs text-rose-500">key</span>
+                  <span className={themeMode === 'light' ? 'text-slate-900 font-extrabold' : 'text-zinc-100'}>LOGIN</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSignInClick}
+                  className={`mobile-drawer-auth-btn flex-1 py-2 px-2.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1 active:scale-95 shadow-sm border ${
+                    themeMode === 'light'
+                      ? 'bg-white hover:bg-slate-200 text-slate-900 border-slate-300'
+                      : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-white/10'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-xs text-pink-500">lock</span>
+                  <span className={themeMode === 'light' ? 'text-slate-900 font-extrabold' : 'text-zinc-100'}>SIGN UP</span>
+                </button>
+              </div>
+            )}
+
+            {/* Close Drawer Button */}
             <button
               type="button"
-              onClick={onToggleTheme}
-              className={`mobile-drawer-theme-btn w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border ${
+              onClick={onClose}
+              className={`mobile-drawer-close-btn w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border ml-1 ${
                 themeMode === 'light'
-                  ? 'bg-white hover:bg-slate-200 text-amber-500 border-slate-300'
-                  : 'bg-zinc-800 hover:bg-zinc-700 text-amber-400 border-white/10'
+                  ? 'bg-white hover:bg-rose-600 text-slate-800 hover:text-white border-slate-300'
+                  : 'bg-zinc-800 hover:bg-rose-600 text-zinc-300 hover:text-white border-white/10'
               }`}
-              title={themeMode === 'dark' ? 'Switch to Daytime Light Mode' : 'Switch to Nighttime Dark Mode'}
-              aria-label="Toggle Theme Mode"
+              title="Close menu"
+              aria-label="Close menu"
             >
-              <span className="material-symbols-outlined text-[18px]">
-                {themeMode === 'dark' ? 'light_mode' : 'dark_mode'}
-              </span>
+              <span className="material-symbols-outlined text-lg">close</span>
             </button>
           </div>
-
-          {/* User Auth Buttons */}
-          {userEmail ? (
-            <div className="flex-1 flex items-center justify-end gap-1.5 overflow-hidden">
-              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs truncate shadow-sm ${
+        ) : (
+          /* ── TOP ACTION BAR FOR CATEGORIES FOLDER VIEW (Back Button + Header + Close Button) ── */
+          <div className={`mobile-drawer-top-bar mobile-drawer-back-header p-3 border-b flex items-center justify-between gap-2 shrink-0 ${
+            themeMode === 'light' ? 'bg-slate-100 border-slate-200' : 'bg-[#18171d] border-white/10'
+          }`}>
+            <button
+              type="button"
+              onClick={() => setDrawerSubView('main')}
+              className={`mobile-drawer-auth-btn mobile-drawer-back-btn px-3 py-1.5 rounded-lg font-bold text-xs uppercase flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95 shadow-sm border ${
                 themeMode === 'light'
-                  ? 'bg-white border-slate-300 text-slate-900'
-                  : 'bg-zinc-800 border-white/10 text-zinc-100'
-              }`}>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                <span className="truncate font-semibold text-[11px]">{userEmail.split('@')[0]}</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleSignInClick}
-                className="px-2.5 py-1.5 bg-[#ec4899] hover:bg-[#f751a1] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer shrink-0 shadow-sm"
-              >
-                Profile
-              </button>
-            </div>
-          ) : (
-            <div className="flex-1 flex items-center justify-end gap-1.5">
-              <button
-                type="button"
-                onClick={handleSignInClick}
-                className={`mobile-drawer-auth-btn flex-1 py-2 px-2.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1 active:scale-95 shadow-sm border ${
-                  themeMode === 'light'
-                    ? 'bg-white hover:bg-slate-200 text-slate-900 border-slate-300'
-                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-white/10'
-                }`}
-              >
-                <span className="material-symbols-outlined text-xs text-rose-500">key</span>
-                <span className={themeMode === 'light' ? 'text-slate-900 font-extrabold' : 'text-zinc-100'}>LOGIN</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleSignInClick}
-                className={`mobile-drawer-auth-btn flex-1 py-2 px-2.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1 active:scale-95 shadow-sm border ${
-                  themeMode === 'light'
-                    ? 'bg-white hover:bg-slate-200 text-slate-900 border-slate-300'
-                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-white/10'
-                }`}
-              >
-                <span className="material-symbols-outlined text-xs text-pink-500">lock</span>
-                <span className={themeMode === 'light' ? 'text-slate-900 font-extrabold' : 'text-zinc-100'}>SIGN UP</span>
-              </button>
-            </div>
-          )}
+                  ? 'bg-white hover:bg-slate-200 text-slate-900 border-slate-300'
+                  : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-white/10'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm text-[#ec4899]">arrow_back</span>
+              <span>Back</span>
+            </button>
+            <span className={`text-xs font-extrabold uppercase tracking-wider truncate px-1 ${
+              themeMode === 'light' ? 'text-slate-900' : 'text-zinc-200'
+            }`}>
+              All Categories ({categories.length})
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              className={`mobile-drawer-close-btn w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border ml-1 ${
+                themeMode === 'light'
+                  ? 'bg-white hover:bg-rose-600 text-slate-800 hover:text-white border-slate-300'
+                  : 'bg-zinc-800 hover:bg-rose-600 text-zinc-300 hover:text-white border-white/10'
+              }`}
+              title="Close menu"
+              aria-label="Close menu"
+            >
+              <span className="material-symbols-outlined text-lg">close</span>
+            </button>
+          </div>
+        )}
 
-          {/* Close Drawer Button */}
-          <button
-            type="button"
-            onClick={onClose}
-            className={`mobile-drawer-close-btn w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 shadow-sm border ml-1 ${
-              themeMode === 'light'
-                ? 'bg-white hover:bg-rose-600 text-slate-800 hover:text-white border-slate-300'
-                : 'bg-zinc-800 hover:bg-rose-600 text-zinc-300 hover:text-white border-white/10'
-            }`}
-            title="Close menu"
-            aria-label="Close menu"
-          >
-            <span className="material-symbols-outlined text-lg">close</span>
-          </button>
-        </div>
-
-        {/* ── DRAWER CONTENT BODY WITH SCROLL SUPPORT ────────────────── */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        {/* ── DRAWER CONTENT BODY WITH FLUID SCROLL SUPPORT ────────────────── */}
+        <div 
+          data-lenis-prevent="true"
+          className="flex-1 overflow-y-auto overscroll-contain touch-pan-y custom-scrollbar min-h-0"
+          style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+        >
           {drawerSubView === 'main' ? (
             /* ── VIEW 1: MAIN MENU VIEW ─────────────────────────────── */
-            <ul className={`py-2 divide-y text-sm ${
+            <ul className={`py-2 pb-24 divide-y text-sm ${
               themeMode === 'light' ? 'divide-slate-200 text-slate-900' : 'divide-white/5 text-white'
             }`}>
               {/* Home */}
@@ -556,72 +598,46 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               )}
             </ul>
           ) : (
-            /* ── VIEW 2: CATEGORIES FOLDER DRILL-DOWN ───────────────── */
-            <div className="flex flex-col h-full animate-in slide-in-from-right-4 duration-200">
-              {/* Back Button Header */}
-              <div className={`mobile-drawer-top-bar p-3 border-b flex items-center justify-between shrink-0 ${
-                themeMode === 'light' ? 'bg-slate-100 border-slate-200' : 'bg-[#18171d] border-white/10'
-              }`}>
-                <button
-                  type="button"
-                  onClick={() => setDrawerSubView('main')}
-                  className={`mobile-drawer-auth-btn px-3.5 py-1.5 rounded-lg font-bold text-xs uppercase flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95 shadow-sm border ${
-                    themeMode === 'light'
-                      ? 'bg-white hover:bg-slate-200 text-slate-900 border-slate-300'
-                      : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-white/10'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-sm text-[#ec4899]">arrow_back</span>
-                  <span>Back</span>
-                </button>
-                <span className={`text-xs font-extrabold uppercase tracking-wider pr-2 ${
-                  themeMode === 'light' ? 'text-slate-900' : 'text-zinc-200'
-                }`}>
-                  All Categories ({categories.length})
-                </span>
-              </div>
-
-              {/* Scrollable Categories List */}
-              <ul className={`divide-y text-sm py-1 ${
-                themeMode === 'light' ? 'divide-slate-200' : 'divide-white/5'
-              }`}>
-                {categories.map((cat) => {
-                  const count = categoryCountMap[cat.id] ?? 0;
-                  return (
-                    <li key={cat.id}>
-                      <button
-                        type="button"
-                        onClick={() => handleCategoryClick(cat.id)}
-                        className={`w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer text-left group ${
+            /* ── VIEW 2: CATEGORIES FOLDER DRILL-DOWN (Direct Smooth Scrolling List) ─── */
+            <ul className={`divide-y text-sm py-2 pb-28 animate-in fade-in slide-in-from-right-3 duration-150 ${
+              themeMode === 'light' ? 'divide-slate-200 text-slate-900' : 'divide-white/5 text-white'
+            }`}>
+              {categories.map((cat) => {
+                const count = categoryCountMap[cat.id] ?? 0;
+                return (
+                  <li key={cat.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleCategoryClick(cat.id)}
+                      className={`w-full px-5 py-3.5 flex items-center justify-between transition-colors cursor-pointer text-left group ${
+                        themeMode === 'light'
+                          ? 'text-slate-900 hover:text-[#ec4899] hover:bg-slate-100 active:bg-slate-200'
+                          : 'text-zinc-100 hover:text-[#ec4899] hover:bg-white/5 active:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="material-symbols-outlined text-lg text-[#ec4899]">{cat.icon || 'category'}</span>
+                        <span className={`font-bold text-xs capitalize group-hover:text-[#ec4899] transition-colors ${
+                          themeMode === 'light' ? 'text-slate-900 font-bold' : 'text-zinc-100'
+                        }`}>
+                          {cat.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded border ${
                           themeMode === 'light'
-                            ? 'text-slate-900 hover:text-[#ec4899] hover:bg-slate-100 active:bg-slate-200'
-                            : 'text-zinc-100 hover:text-[#ec4899] hover:bg-white/5 active:bg-white/10'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="material-symbols-outlined text-lg text-[#ec4899]">{cat.icon || 'category'}</span>
-                          <span className={`font-bold text-xs capitalize group-hover:text-[#ec4899] transition-colors ${
-                            themeMode === 'light' ? 'text-slate-900 font-bold' : 'text-zinc-100'
-                          }`}>
-                            {cat.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded border ${
-                            themeMode === 'light'
-                              ? 'text-slate-700 bg-slate-200 border-slate-300'
-                              : 'text-zinc-400 bg-white/5 border-transparent'
-                          }`}>
-                            {count}
-                          </span>
-                          <span className="material-symbols-outlined text-xs text-zinc-400 group-hover:text-[#ec4899] transition-colors">chevron_right</span>
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
+                            ? 'text-slate-700 bg-slate-200 border-slate-300'
+                            : 'text-zinc-400 bg-white/5 border-transparent'
+                        }`}>
+                          {count}
+                        </span>
+                        <span className="material-symbols-outlined text-xs text-zinc-400 group-hover:text-[#ec4899] transition-colors">chevron_right</span>
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
       </aside>

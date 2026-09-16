@@ -29,6 +29,27 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(236, 72, 153, 0.4) transparent;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(236, 72, 153, 0.3);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(236, 72, 153, 0.6);
+  }
+
   .pb-safe {
     padding-bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
   }
@@ -1837,8 +1858,6 @@ ins[data-zoneid="6010176"] {
 ins[data-zoneid="6010176"] iframe {
   width: 100% !important;
   max-width: 100% !important;
-  min-height: 0 !important;
-  height: auto !important;
   border: none !important;
   display: block !important;
   margin: 0 auto !important;
