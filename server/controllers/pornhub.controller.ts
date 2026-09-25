@@ -52,7 +52,17 @@ export const pornhubController = {
         autoPublish: true,
       });
 
-      return responseUtil.success(res, result, `Imported and published ${result.count} videos to Firestore successfully!`);
+      let importedCount = 0;
+      if (result.videos && result.videos.length > 0) {
+        const importRes = await pornhubService.importToFirestore(result.videos);
+        importedCount = importRes.imported;
+      }
+
+      return responseUtil.success(
+        res,
+        { ...result, imported: importedCount },
+        `Imported and published ${importedCount} videos to Firestore successfully!`
+      );
     } catch (err: any) {
       next(err);
     }

@@ -518,7 +518,6 @@ export default function App() {
 
   const handleUploadSuccess = (newVideo: Video) => {
     setVideosList((prev) => [newVideo, ...prev]);
-    videoService.saveVideo(newVideo);
     startTransition(() => {
       setSelectedVideo(newVideo);
       setCurrentScreen('video-detail');

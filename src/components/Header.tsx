@@ -154,6 +154,9 @@ export const Header: React.FC<HeaderProps> = ({
       if (langDropdownRef.current && !langDropdownRef.current.contains(target)) {
         setIsLangMenuOpen(false);
       }
+      if (desktopSearchRef.current && !desktopSearchRef.current.contains(target)) {
+        setIsSuggestionsOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);

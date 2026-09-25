@@ -144,10 +144,11 @@ export const AdBanner: React.FC<{
 
   useEffect(() => {
     if (!isNear) return;
-    const clearTimers = renderAd();
+    let clearTimers = renderAd();
 
     const handleRefresh = () => {
-      renderAd();
+      if (clearTimers) clearTimers();
+      clearTimers = renderAd();
       triggerAdServe();
     };
 
@@ -234,20 +235,27 @@ export const StickyBottomLeaderboard: React.FC = () => {
       };
 
       triggerAdServe();
-      setTimeout(triggerAdServe, 100);
-      setTimeout(triggerAdServe, 400);
-      setTimeout(triggerAdServe, 1000);
+      const timers = [
+        setTimeout(triggerAdServe, 100),
+        setTimeout(triggerAdServe, 400),
+        setTimeout(triggerAdServe, 1000),
+      ];
+      return () => timers.forEach(clearTimeout);
     } catch (e) {
       console.warn("[ExoClick] Sticky leaderboard error:", e);
     }
   }, [isDismissed]);
 
   useEffect(() => {
-    renderAd();
-    const handleTrigger = () => renderAd();
+    let clearTimers = renderAd();
+    const handleTrigger = () => {
+      if (clearTimers) clearTimers();
+      clearTimers = renderAd();
+    };
     window.addEventListener("exoclick-refresh-ads", handleTrigger);
     window.addEventListener("popstate", handleTrigger);
     return () => {
+      if (clearTimers) clearTimers();
       window.removeEventListener("exoclick-refresh-ads", handleTrigger);
       window.removeEventListener("popstate", handleTrigger);
     };
@@ -512,10 +520,13 @@ export const MobileInstantMessage: React.FC = () => {
       };
 
       triggerAdServe();
-      setTimeout(triggerAdServe, 80);
-      setTimeout(triggerAdServe, 300);
-      setTimeout(triggerAdServe, 700);
-      setTimeout(triggerAdServe, 1500);
+      const timers = [
+        setTimeout(triggerAdServe, 80),
+        setTimeout(triggerAdServe, 300),
+        setTimeout(triggerAdServe, 700),
+        setTimeout(triggerAdServe, 1500),
+      ];
+      return () => timers.forEach(clearTimeout);
     } catch (e) {
       console.warn("[ExoClick] Mobile instant message error:", e);
     }
@@ -523,12 +534,19 @@ export const MobileInstantMessage: React.FC = () => {
 
   useEffect(() => {
     if (!isMobile) return;
-    const t = setTimeout(() => renderAd(), 5000);
-    const handleRefresh = () => renderAd();
+    let clearTimers: (() => void) | undefined;
+    const t = setTimeout(() => {
+      clearTimers = renderAd();
+    }, 5000);
+    const handleRefresh = () => {
+      if (clearTimers) clearTimers();
+      clearTimers = renderAd();
+    };
     window.addEventListener("exoclick-refresh-ads", handleRefresh);
     window.addEventListener("popstate", handleRefresh);
     return () => {
       clearTimeout(t);
+      if (clearTimers) clearTimers();
       window.removeEventListener("exoclick-refresh-ads", handleRefresh);
       window.removeEventListener("popstate", handleRefresh);
     };

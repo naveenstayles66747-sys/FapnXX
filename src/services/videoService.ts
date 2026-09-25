@@ -1290,9 +1290,11 @@ export class VideoService {
    */
   async saveComment(comment: VideoComment): Promise<VideoComment> {
     const id = comment.id || `comment_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const currentUid = auth.currentUser?.uid || undefined;
     const fullComment: VideoComment = {
       ...comment,
       id,
+      userId: comment.userId || currentUid,
       createdAt: comment.createdAt || new Date().toISOString(),
       likesCount: typeof comment.likesCount === 'number' ? comment.likesCount : 0,
     };

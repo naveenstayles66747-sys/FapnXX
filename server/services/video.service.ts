@@ -94,73 +94,19 @@ export const videoServiceBackend = {
     const page = Math.max(1, options?.page || 1);
     const limit = Math.min(100, Math.max(1, options?.limit || 24));
 
-    // 1. Direct Firestore query as authoritative single source of truth
-    try {
-      const snap = await adminDb.collection('videos').get();
-      if (!snap.empty) {
-        let list: VideoRecord[] = [];
-        snap.forEach((doc) => {
-          const data = doc.data() as VideoRecord;
-          const record = { ...data, id: doc.id };
-          list.push(record);
-          videos.set(doc.id, record);
-        });
-
-        // By default, public listing only returns PUBLISHED videos unless requested by admin
-        if (!options?.includeUnpublished) {
-          list = list.filter((v) => v.status === VideoStatus.PUBLISHED || !v.status);
-        } else if (options?.status) {
-          list = list.filter((v) => v.status === options.status);
+    // 1. If in-memory cache is empty, populate from Firestore
+    if (videos.size === 0) {
+      try {
+        const snap = await adminDb.collection('videos').limit(500).get();
+        if (!snap.empty) {
+          snap.forEach((doc) => {
+            const data = doc.data() as VideoRecord;
+            videos.set(doc.id, { ...data, id: doc.id });
+          });
         }
-
-        if (options?.category && options.category !== 'all') {
-          const cat = options.category.toLowerCase();
-          list = list.filter(
-            (v) =>
-              v.category?.toLowerCase() === cat ||
-              v.categories?.some((c) => c.toLowerCase() === cat)
-          );
-        }
-
-        if (options?.orientation && options.orientation !== 'all') {
-          const ori = options.orientation.toLowerCase();
-          list = list.filter((v) => !v.orientation || v.orientation.toLowerCase() === ori);
-        }
-
-        if (options?.search) {
-          const q = options.search.toLowerCase();
-          list = list.filter(
-            (v) =>
-              v.title?.toLowerCase().includes(q) ||
-              v.description?.toLowerCase().includes(q) ||
-              v.tags?.some((t) => t.toLowerCase().includes(q)) ||
-              v.models_actors?.some((m) => m.toLowerCase().includes(q)) ||
-              v.performerName?.toLowerCase().includes(q)
-          );
-        }
-
-        // Sort order
-        if (options?.sort === 'views') {
-          list.sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0));
-        } else if (options?.sort === 'likes') {
-          list.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
-        } else {
-          list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-        }
-
-        const total = list.length;
-        const startIndex = (page - 1) * limit;
-        const paginated = list.slice(startIndex, startIndex + limit);
-
-        return {
-          videos: paginated,
-          total,
-          page,
-          totalPages: Math.ceil(total / limit) || 1,
-        };
+      } catch (err: any) {
+        console.warn('⚠️ [Firestore VideoService] Query notice:', err.message);
       }
-    } catch (err: any) {
-      console.warn('⚠️ [Firestore VideoService] Query notice:', err.message);
     }
 
     // 2. Memory cache fallback
@@ -410,7 +356,30 @@ export const videoServiceBackend = {
       }
     }
     if (!video) {
-      throw new Error('Video not found.');
+      // Dynamic fallback video initialization for curated/affiliate videos not yet in Firestore
+      video = {
+        id: videoId,
+        title: 'Video',
+        category: 'trending',
+        categoryLabel: 'Trending',
+        tags: ['HD'],
+        thumbnail: '',
+        duration: '10:00',
+        quality: 'HD',
+        views: '1 view',
+        viewsCount: 1,
+        likesCount: 0,
+        rating: '95%',
+        timeAgo: 'Just now',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        performerName: '',
+        description: '',
+        status: VideoStatus.PUBLISHED,
+        createdBy: 'system',
+        version: 1,
+      };
+      videos.set(videoId, video);
     }
 
     const cooldownKey = `${videoId}_${clientIdentifier}`;
@@ -451,7 +420,29 @@ export const videoServiceBackend = {
       }
     }
     if (!video) {
-      throw new Error('Video not found.');
+      video = {
+        id: videoId,
+        title: 'Video',
+        category: 'trending',
+        categoryLabel: 'Trending',
+        tags: ['HD'],
+        thumbnail: '',
+        duration: '10:00',
+        quality: 'HD',
+        views: '100 views',
+        viewsCount: 100,
+        likesCount: isLike ? 1 : 0,
+        rating: isLike ? '100%' : '95%',
+        timeAgo: 'Just now',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        performerName: '',
+        description: '',
+        status: VideoStatus.PUBLISHED,
+        createdBy: 'system',
+        version: 1,
+      };
+      videos.set(videoId, video);
     }
 
     const delta = isLike ? 1 : -1;
@@ -479,3 +470,4 @@ export const videoServiceBackend = {
     return { likesCount: video.likesCount, rating: video.rating };
   },
 };
+

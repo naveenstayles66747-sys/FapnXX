@@ -109,11 +109,16 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     }
   }, [video.id, video.viewsCount, video.views, video.likesCount, isGuest]);
 
-  // Keep latest onVideoUpdated callback in a ref to prevent infinite re-render loops
+  // Keep latest onVideoUpdated callback and views count in refs to prevent infinite re-render loops
   const onVideoUpdatedRef = useRef(onVideoUpdated);
   useEffect(() => {
     onVideoUpdatedRef.current = onVideoUpdated;
   }, [onVideoUpdated]);
+
+  const currentViewsCountRef = useRef(currentViewsCount);
+  useEffect(() => {
+    currentViewsCountRef.current = currentViewsCount;
+  }, [currentViewsCount]);
 
   // Real-time Firestore document listener for live view & like updates
   useEffect(() => {
@@ -169,7 +174,8 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
           hasCountedRef.current = true;
           markViewedInSession(video.id);
 
-          videoService.incrementVideoViews(video.id, currentViewsCount).then((newViewsCount) => {
+          const baseline = currentViewsCountRef.current;
+          videoService.incrementVideoViews(video.id, baseline).then((newViewsCount) => {
             setCurrentViewsCount(newViewsCount);
             if (onVideoUpdatedRef.current) {
               onVideoUpdatedRef.current(video.id, {
@@ -184,7 +190,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [video.id, currentViewsCount]);
+  }, [video.id]);
 
   const [likeToastMsg, setLikeToastMsg] = useState<string | null>(null);
 

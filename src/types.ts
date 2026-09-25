@@ -140,11 +140,13 @@ export interface CategoryRequest {
 export interface VideoComment {
   id: string;
   videoId: string;
+  userId?: string;
   userName: string;
   userAvatar?: string;
   text: string;
   createdAt: string;
   likesCount: number;
 }
+
 
 

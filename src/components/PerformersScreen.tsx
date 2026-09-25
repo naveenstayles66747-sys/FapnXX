@@ -118,6 +118,57 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
     [filteredAndSortedPerformers, visibleCount]
   );
 
+  // Sync performer selection with browser URL and history state
+  const handleSelectPerformer = (p: Performer) => {
+    setSelectedPerformer(p);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('star', p.name);
+      window.history.pushState({ performer: p.name }, '', url.toString());
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {}
+  };
+
+  const handleBackToAll = () => {
+    setSelectedPerformer(null);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('star');
+      window.history.pushState({}, '', url.toString());
+    } catch {}
+  };
+
+  // Browser back button (popstate) listener
+  useEffect(() => {
+    const handlePopState = () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const star = urlParams.get('star');
+        if (!star && selectedPerformer) {
+          setSelectedPerformer(null);
+        } else if (star && (!selectedPerformer || selectedPerformer.name !== star)) {
+          const match = allPerformers.find((p) => p.name.toLowerCase() === star.toLowerCase());
+          if (match) setSelectedPerformer(match);
+        }
+      } catch {}
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedPerformer, allPerformers]);
+
+  // Initial load deep link check
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const star = urlParams.get('star');
+      if (star && allPerformers.length > 0) {
+        const match = allPerformers.find((p) => p.name.toLowerCase() === star.toLowerCase());
+        if (match) setSelectedPerformer(match);
+      }
+    } catch {}
+  }, [allPerformers]);
+
   // Fetch live videos from the database whenever a performer profile is opened
   useEffect(() => {
     if (!selectedPerformer) {
@@ -175,7 +226,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
         {/* Back Button */}
         <button
           type="button"
-          onClick={() => setSelectedPerformer(null)}
+          onClick={handleBackToAll}
           className="mb-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-200 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white dark:border-transparent font-bold text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
         >
           <span className="material-symbols-outlined text-base">arrow_back</span>
@@ -387,7 +438,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
           {visiblePerformers.map((performer) => (
             <div
               key={performer.id}
-              onClick={() => setSelectedPerformer(performer)}
+              onClick={() => handleSelectPerformer(performer)}
               className="performer-card group cursor-pointer border-b border-r border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0f0e12] hover:bg-slate-50 dark:hover:bg-[#1a1820] transition-colors duration-200 active:opacity-75"
             >
               {/* Portrait Photo (4:3 aspect ratio) */}

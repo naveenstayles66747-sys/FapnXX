@@ -326,21 +326,34 @@ export const pornhubService = {
   importToFirestore: async (videos: any[]) => {
     if (!videos || videos.length === 0) return { success: false, imported: 0 };
     const { adminDb } = await import("../firebase-admin");
-    const batch = adminDb.batch();
-    let count = 0;
+    const { VideoStatus } = await import("../config/constants");
 
-    for (const v of videos) {
-      const ref = adminDb.collection("videos").doc(v.id);
-      batch.set(ref, {
-        ...v,
-        importedAt: new Date().toISOString(),
-        published: true,
-        source: "pornhub_affiliate",
-      }, { merge: true });
-      count++;
+    let count = 0;
+    const chunkSize = 450;
+    for (let i = 0; i < videos.length; i += chunkSize) {
+      const chunk = videos.slice(i, i + chunkSize);
+      const batch = adminDb.batch();
+
+      for (const v of chunk) {
+        const ref = adminDb.collection("videos").doc(v.id);
+        batch.set(
+          ref,
+          {
+            ...v,
+            status: VideoStatus.PUBLISHED,
+            importedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            published: true,
+            source: "pornhub_affiliate",
+          },
+          { merge: true }
+        );
+        count++;
+      }
+      await batch.commit();
     }
 
-    await batch.commit();
     return { success: true, imported: count };
   },
 };
+

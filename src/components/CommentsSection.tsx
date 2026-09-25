@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { VideoComment } from '../types';
 import { videoService } from '../services/videoService';
+import { auth } from '../services/firebaseConfig';
 
 interface CommentsSectionProps {
   videoId: string;
@@ -17,6 +18,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
   const [newCommentText, setNewCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authorName, setAuthorName] = useState<string>('');
+  const currentUid = auth.currentUser?.uid || null;
 
   useEffect(() => {
     // Persistent Guest ID (e.g., Guest_4821) or Logged In Username
@@ -55,6 +57,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
       const comment: VideoComment = {
         id: `comment_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         videoId,
+        userId: auth.currentUser?.uid || undefined,
         userName: authorName || 'Guest_1001',
         userAvatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(
           authorName || 'Guest'
@@ -72,6 +75,15 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
       console.error('[CommentsSection] Save comment error:', err);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      await videoService.deleteComment(commentId);
+    } catch (err) {
+      console.error('[CommentsSection] Delete comment error:', err);
     }
   };
 
@@ -190,16 +202,29 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                 </div>
               </div>
 
-              {/* Like Button */}
-              <button
-                type="button"
-                onClick={() => handleLikeComment(comment.id)}
-                className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-[#ec4899] dark:text-zinc-400 dark:hover:text-[#ffb0cd] transition-colors p-1 rounded hover:bg-zinc-200/60 dark:hover:bg-white/10 cursor-pointer shrink-0"
-                title="Like comment"
-              >
-                <span className="material-symbols-outlined text-xs">thumb_up</span>
-                <span>{comment.likesCount || 0}</span>
-              </button>
+              {/* Actions: Delete (if owner) & Like Button */}
+              <div className="flex items-center gap-1 shrink-0">
+                {currentUid && comment.userId === currentUid && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteComment(comment.id)}
+                    className="flex items-center text-[11px] text-zinc-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-500/10 cursor-pointer"
+                    title="Delete comment"
+                  >
+                    <span className="material-symbols-outlined text-xs">delete</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => handleLikeComment(comment.id)}
+                  className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-[#ec4899] dark:text-zinc-400 dark:hover:text-[#ffb0cd] transition-colors p-1 rounded hover:bg-zinc-200/60 dark:hover:bg-white/10 cursor-pointer"
+                  title="Like comment"
+                >
+                  <span className="material-symbols-outlined text-xs">thumb_up</span>
+                  <span>{comment.likesCount || 0}</span>
+                </button>
+              </div>
             </div>
           ))}
         </div>

@@ -101,7 +101,12 @@ export const authService = {
     userAgent?: string;
   }): Promise<{ user: Omit<User, 'passwordHash'>; accessToken: string; refreshToken: string; firebaseCustomToken?: string }> => {
     const res = await authService.login(params);
-    if (res.user.role !== Role.ADMIN && res.user.role !== Role.SUPER_ADMIN && res.user.role !== Role.EDITOR) {
+    if (
+      res.user.role !== Role.ADMIN &&
+      res.user.role !== Role.SUPER_ADMIN &&
+      res.user.role !== Role.EDITOR &&
+      res.user.role !== Role.MODERATOR
+    ) {
       throw new Error('Access denied. This account does not possess administrative privileges.');
     }
 
