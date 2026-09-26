@@ -13,10 +13,11 @@ const KEYS = {
   THEME: 'indianfullxx_theme',
   CONTENT_PREFERENCE: 'indianfullxx_content_preference',
   DEVICE_UID: 'fapnxx_device_uid',
-  CACHED_VIDEOS: 'fapnxx_cached_videos_v2',
+  CACHED_VIDEOS: 'fapnxx_cached_videos_v3',
   CACHED_BANNERS: 'fapnxx_cached_banners',
   // Legacy keys to purge
   LEGACY_CACHED_VIDEOS_V1: 'fapnxx_cached_videos',
+  LEGACY_CACHED_VIDEOS_V2: 'fapnxx_cached_videos_v2',
   LEGACY_CUSTOM_VIDEOS: 'indianfullxx_custom_videos',
   LEGACY_CUSTOM_CATEGORIES: 'indianfullxx_custom_categories',
   LEGACY_CUSTOM_BANNERS: 'indianfullxx_custom_banners',
@@ -26,6 +27,7 @@ const KEYS = {
 // Proactively purge legacy, zeroed-out or heavy catalogs from localStorage to ensure authentic data and prevent quota overflow
 try {
   localStorage.removeItem(KEYS.LEGACY_CACHED_VIDEOS_V1);
+  localStorage.removeItem(KEYS.LEGACY_CACHED_VIDEOS_V2);
   localStorage.removeItem(KEYS.LEGACY_CUSTOM_VIDEOS);
   localStorage.removeItem(KEYS.LEGACY_CUSTOM_CATEGORIES);
   localStorage.removeItem(KEYS.LEGACY_CUSTOM_BANNERS);
@@ -35,7 +37,7 @@ try {
     const parsed = JSON.parse(cached);
     if (
       !Array.isArray(parsed) ||
-      parsed.length < 500 ||
+      parsed.length < 50 ||
       (parsed[0] && (parsed[0].viewsCount === 0 || parsed[0].rating === '0%'))
     ) {
       localStorage.removeItem(KEYS.CACHED_VIDEOS);
