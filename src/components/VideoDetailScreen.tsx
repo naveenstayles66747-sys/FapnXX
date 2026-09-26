@@ -51,9 +51,6 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   const [showShareNotification, setShowShareNotification] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
-  const [isMiniPlayerVisible, setIsMiniPlayerVisible] = useState(false);
-  const [isMiniPlayerDismissed, setIsMiniPlayerDismissed] = useState(false);
-  const playerContainerRef = useRef<HTMLDivElement>(null);
 
   // DMCA Report Modal State
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -66,28 +63,6 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
   const [watchSeconds, setWatchSeconds] = useState<number>(0);
   const hasCountedRef = useRef<boolean>(false);
 
-  // Reset mini player dismissed state on video change
-  useEffect(() => {
-    setIsMiniPlayerDismissed(false);
-    setIsMiniPlayerVisible(false);
-  }, [video.id]);
-
-  // Sticky Floating Mini-Player on scroll using IntersectionObserver
-  useEffect(() => {
-    if (!playerContainerRef.current) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting && !isMiniPlayerDismissed) {
-          setIsMiniPlayerVisible(true);
-        } else {
-          setIsMiniPlayerVisible(false);
-        }
-      },
-      { threshold: 0.15 }
-    );
-    observer.observe(playerContainerRef.current);
-    return () => observer.disconnect();
-  }, [isMiniPlayerDismissed, video.id]);
 
   // Hard media killer when user leaves VideoDetailScreen (navigates back)
   useEffect(() => {
@@ -400,7 +375,7 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
       {/* ═══════════════════════════════════════════════
           VIDEO PLAYER — Responsive Clean Container
       ═══════════════════════════════════════════════ */}
-      <section ref={playerContainerRef} className="w-full px-2 sm:px-4 md:px-6 py-1 sm:py-1.5">
+      <section className="w-full px-2 sm:px-4 md:px-6 py-1 sm:py-1.5">
         <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 flex items-center justify-center">
           <FluidPlayerWrapper key={`fluid-player-${video.id}`} video={video} autoPlay={true} />
         </div>
@@ -855,64 +830,6 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({
         </div>
       )}
 
-      {/* Sticky Floating Picture-in-Picture Mini-Player on Scroll */}
-      {isMiniPlayerVisible && !isMiniPlayerDismissed && (
-        <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 z-40 w-72 sm:w-80 rounded-2xl overflow-hidden shadow-2xl border border-zinc-300 dark:border-white/15 bg-white/95 dark:bg-[#141418]/95 backdrop-blur-xl transition-all duration-300 animate-in slide-in-from-bottom-5 duration-200">
-          <div className="relative w-full aspect-video bg-black overflow-hidden group/mini">
-            <img
-              src={video.thumbnail}
-              alt={video.title}
-              className="w-full h-full object-cover opacity-90 group-hover/mini:scale-105 transition-transform duration-300"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-
-            {/* Live Playing Pulse Badge */}
-            <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] font-bold text-white border border-white/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Playing</span>
-            </div>
-
-            {/* Close Mini Player Button */}
-            <button
-              type="button"
-              onClick={() => setIsMiniPlayerDismissed(true)}
-              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/70 hover:bg-black/90 text-white flex items-center justify-center cursor-pointer active:scale-90 transition-transform shadow-md"
-              title="Close mini player"
-            >
-              <span className="material-symbols-outlined text-sm">close</span>
-            </button>
-
-            {/* Center Expand / Scroll to Top Button */}
-            <button
-              type="button"
-              onClick={() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                setIsMiniPlayerVisible(false);
-              }}
-              className="absolute inset-0 m-auto w-10 h-10 rounded-full bg-[#e0358d]/90 hover:bg-[#e0358d] text-white flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 active:scale-95 transition-all"
-              title="Expand to Full Player"
-            >
-              <span className="material-symbols-outlined text-xl">open_in_full</span>
-            </button>
-          </div>
-
-          <div className="p-2.5 flex items-center justify-between gap-2">
-            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate flex-1">
-              {video.title}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                setIsMiniPlayerVisible(false);
-              }}
-              className="text-[11px] font-extrabold text-[#e0358d] dark:text-[#ec4899] hover:underline cursor-pointer shrink-0"
-            >
-              Top ↑
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* DMCA Report Modal */}
       <ReportModal
