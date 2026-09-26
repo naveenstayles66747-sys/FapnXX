@@ -26,8 +26,8 @@ export function initScrollReveal(): () => void {
       });
     },
     {
-      rootMargin: '0px 0px -30px 0px',
-      threshold: 0.02,
+      rootMargin: '60px 0px 60px 0px',
+      threshold: 0.01,
     }
   );
 
