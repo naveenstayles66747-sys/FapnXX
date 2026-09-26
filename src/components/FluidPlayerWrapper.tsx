@@ -533,12 +533,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
             {currentVideoSrc ? (
               <iframe
                 key={`iframe-${videoMountKey}`}
-                src={
-                  /pornhub|xvideos|spankbang|streamtape|streamta\.pe|redtube|youporn/i.test(currentVideoSrc) &&
-                  !currentVideoSrc.startsWith('/api/')
-                    ? `/api/embed?url=${encodeURIComponent(currentVideoSrc)}`
-                    : currentVideoSrc
-                }
+                src={currentVideoSrc}
                 title={video?.title || "Video Stream"}
                 sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope; screen-wake-lock"
