@@ -12,15 +12,27 @@ export function useLenisScroll({ enabled = true, isPaused = false }: UseLenisScr
   useEffect(() => {
     if (!enabled || typeof window === "undefined") return;
 
-    // Initialize Lenis with buttery smooth momentum physics
+    const isTouchDevice =
+      typeof window !== 'undefined' &&
+      (('ontouchstart' in window) ||
+        (navigator.maxTouchPoints > 0) ||
+        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
+        window.innerWidth <= 1024);
+
+    // On mobile devices, native hardware scrolling is 120Hz smooth and zero-latency;
+    // running JS virtual smooth scroll on mobile causes severe touch stutter & hanging.
+    if (isTouchDevice) {
+      return;
+    }
+
+    // Initialize Lenis for desktop mousewheel only
     const lenis = new Lenis({
-      duration: 1.15,
+      duration: 1.0,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: "vertical",
       gestureOrientation: "vertical",
       smoothWheel: true,
-      touchMultiplier: 1.5,
-      wheelMultiplier: 0.95,
+      wheelMultiplier: 1.0,
       infinite: false,
     });
 

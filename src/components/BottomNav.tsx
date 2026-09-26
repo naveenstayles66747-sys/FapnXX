@@ -14,31 +14,33 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
   useEffect(() => {
     let ticking = false;
 
+    let isCurrentlyVisible = true;
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY || document.documentElement.scrollTop;
 
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          // Always stay visible when at or near the top (< 45px)
           if (currentScrollY <= 45) {
-            setIsVisible(true);
+            if (!isCurrentlyVisible) {
+              isCurrentlyVisible = true;
+              setIsVisible(true);
+            }
             accumulatedDelta.current = 0;
           } else {
             const diff = currentScrollY - lastScrollY.current;
 
-            // Reset accumulation if scrolling direction flipped
             if ((diff > 0 && accumulatedDelta.current < 0) || (diff < 0 && accumulatedDelta.current > 0)) {
               accumulatedDelta.current = 0;
             }
 
             accumulatedDelta.current += diff;
 
-            // Require 35px of intentional downward scroll before sliding down
-            if (accumulatedDelta.current > 35) {
+            if (accumulatedDelta.current > 45 && isCurrentlyVisible) {
+              isCurrentlyVisible = false;
               setIsVisible(false);
-            }
-            // Require 18px of upward scroll to slide back up
-            else if (accumulatedDelta.current < -18) {
+            } else if (accumulatedDelta.current < -25 && !isCurrentlyVisible) {
+              isCurrentlyVisible = true;
               setIsVisible(true);
             }
           }
