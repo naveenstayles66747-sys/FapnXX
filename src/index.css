@@ -58,6 +58,191 @@
   }
 }
 
+/* ==========================================================================
+   THE 6 MODERN CORE UI ANIMATIONS
+   ========================================================================== */
+
+/* ─── 1. FADE-IN ON SCROLL ANIMATION (Golden Rules Compliant) ─── */
+.fade-in-scroll {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.fade-in-scroll.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  /* Golden Rule 2: Release will-change to free GPU VRAM once visible */
+  will-change: auto;
+}
+
+/* Golden Rule 3: Low-power mobile & accessibility reduced motion */
+@media (max-width: 640px) {
+  .fade-in-scroll {
+    transform: translate3d(0, 10px, 0);
+    transition: opacity 0.35s ease-out, transform 0.35s ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-scroll,
+  .card-hover-scale,
+  .btn-hover-scale,
+  .page-transition-enter {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+    will-change: auto !important;
+  }
+}
+
+/* ─── 2. HOVER SCALE & DEPTH GLOW EFFECT (GPU Transform Only) ─── */
+.card-hover-scale {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease;
+  will-change: transform;
+}
+
+.card-hover-scale:hover {
+  transform: translate3d(0, -4px, 0) scale(1.02);
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.55), 0 0 24px rgba(236, 72, 153, 0.22);
+}
+
+.btn-hover-scale {
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.btn-hover-scale:hover {
+  transform: scale(1.035);
+}
+
+.btn-hover-scale:active {
+  transform: scale(0.96);
+}
+
+/* ─── 3. GLOWING NEON LOADING SPINNER ─── */
+.neon-spinner {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid rgba(236, 72, 153, 0.18);
+  border-top-color: #ec4899;
+  border-right-color: #f43f5e;
+  box-shadow: 0 0 16px rgba(236, 72, 153, 0.45);
+  animation: neonSpin 0.75s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+  display: inline-block;
+}
+
+.neon-spinner-sm {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
+.neon-spinner-lg {
+  width: 52px;
+  height: 52px;
+  border-width: 4px;
+}
+
+@keyframes neonSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─── 4. MATERIAL BUTTON RIPPLE CLICK EFFECT ─── */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.38);
+  transform: scale(0);
+  animation: rippleExpand 0.55s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes rippleExpand {
+  0% {
+    transform: scale(0);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(3.5);
+    opacity: 0;
+  }
+}
+
+/* ─── 5. SMOOTH PAGE TRANSITION ─── */
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition-enter {
+  animation: pageEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+
+/* ─── 6. STICKY NAVBAR SHRINK & GLASS BLUR ON SCROLL ─── */
+header.header-container {
+  transition: padding 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              backdrop-filter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+header.header-container.is-scrolled {
+  padding-top: 0.35rem !important;
+  padding-bottom: 0.35rem !important;
+  background-color: rgba(9, 9, 11, 0.9) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+html.light header.header-container.is-scrolled {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06), 0 1px 0 rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ─── 7. HORIZONTAL SCROLL ROW WITH SMOOTH SNAP ─── */
+.row-scroll {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.row-scroll .row-scroll-item,
+.row-scroll .video-thumb,
+.row-scroll > * {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+}
+
 @keyframes cardSmoothProgress {
   0% {
     width: 0%;
@@ -165,13 +350,16 @@ html.lenis, html.lenis body {
 }
 
 /* GPU Hardware Acceleration & Micro-Animations (Following Golden Performance Rules) */
+.perspective-parent {
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+}
+
 .gpu-smooth {
   transform: translate3d(0, 0, 0);
   -webkit-transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  perspective: 1000px;
-  will-change: transform, opacity;
 }
 
 .smooth-card-transition {
@@ -277,9 +465,8 @@ button, a, input, select, textarea, [role="button"], article {
 
 /* GPU Acceleration & Performance for Low-End Devices */
 .gpu-accelerated {
-  transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
-  perspective: 1000px;
 }
 
 /* Optimize Video Card Rendering */

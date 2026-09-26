@@ -474,7 +474,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onMouseMove={handleMouseMove}
-        className="group relative bg-[#131315] rounded-2xl overflow-hidden border border-[#353437] hover:border-[#ffb0cd]/50 gpu-smooth smooth-card-transition cursor-pointer flex flex-col md:flex-row"
+        className="group relative bg-[#131315] rounded-2xl overflow-hidden border border-[#353437] hover:border-[#ffb0cd]/50 gpu-smooth smooth-card-transition cursor-pointer flex flex-col md:flex-row fade-in-scroll card-hover-scale btn-ripple"
         style={{ contentVisibility: "auto", containIntrinsicSize: "300px" }}
       >
         <div className="relative w-full md:w-2/5 aspect-video md:aspect-auto overflow-hidden bg-black gpu-smooth">
@@ -620,7 +620,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({ video, onClick, layout =
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
-      className="group cursor-pointer flex flex-col w-full max-w-full rounded-xl sm:rounded-2xl overflow-hidden gpu-smooth smooth-card-transition"
+      className="group cursor-pointer flex flex-col w-full max-w-full rounded-xl sm:rounded-2xl overflow-hidden gpu-smooth smooth-card-transition fade-in-scroll card-hover-scale btn-ripple"
       style={{ contentVisibility: "auto", containIntrinsicSize: "240px" }}
     >
       {/* 16:9 Full-Width Clean Thumbnail Container */}

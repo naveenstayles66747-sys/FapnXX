@@ -56,10 +56,15 @@ export function smartSearch(videos: Video[], query: string): Video[] {
     const performer = (v.performerName || '').toLowerCase();
     const category = (v.categoryLabel || v.category || '').toLowerCase();
     const tags = Array.isArray(v.tags) ? v.tags.join(' ').toLowerCase() : '';
+    const actors = [
+      ...(Array.isArray(v.modelsActors) ? v.modelsActors : []),
+      ...(Array.isArray(v.models_actors) ? v.models_actors : []),
+      ...(Array.isArray(v.performers) ? v.performers : []),
+    ].join(' ').toLowerCase();
 
     // Direct full phrase match gets top score
     if (title.includes(q)) score += 100;
-    if (performer.includes(q)) score += 140;
+    if (performer.includes(q) || actors.includes(q)) score += 140;
     if (category.includes(q)) score += 80;
     if (tags.includes(q)) score += 60;
 
@@ -68,7 +73,7 @@ export function smartSearch(videos: Video[], query: string): Video[] {
     for (let j = 0; j < tokens.length; j++) {
       const t = tokens[j];
       if (title.includes(t)) { score += 30; tokenMatches++; }
-      else if (performer.includes(t)) { score += 45; tokenMatches++; }
+      else if (performer.includes(t) || actors.includes(t)) { score += 45; tokenMatches++; }
       else if (category.includes(t)) { score += 20; tokenMatches++; }
       else if (tags.includes(t)) { score += 15; tokenMatches++; }
     }
@@ -94,7 +99,13 @@ export function hasRealMatches(videos: Video[], query: string): boolean {
     const title = (v.title || '').toLowerCase();
     const performer = (v.performerName || '').toLowerCase();
     const category = (v.categoryLabel || v.category || '').toLowerCase();
-    if (title.includes(q) || performer.includes(q) || category.includes(q)) {
+    const actors = [
+      ...(Array.isArray(v.modelsActors) ? v.modelsActors : []),
+      ...(Array.isArray(v.models_actors) ? v.models_actors : []),
+      ...(Array.isArray(v.performers) ? v.performers : []),
+    ].join(' ').toLowerCase();
+
+    if (title.includes(q) || performer.includes(q) || actors.includes(q) || category.includes(q)) {
       return true;
     }
   }

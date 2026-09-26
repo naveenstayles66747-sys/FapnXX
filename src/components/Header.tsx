@@ -224,8 +224,26 @@ export const Header: React.FC<HeaderProps> = ({
     </div>
   );
 
+  // Sticky Navbar Shrink on Scroll
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrolled = window.scrollY > 25;
+      if (scrolled !== isScrolled) {
+        setIsScrolled(scrolled);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isScrolled]);
+
   return (
-    <header className={`sticky top-0 w-full z-50 header-container backdrop-blur-xl flex justify-between items-center px-3 md:px-8 h-16 md:h-20 shrink-0 box-border transition-colors ${
+    <header className={`sticky top-0 w-full z-50 header-container backdrop-blur-xl flex justify-between items-center px-3 md:px-8 shrink-0 box-border transition-all duration-300 ${
+      isScrolled
+        ? 'is-scrolled h-13 md:h-15 shadow-xl'
+        : 'h-16 md:h-20'
+    } ${
       isBrazzers
         ? 'bg-black/98 border-b border-amber-500/30 shadow-[0_4px_30px_rgba(0,0,0,0.95)]'
         : 'border-b border-zinc-200/80 dark:border-white/10 bg-white/95 dark:bg-[#09090b]/95'

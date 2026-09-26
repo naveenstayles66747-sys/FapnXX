@@ -106,36 +106,51 @@ export const pornhubService = {
     // ── 1. FAST SQLITE FTS5 SEARCH (Sub-millisecond) ──
     if (db) {
       try {
-        let sql = "SELECT * FROM videos_fts";
-        const params: any[] = [];
-        const clauses: string[] = [];
+        let rows: any[] = [];
+        const words = search
+          ? search
+              .replace(/["'*^:?()-]/g, " ")
+              .split(/\s+/)
+              .filter((w) => w.length > 0)
+          : [];
 
-        // Full Text Query
-        if (search) {
-          const sanitized = search
-            .replace(/["'*^:?]/g, " ")
-            .split(/\s+/)
-            .filter((w) => w.length > 0)
-            .map((w) => `"${w}"*`)
-            .join(" ");
+        // 1a. Try Strict AND Search for all words
+        if (words.length > 0) {
+          const strictQuery = words.map((w) => `"${w}"*`).join(" ");
+          let sql = "SELECT * FROM videos_fts WHERE videos_fts MATCH ?";
+          const params: any[] = [strictQuery];
 
-          if (sanitized) {
-            clauses.push("videos_fts MATCH ?");
-            params.push(sanitized);
+          sql += " LIMIT ?";
+          params.push(limit);
+
+          try {
+            rows = db.prepare(sql).all(...params) as any[];
+          } catch (e) {
+            rows = [];
+          }
+
+          // 1b. If 0 rows and multiple words, fallback to OR search
+          if (rows.length === 0 && words.length > 1) {
+            const orQuery = words.map((w) => `"${w}"*`).join(" OR ");
+            try {
+              rows = db.prepare("SELECT * FROM videos_fts WHERE videos_fts MATCH ? LIMIT ?").all(orQuery, limit) as any[];
+            } catch (e) {
+              rows = [];
+            }
           }
         } else if (category && category !== "all" && category !== "trending") {
-          clauses.push("videos_fts MATCH ?");
-          params.push(`"${category}"*`);
+          try {
+            rows = db.prepare("SELECT * FROM videos_fts WHERE videos_fts MATCH ? LIMIT ?").all(`"${category}"*`, limit) as any[];
+          } catch (e) {
+            rows = [];
+          }
+        } else {
+          try {
+            rows = db.prepare("SELECT * FROM videos_fts LIMIT ?").all(limit) as any[];
+          } catch (e) {
+            rows = [];
+          }
         }
-
-        if (clauses.length > 0) {
-          sql += " WHERE " + clauses.join(" AND ");
-        }
-
-        sql += " LIMIT ?";
-        params.push(limit);
-
-        const rows = db.prepare(sql).all(...params) as any[];
 
         const matched = rows.map((r: any) => {
           const videoId = r.id;
@@ -207,6 +222,8 @@ export const pornhubService = {
 
     const matched: any[] = [];
     const seenIds = new Set<string>();
+    const searchLow = search.toLowerCase();
+    const searchTokens = searchLow.split(/\s+/).filter(Boolean);
 
     const fd = fs.openSync(csvPath, "r");
     const BUFFER_SIZE = 1024 * 1024 * 8; // 8MB buffer
@@ -239,13 +256,15 @@ export const pornhubService = {
           const tagsRaw = (cols[4] || "").toLowerCase();
           const catRaw = (cols[5] || "").toLowerCase();
           const modelsRaw = (cols[6] || "").toLowerCase();
+          const titleLow = title.toLowerCase();
 
-          if (search) {
+          if (searchTokens.length > 0) {
             const matchesSearch =
-              title.toLowerCase().includes(search) ||
-              tagsRaw.includes(search) ||
-              catRaw.includes(search) ||
-              modelsRaw.includes(search);
+              searchTokens.every((token) => titleLow.includes(token) || tagsRaw.includes(token) || catRaw.includes(token) || modelsRaw.includes(token)) ||
+              titleLow.includes(searchLow) ||
+              tagsRaw.includes(searchLow) ||
+              catRaw.includes(searchLow) ||
+              modelsRaw.includes(searchLow);
             if (!matchesSearch) continue;
           }
 

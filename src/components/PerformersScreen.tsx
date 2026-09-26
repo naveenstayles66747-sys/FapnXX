@@ -46,11 +46,40 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
     []
   );
 
-  // Build high-quality verified performers list
+  // Auto-load full catalog if only initial 48 seed videos are loaded
+  useEffect(() => {
+    if (!videos || videos.length <= 48) {
+      videoService.loadFullCuratedCatalog();
+    }
+  }, [videos]);
+
+  // Build high-quality verified performers list with dynamic accurate video counts
   const allPerformers = useMemo<Performer[]>(() => {
     const map = new Map<string, Performer>();
 
-    // 1. Seed all 1,500+ top verified adult stars from catalog
+    // 1. Calculate live dynamic video counts from currently loaded videos if available
+    const liveVideoCounts = new Map<string, number>();
+    if (Array.isArray(videos) && videos.length > 48) {
+      for (let i = 0; i < videos.length; i++) {
+        const v = videos[i];
+        if (!v || v.isTakenDown) continue;
+        const seenInVideo = new Set<string>();
+        const addCount = (raw?: string) => {
+          if (!raw) return;
+          const low = raw.toLowerCase().trim();
+          if (low && !seenInVideo.has(low)) {
+            seenInVideo.add(low);
+            liveVideoCounts.set(low, (liveVideoCounts.get(low) || 0) + 1);
+          }
+        };
+        if (v.performerName) addCount(v.performerName);
+        if (Array.isArray(v.modelsActors)) v.modelsActors.forEach((a) => a.split(';').forEach(addCount));
+        if (Array.isArray(v.models_actors)) v.models_actors.forEach((a) => a.split(';').forEach(addCount));
+        if (Array.isArray(v.performers)) v.performers.forEach((p) => p.split(';').forEach(addCount));
+      }
+    }
+
+    // 2. Seed all verified adult stars from catalog
     if (Array.isArray(TOP_PERFORMERS_CATALOG)) {
       TOP_PERFORMERS_CATALOG.forEach((item: any) => {
         if (!item || !item.name) return;
@@ -61,8 +90,13 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
           return;
         }
 
+        const realCount = liveVideoCounts.get(low) || item.videosCount || 0;
+        if (realCount <= 0 && (!item.videosCount || item.videosCount <= 0)) {
+          return;
+        }
+
         const id = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-        const viewsCount = item.totalViews || item.videosCount * 450000;
+        const viewsCount = item.totalViews || realCount * 385000;
         const subCount = Math.max(15, Math.round((viewsCount / 100000) % 950));
 
         map.set(id, {
@@ -72,7 +106,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
             item.avatar ||
             'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop',
           subscribers: `${subCount}K`,
-          videosCount: item.videosCount || 1,
+          videosCount: realCount,
           isFollowing: false,
           bio: `Official verified adult creator channel & HD video catalog for ${name}.`,
           tags:
@@ -84,7 +118,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
     }
 
     return Array.from(map.values());
-  }, [nonPerformerBlacklist]);
+  }, [nonPerformerBlacklist, videos]);
 
   // Filter & Sort performers
   const filteredAndSortedPerformers = useMemo(() => {
@@ -199,19 +233,38 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
 
     const list = cleanVideos.filter((v) => {
       if (!v || v.isTakenDown) return false;
-      const matchDirect = (v.performerName || '').toLowerCase().trim() === targetName;
-      const matchActors =
-        Array.isArray(v.modelsActors) &&
-        v.modelsActors.some((a) => (a || '').toLowerCase().trim() === targetName);
-      const matchActorsAlt =
-        Array.isArray(v.models_actors) &&
-        v.models_actors.some((a) => (a || '').toLowerCase().trim() === targetName);
-      const matchTitle = (v.title || '').toLowerCase().includes(targetName);
-      const matchTags =
-        Array.isArray(v.tags) &&
-        v.tags.some((t) => (t || '').toLowerCase().trim() === targetName);
 
-      return matchDirect || matchActors || matchActorsAlt || matchTitle || matchTags;
+      // 1. Match performerName
+      const vPerf = (v.performerName || '').toLowerCase().trim();
+      if (vPerf === targetName || vPerf.includes(targetName) || targetName.includes(vPerf)) return true;
+
+      // 2. Match modelsActors / models_actors / performers arrays
+      const checkActorArray = (arr?: string[]) => {
+        if (!Array.isArray(arr) || arr.length === 0) return false;
+        return arr.some((item) => {
+          if (!item) return false;
+          const splitted = item.toLowerCase().split(';');
+          return splitted.some((s) => {
+            const trimmed = s.trim();
+            return trimmed === targetName || trimmed.includes(targetName) || targetName.includes(trimmed);
+          });
+        });
+      };
+
+      if (checkActorArray(v.modelsActors)) return true;
+      if (checkActorArray(v.models_actors)) return true;
+      if (checkActorArray(v.performers)) return true;
+
+      // 3. Match title
+      const title = (v.title || '').toLowerCase();
+      if (title.includes(targetName)) return true;
+
+      // 4. Match tags
+      if (Array.isArray(v.tags)) {
+        if (v.tags.some((t) => (t || '').toLowerCase().trim() === targetName)) return true;
+      }
+
+      return false;
     });
 
     return deduplicateVideos(list);
@@ -255,7 +308,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
 
             <div className="flex items-center justify-center sm:justify-start gap-3 text-xs font-semibold text-slate-600 dark:text-zinc-300 flex-wrap">
               <span className="bg-[#ec4899]/15 text-[#ec4899] px-2.5 py-0.5 rounded-full font-bold border border-[#ec4899]/30">
-                {selectedPerformer.videosCount || performerVideos.length} Videos
+                {performerVideos.length > 0 ? performerVideos.length : selectedPerformer.videosCount} Videos Available
               </span>
               <span>⭐ Top Rated Creator</span>
               {selectedPerformer.tags && selectedPerformer.tags.length > 0 && (
@@ -314,12 +367,22 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
               ))}
             </div>
           ) : (
-            <div className="p-12 text-center text-slate-600 dark:text-zinc-400 bg-slate-50 dark:bg-[#121115] rounded-3xl border border-slate-200 dark:border-white/10 space-y-2">
+            <div className="p-12 text-center text-slate-600 dark:text-zinc-400 bg-slate-50 dark:bg-[#121115] rounded-3xl border border-slate-200 dark:border-white/10 space-y-3">
               <span className="material-symbols-outlined text-4xl text-[#ec4899]">videocam_off</span>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 No Videos Found for {selectedPerformer.name}
               </h3>
-              <p className="text-xs">Check back soon as new content is added daily!</p>
+              <p className="text-xs">Check back soon or search the entire video database.</p>
+              {onNavigateToSearch && (
+                <button
+                  type="button"
+                  onClick={() => onNavigateToSearch(selectedPerformer.name)}
+                  className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#ec4899] hover:bg-[#db2777] text-white font-bold text-xs shadow-lg shadow-[#ec4899]/30 transition-all cursor-pointer active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-sm">search</span>
+                  <span>Search All Videos for "{selectedPerformer.name}"</span>
+                </button>
+              )}
             </div>
           )}
         </section>
@@ -401,7 +464,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
         </div>
 
         {/* ── A to Z Alphabet Bar ── */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-700">
+        <div className="row-scroll items-center gap-1 pb-2 hide-scrollbar">
           {ALPHABET.map((letter) => {
             const isActive = selectedLetter === letter;
             return (
@@ -412,7 +475,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
                   setSelectedLetter(letter);
                   setVisibleCount(48);
                 }}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
+                className={`row-scroll-item px-2.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
                   isActive
                     ? 'bg-[#ec4899] text-white shadow-md scale-105'
                     : 'bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-950 border border-slate-200 dark:bg-[#141316] dark:text-zinc-400 dark:hover:text-white dark:hover:bg-white/10 dark:border-white/5'
@@ -439,7 +502,7 @@ export const PerformersScreen: React.FC<PerformersScreenProps> = ({
             <div
               key={performer.id}
               onClick={() => handleSelectPerformer(performer)}
-              className="performer-card group cursor-pointer border-b border-r border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0f0e12] hover:bg-slate-50 dark:hover:bg-[#1a1820] transition-colors duration-200 active:opacity-75"
+              className="performer-card group cursor-pointer border-b border-r border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0f0e12] hover:bg-slate-50 dark:hover:bg-[#1a1820] transition-all duration-200 active:opacity-75 fade-in-scroll card-hover-scale btn-ripple"
             >
               {/* Portrait Photo (4:3 aspect ratio) */}
               <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-zinc-900">

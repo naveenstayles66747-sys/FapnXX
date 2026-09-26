@@ -622,14 +622,14 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
     <main className="w-full bg-white dark:bg-[#09090b] px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-5 pb-6 transition-colors max-w-[1920px] mx-auto box-border overflow-x-hidden">
       {/* ── Category Quick Pills Bar (Horizontal 1-Click Filter) ── */}
       <section className="mb-4 sm:mb-5 w-full">
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto hide-scrollbar py-1 px-0.5 scroll-smooth select-none">
+        <div className="row-scroll hide-scrollbar items-center gap-1.5 sm:gap-2 py-1 px-0.5 select-none">
           <button
             type="button"
             onClick={() => {
               if (setSearchQuery) setSearchQuery('');
               onSelectCategory('all');
             }}
-            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm pill-hover-glow cursor-pointer active:scale-95 border ${
+            className={`row-scroll-item shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm pill-hover-glow cursor-pointer active:scale-95 border ${
               selectedCategory === 'all' && !cleanSearch
                 ? 'bg-gradient-to-r from-[#e0358d] to-[#ec4899] text-white font-extrabold border-[#e0358d] shadow-md shadow-[#e0358d]/30'
                 : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-[#18171c] dark:hover:bg-[#25242b] text-zinc-800 dark:text-zinc-200 border-zinc-300/80 dark:border-white/10 font-semibold'
@@ -649,7 +649,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
                   if (setSearchQuery) setSearchQuery('');
                   onSelectCategory(cat.id);
                 }}
-                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm pill-hover-glow cursor-pointer active:scale-95 border ${
+                className={`row-scroll-item shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm pill-hover-glow cursor-pointer active:scale-95 border ${
                   isSelected
                     ? 'bg-gradient-to-r from-[#e0358d] to-[#ec4899] text-white font-extrabold border-[#e0358d] shadow-md shadow-[#e0358d]/30'
                     : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-[#18171c] dark:hover:bg-[#25242b] text-zinc-800 dark:text-zinc-200 border-zinc-300/80 dark:border-white/10 font-semibold'
@@ -680,7 +680,7 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto hide-scrollbar py-1 px-1 scroll-smooth">
+          <div className="row-scroll hide-scrollbar items-center gap-3 sm:gap-4 py-1 px-1">
             {topTrendingStars.map((star) => (
               <button
                 key={star.name}
@@ -929,12 +929,12 @@ export const BrowseScreen: React.FC<BrowseScreenProps> = ({
             </span>
           </div>
 
-          <div className="flex overflow-x-auto hide-scrollbar gap-6 snap-x snap-mandatory pb-4">
+          <div className="row-scroll hide-scrollbar gap-6 pb-4">
             {rankedTrendingVideos.map((video, index) => (
               <div
                 key={video.id}
                 onClick={() => onSelectVideo(video)}
-                className="snap-start shrink-0 w-[85vw] md:w-[60vw] lg:w-[45vw] aspect-video relative rounded-xl overflow-hidden group cursor-pointer border border-zinc-200 dark:border-[#27272a] hover:border-rose-500 transition-all duration-300 shadow-xl"
+                className="video-thumb row-scroll-item shrink-0 w-[85vw] md:w-[60vw] lg:w-[45vw] aspect-video relative rounded-xl overflow-hidden group cursor-pointer border border-zinc-200 dark:border-[#27272a] hover:border-rose-500 transition-all duration-300 shadow-xl"
               >
                 <img
                   src={video.thumbnail}

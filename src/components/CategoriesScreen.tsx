@@ -31,7 +31,7 @@ export const CategoriesScreen: React.FC<CategoriesScreenProps> = ({
             onClick={() => {
               onSelectCategory(cat.id);
             }}
-            className="category-card-item group relative aspect-video sm:aspect-[16/10] lg:aspect-video w-full rounded-2xl overflow-hidden border border-zinc-200 dark:border-[#27272a] hover:border-[#ffb0cd] transition-all duration-300 cursor-pointer shadow-lg bg-[#09090b] select-none"
+            className="category-card-item group relative aspect-video sm:aspect-[16/10] lg:aspect-video w-full rounded-2xl overflow-hidden border border-zinc-200 dark:border-[#27272a] hover:border-[#ffb0cd] transition-all duration-300 cursor-pointer shadow-lg bg-[#09090b] select-none fade-in-scroll card-hover-scale btn-ripple"
             style={{ contentVisibility: 'auto' }}
           >
             <img

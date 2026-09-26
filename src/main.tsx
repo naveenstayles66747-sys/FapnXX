@@ -4,10 +4,14 @@ import App from './App.tsx';
 import { LanguageProvider } from './i18n/LanguageContext.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import './index.css';
+import { initRippleEffect } from './utils/ripple.ts';
+import { initScrollReveal } from './utils/scrollReveal.ts';
 
-// Safe passive mobile viewport responsiveness without blocking main thread compositor
+// Initialize global micro-animations (Ripple click effect & Scroll Reveal)
 if (typeof window !== 'undefined') {
   try {
+    initRippleEffect();
+    initScrollReveal();
     document.addEventListener('gesturestart', () => {}, { passive: true });
     document.addEventListener('gesturechange', () => {}, { passive: true });
     document.addEventListener('gestureend', () => {}, { passive: true });

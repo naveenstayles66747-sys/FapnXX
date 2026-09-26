@@ -11,6 +11,7 @@ import {
   getResponsiveImageSrcSet,
 } from '../utils/mediaHelper';
 import { deduplicateVideos } from '../utils/videoDeduplicator';
+import { videoService } from '../services/videoService';
 import {
   isCategorySaved,
   toggleStoredSavedCategory,
@@ -37,9 +38,29 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
   userEmail,
 }) => {
   const category = (categories || []).find((c) => c && c.id === categoryId) || (categories && categories[0]) || CATEGORIES[0];
+  const [liveCategoryVideos, setLiveCategoryVideos] = React.useState<Video[]>([]);
+  const [isLoadingLive, setIsLoadingLive] = React.useState<boolean>(false);
+
+  // Fetch live videos from the 51 Lakh video database whenever a category is opened
+  React.useEffect(() => {
+    if (!categoryId || categoryId === 'all') return;
+    setIsLoadingLive(true);
+    videoService
+      .searchLivePornhubVideos(undefined, categoryId, 40)
+      .then((remoteVids) => {
+        if (remoteVids && remoteVids.length > 0) {
+          setLiveCategoryVideos(remoteVids);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setIsLoadingLive(false);
+      });
+  }, [categoryId]);
+
   const activeVideos = React.useMemo(
-    () => deduplicateVideos(videos || []),
-    [videos]
+    () => deduplicateVideos([...(videos || []), ...liveCategoryVideos]),
+    [videos, liveCategoryVideos]
   );
   const categoryVideos = React.useMemo(() => {
     return deduplicateVideos(
@@ -245,12 +266,12 @@ export const CategoryDetailScreen: React.FC<CategoryDetailScreenProps> = ({
 
       {/* Subtags / Filter Navigation Chips */}
       <section className="px-6 md:px-12 py-5 border-b border-zinc-200 dark:border-[#353437] bg-zinc-100/80 dark:bg-[#1c1b1d]/50 transition-colors">
-        <div className="flex overflow-x-auto hide-scrollbar space-x-3 pb-1">
+        <div className="row-scroll hide-scrollbar space-x-3 pb-1">
           {subtags.map((tag) => (
             <button
               key={tag}
               onClick={() => handleSelectSubtag(tag)}
-              className={`whitespace-nowrap px-4 py-2 rounded-full font-semibold text-xs transition-colors cursor-pointer active:scale-95 ${
+              className={`row-scroll-item whitespace-nowrap px-4 py-2 rounded-full font-semibold text-xs transition-colors cursor-pointer active:scale-95 ${
                 selectedSubtag === tag
                   ? 'bg-[#ec4899] text-[#fafafa] shadow-neon-pink'
                   : 'bg-white dark:bg-[#2a2a2c] text-zinc-800 dark:text-[#e5e1e4] border border-zinc-200 dark:border-transparent hover:bg-zinc-200 dark:hover:bg-[#353437]'
