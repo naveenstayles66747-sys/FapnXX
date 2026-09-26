@@ -265,6 +265,22 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
       setCurrentVideoSrc("");
     }
 
+    // Direct Stream Resolver for Zero-Lag, Unblocked Native HTML5 Video Playback
+    // Eliminates ISP ERR_CONNECTION_RESET by streaming direct MP4 via serverless proxy
+    let isStreamMounted = true;
+    const targetVideoId = video?.id || rawEmbed;
+    if (targetVideoId && !rawMp4 && !targetVideoId.startsWith("bz-") && !targetVideoId.startsWith("dp-")) {
+      fetch(`/api/stream?id=${encodeURIComponent(targetVideoId)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!isStreamMounted || !data || !data.success || !data.proxyStreamUrl) return;
+          setPlayerMode("video");
+          setCurrentVideoSrc(data.proxyStreamUrl);
+          setVideoMountKey((k) => k + 1);
+        })
+        .catch(() => {});
+    }
+
     // Dynamic VAST In-Stream Pre-roll Engine
     let isMounted = true;
     const dynamicVastTag = `${VAST_TAG_URL}${VAST_TAG_URL.includes("?") ? "&" : "?"}cb=${Date.now()}_${Math.random().toString(36).substring(2, 8)}&v=${encodeURIComponent(video?.id || "vid")}`;
@@ -295,6 +311,7 @@ export const FluidPlayerWrapper: React.FC<FluidPlayerWrapperProps> = ({
 
     return () => {
       isMounted = false;
+      isStreamMounted = false;
       cleanupInstance();
     };
   }, [video?.id, video?.embedUrl, video?.previewMp4Url, autoPlay, cleanupInstance, VAST_TAG_URL]);
